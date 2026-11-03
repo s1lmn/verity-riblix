@@ -24,6 +24,9 @@
       "StarterPlayerScripts": {
         "VerityClient": {
           "$path": "src/client"
+        },
+        "VerityWorldVisuals": {
+          "$path": "src/world-client"
         }
       }
     },
