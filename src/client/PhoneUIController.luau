@@ -67,7 +67,7 @@ function Phone:Render()
 	self.refs.Session.Text=if not state then "Загружаем прогресс…" elseif not ready then "Подключаем телефон…" elseif busy then "Получаем награду…" else "Листай ленту и расти вместе с Verity"
 	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
 		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ VERITY",100,"VerityLevel","NextVerityUpgradeCost"}} do
-		local maxed=state and state[entry[5]]>=entry[4]
+		local maxed=state and state[entry[5]] >= entry[4]
 		local cost=state and state[entry[6]]
 		local pending=net:IsBusy(entry[2])
 		local affordable=cost and state.Cash>=cost
