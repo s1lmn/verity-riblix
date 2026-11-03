@@ -9,6 +9,7 @@ local Levels=require(Shared.LevelConfig)
 local Profile=require(Shared.VerityAnimationProfile)
 local Art=require(Shared.VerityCompanionConfig)
 local FaceUI=require(script.Parent.VerityFaceUI)
+local Personality=require(Shared.VerityPersonality)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
@@ -116,7 +117,7 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	local model=record.model
 	if not model:IsDescendantOf(workspace) then return end
 	if math.abs(model:GetScale()-scale)>0.000001 then model:ScaleTo(scale) end
-	model:PivotTo(record.origin*CFrame.new(0,lift,0)*CFrame.Angles(0,yaw,0))
+	model:PivotTo(record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0))
 	for _,p in record.tints do if p.Parent then p.Color=color end end
 	if record.stageLevel~=level then
 		Factory.SetStage(model,level)
@@ -191,11 +192,13 @@ function Controller:Follow(record,now,dt)
  local char=owner and owner.Character
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
- if not root or not hum or hum.Health<=0 then record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);return false end
+ if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);return false end
  local scale=Levels.getVerityScale(record.model:GetAttribute("VerityLevel"))
  local x,y,z=Follow.Offset(scale,record.plot)
  local heading=root.CFrame.Rotation
  local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
+ record.teleported=teleport
+ record.velocity=root.AssemblyLinearVelocity
  if not record.heading or teleport then record.heading=heading
  else record.heading=record.heading:Lerp(heading,1-math.exp(-Art.HeadingSpeed*(dt or 1/30))) end
  local target=root.Position+record.heading:VectorToWorldSpace(Vector3.new(x,y,z))
@@ -294,6 +297,16 @@ function Controller:Tick(now,dt)
 			end
 		end
 		local active=record.active
+		record.lifeState=record.lifeState or {}
+		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
+		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil,record.teleported)
+		local body=model:FindFirstChild("Body")
+		local face=body and body:FindFirstChild("FaceGui")
+		if face then
+			record.faceLife=record.faceLife or {}
+			local emotion=if workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
+			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,self.settings.values.ReducedEffects or not near)
+		end
 		local scale=Levels.getVerityScale(record.level)
 		local stage=Profile.Stage(record.level)
 		if active then
