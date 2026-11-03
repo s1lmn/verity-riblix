@@ -8,6 +8,11 @@ local configModule = shared and shared:WaitForChild("VerityCompanionConfig",15)
 if not configModule then warn("[Verity companion] Config unavailable"); return end
 local Config = require(configModule)
 local Levels = require(shared:WaitForChild("VerityCompanionLevels",15))
+local templates = ReplicatedStorage:WaitForChild("VerityCompanionAssets",15)
+if not templates or not templates:FindFirstChild("Joy") then
+    warn("[Verity companion] Sync VerityCompanionAssets with the updated Rojo project")
+    return
+end
 if Config.MeshId == "" then warn("[Verity companion] Upload mesh/textures and configure real IDs first"); return end
 local source = ReplicatedStorage:WaitForChild("VerityCompanions",30)
 if not source then return end
@@ -18,7 +23,12 @@ visuals.Parent = workspace
 local entries, connections = {}, {}
 local function emotion(entry)
     local name = entry.descriptor:GetAttribute("Emotion") or "Joy"
-    entry.part.TextureId = Config.Textures[name] or Config.Textures.Joy
+    local template = templates:FindFirstChild(name) or templates.Joy
+    local appearance = template:FindFirstChildOfClass("SurfaceAppearance")
+    if entry.appearance then entry.appearance:Destroy() end
+    -- ColorMap is plugin-only. Clone the authored appearance instead of writing it.
+    entry.appearance = appearance:Clone()
+    entry.appearance.Parent = entry.body
 end
 local function readLevel(descriptor)
     local level=descriptor:GetAttribute("Level") or 1
@@ -64,27 +74,17 @@ local function attach(descriptor)
     if not descriptor:IsA("Folder") or entries[descriptor] then return end
     local ownerId = descriptor:GetAttribute("OwnerUserId")
     if type(ownerId) ~= "number" then return end
-    -- Colored native sphere under a transparent face shell; two noncolliding Parts.
-    local part = Instance.new("Part")
+    -- One mesh with Overlay alpha: transparent texels reveal the body's pigment.
+    local part = templates.Joy:Clone()
     part.Name = "Verity_"..ownerId
     part.Anchored = true
     part.CanCollide,part.CanTouch,part.CanQuery,part.CastShadow = false,false,false,false
-    part.Shape = Enum.PartType.Ball
     part.Size = Vector3.new(Config.BaseDiameter,Config.BaseDiameter,Config.BaseDiameter)
     part.Transparency = 1
     part.Color = Color3.new(1,1,1)
     part.Material = Enum.Material.SmoothPlastic
-    local faceBody=part:Clone()
-    faceBody.Name="Face_"..ownerId
-    faceBody.Color=Color3.new(1,1,1)
-    faceBody.Parent=visuals
-    local mesh = Instance.new("SpecialMesh")
-    mesh.MeshType = Enum.MeshType.FileMesh
-    mesh.MeshId = Config.MeshId
-    mesh.TextureId = Config.Textures.Joy
-    mesh.Parent = faceBody
     part.Parent = visuals
-    local entry = {descriptor=descriptor,ownerId=ownerId,body=part,faceBody=faceBody,part=mesh,visible=false}
+    local entry = {descriptor=descriptor,ownerId=ownerId,body=part,appearance=part:FindFirstChildOfClass("SurfaceAppearance"),visible=false}
     setImmediate(entry,readLevel(descriptor) or 1)
     entries[descriptor] = entry
     entry.changed = descriptor:GetAttributeChangedSignal("Emotion"):Connect(function() emotion(entry) end)
@@ -96,7 +96,6 @@ local function remove(descriptor)
     if not entry then return end
     entry.changed:Disconnect()
     entry.levelChanged:Disconnect()
-    entry.faceBody:Destroy()
     entry.body:Destroy()
     entries[descriptor] = nil
 end
@@ -126,8 +125,6 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             local radius=Config.BaseDiameter*entry.scale/2
             entry.body.Size=Vector3.new(1,1,1)*(radius*2)
             entry.body.Color=entry.color
-            entry.faceBody.Size=entry.body.Size
-            entry.part.Scale=Vector3.new(1,1,1)*(entry.scale*1.004)
             ray.FilterDescendantsInstances = {character,visuals}
             local origin = root.Position+Vector3.new(0,1.6,0)
             local snap = not entry.position or (entry.rootPosition and (root.Position-entry.rootPosition).Magnitude>Config.SnapDistance)
@@ -159,7 +156,6 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             if snap or not entry.facing then entry.facing=facing
             else entry.facing=entry.facing:Lerp(facing,1-math.exp(-Config.FacingSpeed*step)) end
             entry.body.CFrame = CFrame.new(position)*entry.facing
-            entry.faceBody.CFrame=entry.body.CFrame
             visible = (camera.CFrame.Position-position).Magnitude>2
             if owner==localPlayer and (camera.Focus.Position-camera.CFrame.Position).Magnitude<1 then visible=false end
         else
@@ -169,14 +165,12 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
         if entry.visible~=visible then
             entry.visible=visible
             entry.body.Transparency=if visible then 0 else 1
-            entry.faceBody.Transparency=entry.body.Transparency
         end
     end
 end)
 task.spawn(function()
-    local assets = {Config.MeshId}
-    for _, id in Config.Textures do assets[#assets+1]=id end
-    local ok,err=pcall(function() ContentProvider:PreloadAsync(assets) end)
+    -- Preload typed instances; a bare mesh ID can be mistaken for an image request.
+    local ok,err=pcall(function() ContentProvider:PreloadAsync({templates}) end)
     if not ok then warn("[Verity companion] Asset preload: "..tostring(err)) end
 end)
 script.Destroying:Connect(function()

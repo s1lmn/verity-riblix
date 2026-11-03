@@ -1,5 +1,5 @@
 {
-  "mesh": "rbxassetid://131241398783580",
+  "mesh": "rbxassetid://98969698787830",
   "textures": {
     "Joy": "rbxassetid://80981300413243",
     "Love": "rbxassetid://101077299500859",
@@ -11,9 +11,10 @@
     "Stars": "rbxassetid://79774909235274"
   },
   "source": "Actual Studio importer readback, 2026-11-03. Transparent RGBA shared faces. No Play test.",
-  "partsPerCompanion": 2,
+  "partsPerCompanion": 1,
   "levelRange": [
     1,
     10
-  ]
+  ],
+  "rendering": "MeshPart with authored SurfaceAppearance AlphaMode=Overlay; clone appearances to change emotion"
 }

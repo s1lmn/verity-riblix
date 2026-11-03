@@ -4,7 +4,9 @@ Open Verity_FirstTen_Textured.rbxmx in Studio via Insert from File, or insert in
 
 01 Sunny / 02 Mango / 03 Cherry / 04 Bubblegum / 05 Grape / 06 Blue / 07 Cyan / 08 Mint / 09 Lime / 10 Golden.
 
-Each model has Body, Face.SharedFace (SpecialMesh) and Integration metadata with eight texture IDs. Change the SpecialMesh TextureId to swap expression; keep the shell white and change Body.Color for pigment. Keep Face at Body.CFrame. Each export is ALREADY scaled with shared LevelConfig; do not multiply its size again. Face mesh scale includes the 1.004 separation to avoid overlap artifacts.
+Each model has one Body MeshPart with FaceAppearance (SurfaceAppearance, AlphaMode=Overlay) and Integration metadata with eight texture IDs. Change Body.Color for pigment. To swap expressions at runtime, replace its SurfaceAppearance with a clone from the desired emotion MeshPart in Verity_FaceTemplates.rbxmx. Do not write ColorMap from a normal script (plugin-only property). Each export is ALREADY scaled with shared LevelConfig; do not multiply its size again. No SpecialMesh or overlapping shell remains.
+
+The default Rojo project MUST include VerityCompanionAssets from Verity_FaceTemplates.rbxmx; restart rojo serve if its mapping has not refreshed. The static ten-model pack is not needed under Workspace for the runtime renderer.
 
 The integrated game renderer uses the same assets/config with idle flight, smooth color/growth transitions and an expansion pulse. Full server integration and accepted limits: ../../docs/VERITY_COMPANION.md. No action-selection UI or automatic economy changes. No Play tests were run for this pack.
 

@@ -41,6 +41,19 @@ if asset_file.exists():
   node=ET.SubElement(props,'CoordinateFrame',name='CFrame')
   for key,value in zip(['X','Y','Z','R00','R01','R02','R10','R11','R12','R20','R21','R22'],[*xyz,1,0,0,0,1,0,0,0,1]):ET.SubElement(node,key).text=str(value)
  def content(props,name,value):ET.SubElement(ET.SubElement(props,'Content',name=name),'url').text=value
+ def appearance(parent,emotion,ref):
+  _,props=item(parent,'SurfaceAppearance','FaceAppearance',ref)
+  val(props,'token','AlphaMode',0) # Overlay: transparent texels reveal MeshPart.Color.
+  content(props,'ColorMap',assets['textures'][emotion])
+ def body(parent,name,ref,color,diameter,xyz,emotion='Joy'):
+  part,p=item(parent,'MeshPart',name,ref)
+  for flag,value in [('Anchored',True),('CanCollide',False),('CanTouch',False),('CanQuery',False),('CastShadow',False)]:val(p,'bool',flag,str(value).lower())
+  val(p,'token','Material',272)
+  val(p,'Color3uint8','Color3uint8',0xff000000|int(color,16))
+  content(p,'MeshId',assets['mesh'])
+  vector(p,'size',[diameter]*3);vector(p,'InitialSize',[2.8]*3);frame(p,xyz)
+  appearance(part,emotion,ref+'Appearance')
+  return part
  def model(parent,level,name,hexcode,xyz):
   # Mirrors LevelConfig.getVerityScale; assert the formula before exporting.
   config=(ROOT/'src/shared/LevelConfig.luau').read_text()
@@ -48,16 +61,7 @@ if asset_file.exists():
   scale=1+14*((level-1)/99)**.85;diameter=2.8*scale
   node,props=item(parent,'Model',f'Verity_{level:02}_{name}',f'Model{level}')
   val(props,'Ref','PrimaryPart',f'Body{level}')
-  for partname,color in [('Body',hexcode),('Face','FFFFFF')]:
-   part,p=item(node,'Part',partname,f'{partname}{level}')
-   for flag,value in [('Anchored',True),('CanCollide',False),('CanTouch',False),('CanQuery',False),('CastShadow',False)]:val(p,'bool',flag,str(value).lower())
-   val(p,'token','shape',0);val(p,'token','Material',272)
-   val(p,'Color3uint8','Color3uint8',0xff000000|int(color,16))
-   vector(p,'size',[diameter]*3);frame(p,xyz)
-   if partname=='Face':
-    mesh,mp=item(part,'SpecialMesh','SharedFace',f'Mesh{level}')
-    val(mp,'token','MeshType',5);content(mp,'MeshId',assets['mesh']);content(mp,'TextureId',assets['textures']['Joy'])
-    vector(mp,'Scale',[scale*1.004]*3)
+  body(node,'Body',f'Body{level}',hexcode,diameter,xyz)
   meta,mp=item(node,'Configuration','Integration',f'Metadata{level}')
   for kind,key,value in [('IntValue','Level',level),('NumberValue','AppliedScale',scale),('BoolValue','AlreadyScaled','true')]:
    _,p=item(meta,kind,key,f'{key}{level}');val(p,'bool' if kind=='BoolValue' else 'int64' if kind=='IntValue' else 'double','Value',value)
@@ -65,6 +69,10 @@ if asset_file.exists():
    _,p=item(meta,'StringValue',emotion,f'{emotion}{level}');val(p,'string','Value',url)
   return scale
  def document():return ET.Element('roblox',{'version':'4'})
+ templates=document();library,_=item(templates,'Folder','VerityCompanionAssets','Assets')
+ for emotion in assets['textures']:
+  body(library,emotion,'Template'+emotion,'FFDA21',2.8,[0,0,0],emotion)
+ ET.ElementTree(templates).write(OUT/'Verity_FaceTemplates.rbxmx',encoding='utf-8',xml_declaration=True)
  (OUT/'models').mkdir(exist_ok=True)
  pack=document();folder,_=item(pack,'Folder','Verity_FirstTen_Textured','FirstTen');records=[]
  for level,(name,hexcode) in enumerate(palettes,1):

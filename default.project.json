@@ -8,6 +8,9 @@
       },
       "Shared": {
         "$path": "src/shared"
+      },
+      "VerityCompanionAssets": {
+        "$path": "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"
       }
     },
     "ServerScriptService": {
