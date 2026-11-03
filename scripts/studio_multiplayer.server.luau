@@ -129,6 +129,8 @@ local ok, failure = pcall(function()
 			local plotId = plots.owners[player.UserId]
 			player.Character:PivotTo(world.anchors[plotId].InteriorEntrance.CFrame)
 			check(interiors:Enter(player, plotId, player.UserId) == "OK", "private room entry for " .. player.Name)
+			check(interiors.roomsByUserId[player.UserId].model:GetAttribute("TemplateVersion") == 2,
+				"latest template2 for " .. player.Name)
 		end
 		check(#workspace.PlayerInteriors:GetChildren() == expected, "one distinct room per concurrent owner")
 		local a, b = interiors.roomsByUserId[first.UserId], interiors.roomsByUserId[second.UserId]

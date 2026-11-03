@@ -1,6 +1,6 @@
 {
   "kind": "actual Studio single-player integration",
-  "assertions": 85,
+  "assertions": 88,
   "checks": [
     "owned RespawnLocation assigned",
     "initial character at owned plot",
@@ -39,6 +39,9 @@
     "approved World geometry/surfaces preserved: ",
     "foreign entrance rejected",
     "owned interior enters with real streaming",
+    "latest World template version2 cloned",
+    "two-storey geometry and upstairs marker preserved",
+    "latest50x70x32 envelope fits slot spacing",
     "one owned room created lazily",
     "interior spawn is at supplied EntryPoint",
     "interior transition cooldown enforced",
@@ -89,8 +92,11 @@
     "private transition phases reach actual client"
   ],
   "status": "PASS",
-  "recordedAtUtc": "2026-11-03 12:19:57 UTC",
-  "worldBaseline": "31649ddeecaaaa8344c855c8ac5e521eb918fdce",
+  "recordedAtUtc": "2026-11-03 12:31:57 UTC",
+  "worldBaseline": "e81e404372ea255b7d5f0c1626f5525b84b1636f",
+  "templateVersion": 2,
+  "templateParts": 375,
+  "templateSetup": "World v2 procedural factory in test scene; normal Rojo build imports XML v2",
   "dataMode": "Studio Memory",
   "streamingEnabled": true,
   "maxScale": 5,
@@ -99,6 +105,7 @@
   "interiorCycles": 20,
   "seededTestMoney": true,
   "seededLevelForFinalTransitions": 98,
-  "productionSourceSha256": "6398b9607c0ae403989f9eef6ced9adff35f968726826ea4e031def5b87aaaed",
-  "sourceHashNormalization": "Sorted relative src path followed by UTF-8 source with LF newlines"
+  "productionSourceSha256": "7d4c31d7f866e4f25b2886a259391f691cac3832824b9493ff1b7b46cb57285f",
+  "sourceHashNormalization": "Sorted relative src path followed by UTF-8 source with LF newlines",
+  "templateAssetSha256": "a2ca4e67e49950c5b55ccf697455152e25b5ae264a9d686e63ffd891803bd4e2"
 }

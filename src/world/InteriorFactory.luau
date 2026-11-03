@@ -8,7 +8,7 @@ function InteriorFactory.CreateTemplate(parent)
     root.Name = "StandardInterior"
     root.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
     root:SetAttribute("TemplateId", "StandardInterior")
-    root:SetAttribute("TemplateVersion", 1)
+    root:SetAttribute("TemplateVersion", 2)
     local objects = {[""] = root}
     for _, data in Recipe do
         local parentPath = data.path:match("^(.*)/[^/]+$") or ""
@@ -57,6 +57,9 @@ function InteriorFactory.EnsureTemplate(serverStorage)
     if existing then
         assert(existing:IsA("Model"), "StandardInterior name is occupied")
         assert(existing:FindFirstChild("Geometry") and existing:FindFirstChild("Furniture") and existing:FindFirstChild("Markers"), "Invalid interior template")
+        assert(existing.Geometry:FindFirstChild("UpperFloorMain") and existing.Markers:FindFirstChild("UpstairsPoint"), "Outdated interior template: import v2 or remove the old template explicitly")
+        existing:SetAttribute("TemplateId", "StandardInterior")
+        existing:SetAttribute("TemplateVersion", 2)
         return existing
     end
     return InteriorFactory.CreateTemplate(templates)

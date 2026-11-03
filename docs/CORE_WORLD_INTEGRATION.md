@@ -1,7 +1,8 @@
 # Core and World integration
 
-World baseline: origin/main31649dd. Core baseline: agent/core d48ddee. Both histories are
-preserved by the integration merge. The user's staged main.py remains in the original
+World baseline: origin/main e81e404 (two-storey interior v2), including map v4 from31649dd.
+Core baseline: agent/core d48ddee. Both histories are preserved by the integration merges.
+The user's staged main.py remains in the original
 checkout and is excluded from integration.
 
 ## Decisions
@@ -18,6 +19,8 @@ checkout and is excluded from integration.
 - Personal interiors use the supplied StandardInterior template, cloned lazily per owner.
   ServerStorage owns the template; Workspace.PlayerInteriors owns session copies. No furniture
   data or room location is written into persistent player profiles.
+- The latest v2 template contains375 parts and a50x70x32-stud two-storey envelope. Its
+  existing EntryPoint/ExitPoint/pivot contract is unchanged;128-stud slots retain clearance.
 - InteriorTransition is a private server-to-client event for the UI owner. Core does not
   implement the final fade controller or require client acknowledgement to move a player.
 
@@ -39,11 +42,11 @@ Foreign characters observed inside a room are returned to their own outdoor poin
 
 Executed against this integrated source:
 
--572 standalone assertions, full Luau bytecode compilation and Rojo source roundtrip.
--85 actual single-player Studio assertions, including all1549 original World parts checked
+- 572 standalone assertions, full Luau bytecode compilation and Rojo source roundtrip.
+- 88 actual single-player Studio assertions against the v2 template, including all1549 original World parts checked
  against the approved recipe,5x final scale, private-room entry/exit, private UI event phases,
  continuing income inside, and20 repeated entry/exit cycles reusing the same room.
--43 assertions with2 actual local clients and115 with8. Separate rooms per owner, rejected
+- 45 assertions with2 clients and123 with8, both on template v2. Separate rooms per owner, rejected
  foreign entrance/exit, intruder returned outside, death inside, room cleanup on disconnect
  and replacement-client allocation passed. StreamingEnabled was active; profiles were Memory.
 
