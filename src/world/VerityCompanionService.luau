@@ -56,19 +56,8 @@ Players.PlayerRemoving:Connect(Service.Detach)
 function Service.StartStudioPreview()
     if not RunService:IsStudio() or not Config.StudioPreview then return end
     local root = folder()
-    if root:FindFirstChild("StudioEmotionRequest") then return end
-    local remote = Instance.new("RemoteEvent")
-    remote.Name = "StudioEmotionRequest"
-    remote.Parent = root
-    local last = {}
-    remote.OnServerEvent:Connect(function(player, emotion)
-        if type(emotion) ~= "string" or Config.Textures[emotion] == nil then return end
-        local now = os.clock()
-        if now - (last[player] or -1) < .25 then return end
-        last[player] = now
-        Service.SetEmotion(player, emotion)
-    end)
-    Players.PlayerRemoving:Connect(function(player) last[player] = nil end)
+    if root:GetAttribute("StudioPreviewStarted") then return end
+    root:SetAttribute("StudioPreviewStarted", true)
     Players.PlayerAdded:Connect(Service.Attach)
     for _, player in Players:GetPlayers() do Service.Attach(player) end
 end

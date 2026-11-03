@@ -100,21 +100,6 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
         if entry.visible~=visible then entry.visible=visible;entry.body.Transparency=if visible then 0 else 1 end
     end
 end)
--- Studio-only review controls. Server validates each request and owns the face state.
-local previewGui
-if RunService:IsStudio() and Config.StudioPreview then
-    local remote=source:WaitForChild("StudioEmotionRequest",10)
-    if remote then
-        previewGui=Instance.new("ScreenGui");previewGui.Name="VerityCompanionReview";previewGui.ResetOnSpawn=false
-        local panel=Instance.new("Frame");panel.Size=UDim2.fromOffset(360,110);panel.Position=UDim2.new(.5,-180,1,-180);panel.BackgroundColor3=Color3.fromRGB(25,28,44);panel.Parent=previewGui
-        local layout=Instance.new("UIGridLayout");layout.CellSize=UDim2.fromOffset(86,48);layout.CellPadding=UDim2.fromOffset(4,4);layout.Parent=panel
-        for _, name in {"Joy","Love","Playful","Wink","Laugh","Surprise","Confident","Stars"} do
-            local button=Instance.new("TextButton");button.Text=name;button.TextSize=14;button.BackgroundColor3=Color3.fromRGB(255,218,33);button.Parent=panel
-            connections[#connections+1]=button.Activated:Connect(function() remote:FireServer(name) end)
-        end
-        previewGui.Parent=localPlayer:WaitForChild("PlayerGui")
-    end
-end
 task.spawn(function()
     local assets = {Config.MeshId}
     for _, id in Config.Textures do assets[#assets+1]=id end
@@ -124,6 +109,5 @@ end)
 script.Destroying:Connect(function()
     for _, connection in connections do connection:Disconnect() end
     for descriptor in entries do remove(descriptor) end
-    if previewGui then previewGui:Destroy() end
     visuals:Destroy()
 end)
