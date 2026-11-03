@@ -1,0 +1,27 @@
+{
+  "name": "VERITY Core Studio Smoke",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "Core": { "$path": "src/server" },
+      "CoreSmoke": { "$path": "scripts/studio_smoke.server.luau" },
+      "CoreMultiplayerSmoke": { "$path": "scripts/studio_multiplayer.server.luau" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "CoreSmoke": { "$path": "scripts/studio_smoke.client.luau" }
+      }
+    }
+  }
+}

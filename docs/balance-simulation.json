@@ -1,0 +1,84 @@
+{
+  "kind": "deterministic simulation; not observed player behaviour",
+  "timeStepSeconds": 1,
+  "boostRules": {
+    "multiplier": 5.3721,
+    "durationSeconds": 14400,
+    "stacking": "extend duration; multiplier does not stack"
+  },
+  "policy": "45 swipes/min + one 15s task route/min; Swipe Power ROI <=1800s; all upgrades paid",
+  "runs": [
+    {
+      "mode": "passive",
+      "multiplier": 1.0,
+      "boostSeconds": 14400,
+      "completed": true,
+      "seconds": 145794,
+      "hours": 40.4983,
+      "milestonesSeconds": {
+        "10": 610,
+        "25": 16393,
+        "50": 51953,
+        "75": 95586,
+        "100": 145794
+      },
+      "maxPurchaseGapSeconds": 2123,
+      "swipeUpgradeLevel": 0,
+      "swipeUpgradeSpend": 0
+    },
+    {
+      "mode": "moderate",
+      "multiplier": 1.0,
+      "boostSeconds": 14400,
+      "completed": true,
+      "seconds": 143090,
+      "hours": 39.7472,
+      "milestonesSeconds": {
+        "10": 925,
+        "25": 14225,
+        "50": 49266,
+        "75": 92882,
+        "100": 143090
+      },
+      "maxPurchaseGapSeconds": 2123,
+      "swipeUpgradeLevel": 13,
+      "swipeUpgradeSpend": 11618
+    },
+    {
+      "mode": "active",
+      "multiplier": 1.0,
+      "boostSeconds": 14400,
+      "completed": true,
+      "seconds": 86400,
+      "hours": 24.0,
+      "milestonesSeconds": {
+        "10": 350,
+        "25": 2947,
+        "50": 11721,
+        "75": 37523,
+        "100": 86400
+      },
+      "maxPurchaseGapSeconds": 2117,
+      "swipeUpgradeLevel": 33,
+      "swipeUpgradeSpend": 38829532
+    },
+    {
+      "mode": "active",
+      "multiplier": 5.3721,
+      "boostSeconds": 14400,
+      "completed": true,
+      "seconds": 13500,
+      "hours": 3.75,
+      "milestonesSeconds": {
+        "10": 67,
+        "25": 551,
+        "50": 2182,
+        "75": 5669,
+        "100": 13500
+      },
+      "maxPurchaseGapSeconds": 386,
+      "swipeUpgradeLevel": 40,
+      "swipeUpgradeSpend": 663439881
+    }
+  ]
+}

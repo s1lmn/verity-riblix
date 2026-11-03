@@ -1,0 +1,13 @@
+{
+  "kind": "normal Core build prompt integration",
+  "status": "PASS",
+  "recordedAtUtc": "2026-11-03 11:44:21 UTC",
+  "dataMode": "Studio Memory",
+  "method": "Navigate character; aim test camera so prompt is visible; invoke documented ProximityPrompt.InputHoldBegin/End",
+  "keyboardOnlyVerified": false,
+  "confirmedDeliveryState": "Opened",
+  "confirmedIncomePerSecond": 5,
+  "confirmedUnlocked": true,
+  "normalBuildExcludesSmokeBridge": true,
+  "productionSourceSha256": "8da465905ce07cfc29e8753e13ef2af434e1376b717a9cdffbd5e9f453490164"
+}
