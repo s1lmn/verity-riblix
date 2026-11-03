@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local Theme = require(script.Parent.UITheme)
 local W = {}
 
@@ -25,22 +26,23 @@ function W.Frame(parent, name, size, color)
 end
 
 function W.Text(parent, name, text, size, bold, color)
-	return W.New("TextLabel", { Name = name, Text = text, TextSize = size or 16,
+	local label = W.New("TextLabel", { Name = name, Text = text, TextSize = size or 16,
 		Font = if bold then Theme.Bold else Theme.Font, TextColor3 = color or Theme.Ink,
 		BackgroundTransparency = 1, BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 24),
-		TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, RichText = false }, parent)
+		TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, RichText = false, AutoLocalize = false }, parent)
+	return Locale.BindStatic(label, text)
 end
 
 function W.Button(parent, name, text, color)
 	local button = W.New("TextButton", { Name = name, Text = text, Font = Theme.Bold,
 		TextSize = 15, TextColor3 = Theme.Ink, BackgroundColor3 = color or Theme.Mint,
 		Size = UDim2.new(1, 0, 0, Theme.TouchTarget), BorderSizePixel = 0,
-		AutoButtonColor = false, Selectable = true }, parent)
+		AutoButtonColor = false, AutoLocalize = false, Selectable = true }, parent)
 	button:SetAttribute("BaseColor", color or Theme.Mint)
 	button:SetAttribute("UIState", "Normal")
 	W.Round(button, 12)
 	W.Stroke(button)
-	return button
+	return Locale.BindStatic(button, text)
 end
 
 function W.SetButton(button, text, enabled, loading)

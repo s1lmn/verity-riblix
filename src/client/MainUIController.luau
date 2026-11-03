@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local GuiService=game:GetService("GuiService")
@@ -50,6 +51,7 @@ function Main.new()
 	local refs=Builder.Build(playerGui)
 	self.refs=refs
 	self.cleanup:Add(refs.Gui)
+	self.cleanup:Add(Locale.TrackWorld())
 	local ctx={refs=refs,active=nil}
 	self.ctx=ctx
 	ctx.net=self.cleanup:Add(Network.new())
@@ -103,6 +105,11 @@ function Main.new()
 		if Model.IsFinite(state.IncomeAccrued) and state.IncomeAccrued>0 then ctx.rewards:Add(state.IncomeAccrued) end
 		self:Render()
 		self.phone:ReconcileSession()
+	end))
+	self.cleanup:Add(Locale.Changed.Event:Connect(function()
+		self:Render()
+		self.presentation:RenderCopy()
+		self:RenderBanner()
 	end))
 	self.cleanup:Add(ctx.net.PendingChanged.Event:Connect(function() self:Render() end))
 	self.cleanup:Add(ctx.net.ConnectionChanged.Event:Connect(function() self:Render() end))
@@ -183,7 +190,7 @@ end
 
 function Main:Open(name)
 	local ctx=self.ctx
-	if name and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
+	if name and name~="SETTINGS" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and self.presentation then self.presentation:Stop() end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
@@ -201,13 +208,22 @@ end
 function Main:Render()
 	local ctx=self.ctx
 	local state=ctx.net.state
-	self.refs.Status.Text=if self.versions.issue then self.versions.issue elseif not ctx.net.connected then "Connecting…" elseif not state then "Loading progress…" else ""
+	self.refs.Status.Text=if self.versions.issue then self.versions:IssueText() elseif not ctx.net.connected then Locale.Text("Connecting…") elseif not state then Locale.Text("Loading progress…") else ""
  self.refs.Status.Visible=ctx.active==nil and (self.versions.issue~=nil or not ctx.net.connected or (state==nil and not Players.LocalPlayer:GetAttribute("HouseSelectionReady")))
-	self.refs.Income.Text=if state then "+$"..Model.Format(state.IncomePerSecond).." / sec" else "+$— / sec"
-	self.refs.Level.Text=if state then string.format("LVL %d / 100",state.VerityLevel) else "LVL — / 100"
+	self.refs.Income.Text=if state then "+$"..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec") else Locale.Text("+$— / sec")
+	self.refs.Level.Text=if state then string.format(Locale.Text("LVL %d / 100"),state.VerityLevel) else Locale.Text("LVL — / 100")
 	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()
 	local selected=GuiService.SelectedObject
 	if ctx.active and selected and selected:IsDescendantOf(self.refs.Panels[ctx.active].Root) and not selected.Selectable then self:SetFocus(ctx.active) end
+end
+
+function Main:RenderBanner()
+	local event=self.bannerEvent
+	if not event then return end
+	local milestone=Model.NextMilestone(event.oldLevel)
+	if milestone and milestone.level~=event.newLevel then milestone=nil end
+	self.refs.BannerText.Text=if milestone then string.format(Locale.Text("LEVEL %d • %s\n%s"),event.newLevel,Locale.Text(milestone.name),Locale.Text(milestone.reward))
+		else string.format(Locale.Text("LEVEL UP!  %d → %d\n%.3f× → %.3f×"),event.oldLevel,event.newLevel,event.oldScale,event.newScale)
 end
 
 function Main:Tick(dt)
@@ -217,10 +233,10 @@ function Main:Tick(dt)
 		if ctx.settings.values.ReducedMotion then self.displayCash=state.Cash
 		else self.displayCash+=(state.Cash-self.displayCash)*(1-math.exp(-dt*15)) end
 		if math.abs(state.Cash-self.displayCash)<0.5 then self.displayCash=state.Cash end
-		self.refs.Cash.Text="$"..Model.Format(self.displayCash)
+		self.refs.Cash.Text="$"..Locale.Number(self.displayCash)
 	end
 	local now=os.clock()
-	if self.versions.issue then self.refs.Status.Text=self.versions.issue end
+	if self.versions.issue then self.refs.Status.Text=self.versions:IssueText() end
 	ctx.rewards:Tick(now)
 	self.tasks:Render();self.tutorial:Render()
 	self.phone:ReconcileSession()
@@ -231,8 +247,8 @@ function Main:Tick(dt)
 		if event and not self.presentation:Has(event.eventId) then
 			local milestone=nil
 			for _,entry in Model.Milestones do if entry.level==event.newLevel then milestone=entry end end
-			self.refs.BannerText.Text=if milestone then string.format("LEVEL %d • %s\n%s",event.newLevel,milestone.name,milestone.reward)
-				else string.format("LEVEL UP!  %d → %d\n%.3f× → %.3f×",event.oldLevel,event.newLevel,event.oldScale,event.newScale)
+			self.bannerEvent=event
+			self:RenderBanner()
 			ctx.sound:Play(if milestone then "Milestone" else "LevelUp")
 			self.bannerUntil=now+(if milestone then 1.6 else 0.7)
 			self.nextPresentation=self.bannerUntil+0.1

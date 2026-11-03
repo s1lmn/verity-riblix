@@ -18,6 +18,7 @@ local ClientModules=if Client then Client:WaitForChild("PlayerScripts",10):WaitF
 	else game:GetService("StarterPlayer").StarterPlayerScripts:WaitForChild("VerityClient",10)
 local Cleanup=require(ClientModules.Cleanup)
 local Ledger=require(ClientModules.EventLedger)
+local Locale=if Client then require(ClientModules.Locale) else nil
 local Controller={}
 Controller.__index=Controller
 
@@ -105,7 +106,10 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	if record.stageLevel~=level then
 		Factory.SetStage(model,level)
 		local label=model.PrimaryPart:FindFirstChild("LevelLabel")
-		if label and label:FindFirstChild("Title") then label.Title.Text="VERITY • LVL "..level end
+		if label and label:FindFirstChild("Title") then
+			if Locale then Locale.Bind(label.Title, "VERITY • LVL %d", level)
+			else label.Title.Text="VERITY • УР. "..level end
+		end
 		record.stageLevel=level
 	end
 	local label=model.PrimaryPart:FindFirstChild("LevelLabel")

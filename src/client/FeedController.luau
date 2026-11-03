@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local W = require(script.Parent.UIWidgets)
 local T = require(script.Parent.UITheme)
 local Feed = {}
@@ -52,7 +53,8 @@ function Feed.Draw(parent, index)
 	local card = W.Frame(parent, "Post_" .. index)
 	card.BackgroundColor3 = T.Paper
 	W.New("UIGradient", { Color = ColorSequence.new(post[4]:Lerp(T.White,0.70),post[5]:Lerp(T.White,0.85)), Rotation = 35 }, card)
-	local tag = W.Text(card, "Tag", string.format("VERITY DAILY   /   %02d", index), 10, true, T.Muted)
+	local tag = W.Text(card, "Tag", "", 10, true, T.Muted)
+	Locale.Bind(tag, "VERITY DAILY   /   %02d", index)
 	tag.Position, tag.Size = UDim2.fromScale(0.06,0.03), UDim2.fromScale(0.9,0.09)
 	local art = W.Frame(card, "Illustration", UDim2.fromScale(0.9,0.65))
 	art.Position, art.BackgroundTransparency = UDim2.fromScale(0.05,0.10), 1

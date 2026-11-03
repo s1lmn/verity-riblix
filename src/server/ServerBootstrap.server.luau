@@ -11,6 +11,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared", 15)
 assert(Shared, "Missing Shared folder; check Rojo mapping")
 local Config = require(Shared.GameConfig)
 local Protocol = require(Shared.RemotesConfig)
+local LocaleText = require(Shared.LocaleText)
 local Runtime = require(script.Parent.Runtime)
 assert(not Runtime.Services, "Core already started")
 local function clock() return workspace:GetServerTimeNow() end
@@ -148,6 +149,16 @@ Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyServi
 	CosmeticService = Cosmetics, BoostService = Boost, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
+local languages = {}
+local languagePreference = Instance.new("RemoteEvent")
+languagePreference.Name = "VerityLanguagePreference"
+languagePreference.OnServerEvent:Connect(function(player, language)
+	if language == "ru" or language == "en" then languages[player] = language end
+end)
+languagePreference.Parent = ReplicatedStorage
+local function kick(player, message)
+	player:Kick(LocaleText.Get(languages[player] or "ru", message))
+end
 local spawning = {}
 local function spawnPlayer(player)
 	local id = player.UserId
@@ -163,7 +174,7 @@ local function spawnPlayer(player)
 	if not ok then
 		warn("Character load failed", id, reason)
 		if player.Parent == Players and not (player.Character and player.Character:GetAttribute("SpawnReady")) then
-			player:Kick("Character unavailable. Please rejoin.")
+			kick(player, "Character unavailable. Please rejoin.")
 		end
 		return
 	end
@@ -197,7 +208,7 @@ end
 local function onPlayer(player)
 	if closing then return end
 	local profile, reason = Data:LoadAsync(player.UserId)
-	if not profile then if player.Parent == Players then player:Kick("Profile unavailable: " .. tostring(reason)) end; return end
+	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
 	player:SetAttribute("HouseSelectionReady", true)
@@ -235,6 +246,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+	languages[player] = nil
 	local id = player.UserId
 	player:SetAttribute("HouseSelectionReady", nil)
 	player:SetAttribute("HousePlotId", nil)
@@ -268,7 +280,7 @@ RunService.Heartbeat:Connect(function(dt)
 		for id in State.sessions do
 			if not Data:Get(id) then
 				local player = Players:GetPlayerByUserId(id)
-				if player then player:Kick("Profile session expired. Please rejoin.") end
+				if player then kick(player, "Profile session expired. Please rejoin.") end
 			else State:Publish(id, false) end
 		end
 	end

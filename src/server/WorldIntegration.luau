@@ -1,4 +1,5 @@
 --!nonstrict
+local LocaleText = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LocaleText"))
 -- Owns interaction anchors and temporary proxies, not final art or map geometry.
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.GameConfig)
@@ -11,9 +12,11 @@ local houseColors = {
 }
 
 local function updateHouseSign(anchors, player, tier)
-	anchors.HouseSign.Text = if player
-		then string.format("Дом %s\nУровень дома %d / 6", player.DisplayName, tier)
-		else "Свободный дом"
+	if player then
+		LocaleText.SetWorld(anchors.HouseSign, "Text", "Дом %s\nУровень дома %d / 6", player.DisplayName, tier)
+	else
+		LocaleText.SetWorld(anchors.HouseSign, "Text", "Свободный дом")
+	end
 	anchors.HouseSign.BackgroundColor3 = if player then houseColors[tier] else Color3.fromRGB(235, 241, 248)
 	for part, originalColor in anchors.FacadeColors do
 		part.Color = if tier and tier > 1 then houseColors[tier] else originalColor
@@ -108,8 +111,8 @@ function WorldIntegration.new(workspace, players, plots, world)
 			box.Parent = model
 			local prompt = Instance.new("ProximityPrompt")
 			prompt.Name = "OpenBox"
-			prompt.ActionText = "Распаковать"
-			prompt.ObjectText = "Коробка Verity"
+			LocaleText.SetWorld(prompt, "ActionText", "Распаковать")
+			LocaleText.SetWorld(prompt, "ObjectText", "Коробка Verity")
 			prompt.MaxActivationDistance = Config.MaxInteractionDistance
 			prompt.Enabled = false
 			prompt.Parent = box
@@ -124,8 +127,8 @@ function WorldIntegration.new(workspace, players, plots, world)
 		anchors.ClaimPoint = anchors.HouseEntrance or anchors.SpawnPoint
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "ClaimHouse"
-		prompt.ActionText = "Занять дом"
-		prompt.ObjectText = string.format("Свободный дом %02d", id)
+		LocaleText.SetWorld(prompt, "ActionText", "Занять дом")
+		LocaleText.SetWorld(prompt, "ObjectText", "Свободный дом %02d", id)
 		prompt.MaxActivationDistance = Config.MaxInteractionDistance
 		prompt.RequiresLineOfSight = false
 		prompt:AddTag("VerityHouseClaim")

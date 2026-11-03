@@ -1,7 +1,7 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
-local Model=require(script.Parent.UIModel)
 local Feed=require(script.Parent.FeedController)
 local Swipe=require(script.Parent.SwipeInputController)
 local Phone={}
@@ -63,21 +63,21 @@ function Phone:Render()
 	local state=net.state
 	local ready=state and state.PhoneSessionOpen and self.open and not net:IsBusy("PhoneSession")
 	local busy=net:IsBusy("Swipe")
-	self.refs.Reward.Text=if state then "$"..Model.Format(state.SwipeIncome).." за свайп" else "$— за свайп"
-	self.refs.Session.Text=if not state then "Загружаем прогресс…" elseif not ready then "Подключаем телефон…" elseif busy then "Получаем награду…" else "Листай ленту и расти вместе с Verity"
+	self.refs.Reward.Text=if state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за свайп") else Locale.Text("$— за свайп")
+	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else Locale.Text("Листай ленту и расти вместе с Verity")
 	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
 		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ VERITY",100,"VerityLevel","NextVerityUpgradeCost"}} do
 		local maxed=state and state[entry[5]] >= entry[4]
 		local cost=state and state[entry[6]]
 		local pending=net:IsBusy(entry[2])
 		local affordable=cost and state.Cash>=cost
-		local text=entry[3].."\n"..(if not state then "Загрузка…" elseif not state.VerityUnlocked then "Сначала открой коробку"
-			elseif maxed then "Максимальный уровень" elseif pending then "Улучшаем…"
-			elseif not affordable then "Нужно $"..Model.Format(cost) else "$"..Model.Format(cost).."  •  улучшить")
+		local text=Locale.Text(entry[3]).."\n"..(if not state then Locale.Text("Загрузка…") elseif not state.VerityUnlocked then Locale.Text("Сначала открой коробку")
+			elseif maxed then Locale.Text("Максимальный уровень") elseif pending then Locale.Text("Улучшаем…")
+			elseif not affordable then Locale.Text("Нужно $")..Locale.Number(cost) else "$"..Locale.Number(cost)..Locale.Text("  •  улучшить"))
 		W.SetButton(entry[1],text,net.connected and state~=nil and state.VerityUnlocked and not maxed and affordable and not net:IsBusy(),pending)
 	end
-	self.refs.PowerHint.Text=if state then "Свайп $"..Model.Format(state.SwipeIncome)..(if state.NextSwipeIncome then " → $"..Model.Format(state.NextSwipeIncome) else " • MAX") else "Больше дохода за каждое движение"
-	W.SetButton(self.refs.Next,if busy then "ПОДОЖДИ…" else "ЛИСТАТЬ ↑",ready and not busy,busy)
+	self.refs.PowerHint.Text=if state then Locale.Text("Свайп $")..Locale.Number(state.SwipeIncome)..(if state.NextSwipeIncome then " → $"..Locale.Number(state.NextSwipeIncome) else Locale.Text(" • MAX")) else Locale.Text("Больше дохода за каждое движение")
+	W.SetButton(self.refs.Next,if busy then Locale.Text("ПОДОЖДИ…") else Locale.Text("ЛИСТАТЬ ↑"),ready and not busy,busy)
 end
 
 function Phone:Destroy() self.cleanup:Destroy() end

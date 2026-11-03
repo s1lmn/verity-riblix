@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 -- Own confirmed purchases only. The existing world animator remains the model owner.
 local Players=game:GetService("Players")
 local Run=game:GetService("RunService")
@@ -64,9 +65,7 @@ function Presentation:Start(event,model)
  self.ctx.refs.Gui:SetAttribute("RevealActive",true)
  local milestone=Model.NextMilestone(event.oldLevel)
  local special=milestone and milestone.level==event.newLevel
- self.tag.Text=if special then "ОТКРЫТА НОВАЯ СТУПЕНЬ" else "ТВОЙ СПУТНИК СТАНОВИТСЯ БОЛЬШЕ"
- self.title.Text="Verity растёт!"
- self.detail.Text=string.format("Уровень %d → %d   •   Размер %.2f× → %.2f×",event.oldLevel,event.newLevel,event.oldScale,event.newScale)
+ self:RenderCopy()
  self.ctx.sound:Play(if special then "Milestone" else "LevelUp")
  if not self.ctx.settings.values.ReducedEffects then
   local glow=Instance.new("Highlight")
@@ -123,8 +122,23 @@ function Presentation:Complete(event)
  local a=self.active
  if not a or a.event.eventId~=event.eventId then return end
  a.completed=os.clock()
- self.title.Text="Знакомься: Verity "..event.newLevel.."!"
- self.detail.Text=string.format("УРОВЕНЬ %d   •   РАЗМЕР %.2f×\nЕщё больше радости. Ещё больше дохода.",event.newLevel,event.newScale)
+ self:RenderCopy()
+end
+
+function Presentation:RenderCopy()
+ local active=self.active
+ if not active then return end
+ local event=active.event
+ local milestone=Model.NextMilestone(event.oldLevel)
+ local special=milestone and milestone.level==event.newLevel
+ self.tag.Text=Locale.Text(if special then "ОТКРЫТА НОВАЯ СТУПЕНЬ" else "ТВОЙ СПУТНИК СТАНОВИТСЯ БОЛЬШЕ")
+ if active.completed then
+  self.title.Text=Locale.Text("Знакомься: Verity ")..event.newLevel.."!"
+  self.detail.Text=string.format(Locale.Text("УРОВЕНЬ %d   •   РАЗМЕР %.2f×\nЕщё больше радости. Ещё больше дохода."),event.newLevel,event.newScale)
+ else
+  self.title.Text=Locale.Text("Verity растёт!")
+  self.detail.Text=string.format(Locale.Text("Уровень %d → %d   •   Размер %.2f× → %.2f×"),event.oldLevel,event.newLevel,event.oldScale,event.newScale)
+ end
 end
 
 function Presentation:Tick(now)

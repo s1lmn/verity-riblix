@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local Cleanup = require(script.Parent.Cleanup)
 local Settings = {}
 Settings.__index = Settings
@@ -8,7 +9,7 @@ function Settings.new(refs)
 		UISounds = true, Volume = 0.6, ReducedMotion = false, ReducedEffects = false,
 	}, Changed = Instance.new("BindableEvent") }, Settings)
 	self.cleanup:Add(self.Changed)
-	local function render()
+	local function render(languageOnly)
 		local gui=refs.Root:FindFirstAncestorOfClass("ScreenGui")
 		if gui then
 			gui:SetAttribute("ReducedMotion",self.values.ReducedMotion)
@@ -16,15 +17,21 @@ function Settings.new(refs)
 			gui:SetAttribute("UISounds",self.values.UISounds)
 			gui:SetAttribute("UIVolume",self.values.Volume)
 		end
-		refs.Sound.Text = "UI SOUNDS: " .. (if self.values.UISounds then "ON" else "OFF")
-		refs.Motion.Text = "REDUCED MOTION: " .. (if self.values.ReducedMotion then "ON" else "OFF")
-		refs.Effects.Text = "REDUCED EFFECTS: " .. (if self.values.ReducedEffects then "ON" else "OFF")
-		refs.Volume.Text = string.format("VOLUME %d%%", math.round(self.values.Volume * 100))
-		self.Changed:Fire(self.values)
+		refs.Language.Text = if Locale.GetLanguage() == "ru" then "ЯЗЫК: РУССКИЙ  •  ENGLISH"
+			else "LANGUAGE: ENGLISH  •  РУССКИЙ"
+		refs.Sound.Text = Locale.Text("UI SOUNDS: ") .. (if self.values.UISounds then Locale.Text("ON") else Locale.Text("OFF"))
+		refs.Motion.Text = Locale.Text("REDUCED MOTION: ") .. (if self.values.ReducedMotion then Locale.Text("ON") else Locale.Text("OFF"))
+		refs.Effects.Text = Locale.Text("REDUCED EFFECTS: ") .. (if self.values.ReducedEffects then Locale.Text("ON") else Locale.Text("OFF"))
+		refs.Volume.Text = string.format(Locale.Text("VOLUME %d%%"), math.round(self.values.Volume * 100))
+		if not languageOnly then self.Changed:Fire(self.values) end
 	end
 	for button, key in { [refs.Sound] = "UISounds", [refs.Motion] = "ReducedMotion", [refs.Effects] = "ReducedEffects" } do
 		self.cleanup:Add(button.Activated:Connect(function() self.values[key] = not self.values[key]; render() end))
 	end
+	self.cleanup:Add(refs.Language.Activated:Connect(function()
+		Locale.SetLanguage(if Locale.GetLanguage() == "ru" then "en" else "ru")
+	end))
+	self.cleanup:Add(Locale.Changed.Event:Connect(function() render(true) end))
 	self.cleanup:Add(refs.Minus.Activated:Connect(function() self.values.Volume = math.max(0, self.values.Volume - 0.1); render() end))
 	self.cleanup:Add(refs.Plus.Activated:Connect(function() self.values.Volume = math.min(1, self.values.Volume + 0.1); render() end))
 	render()

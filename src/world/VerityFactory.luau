@@ -1,4 +1,5 @@
 --!nonstrict
+local LocaleText = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LocaleText"))
 -- Replaceable procedural mascot; no uploaded models, animation ids or scripts.
 local CollectionService = game:GetService("CollectionService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared", 10)
@@ -82,7 +83,8 @@ function Factory.Create(parent, origin, metadata)
 	title.Name, title.Size, title.BackgroundTransparency = "Title", UDim2.fromScale(1, 1), 1
 	title.Font, title.TextSize, title.TextColor3 = Enum.Font.GothamBold, 18, ink
 	title.TextStrokeColor3, title.TextStrokeTransparency = white, 0.25
-	title.Text = "VERITY • LVL " .. level
+	title.Text = string.format(LocaleText.Get("ru", "VERITY • LVL %d"), level)
+	title.AutoLocalize = false
 	title.Parent, gui.Parent = gui, root
 	model.Parent = parent
 	if not metadata.preview then CollectionService:AddTag(model, Profile.Tag) end

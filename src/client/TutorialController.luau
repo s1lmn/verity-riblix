@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local Input=game:GetService("UserInputService")
@@ -31,7 +32,7 @@ local function visible(object,ignoreClip)
 end
 function Tutorial.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),arrows={},subtitles={},nextPathAt=0,generation=0,dead=false},Tutorial)
- for name,panel in ctx.refs.Panels do self.subtitles[name]=panel.Subtitle.Text end
+ for name,panel in ctx.refs.Panels do self.subtitles[name]=Locale.Source(panel.Subtitle) end
  self.folder=self.cleanup:Add(Instance.new("Folder"));self.folder.Name="VerityGuidance";self.folder.Parent=workspace
  self.anchor=piece(self.folder,"GoalMarker");self.anchor.Size=Vector3.one*.1
  self.pin=Instance.new("BillboardGui");self.pin.Name="GoalPin";self.pin.Size=UDim2.fromOffset(210,84)
@@ -175,13 +176,14 @@ end
 function Tutorial:Render()
  local ctx=self.ctx
  self.goal=Goals.Resolve(ctx.net.state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow())
- if not self.goal and Players.LocalPlayer:GetAttribute("HouseSelectionReady")
+ if not self.goal and not ctx.active and Players.LocalPlayer:GetAttribute("HouseSelectionReady")
   and not Players.LocalPlayer:GetAttribute("HousePlotId") then
   self.goal={id="claim-house",kind="Wait",title="Выбери дом",detail="Подойди к свободному дому и нажми «Занять дом»"}
  end
  self:Update(os.clock())
 end
 function Tutorial:HintText(text)
+ text=Locale.Text(text)
  self.ctx.refs.TutorialText.Text=text
  local panel=self.ctx.active and self.ctx.refs.Panels[self.ctx.active]
  if panel then panel.Subtitle.Text=text end
@@ -197,12 +199,12 @@ function Tutorial:Update(now)
  local alive=root and hum and hum.Health>0
  ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and not (ctx.active and ctx.refs.Safe.AbsoluteSize.X<640)
  self.pointer.Visible=false;self.compass.Visible=false
- for name,panel in ctx.refs.Panels do if name~=ctx.active or not goal then panel.Subtitle.Text=self.subtitles[name] end end
+ for name,panel in ctx.refs.Panels do if name~=ctx.active or not goal then panel.Subtitle.Text=Locale.Text(self.subtitles[name]) end end
  if not goal or not alive then self.lastRootPosition=nil;self:SetButton(nil);self:ClearRoute();return end
  if self.lastRootPosition and (root.Position-self.lastRootPosition).Magnitude>16 then self:ClearRoute() end
  self.lastRootPosition=root.Position
  ctx.refs.Gui:SetAttribute("GuidanceGoal",goal.id);ctx.refs.Gui:SetAttribute("GuidanceKind",goal.kind)
- ctx.refs.GuideTitle.Text=goal.title;self:HintText(goal.detail)
+ ctx.refs.GuideTitle.Text=Locale.Text(goal.title);self:HintText(goal.detail)
  ctx.refs.TutorialText.Size=UDim2.new(1,if goal.kind=="World" then -54 else -16,1,if ctx.refs.Safe.AbsoluteSize.Y<360 then -22 else -25)
  if goal.kind=="UI" then
   self:ClearRoute();local button=self:UIButton(goal.target)
@@ -243,12 +245,12 @@ function Tutorial:Update(now)
  end
  if near then
   local key=if Input.PreferredInput==Enum.PreferredInput.Gamepad then "X" else "E"
-  self:HintText(string.format(goal.near or goal.detail,key))
+  self:HintText(string.format(Locale.Text(goal.near or goal.detail),key))
   if Input.PreferredInput==Enum.PreferredInput.Touch then
    if goal.target=="Delivery" and ctx.net.state.DeliveryState=="Delivered" then self:HintText("Коснись «Распаковать» у коробки")
    elseif goal.target=="PRESS_BUTTON" then self:HintText("Коснись «Нажать» у кнопки") end
   end
- else self:HintText("Следуй стрелкам · "..math.max(1,math.round(delta.Magnitude*.28)).." м") end
+ else self:HintText(Locale.Text("Следуй стрелкам · ")..math.max(1,math.round(delta.Magnitude*.28))..Locale.Text(" м")) end
  local camera=workspace.CurrentCamera
  if camera and flat(delta).Magnitude>.1 then
   local forward=flat(camera.CFrame.LookVector)
@@ -257,7 +259,7 @@ function Tutorial:Update(now)
    self.compass.Rotation=math.deg(math.atan2(delta:Dot(right),delta:Dot(forward)));self.compass.Visible=true
   end
  end
- self.anchor.Position=position;self.pin.Enabled=true;self.pinTitle.Text=if goal.target=="Delivery" then "ТВОЯ КОРОБКА" else goal.title
+ self.anchor.Position=position;self.pin.Enabled=true;self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("ТВОЯ КОРОБКА") else Locale.Text(goal.title)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4+(if ctx.settings.values.ReducedMotion then 0 else math.sin(now*2)*.15),0)
  self.highlight.Adornee=part;self.highlight.Enabled=part~=nil
  if near then self:HideArrows() else self:ComputeRoute(root,position,now);self:DrawRoute(root,now) end

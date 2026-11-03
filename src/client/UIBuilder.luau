@@ -168,6 +168,7 @@ function Builder.Build(playerGui)
 
 	refs.Panels.COSMETICS = panel(safe, "Cosmetics", "STYLE YOUR COMPANION", "Preview, collect and wear cosmetic accessories.")
 	local settings = panel(safe, "SettingsPanel", "MAKE IT YOURS", "Settings apply on this device for this play session.")
+	settings.Language = W.Button(settings.Body, "Language", "", T.Blue)
 	settings.Sound = W.Button(settings.Body, "UISounds", "UI SOUNDS: ON", T.Soft)
 	settings.Volume = W.Line(settings.Body, "VolumeLabel", "VOLUME 60%", 24, 14, true)
 	local volumeRow = W.Frame(settings.Body, "VolumeControls", UDim2.new(1, -4, 0, 44))

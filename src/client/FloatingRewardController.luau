@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local Model = require(script.Parent.UIModel)
 local Reward = {}
 Reward.__index = Reward
@@ -11,7 +12,7 @@ function Reward:Add(amount)
 	if not Model.IsFinite(amount) or amount <= 0 then return end
 	self.amount += amount
 	self.deadline = os.clock() + 1.1
-	self.label.Text = "+$" .. Model.Format(self.amount)
+	self.label.Text = "+$" .. Locale.Number(self.amount)
 	self.label.Visible = true
 end
 

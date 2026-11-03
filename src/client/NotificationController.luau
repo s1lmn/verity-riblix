@@ -1,4 +1,5 @@
 --!nonstrict
+local Locale = require(script.Parent.Locale)
 local W = require(script.Parent.UIWidgets)
 local T = require(script.Parent.UITheme)
 local Notifications = {}
@@ -8,13 +9,13 @@ function Notifications.new(container)
 	return setmetatable({ container = container, active = {}, queue = {}, dead = false }, Notifications)
 end
 
-function Notifications:Show(message, kind, lifetime)
+function Notifications:Show(message, kind, lifetime, suffix)
 	if self.dead or type(message) ~= "string" then return end
 	message = string.sub(message, 1, 180)
 	-- Deduplicate repeated connection/cooldown errors.
 	for _, entry in self.active do if entry.message == message then return end end
 	if #self.active >= 2 then
-		if #self.queue < 8 then table.insert(self.queue, { message, kind, lifetime }) end
+		if #self.queue < 8 then table.insert(self.queue, { message, kind, lifetime, suffix }) end
 		return
 	end
 	local frame = W.Round(W.Frame(self.container, "Toast", UDim2.new(1, 0, 0, 48),
@@ -22,6 +23,7 @@ function Notifications:Show(message, kind, lifetime)
 	frame.ZIndex = 20
 	W.Stroke(frame)
 	local label = W.Text(frame, "Message", message, 13, true)
+	if suffix then Locale.BindSuffix(label, message, suffix) end
 	label.Position, label.Size, label.ZIndex = UDim2.fromOffset(12, 4), UDim2.new(1, -24, 1, -8), 21
 	local entry = { frame = frame, message = message }
 	table.insert(self.active, entry)
