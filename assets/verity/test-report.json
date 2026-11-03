@@ -22,5 +22,7 @@
   "motionSketch": "software-rendered 60-frame animation, not a Studio capture",
   "audio": "not provided",
   "levels11to100": "not authored",
-  "fullGalleryXmlRoundTrip": "passed; canonicalized with Rojo"
+  "fullGalleryXmlRoundTrip": "passed; canonicalized with Rojo",
+  "isolatedPrototypeTag": "VerityPrototypeVisual",
+  "canonicalFactoryAndController": "preserved from main 600bd24"
 }

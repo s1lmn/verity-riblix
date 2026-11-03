@@ -17370,7 +17370,7 @@ return {{{name="Body",shape="Ball",pos={0,1.4,0},size={2.8,2.8,2.8},color="FFE12
           <string name="Name">VerityVisualConfig</string>
           <string name="Source"><![CDATA[local Definitions = require(script.Parent.VerityDefinitions)
 local LevelConfig = require(script.Parent.Parent.Shared.LevelConfig)
-local Config = { MinLevel = 1, MaxAuthoredLevel = 10, Tag = "VerityVisual" }
+local Config = { MinLevel = 1, MaxAuthoredLevel = 10, Tag = "VerityPrototypeVisual" }
 function Config.Get(level)
     assert(type(level) == "number" and level == level and level % 1 == 0 and level >= 1 and level <= 10,
         "Verity visuals are authored for integer levels 1..10 only")
@@ -17419,7 +17419,7 @@ return Motion
       </Item>
       <Item class="ModuleScript" referent="548">
         <Properties>
-          <string name="Name">VerityFactory</string>
+          <string name="Name">VerityPrototypeFactory</string>
           <string name="Source"><![CDATA[local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local Config = require(script.Parent.VerityVisualConfig)
@@ -17676,6 +17676,13 @@ return Service
           <string name="Source"><![CDATA[--!strict
 -- Shared exact growth contract. Core owns economy; this module has no prices.
 local LevelConfig = { MinLevel = 1, MaxLevel = 100 }
+LevelConfig.Milestones = table.freeze({
+	{ level = 10, name = "STARLIGHT", reward = "New idle + star trail" },
+	{ level = 25, name = "LEVITATION", reward = "Floating idle + glowing aura" },
+	{ level = 50, name = "POWER PULSE", reward = "Power impulse + light wave" },
+	{ level = 75, name = "LEGENDARY", reward = "Legendary spin + energy rings" },
+	{ level = 100, name = "FINAL EVOLUTION", reward = "Giant 15× form + crown + layered aura" },
+})
 
 function LevelConfig.getVerityScale(level: number): number
 	assert(type(level) == "number" and level == level and level % 1 == 0 and level >= 1 and level <= 100,
@@ -17698,7 +17705,7 @@ return table.freeze(LevelConfig)
         <string name="Name">GalleryBootstrap</string>
         <string name="Source"><![CDATA[-- Isolated art review only. Do not enable this script in the production map.
 local World=game:GetService("ReplicatedStorage"):WaitForChild("World")
-local Factory=require(World.VerityFactory)
+local Factory=require(World.VerityPrototypeFactory)
 local Config=require(World.VerityVisualConfig)
 local old=workspace:FindFirstChild("VerityGallery")
 if old then old:Destroy() end
