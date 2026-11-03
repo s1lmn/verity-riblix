@@ -30,26 +30,25 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="verity-ui-", dir=stage_parent) as tmp:
         stage = Path(tmp).resolve()
         assert stage.parent == stage_parent.resolve() and stage.name.startswith("verity-ui-")
-        for folder in ("src/client", "src/shared", "tests"):
+        for folder in ("src/client", "src/shared", "src/world", "src/server", "tests"):
             shutil.copytree(root / folder, stage / folder)
         sources = sorted(p.relative_to(stage).as_posix()
-                         for folder in ("src/client", "src/shared", "tests")
+                         for folder in ("src/client", "src/shared", "src/world", "src/server", "tests")
                          for p in (stage / folder).glob("*.luau"))
         for source in sources:
             subprocess.run([str(binaries["luau-compile"]), "--null", source],
                            cwd=stage, check=True, capture_output=True, text=True)
         print(f"Luau compilation: {len(sources)} files passed", flush=True)
         subprocess.run([str(binaries["luau"]), "tests/UIModelTests.luau"], cwd=stage, check=True)
+        subprocess.run([str(binaries["luau"]), "tests/AnimationProfileTests.luau"], cwd=stage, check=True)
         # These modules have no Roblox-engine type dependency.
         subprocess.run([str(binaries["luau-analyze"]), "src/shared/LevelConfig.luau",
                         "src/client/RequestTracker.luau", "src/client/EventLedger.luau"],
                        cwd=stage, check=True)
         print("Pure module strict typecheck: 3 passed", flush=True)
-    output = root / "builds/VerityUI.rbxlx"
-    output.parent.mkdir(exist_ok=True)
-    subprocess.run([str(args.rojo.resolve()), "build", "default.project.json", "-o", str(output)],
-                   cwd=root, check=True)
-    report = {"compiledFiles": len(sources), "pureTestGroups": 10,
+    from build_project import build
+    build(args.rojo)
+    report = {"compiledFiles": len(sources), "pureTestGroups": 14,
               "strictTypecheckedModules": 3, "rojoBuild": "passed",
               "studioTests": "See docs/UI_TEST_REPORT.md; this script does not run Studio."}
     (root / "builds/ui-checks.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

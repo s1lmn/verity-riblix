@@ -7,10 +7,10 @@
 Нужны официальные [Rojo](https://github.com/rojo-rbx/rojo/releases) и [Luau CLI](https://github.com/luau-lang/luau/releases). Ничего из Creator Store для UI не требуется.
 
 ```powershell
-rojo build default.project.json -o builds/VerityUI.rbxlx
+python tools/build_project.py --rojo C:/path/to/rojo.exe
 ```
 
-Откройте `builds/VerityUI.rbxlx` через File → Open from File. Play создаёт существующую карту через MapBootstrap и запускает `StarterPlayerScripts/VerityClient/ClientBootstrap`. В UI будет `Waiting for Core`, пока сервер не создаст согласованные remotes и не пришлёт снимок.
+Откройте `builds/VerityGrowingSimulator.rbxlx` через File → Open from File. Play создаёт существующую карту через MapBootstrap и запускает `StarterPlayerScripts/VerityClient/ClientBootstrap`. В UI будет `Waiting for Core`, пока сервер не создаст согласованные remotes и не пришлёт снимок.
 
 Альтернатива: `rojo serve default.project.json`, затем подключение обычным Rojo plugin. Ветка не требует установки неофициального MCP или сторонних UI-фреймворков.
 
@@ -64,3 +64,7 @@ UI-композиции карточек уже работают без изоб
 ## Ограничения приёмки
 
 Фактические выполненные проверки и снимки находятся в [отчёте UI](UI_TEST_REPORT.md). Эмулятор не доказывает FPS физического телефона или качество реального touch/gamepad-ввода. 2/8/16/24 игрока, 16 моделей 15×, перезаход с сохранением, внешние аудиоассеты и баланс требуют общей сборки Core + World + UI.
+
+## Актуальные анимации и сборка
+
+Сборка включает VerityVisualController и VersionController. Список milestone теперь берётся из общего LevelConfig. Подробности серверного подключения, версии старого открытого place и отдельный Studio preview — [ANIMATIONS.md](ANIMATIONS.md). Команда check_ui также компилирует World/Server и запускает 4 дополнительные группы тестов анимации.

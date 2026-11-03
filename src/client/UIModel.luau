@@ -2,13 +2,7 @@
 -- Pure presentation logic. No prices, rewards or player progress are generated here.
 local Model = {}
 local LevelConfig = if game then require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LevelConfig")) else require("../shared/LevelConfig")
-Model.Milestones = table.freeze({
-	{ level = 10, name = "STARLIGHT", reward = "New idle + star trail" },
-	{ level = 25, name = "LEVITATION", reward = "Floating idle + glowing aura" },
-	{ level = 50, name = "POWER PULSE", reward = "Power impulse + light wave" },
-	{ level = 75, name = "LEGENDARY", reward = "Legendary spin + energy rings" },
-	{ level = 100, name = "FINAL EVOLUTION", reward = "Giant 15× form + crown + layered aura" },
-})
+Model.Milestones = LevelConfig.Milestones
 
 function Model.IsFinite(value: any): boolean
 	return type(value) == "number" and value == value and math.abs(value) < math.huge
