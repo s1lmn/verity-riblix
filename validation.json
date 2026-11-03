@@ -1,0 +1,24 @@
+{
+  "plots": 16,
+  "parts": 1549,
+  "plotFootprint": [
+    64,
+    48
+  ],
+  "houseFootprint": [
+    28,
+    30
+  ],
+  "reservedVerityPad": [
+    17,
+    17
+  ],
+  "checks": [
+    "16 unique plots",
+    "non-overlapping lot bounds",
+    "all lot geometry within bounds",
+    "required integration anchors present",
+    "XML parses"
+  ],
+  "studioPlaytest": "not run"
+}

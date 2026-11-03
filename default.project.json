@@ -1,0 +1,21 @@
+{
+  "name": "VerityNeighborhood",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "World": {
+        "$path": "src/world"
+      }
+    },
+    "ServerScriptService": {
+      "MapBootstrap": {
+        "$path": "src/server/MapBootstrap.server.luau"
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true
+      }
+    }
+  }
+}
