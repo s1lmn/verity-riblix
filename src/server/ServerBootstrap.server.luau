@@ -1,6 +1,6 @@
 --!nonstrict
 local Players = game:GetService("Players")
--- Load only after the player's profile and owned RespawnLocation are ready.
+-- Load after profile initialization. The player chooses a house before gameplay starts.
 Players.CharacterAutoLoads = false
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -149,9 +149,13 @@ Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyServi
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local spawning = {}
+local houseSelection = Instance.new("RemoteEvent")
+houseSelection.Name = "ChooseHouse"
+houseSelection:SetAttribute("PlotCount", Plots.count)
+houseSelection.Parent = ReplicatedStorage
 local function spawnPlayer(player)
 	local id = player.UserId
-	if closing or player.Parent ~= Players or not State.sessions[id] then return end
+	if closing or player.Parent ~= Players or not Data:Get(id) then return end
 	if spawning[id] then
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if hum and hum.Health <= 0 then task.delay(0.5, function() spawnPlayer(player) end) end
@@ -178,8 +182,8 @@ local function onCharacter(player, character)
 	local root = character:WaitForChild("HumanoidRootPart", 10)
 	local humanoid = character:WaitForChild("Humanoid", 10)
 	local plotId = Plots.owners[player.UserId]
-	if not root or not humanoid or not plotId or player.Parent ~= Players or player.Character ~= character then return end
-	character:PivotTo(World.anchors[plotId].SpawnPoint.CFrame)
+	if not root or not humanoid or player.Parent ~= Players or player.Character ~= character then return end
+	character:PivotTo(World.anchors[plotId or 1].SpawnPoint.CFrame)
 	character:SetAttribute("SpawnReady", true)
 	local death = humanoid.Died:Connect(function()
 		Tasks:OnDeath(player.UserId)
@@ -199,22 +203,43 @@ local function onPlayer(player)
 	local profile, reason = Data:LoadAsync(player.UserId)
 	if not profile then if player.Parent == Players then player:Kick("Profile unavailable: " .. tostring(reason)) end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
-	local plotId, plotError = Plots:Assign(player.UserId)
-	if not plotId then Data:ReleaseAsync(player.UserId); player:Kick(plotError); return end
-	State:Attach(player.UserId, plotId)
-	World.anchors[plotId].SpawnPoint.Enabled = true
-	player.RespawnLocation = World.anchors[plotId].SpawnPoint
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
-	if player.Character then
-		task.spawn(onCharacter, player, player.Character)
-		player.Character:PivotTo(World.anchors[plotId].SpawnPoint.CFrame)
+	player:SetAttribute("HouseSelectionReady", true)
+	if player.Character then task.spawn(onCharacter, player, player.Character)
 	else task.spawn(spawnPlayer, player) end
-	State:Publish(player.UserId, true)
-	Verity:Event(player.UserId, "PlotAssigned", {state = State:Snapshot(player.UserId), presentation = false})
-	Delivery:Begin(player.UserId)
 end
+
+local function claimHouse(player, requestedPlot)
+	local userId = player.UserId
+	if closing or player.Parent ~= Players or not player:GetAttribute("HouseSelectionReady") or not Data:Get(userId) then
+		return "NOT_READY"
+	end
+	if type(requestedPlot) ~= "number" then return "INVALID_PLOT" end
+	if Plots.owners[userId] then return "ALREADY_CLAIMED" end
+	local plotId, reason = Plots:Assign(userId, requestedPlot)
+	if not plotId then return reason end
+
+	State:Attach(userId, plotId)
+	local spawnPoint = World.anchors[plotId].SpawnPoint
+	spawnPoint.Enabled = true
+	player.RespawnLocation = spawnPoint
+	if World:GetCharacter(userId) then player.Character:PivotTo(spawnPoint.CFrame) end
+	houseSelection:SetAttribute("Owner" .. plotId, userId)
+	player:SetAttribute("HousePlotId", plotId)
+	State:Publish(userId, true)
+	Verity:Event(userId, "PlotAssigned", {state = State:Snapshot(userId), presentation = false})
+	Delivery:Begin(userId)
+	return "OK"
+end
+
+houseSelection.OnServerEvent:Connect(function(player, plotId)
+	local result = claimHouse(player, plotId)
+	houseSelection:FireClient(player, result)
+end)
 local function removePlayer(player)
 	local id = player.UserId
+	player:SetAttribute("HouseSelectionReady", nil)
+	player:SetAttribute("HousePlotId", nil)
 	Income:Settle(id)
 	disconnectPlayer(id)
 	Delivery:Remove(id)
@@ -225,12 +250,13 @@ local function removePlayer(player)
 	local plotId = Plots:Release(id)
 	State:Remove(id)
 	if plotId then
+		houseSelection:SetAttribute("Owner" .. plotId, nil)
 		World:ClearPlot(plotId)
 		emit({protocolVersion = 1, type = "PlotReleased", eventId = guid(), ownerUserId = id, plotId = plotId})
 	end
 	if not Data:ReleaseAsync(id) then warn("Profile release did not complete", id) end
 end
-Runtime.Services.PlayerLifecycle = {Attach = onPlayer, Detach = removePlayer}
+Runtime.Services.PlayerLifecycle = {Attach = onPlayer, Detach = removePlayer, ClaimHouse = claimHouse}
 Players.PlayerAdded:Connect(onPlayer)
 Players.PlayerRemoving:Connect(removePlayer)
 for _, player in Players:GetPlayers() do task.spawn(onPlayer, player) end

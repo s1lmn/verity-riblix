@@ -29,7 +29,10 @@ function Verity:Render()
 	r.Level.Size=UDim2.new(1,-4,0,if maxed then 48 else 34)
 	r.Income.Text="INCOME  $"..Model.Format(state.IncomePerSecond).." / sec"..(if maxed then "" else " → $"..Model.Format(state.NextIncomePerSecond))
 	r.Scale.Text=if maxed then "SCALE  15× • final evolution" else string.format("SCALE  %.3f× → %.3f×",Model.Scale(level),Model.Scale(level+1))
-	r.House.Text=string.format("HOUSE STAGE %d / 6",state.HouseTier)
+	local nextHouseMilestone=Model.Milestones[state.HouseTier]
+	local nextHouseLevel=nextHouseMilestone and nextHouseMilestone.level
+	r.House.Text=if nextHouseLevel then string.format("Дом %d / 6  •  Следующий этап на уровне Verity %d",state.HouseTier,nextHouseLevel)
+		else "Дом 6 / 6  •  Максимальный этап"
 	r.Progress.Size=UDim2.fromScale((level-1)/99,1)
 	local nextStage=Model.NextMilestone(level)
 	r.Milestone.Text=if nextStage then string.format("NEXT • LEVEL %d  /  %s\n%s",nextStage.level,nextStage.name,nextStage.reward)

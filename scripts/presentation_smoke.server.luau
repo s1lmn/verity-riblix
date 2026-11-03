@@ -20,6 +20,17 @@ local checks={};local function check(v,label)assert(v,label);table.insert(checks
 local ok,failure=pcall(function()
  waitFor(function()return game.ServerScriptService.Core:GetAttribute("CoreReady")end,30)
  local s=require(game.ServerScriptService.Core.Runtime).GetServices()
+ local rosterForClaim = waitFor(function()
+  local players = Players:GetPlayers()
+  if #players ~= expected then return nil end
+  for _, player in players do
+   if not player:GetAttribute("HouseSelectionReady") then return nil end
+  end
+  return players
+ end, 60, "House selection not ready")
+ for plotId, player in rosterForClaim do
+  assert(s.PlayerLifecycle.ClaimHouse(player, plotId) == "OK", "Smoke house claim failed")
+ end
  waitFor(function()
   if #Players:GetPlayers()~=expected then return false end
   for _,p in Players:GetPlayers()do if not ready[p]or not p.Character or not p.Character:GetAttribute("SpawnReady")then return false end end

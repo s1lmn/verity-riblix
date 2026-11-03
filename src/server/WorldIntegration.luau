@@ -4,6 +4,22 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.GameConfig)
 local Tasks = require(Shared.TaskConfig)
 local Levels = require(Shared.LevelConfig)
+local houseColors = {
+	Color3.fromRGB(134, 224, 188), Color3.fromRGB(103, 214, 255),
+	Color3.fromRGB(157, 137, 255), Color3.fromRGB(255, 137, 203),
+	Color3.fromRGB(255, 167, 105), Color3.fromRGB(255, 216, 90),
+}
+
+local function updateHouseSign(anchors, player, tier)
+	anchors.HouseSign.Text = if player
+		then string.format("Дом %s\nУровень дома %d / 6", player.DisplayName, tier)
+		else "Свободный дом"
+	anchors.HouseSign.BackgroundColor3 = if player then houseColors[tier] else Color3.fromRGB(235, 241, 248)
+	for part, originalColor in anchors.FacadeColors do
+		part.Color = if tier and tier > 1 then houseColors[tier] else originalColor
+	end
+end
+
 local WorldIntegration = {}
 WorldIntegration.__index = WorldIntegration
 function WorldIntegration.ReadLayouts(world, count)
@@ -104,6 +120,35 @@ function WorldIntegration.new(workspace, players, plots, world)
 		if sourceMarkers then
 			self.anchors[id].HouseEntrance = assert(sourceMarkers:FindFirstChild("HouseEntrance"))
 		end
+		local sign = Instance.new("BillboardGui")
+		sign.Name = "HouseStatus"
+		sign.Adornee = self.anchors[id].HouseEntrance or self.anchors[id].SpawnPoint
+		sign.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
+		sign.Size = UDim2.fromOffset(170, 46)
+		sign.MaxDistance = 65
+		sign.Parent = model
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.Font = Enum.Font.GothamBold
+		label.TextSize = 13
+		label.TextWrapped = true
+		label.TextColor3 = Color3.fromRGB(34, 38, 75)
+		label.Parent = sign
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 9)
+		corner.Parent = label
+		self.anchors[id].HouseSign = label
+		local facadeColors = {}
+		local house = sourcePlot and sourcePlot:FindFirstChild("House")
+		local geometry = house and house:FindFirstChild("Geometry")
+		if geometry then
+			for _, name in {"FrontHeader", "OpenDoorLintel", "UpperFrontHeader", "RoofCapLobby", "RoofCapUpper"} do
+				local trim = geometry:FindFirstChild(name)
+				if trim and trim:IsA("BasePart") then facadeColors[trim] = trim.Color end
+			end
+		end
+		self.anchors[id].FacadeColors = facadeColors
+		updateHouseSign(self.anchors[id], nil)
 		if id % 8 == 0 then task.wait() end
 	end
 	return self
@@ -146,6 +191,9 @@ function WorldIntegration:UpdatePlot(userId, state)
 	local plotId = self.plots.owners[userId]
 	if not plotId then return end
 	local model = self.anchors[plotId].Model
+	if model:GetAttribute("OwnerUserId") ~= userId or model:GetAttribute("HouseTier") ~= state.HouseTier then
+		updateHouseSign(self.anchors[plotId], self.players:GetPlayerByUserId(userId), state.HouseTier)
+	end
 	model:SetAttribute("OwnerUserId", userId)
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
 		model:SetAttribute(key, state[key])
@@ -187,6 +235,7 @@ function WorldIntegration:ClearPlot(plotId)
 	local verity = self.verities[owner]
 	if verity then verity:Destroy(); self.verities[owner] = nil end
 	model:SetAttribute("OwnerUserId", 0)
+	updateHouseSign(self.anchors[plotId], nil)
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 		model:SetAttribute(key, nil)
 	end

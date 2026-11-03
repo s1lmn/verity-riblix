@@ -28,6 +28,17 @@ local ok,failure=pcall(function()
 	waitFor(function()return game.ServerScriptService.Core:GetAttribute("CoreReady")end,30,"Core startup failed")
 	local s=require(game.ServerScriptService.Core.Runtime).GetServices()
 	check(require(game.ReplicatedStorage.Shared.GameConfig).StudioDataMode=="Memory","ephemeral smoke profiles")
+ local rosterForClaim = waitFor(function()
+  local players = Players:GetPlayers()
+  if #players ~= expected then return nil end
+  for _, player in players do
+   if not player:GetAttribute("HouseSelectionReady") then return nil end
+  end
+  return players
+ end, 60, "House selection not ready")
+ for plotId, player in rosterForClaim do
+  assert(s.PlayerLifecycle.ClaimHouse(player, plotId) == "OK", "Smoke house claim failed")
+ end
 	waitFor(function()
 		if #Players:GetPlayers()~=expected then return false end
 		for _,p in Players:GetPlayers()do if not ready[p] or not s.DataService:Get(p.UserId)or not p.Character or not p.Character:GetAttribute("SpawnReady") or not p.Character:FindFirstChild("HumanoidRootPart")then return false end end
@@ -133,7 +144,9 @@ local ok,failure=pcall(function()
  end
  local savedLevel=profile.Data.VerityLevel
  local savedCooldown=profile.Data.TaskCooldowns.PRESS_BUTTON
+ local savedPlot = s.PlotService.owners[id]
  s.PlayerLifecycle.Detach(first);s.PlayerLifecycle.Attach(first)
+ assert(s.PlayerLifecycle.ClaimHouse(first, savedPlot) == "OK", "Reattached player could not reclaim house")
  check(s.DataService:Get(id).Data.VerityLevel==savedLevel and s.DataService:Get(id).Data.VerityUnlocked,"production profile reattach restores unlocked level")
  check(s.DataService:Get(id).Data.CosmeticsEquipped.Face=="round_glasses","production profile reattach restores equipped cosmetics")
  check(s.DataService:Get(id).Data.TaskCooldowns.PRESS_BUTTON==savedCooldown,"production profile reattach preserves task cooldown")

@@ -27,12 +27,20 @@ function PlotService:GetLayout(plotId)
 		ReservationDepth = Levels.MaxScale * Config.BaseDepth * Config.AnimationExpansion + 2 * Config.EffectMargin,
 		ReservationHeight = Levels.MaxScale * Config.BaseHeight * Config.AnimationExpansion + Config.EffectMargin}
 end
-function PlotService:Assign(userId)
-	if self.owners[userId] then return self.owners[userId], nil end
+function PlotService:Assign(userId, requestedPlot)
+	local current = self.owners[userId]
+	if current then
+		if requestedPlot and requestedPlot ~= current then return nil, "ALREADY_CLAIMED" end
+		return current, nil
+	end
+	if requestedPlot ~= nil then
+		if not Numeric.isInteger(requestedPlot, 1, self.count) then return nil, "INVALID_PLOT" end
+		if self.plots[requestedPlot] then return nil, "PLOT_TAKEN" end
+	end
 	local used = 0
 	for _ in self.owners do used += 1 end
 	if used >= self.capacity then return nil, "SERVER_FULL" end
-	for id = 1, self.count do
+	for id = requestedPlot or 1, requestedPlot or self.count do
 		if not self.plots[id] then self.plots[id] = userId; self.owners[userId] = id; return id, nil end
 	end
 	return nil, "NO_PLOTS"

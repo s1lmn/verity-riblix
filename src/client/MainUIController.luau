@@ -15,6 +15,7 @@ local Sound=require(script.Parent.UISoundController)
 local Notifications=require(script.Parent.NotificationController)
 local Rewards=require(script.Parent.FloatingRewardController)
 local Verity=require(script.Parent.VerityUIController)
+local HouseSelection=require(script.Parent.HouseSelectionController)
 local Phone=require(script.Parent.PhoneUIController)
 local Tasks=require(script.Parent.TasksUIController)
 local Cosmetics=require(script.Parent.CosmeticsUIController)
@@ -66,6 +67,7 @@ function Main.new()
 	end
 	self.verity=self.cleanup:Add(Verity.new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
+	self.houseSelection=self.cleanup:Add(HouseSelection.new(ctx))
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
  ctx.tasks=self.tasks
  self.cosmetics=self.cleanup:Add(Cosmetics.new(ctx))
@@ -181,6 +183,7 @@ end
 
 function Main:Open(name)
 	local ctx=self.ctx
+	if name and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and self.presentation then self.presentation:Stop() end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject

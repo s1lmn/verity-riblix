@@ -34,11 +34,11 @@ function Tutorial.new(ctx)
  for name,panel in ctx.refs.Panels do self.subtitles[name]=panel.Subtitle.Text end
  self.folder=self.cleanup:Add(Instance.new("Folder"));self.folder.Name="VerityGuidance";self.folder.Parent=workspace
  self.anchor=piece(self.folder,"GoalMarker");self.anchor.Size=Vector3.one*.1
- self.pin=Instance.new("BillboardGui");self.pin.Name="GoalPin";self.pin.Size=UDim2.fromOffset(170,64)
+ self.pin=Instance.new("BillboardGui");self.pin.Name="GoalPin";self.pin.Size=UDim2.fromOffset(210,84)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4,0);self.pin.AlwaysOnTop=true;self.pin.MaxDistance=1500;self.pin.Enabled=false;self.pin.Parent=self.anchor
  self.pinTitle=W.Text(self.pin,"Target","",13,true,T.Ink);self.pinTitle.Size=UDim2.new(1,0,0,27)
  self.pinTitle.TextXAlignment=Enum.TextXAlignment.Center;self.pinTitle.TextStrokeColor3=T.White;self.pinTitle.TextStrokeTransparency=.1
- local down=W.Text(self.pin,"Arrow","▼",28,true,T.Mint);down.Position=UDim2.fromOffset(0,28);down.Size=UDim2.new(1,0,0,32)
+ local down=W.Text(self.pin,"Arrow","▼",42,true,T.Mint);down.Position=UDim2.fromOffset(0,28);down.Size=UDim2.new(1,0,0,52)
  down.TextXAlignment=Enum.TextXAlignment.Center;down.TextStrokeColor3=T.Ink;down.TextStrokeTransparency=.25
  self.highlight=Instance.new("Highlight");self.highlight.Name="CurrentGoal";self.highlight.FillColor=T.Mint;self.highlight.OutlineColor=T.Mint
  self.highlight.FillTransparency=.82;self.highlight.OutlineTransparency=.15;self.highlight.Enabled=false;self.highlight.Parent=self.folder
@@ -157,10 +157,13 @@ function Tutorial:DrawRoute(root,now)
    local arrow=self.arrows[i]
    if not arrow then arrow={piece(self.folder,"RouteStem"),piece(self.folder,"RouteHead"),piece(self.folder,"RouteHead")};self.arrows[i]=arrow end
    local cf=CFrame.lookAt(hit.Position+Vector3.new(0,.11,0),hit.Position+Vector3.new(0,.11,0)+delta.Unit)
-   arrow[1].CFrame=cf*CFrame.new(0,0,.35)
-   arrow[2].Size=Vector3.new(.2,.07,.9);arrow[2].CFrame=cf*CFrame.new(-.28,0,-.35)*CFrame.Angles(0,-math.pi/4,0)
-   arrow[3].Size=Vector3.new(.2,.07,.9);arrow[3].CFrame=cf*CFrame.new(.28,0,-.35)*CFrame.Angles(0,math.pi/4,0)
-   for _,p in arrow do p.Transparency=.12 end
+   arrow[1].Size=Vector3.new(.42,.12,1.65)
+   arrow[1].CFrame=cf*CFrame.new(0,0,.45)
+   arrow[2].Size=Vector3.new(.38,.12,1.48)
+   arrow[2].CFrame=cf*CFrame.new(-.45,0,-.57)*CFrame.Angles(0,-math.pi/4,0)
+   arrow[3].Size=arrow[2].Size
+   arrow[3].CFrame=cf*CFrame.new(.45,0,-.57)*CFrame.Angles(0,math.pi/4,0)
+   for _,p in arrow do p.Transparency=.04 end
   end
   distance+=5
  end
