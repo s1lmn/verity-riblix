@@ -18,6 +18,8 @@ local Verity=require(script.Parent.VerityUIController)
 local Phone=require(script.Parent.PhoneUIController)
 local Tasks=require(script.Parent.TasksUIController)
 local Tutorial=require(script.Parent.TutorialController)
+local Versions=require(script.Parent.VersionController)
+local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualController)
 local Main={}
 Main.__index=Main
 local Errors={
@@ -63,6 +65,11 @@ function Main.new()
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
 	self.tutorial=self.cleanup:Add(Tutorial.new(ctx))
 	self.ledger=Ledger.new()
+	self.versions=self.cleanup:Add(Versions.new(ctx))
+	self.visuals=self.cleanup:Add(Visuals.new(ctx.settings))
+	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event)
+		if event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
+	end))
 	for _,obj in refs.Gui:GetDescendants() do
 		if obj:IsA("TextButton") then
 			ctx.animation:BindButton(obj)
@@ -112,7 +119,8 @@ function Main.new()
 		ctx.notifications:Show(payload.message,payload.kind)
 	end))
 	self.cleanup:Add(ctx.net.World.Event:Connect(function(event)
-		if event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
+		local animated=self.visuals:HandleWorld(event)
+		if not animated and event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
 	local function back(_,state)
 		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
@@ -143,8 +151,11 @@ function Main.new()
 	refs.Layout(false)
 	self:Render()
 	ctx.net:Start()
+	Main.current=self
 	return self
 end
+
+function Main.GetCurrent() return Main.current end
 
 function Main:SetFocus(name)
 	if UserInputService.PreferredInput~=Enum.PreferredInput.Gamepad then return end
@@ -172,7 +183,7 @@ end
 function Main:Render()
 	local ctx=self.ctx
 	local state=ctx.net.state
-	self.refs.Status.Text=if not ctx.net.connected then "Waiting for Core • interface ready" elseif not state then "Loading confirmed player progress…" else "SERVER CONNECTED • ALL LEVELS FREE"
+	self.refs.Status.Text=if self.versions.issue then self.versions.issue elseif not ctx.net.connected then "Waiting for Core • interface ready" elseif not state then "Loading confirmed player progress…" else "SERVER CONNECTED • ALL LEVELS FREE"
 	self.refs.Income.Text=if state then "+$"..Model.Format(state.IncomePerSecond).." / sec" else "+$— / sec"
 	self.refs.Level.Text=if state then string.format("LVL %d / 100",state.VerityLevel) else "LVL — / 100"
 	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render()
@@ -190,6 +201,7 @@ function Main:Tick(dt)
 		self.refs.Cash.Text="$"..Model.Format(self.displayCash)
 	end
 	local now=os.clock()
+	if self.versions.issue then self.refs.Status.Text=self.versions.issue end
 	ctx.rewards:Tick(now)
 	self.tasks:Render();self.tasks:Tick()
 	self.phone:ReconcileSession()
@@ -213,6 +225,7 @@ end
 function Main:Destroy()
 	if self.dead then return end
 	self.dead=true
+	if Main.current==self then Main.current=nil end
 	if GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(self.refs.Gui) then GuiService.SelectedObject=nil end
 	self.cleanup:Destroy()
 end

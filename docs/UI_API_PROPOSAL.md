@@ -140,3 +140,7 @@ UI проверяет точную формулу scale, +1 уровень, revi
 В `PlayerGui.VerityUI` доступны локальные атрибуты `ReducedMotion`, `ReducedEffects`, `UISounds`, `UIVolume`. World может наблюдать первые два для своего VFX. Настройки действуют на время текущего подключения и не заявлены как сохранённые. Никаких remotes настроек и новых DataStore-схем в этой ветке нет.
 
 Roblox API: [ScreenGui и safe areas](https://create.roblox.com/docs/reference/engine/classes/ScreenGui), [GuiObject и Activated/input](https://create.roblox.com/docs/reference/engine/classes/GuiObject), [UserInputService](https://create.roblox.com/docs/reference/engine/classes/UserInputService).
+
+## Реализация визуалов
+
+VerityVisualController принимает те же WorldEvent, обнаруживает модели по tag VerityVisual и сигнализирует UI о старте перехода. Новых игровых remotes не добавлено. Точные атрибуты модели, версии, последовательность обновления и ограничения — [ANIMATIONS.md](ANIMATIONS.md). Серверный Core пока отсутствует; в production не подключается ни один QA fixture.
