@@ -25,8 +25,9 @@ def check_build(path):
         actual[name] = source.replace("\r\n", "\n")
     expected = {}
     for source in (ROOT / "src").rglob("*.luau"):
-        if source.name == "MapBootstrap.server.luau":
-            continue  # World preview launcher; Core is the sole integrated bootstrap.
+        if source.name in {"MapBootstrap.server.luau", "CompanionBootstrap.server.luau",
+                           "VerityCompanion.client.luau", "VerityLevelPreview.client.luau"}:
+            continue  # Standalone preview scripts are mapped only in companion-preview.project.json.
         name = source.stem.removesuffix(".server").removesuffix(".client")
         expected[name] = source.read_text(encoding="utf-8").replace("\r\n", "\n")
     assert expected == actual, "Built scripts differ from source or unexpected scripts present"

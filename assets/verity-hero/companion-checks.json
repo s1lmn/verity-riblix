@@ -1,0 +1,25 @@
+{
+  "studioVersion": "0.745.0.7451137",
+  "assetImport": "mesh and all 8 texture IDs read back from imported MeshParts",
+  "playEvidence": {
+    "serverAndClient": "actual PlayServer + PlayClient created, player 1371278087 joined",
+    "expressions": "8/8 server descriptor and client TextureId assertions passed",
+    "teleportFollow": "18-stud move; final owner distance 4.9982 studs",
+    "walkFollow": "Humanoid MoveTo travelled 14.1861 studs; companion within 12 studs",
+    "idle": "sample Y 5.8762 -> 6.0086",
+    "serverTimer": "Love reset to Joy after duration, passed",
+    "respawn": "same descriptor and one visible companion after LoadCharacterAsync, passed",
+    "reducedMotion": "vertical drift <0.015 studs, passed",
+    "camera": "LockFirstPerson focus distance 0.5 -> transparency 1; restored third person -> visible",
+    "testCorrection": "Synthetic Camera.Focus test failed because Studio camera controller overwrote Focus to distance 20. Restored camera and retested through actual LockFirstPerson; passed."
+  },
+  "pureServiceTests": "idempotency, delayed unlock descriptor root, reaction timer races, validation, detach and production preview guard passed",
+  "pending": [
+    "16-player streaming/load",
+    "physical phone FPS and touch",
+    "all house doorways at full growth",
+    "asset access in published experience under intended creator",
+    "integration with real Core unlock/earning/combat events"
+  ],
+  "finalEditSourceUpdate": "Final guard/initializer/camera-facing changes compiled and pure-service tested; separate restart verification unavailable after native UI timeout. Prior v1 movement/emotion/respawn/idle tests are actual Studio Play."
+}

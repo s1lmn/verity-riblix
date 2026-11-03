@@ -110,10 +110,18 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(id,product,_pu
  Cosmetics:ClosePrompt(id,product)
 end)
 Remote:Register("RequestOpenBox", function(id) return Delivery:Open(id) end)
-Remote:Register("RequestUpgradeVerity", function(id) return Upgrade:UpgradeVerity(id) end)
+Remote:Register("RequestUpgradeVerity", function(id)
+	local status=Upgrade:UpgradeVerity(id)
+	if status=="OK" then World:React(id,"Stars",2) end
+	return status
+end)
 Remote:Register("RequestUpgradeSwipe", function(id) return Upgrade:UpgradeSwipe(id) end)
 Remote:Register("RequestPhoneSession", function(id, payload) return Phone:SetOpen(id, payload.open) end)
-Remote:Register("RequestSwipe", function(id) return Phone:Swipe(id) end)
+Remote:Register("RequestSwipe", function(id)
+	local status,reward=Phone:Swipe(id)
+	if status=="OK" then World:React(id,"Love",2) end
+	return status,reward
+end)
 Remote:Register("RequestTaskStart", function(id, payload) return Tasks:Start(id, payload.taskId) end)
 Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Complete(id, payload.taskId) end)
 Remote:Register("RequestSync", function(id)

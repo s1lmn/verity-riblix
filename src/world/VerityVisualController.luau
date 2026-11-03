@@ -1,11 +1,13 @@
 --!nonstrict
 local RunService=game:GetService("RunService")
+local ContentProvider=game:GetService("ContentProvider")
 local CollectionService=game:GetService("CollectionService")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Shared=ReplicatedStorage:WaitForChild("Shared",10)
 assert(Shared,"Shared modules missing")
 local Levels=require(Shared.LevelConfig)
 local Profile=require(Shared.VerityAnimationProfile)
+local Art=require(Shared.VerityCompanionConfig)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
@@ -41,11 +43,16 @@ function Controller.new(settings,options)
 		for _,record in self.records do if record.active then self:Finish(record,os.clock()) end end
 	end))
 	if not editPreview then
+		local assets=ReplicatedStorage:FindFirstChild("VerityCompanionAssets")
+		if assets then
+			local images={}
+			for _, instance in assets:GetDescendants() do
+				if instance:IsA("ImageLabel") then table.insert(images,instance) end
+			end
+			task.spawn(function() pcall(ContentProvider.PreloadAsync,ContentProvider,images) end)
+		end
 		self.cleanup:Add(RunService.RenderStepped:Connect(function(dt)
-			self.elapsed+=dt
-			if self.elapsed<Profile.FrameInterval then return end
-			local elapsed=self.elapsed;self.elapsed=0
-			self:Tick(os.clock(),elapsed)
+			self:Tick(os.clock(),math.min(dt,.1))
 		end))
 	end
 	return self
@@ -147,9 +154,26 @@ function Controller:Finish(record,now)
 end
 
 local function visibility(record,alpha)
+ local model=record.model
+ local body=model:FindFirstChild("Body")
+ local face=body and body:FindFirstChild("FaceGui")
+ local image=face and face:FindFirstChild("Expression")
+ local textured=false
+ if image then
+  local emotion=if workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0)
+   then model:GetAttribute("Emotion") else "Joy"
+  local asset=Art.Textures[emotion] or Art.Textures.Joy
+  if image.Image~=asset then image.Image=asset end
+  textured=image.IsLoaded
+  face.Enabled=textured and alpha<.7
+  image.ImageTransparency=alpha
+ end
+ if record.textured~=textured then record.textured=textured;record.visibility=nil end
  if record.visibility==alpha then return end
  record.visibility=alpha
- for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then p.LocalTransparencyModifier=alpha end end
+ for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then
+  p.LocalTransparencyModifier=if textured and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
+ end end
  local primary=record.model.PrimaryPart
  local label=primary and primary:FindFirstChild("LevelLabel");if label then label.Enabled=alpha<.7 end
 end
@@ -163,7 +187,11 @@ function Controller:Follow(record,now,dt)
  if not root or not hum or hum.Health<=0 then record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);return false end
  local scale=Levels.getVerityScale(record.model:GetAttribute("VerityLevel"))
  local x,y,z=Follow.Offset(scale,record.plot)
- local target=root.CFrame:PointToWorldSpace(Vector3.new(x,y,z))
+ local heading=root.CFrame.Rotation
+ local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
+ if not record.heading or teleport then record.heading=heading
+ else record.heading=record.heading:Lerp(heading,1-math.exp(-Art.HeadingSpeed*(dt or 1/30))) end
+ local target=root.Position+record.heading:VectorToWorldSpace(Vector3.new(x,y,z))
  local mode="Following"
  if scale>Follow.IndoorMaxScale then
   if not record.surfaceAt or now-record.surfaceAt>=Follow.RayInterval then
@@ -204,22 +232,32 @@ function Controller:Follow(record,now,dt)
    target=Vector3.new(target.X,record.surfaceY+Follow.RoofClearance,target.Z);mode="RoofHover"
   end
  else
-  local ray=RaycastParams.new();ray.FilterType=Enum.RaycastFilterType.Include
-  local world=workspace:FindFirstChild("GeneratedWorld");ray.FilterDescendantsInstances=if world then {world} else {}
   local start=root.Position+Vector3.new(0,1,0)
-  local desiredCenter=target+Vector3.new(0,.85*scale,0)
-  local delta=desiredCenter-start
-  if delta.Magnitude>.01 then
-   local hit=workspace:Spherecast(start,.85*scale,delta,ray)
-   if hit then target=start+delta.Unit*math.max(0,hit.Distance-.25)-Vector3.new(0,.85*scale,0) end
+  local lift=Vector3.new(0,.85*scale,0)
+  local delta=target+lift-start
+  if not record.wallAt or now-record.wallAt>=Profile.FrameInterval
+   or teleport or record.wallScale~=scale or record.lastRoot and (root.Position-record.lastRoot).Magnitude>2 then
+   record.wallAt,record.wallScale=now,scale
+   record.wallFraction=1
+   if delta.Magnitude>.01 then
+    local ray=RaycastParams.new();ray.FilterType=Enum.RaycastFilterType.Include
+    local world=workspace:FindFirstChild("GeneratedWorld");ray.FilterDescendantsInstances=if world then {world} else {}
+    local hit=workspace:Spherecast(start,.85*scale,delta,ray)
+    if hit then record.wallFraction=math.max(0,hit.Distance-.25)/delta.Magnitude end
+   end
   end
+  target=start+delta*record.wallFraction-lift
  end
- local cf=CFrame.new(target)*root.CFrame.Rotation
+ local cf=CFrame.new(target)*heading
  local distance=(record.origin.Position-target).Magnitude
- local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
  if not record.followStarted or teleport or distance>Follow.TeleportDistance or (record.mode~=mode and mode=="RoofHover") then
   record.origin=cf;record.followStarted=true
- else record.origin=record.origin:Lerp(cf,Follow.Blend(dt or 1/30)) end
+ else
+  local step=dt or 1/30
+  local position=record.origin.Position:Lerp(target,Follow.Blend(step))
+  local facing=record.origin.Rotation:Lerp(heading,1-math.exp(-Art.FacingSpeed*step))
+  record.origin=CFrame.new(position)*facing
+ end
  record.lastRoot=root.Position;record.mode=mode
  record.model:SetAttribute("CompanionMode",mode)
  local camera=workspace.CurrentCamera

@@ -21,7 +21,8 @@ def build(rojo, preview=False):
     assert f'local VERSION = "{expected_map}"' in world_source, "World/Shared version mismatch"
     digest = hashlib.sha256()
     digest.update(b"studio-preview-v1" if preview else b"complete-game-v1")
-    inputs = [*ROOT.glob("src/**/*.luau"), ROOT / "default.project.json"]
+    inputs = [*ROOT.glob("src/**/*.luau"), ROOT / "default.project.json",
+              ROOT / "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"]
     if preview:
         inputs.extend(ROOT.glob("tests/*.luau"))
     for path in sorted(inputs):

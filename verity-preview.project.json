@@ -29,6 +29,9 @@
         "LevelConfig": {
           "$path": "src/shared/LevelConfig.luau"
         }
+      },
+      "VerityCompanionAssets": {
+        "$path": "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"
       }
     },
     "ServerScriptService": {
@@ -39,7 +42,10 @@
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "VerityWorldVisuals": {
-          "$path": "src/world-client"
+          "$className": "Folder",
+          "VerityVisualBootstrap": {
+            "$path": "src/world-client/VerityVisualBootstrap.client.luau"
+          }
         }
       }
     },

@@ -1,15 +1,17 @@
 --!nonstrict
 local LocaleText = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LocaleText"))
--- Replaceable procedural mascot; no uploaded models, animation ids or scripts.
+-- Core companion geometry and the team's shared expression art.
 local CollectionService = game:GetService("CollectionService")
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared", 10)
 assert(Shared, "Shared modules missing; open the complete project build")
 local Levels = require(Shared.LevelConfig)
 local Profile = require(Shared.VerityAnimationProfile)
 local Version = require(Shared.ProjectVersion)
+local Looks = require(Shared.VerityCompanionLevels)
 local Factory = {}
 
 function Factory.Color(level)
+	if Looks.IsValid(level) then return Color3.fromHex(Looks.Get(level).Hex) end
 	return if level == 1 then Color3.fromRGB(255, 222, 35) else Color3.fromHSV(((level - 1) * 0.61803398875 + 0.13) % 1, 0.82, 1)
 end
 
@@ -44,7 +46,17 @@ function Factory.Create(parent, origin, metadata)
 	local root = part(model, "Root", Vector3.one * 0.04, Vector3.zero, white)
 	root.Transparency = 1
 	model.PrimaryPart = root
-	part(model, "Body", Vector3.one * 1.7, Vector3.new(0,0.85,0), color, Enum.PartType.Ball, true)
+	local body = part(model, "Body", Vector3.one * 1.7, Vector3.new(0,0.85,0), color, Enum.PartType.Ball, true)
+	local assets = game:GetService("ReplicatedStorage"):FindFirstChild("VerityCompanionAssets")
+	local template = assets and assets:FindFirstChild("Joy")
+	local face = template and template:FindFirstChildOfClass("SurfaceGui")
+	if face then
+		local artwork = face:Clone()
+		artwork.Name = "FaceGui"
+		artwork.Adornee = nil
+		artwork.Enabled = false
+		artwork.Parent = body
+	end
  for _,side in {-1,1} do
   part(model,"Eye",Vector3.new(0.12,0.24,0.04),Vector3.new(side*0.29,1.02,-0.79),ink,Enum.PartType.Ball)
  end

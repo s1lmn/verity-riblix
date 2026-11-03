@@ -12,7 +12,7 @@ python tools/build_project.py --rojo C:/path/to/rojo.exe
 
 Откройте `builds/VerityGrowingSimulator.rbxlx` через File → Open from File. Play создаёт существующую карту через MapBootstrap и запускает `StarterPlayerScripts/VerityClient/ClientBootstrap`. В UI будет `Waiting for Core`, пока сервер не создаст согласованные remotes и не пришлёт снимок.
 
-Альтернатива: `rojo serve default.project.json`, затем подключение обычным Rojo plugin. Ветка не требует установки неофициального MCP или сторонних UI-фреймворков.
+Альтернатива: `rojo serve default.project.json`, затем подключение обычным Rojo plugin. Подключаться в Edit и запускать заново после синхронизации. Текущий проект также синхронизирует `ReplicatedStorage.VerityCompanionAssets` из XML-шаблонов MeshPart/SurfaceAppearance. После изменения project.json перезапустите `rojo serve`, если новый узел отсутствует. В стандартном Baseplate его пол совпадает с землёй карты: MapBootstrap временно убирает только этот совпадающий пол в ServerStorage, чтобы убрать z-fighting. Ветка не требует установки неофициального MCP или сторонних UI-фреймворков.
 
 Пути в DataModel:
 

@@ -3,6 +3,27 @@ local InteriorFactory = require(script.Parent.InteriorFactory)
 local WorldBuilder = {}
 local VERSION = "open-neighborhood-5"
 local ROW_SPACING = 72
+
+local function parkTemplateFloor(target, world)
+    -- Rojo sync preserves the Studio template's Baseplate. Its top is Y=0,
+    -- exactly coplanar with our Ground, so both stud surfaces fight for depth.
+    -- Park only that overlapping template floor; Stop restores the Edit scene.
+    local baseplate = target:FindFirstChild("Baseplate")
+    local ground = world:FindFirstChild("Environment") and world.Environment:FindFirstChild("Ground")
+    if baseplate and baseplate:IsA("BasePart") and ground then
+        local flat = baseplate.CFrame.UpVector:Dot(Vector3.yAxis) > .9999
+        local sameHeight = math.abs(baseplate.Position.Y + baseplate.Size.Y/2 - (ground.Position.Y + ground.Size.Y/2)) < .05
+        local overlaps = math.abs(baseplate.Position.X-ground.Position.X) < (baseplate.Size.X+ground.Size.X)/2
+            and math.abs(baseplate.Position.Z-ground.Position.Z) < (baseplate.Size.Z+ground.Size.Z)/2
+        if flat and sameHeight and overlaps then
+            local storage = Instance.new("Folder")
+            storage.Name = "VerityTemplateFloor"
+            storage.Parent = game:GetService("ServerStorage")
+            baseplate.Parent = storage
+            print("[Verity map] Parked coplanar Studio Baseplate to prevent floor flicker")
+        end
+    end
+end
 function WorldBuilder.Build(parent, plotCount)
     local target = parent or workspace
     local count = plotCount or 16
@@ -10,7 +31,10 @@ function WorldBuilder.Build(parent, plotCount)
     local existing = target:FindFirstChild("GeneratedWorld")
     if existing then
         assert(existing:IsA("Model"), "GeneratedWorld name is occupied")
-        if existing:GetAttribute("BuilderVersion") == VERSION and existing:GetAttribute("PlotCount") == count then return existing end
+        if existing:GetAttribute("BuilderVersion") == VERSION and existing:GetAttribute("PlotCount") == count then
+            parkTemplateFloor(target, existing)
+            return existing
+        end
         error("Preserve/remove the previous GeneratedWorld explicitly before rebuilding v5")
     end
     local root = Instance.new("Model")
@@ -80,6 +104,7 @@ function WorldBuilder.Build(parent, plotCount)
             end
         end
     end
+    parkTemplateFloor(target, root)
     root.Parent = target
     return root
 end

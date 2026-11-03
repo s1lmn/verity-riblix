@@ -1,0 +1,72 @@
+[
+  {
+    "level": 1,
+    "name": "Sunny",
+    "color": "#FFDA21",
+    "scale": 1.0,
+    "diameter": 2.8
+  },
+  {
+    "level": 2,
+    "name": "Mango",
+    "color": "#FF8A00",
+    "scale": 1.2817332597753621,
+    "diameter": 3.5888531273710136
+  },
+  {
+    "level": 3,
+    "name": "Cherry",
+    "color": "#FF4566",
+    "scale": 1.507824461410805,
+    "diameter": 4.221908491950254
+  },
+  {
+    "level": 4,
+    "name": "Bubblegum",
+    "color": "#FF2DBB",
+    "scale": 1.7167887604420318,
+    "diameter": 4.807008529237689
+  },
+  {
+    "level": 5,
+    "name": "Grape",
+    "color": "#9D2AFF",
+    "scale": 1.9153540615431672,
+    "diameter": 5.3629913723208675
+  },
+  {
+    "level": 6,
+    "name": "Blue",
+    "color": "#2468FF",
+    "scale": 2.1065285503486857,
+    "diameter": 5.89827994097632
+  },
+  {
+    "level": 7,
+    "name": "Cyan",
+    "color": "#08DDF5",
+    "scale": 2.2920124038852494,
+    "diameter": 6.417634730878698
+  },
+  {
+    "level": 8,
+    "name": "Mint",
+    "color": "#04E6B2",
+    "scale": 2.4728938686018314,
+    "diameter": 6.9241028320851274
+  },
+  {
+    "level": 9,
+    "name": "Lime",
+    "color": "#B4F51B",
+    "scale": 2.6499265428369636,
+    "diameter": 7.419794319943498
+  },
+  {
+    "level": 10,
+    "name": "Golden",
+    "color": "#FFCA15",
+    "scale": 2.823661599293202,
+    "diameter": 7.906252478020965
+  }
+]

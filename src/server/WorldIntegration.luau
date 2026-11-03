@@ -243,6 +243,13 @@ function WorldIntegration:UpdatePlot(userId, state)
 		if prompt then prompt.Enabled = state.DeliveryState == "Delivered" end
 	end
 end
+function WorldIntegration:React(userId, emotion, duration)
+	local model=self.verities[userId]
+	if not model then return end
+	model:SetAttribute("Emotion",emotion)
+	model:SetAttribute("EmotionUntil",self.workspace:GetServerTimeNow()+duration)
+end
+
 function WorldIntegration:ClearPlot(plotId)
 	local model = self.anchors[plotId].Model
 	local owner = model:GetAttribute("OwnerUserId")

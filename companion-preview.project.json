@@ -1,0 +1,48 @@
+{
+  "name": "VerityNeighborhood",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "World": {
+        "$path": "src/world"
+      },
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "VerityCompanionAssets": {
+        "$path": "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"
+      }
+    },
+    "ServerScriptService": {
+      "MapBootstrap": {
+        "$path": "src/server/MapBootstrap.server.luau"
+      },
+      "CompanionBootstrap": {
+        "$path": "src/server/CompanionBootstrap.server.luau"
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "VerityWorldVisuals": {
+          "$className": "Folder",
+          "VerityCompanion": {
+            "$path": "src/world-client/VerityCompanion.client.luau"
+          },
+          "VerityLevelPreview": {
+            "$path": "src/world-client/VerityLevelPreview.client.luau"
+          }
+        }
+      }
+    },
+    "StarterGui": {
+      "$properties": {
+        "ScreenOrientation": "Sensor"
+      }
+    }
+  }
+}

@@ -10,6 +10,9 @@
       },
       "World": {
         "$path": "src/world"
+      },
+      "VerityCompanionAssets": {
+        "$path": "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"
       }
     },
     "ServerScriptService": {
@@ -85,7 +88,10 @@
           "$path": "src/client"
         },
         "VerityWorldVisuals": {
-          "$path": "src/world-client"
+          "$className": "Folder",
+          "VerityVisualBootstrap": {
+            "$path": "src/world-client/VerityVisualBootstrap.client.luau"
+          }
         },
         "FinalSmoke": {
           "$path": "scripts/final_smoke.client.luau"
