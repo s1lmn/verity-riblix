@@ -1,4 +1,6 @@
 --!nonstrict
+-- Prevent stale Rojo preview/game scripts from starting a second runtime.
+if game:GetService("ReplicatedStorage"):GetAttribute("VerityRuntimeMode")=="Preview" then return end
 local Players = game:GetService("Players")
 -- Load after profile initialization. The player chooses a house before gameplay starts.
 Players.CharacterAutoLoads = false

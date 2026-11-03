@@ -1,63 +1,43 @@
-# Textured Verity — first ten looks
+# Verity: combined game and standalone art preview
 
-Ten bright plastic spheres based on the approved hero. No stripes, extra appendages, early-level neon or new UI. All ten reuse one UV mesh and eight transparent expression images. Each companion is one anchored, noncolliding solid-color MeshPart with a Front SurfaceGui/ImageLabel for its expression. The image is cropped from the existing shared RGBA artwork; it is independent of mesh UVs and PBR texture packs. The face is a flat tangent image, not UV-wrapped; scene occlusion remains enabled (AlwaysOnTop=false). The old opaque yellow hero textures remain historical sources, not the current runtime textures.
+## Current startup contract
 
-## Core integration
+`default.project.json` is the complete Core game, based on Ivan's integration commit 841fc96 and the team's facade/art changes. ServerBootstrap owns the world, player profiles, levels, rewards and cosmetics. VerityFactory creates one companion per owner; VerityVisualController owns its client presentation. It uses the team's first ten colors and eight shared expression images. Above level 10, Core's existing presentation remains; this update does not author another 90 models.
+
+`companion-preview.project.json` is a separate Studio-only art review place. It uses VerityCompanionService, the standalone renderer and the minus/reset/plus level panel for 1..10. It does not run Core, spend money or save progression. The normal game uses real upgrades. Do not enable both runtimes on the same owner. ReplicatedStorage.VerityRuntimeMode is Core or Preview; startup guards prevent leftover scripts from the other Rojo project from starting. Stop Play before switching/syncing projects and restart the Rojo server if its project mapping changed.
+
+## Confirmed face failure and fix
+
+Source PNGs are 2048x1024. Read-only Studio AssetService inspection on 2026-11-03 confirmed that ALL EIGHT uploaded images are accessible to the logged-in account and are actually 1024x512. Joy's opaque pixels occupy approximately x=430..592, y=188..336. The old ImageRectOffset=(768,288), ImageRectSize=(512,512) therefore sampled a transparent area. The old crop was reproduced offline at the actual uploaded resolution. Earlier fixes based only on source resolution missed this.
+
+Current faces use a clipping Frame and a full ImageLabel positioned/scaled in NORMALIZED coordinates, never pixel ImageRect offsets. Shared.VerityFaceLayout defines the source rectangle X=.375, Y=.28125, Width=.25, Height=.5. FaceWindow covers (.19,.14)–(.81,.78) of the 512-square SurfaceGui; the full image has Position=(-1.5,-.5625), Size=(4,2) relative to that window. This preserves the same artwork if Roblox resizes it again. The face is a flat image at the sphere's front tangent, not UV-wrapped.
+
+World.VerityFaceUI configures both game and preview faces, explicitly sets Adornee/Front/FixedSize/CanvasSize, clears legacy pixel crops, and repairs older template layouts at runtime. Loading/unavailable images show a simple native GUI smile instead of a faceless sphere. Image.IsLoaded controls the temporary smile, not whether the entire GUI is enabled. Hidden companions disable their GUI; emotion changes re-enable the loading fallback until the replacement is ready. Preload failures are reported with asset/status, not silently treated as success. No runtime EditableImage/EditableMesh APIs, PBR texture packs or alpha SpecialMesh shells are required.
+
+Core's following offset still follows the owner. Its facing rotation now follows the viewing camera horizontally so a face on local -Z is visible from the normal third-person camera, with the existing independent smoothing. Cosmetics stay attached to the same model and growth/purchase animations retain their owner. The game keeps its 1.7-stud base body and the art preview its 2.8-stud base body; both use the unchanged shared LevelConfig formula, 1 + 14*((level-1)/99)^0.85. Do not scale already-scaled static model exports a second time.
+
+## Emotions and integration
+
+Eight expressions: Joy, Love, Playful, Wink, Laugh, Surprise, Confident, Stars. Canonical asset IDs: src/shared/VerityCompanionConfig.luau and assets/verity-ten-textured/roblox-assets.json. Confirmed Core earning and upgrades trigger Love/Stars through WorldIntegration; actions remain server-owned. There is no manual emotion picker.
+
+Standalone preview API (not the full game's progression API):
 
 ```luau
 local Companion = require(game.ReplicatedStorage.World.VerityCompanionService)
-Companion.Attach(player, savedLevel) -- confirmed unlock/restoration; currently 1..10
-Companion.SetLevel(player, confirmedLevel) -- after a real upgrade, not from a client claim
-Companion.SetEmotion(player, "Stars", 2) -- successful upgrade reaction
-Companion.SetEmotion(player, "Love", 3) -- confirmed swipe/earning
-Companion.SetEmotion(player, "Playful", 2) -- confirmed combat action
+Companion.Attach(player, savedLevel) -- only 1..10, after unlock/restoration
+Companion.SetLevel(player, confirmedLevel)
+Companion.SetEmotion(player, "Love", 3)
 Companion.Detach(player)
 ```
 
-Attach is idempotent; omitting its level defaults a new companion to 1 and preserves an existing descriptor's level. SetLevel returns false if no companion is attached. Only integer levels 1..10 are authored and accepted. This milestone does not implement levels 11..100, economy, saves, unlocks or purchases. Core must supply its saved/confirmed level; no fake upgrade controls were added.
+Attach is idempotent. SetLevel fails when unattached and validates integer 1..10. SetEmotion duration 0..10 seconds resets to Joy, newer reactions supersede earlier timers. Its StudioSetLevel remote exists only behind the Studio/config guard, rate-limits and changes only the sender's cosmetic descriptor. Normal Core does not call this preview service or expose its debug remote.
 
-SetEmotion accepts Joy, Love, Playful, Wink, Laugh, Surprise, Confident, Stars. Optional duration 0..10 seconds returns to Joy; a later reaction supersedes an earlier reset timer. Zero/nil persists. Calls are server-only. No manual emotion menu or client emotion remote exists. Event mappings are ready for Core; this does not claim earning/combat callbacks already exist.
+Static ten-model pack: assets/verity-ten-textured/Verity_FirstTen_Textured.rbxmx. Each contains Body, Body.FaceGui.FaceWindow.Expression and Integration metadata. Change Body.Color for pigment and Expression.Image for an expression. The same normalized layout is generated into the eight templates and all ten exports. `tools/build_verity_first_ten_textured.py` reproduces them.
 
-Descriptors have OwnerUserId, Emotion and Level. The client reacts to confirmed attributes. Changing level smoothly changes color and size with a small expansion pulse. A jump queues each intermediate look; restoration, hidden companions and level decreases apply immediately. Growth comes from Shared.LevelConfig.getVerityScale, unchanged: 1 + 14 * ((level - 1) / 99)^0.85. Level 1 diameter is 2.8 studs; level 10 is approximately 7.91 studs. Higher levels move farther from the owner and use a larger wall/floor query radius.
+## Verification and limits
 
-Existing display-frame flight interpolation, independently smoothed heading/facing, bobbing, teleport catch-up, distance culling, first-person hiding and respawn recovery remain. ReducedMotion disables idle bob and expansion pulse and uses a linear color/size transition. Every visible owner shares one client render connection; there is no per-frame network transform traffic. Removing a descriptor destroys the MeshPart and disconnects its signals.
-
-## Assets and Studio files
-
-`assets/verity-ten-textured/Verity_FirstTen_Textured.rbxmx` contains all ten static models. The models subfolder contains each separately. They already have their level's size: do not apply LevelConfig a second time. The Integration configuration records Level, AppliedScale, AlreadyScaled and all eight emotion IDs. Verity_FaceTemplates.rbxmx is synced by the Rojo project to ReplicatedStorage.VerityCompanionAssets. To change a static face, set Body.FaceGui.Expression.Image to the corresponding image ID. Runtime clones FaceGui from the selected template. ImageRectOffset=(768,288), ImageRectSize=(512,512); the same crop fits all eight expressions. No SurfaceAppearance, SpecialMesh or second mesh shell is used. Hiding the body also disables its FaceGui. Runtime animation is in src/world-client/VerityCompanion.client.luau; the static models contain no scripts.
-
-Canonical current cloud IDs: src/shared/VerityCompanionConfig.luau and assets/verity-ten-textured/roblox-assets.json. Transparent PNGs and the reproducible import GLB are included. Their eight actual texture IDs were read from imported Studio MeshParts on 2026-11-03. The Joy mesh ID from the transparent-face import is used. No runtime EditableImage/EditableMesh or local-file URI dependencies.
-
-Assets belong to the logged-in Studio account. A different experience creator/group may need the normal asset permission grant. Published-game access and device performance were not verified.
-
-## Build and verification boundary
-
-The complete Rojo build includes the new shared palette, service API and renderer. StudioPreview still creates a level-1 companion only in Studio; production creation remains Core-owned. The temporary Studio panel can change only the cosmetic descriptor, never Core progression, currency or saves. Historical prototype renderers/factories must not be attached to these models.
-
-This update is checked by Luau compilation and offline Rojo packaging only. Textures were uploaded/read back in Studio Edit mode. No Play, movement test, emotion playback test, multiplayer session or mobile profiling was run, per the user's request. Earlier hero checks describe the earlier build and are not evidence for this update.
-
-## Rendering fix after user report
-
-The first release incorrectly used an RGBA texture on a SpecialMesh shell, producing a black sphere. It now uses one MeshPart with a pre-authored SurfaceAppearance in Overlay mode; expressions swap cloned appearances, and body pigment stays independent. PreloadAsync receives asset instances instead of a bare mesh ID (Studio logged an image-type mismatch for that untyped request). All ten static exports and the game renderer use the corrected representation.
-
-Read-only inspection of the user's current Edit scene found only the default Baseplate and no duplicate generated world. Its position (0,-10,0) and size (512,20,512) put its studded top at Y=0, exactly equal to GeneratedWorld.Environment.Ground. MapBootstrap now parks only a root Baseplate whose flat top overlaps Ground at the same height, in ServerStorage during execution. It does not delete the Edit-time floor or alter houses. This addresses the confirmed floor overlap; the report of flickering walls has not been reproduced or verified as resolved. No Play was started for diagnosis or validation. Stop and restart after syncing the updated Rojo project; it includes a new asset mapping.
-
-## Current rendering and preview revision
-
-The user reported that the prior SurfaceAppearance version had no visible face. It is superseded by a direct ImageLabel on SurfaceGui, using the same uploaded image IDs without PBR texture-pack generation or imported UV mapping. This implementation has been compiled and structurally checked; visual behavior has not been verified in Play. Previous sections describing the first SurfaceAppearance fix are historical.
-
-VerityLevelPreview.client.luau creates a small bottom-center Studio-only panel with minus, reset-to-1 and plus. It displays the server-confirmed cosmetic level, 1..10. StartStudioPreview creates StudioSetLevel only after its IsStudio/config guard. The server validates an integer range, acts only on the sender's descriptor, throttles requests to one per 0.2 seconds, and triggers Stars briefly on an increase. No production remote, no economy, no save writes and no manual emotion selection. The panel is absent when StudioPreview=false or outside Studio.
-
-Facade correction: vertical colored side piers are split around the horizontal floor band; side strips stop at the passage wall; the lobby ceiling/roof cap stop at that wall instead of entering it. Passage frames are wider/deeper and entrance posts wider, separating their exposed faces from the wall planes. Door layout, wall colors and free walk-in circulation remain. Source generator, InteriorRecipe and standalone interior XML are updated. Offline geometry checks confirm no positive-volume intersection between corrected side piers/bands, passage wall and lobby ceiling/cap. This is not a Studio rendering or movement test.
-
-
-## Combined game
-
-Use `companion-preview.project.json` for the standalone MeshPart renderer and its
-Studio level controls. `default.project.json` builds Core with a single owner model,
-the shared face artwork, and the first ten authored colors. Core retains its sphere
-dimensions, level 1–100 animation, equipped accessories, and roof clearance.
-The face uses the template's SurfaceGui and falls back to the geometric eyes and
-smile until the expression image loads. Confirmed swipes and upgrades trigger
-Love and Stars respectively. The standalone renderer and level controls stay
-in the preview project.
+- Fast-forwarded to 841fc96; preserves one Core startup, shared 15x formula, compact UI, purchase presentation and cosmetics. Facade corrections remain untouched; user confirmed flicker resolved.
+- Full source/test compilation, 678 standalone assertions (including face-loading/hiding and resized crop regression), balance simulation and Rojo source roundtrip (81 exact sources) passed.
+- Both complete and preview projects build. Each contains eight expression images and exactly its own startup/renderer mapping. No fixed pixel crop remains in either exported library. All eight source images were checked at 2048/1024/512/256 widths; the previous invisible crop reproduced at 1024.
+- Read-only Studio asset inspection confirmed access/dimensions; this is NOT Play or visual movement verification. No Play, multiplayer/device profiling or real purchase test was run for this change. Prior Core test reports describe their recorded versions, not this patch.
+- A different experience creator/group may require normal image/mesh grants. The loading face remains visible if an expression cannot load; that does not replace granting its asset permissions.

@@ -1,3 +1,5 @@
+-- Prevent stale Rojo preview/game scripts from starting a second runtime.
+if game:GetService("ReplicatedStorage"):GetAttribute("VerityRuntimeMode")=="Preview" then return end
 -- Separate World presentation bootstrap; does not modify the UI team's files.
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")

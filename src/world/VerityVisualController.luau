@@ -8,6 +8,7 @@ assert(Shared,"Shared modules missing")
 local Levels=require(Shared.LevelConfig)
 local Profile=require(Shared.VerityAnimationProfile)
 local Art=require(Shared.VerityCompanionConfig)
+local FaceUI=require(script.Parent.VerityFaceUI)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
@@ -49,7 +50,14 @@ function Controller.new(settings,options)
 			for _, instance in assets:GetDescendants() do
 				if instance:IsA("ImageLabel") then table.insert(images,instance) end
 			end
-			task.spawn(function() pcall(ContentProvider.PreloadAsync,ContentProvider,images) end)
+			task.spawn(function()
+                local ok,err=pcall(function()
+                    ContentProvider:PreloadAsync(images,function(id,status)
+                        if status~=Enum.AssetFetchStatus.Success then warn("[Verity face] Image unavailable: "..id.." / "..status.Name.."; using loading face") end
+                    end)
+                end)
+                if not ok then warn("[Verity face] Preload failed: "..tostring(err)) end
+            end)
 		end
 		self.cleanup:Add(RunService.RenderStepped:Connect(function(dt)
 			self:Tick(os.clock(),math.min(dt,.1))
@@ -157,7 +165,7 @@ local function visibility(record,alpha)
  local model=record.model
  local body=model:FindFirstChild("Body")
  local face=body and body:FindFirstChild("FaceGui")
- local image=face and face:FindFirstChild("Expression")
+ local image=face and FaceUI.Image(face)
  local textured=false
  if image then
   local emotion=if workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0)
@@ -165,14 +173,13 @@ local function visibility(record,alpha)
   local asset=Art.Textures[emotion] or Art.Textures.Joy
   if image.Image~=asset then image.Image=asset end
   textured=image.IsLoaded
-  face.Enabled=textured and alpha<.7
-  image.ImageTransparency=alpha
+  FaceUI.Refresh(face,alpha)
  end
  if record.textured~=textured then record.textured=textured;record.visibility=nil end
  if record.visibility==alpha then return end
  record.visibility=alpha
  for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then
-  p.LocalTransparencyModifier=if textured and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
+  p.LocalTransparencyModifier=if face and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
  end end
  local primary=record.model.PrimaryPart
  local label=primary and primary:FindFirstChild("LevelLabel");if label then label.Enabled=alpha<.7 end
@@ -248,15 +255,19 @@ function Controller:Follow(record,now,dt)
   end
   target=start+delta*record.wallFraction-lift
  end
- local cf=CFrame.new(target)*heading
+ -- Offsets follow owner heading; the expression faces the viewing camera.
+ local camera=workspace.CurrentCamera
+ local gaze=camera and Vector3.new(camera.CFrame.Position.X-target.X,0,camera.CFrame.Position.Z-target.Z)
+ local facing=if gaze and gaze.Magnitude>.01 then CFrame.lookAt(Vector3.zero,gaze).Rotation else heading
+ local cf=CFrame.new(target)*facing
  local distance=(record.origin.Position-target).Magnitude
  if not record.followStarted or teleport or distance>Follow.TeleportDistance or (record.mode~=mode and mode=="RoofHover") then
   record.origin=cf;record.followStarted=true
  else
   local step=dt or 1/30
   local position=record.origin.Position:Lerp(target,Follow.Blend(step))
-  local facing=record.origin.Rotation:Lerp(heading,1-math.exp(-Art.FacingSpeed*step))
-  record.origin=CFrame.new(position)*facing
+  local rotation=record.origin.Rotation:Lerp(facing,1-math.exp(-Art.FacingSpeed*step))
+  record.origin=CFrame.new(position)*rotation
  end
  record.lastRoot=root.Position;record.mode=mode
  record.model:SetAttribute("CompanionMode",mode)

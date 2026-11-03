@@ -1,0 +1,76 @@
+{
+  "date": "2026-11-03",
+  "method": "Studio Edit-mode AssetService.CreateEditableImageAsync inspection; images destroyed after reading. No Play.",
+  "expressions": {
+    "Joy": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Love": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Playful": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Wink": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Laugh": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Surprise": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Confident": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    },
+    "Stars": {
+      "accessibleToLoggedInAccount": true,
+      "size": [
+        1024,
+        512
+      ]
+    }
+  },
+  "joyOpaqueBoundsApprox": [
+    430,
+    188,
+    592,
+    336
+  ],
+  "oldCrop": [
+    768,
+    288,
+    512,
+    512
+  ],
+  "oldCropAtUploadedResolution": "transparent; reproduced offline",
+  "limits": "Does not establish image access for a different experience creator or Play rendering."
+}

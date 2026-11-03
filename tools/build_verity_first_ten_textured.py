@@ -49,13 +49,17 @@ if asset_file.exists():
   val(props,'float','ZOffset',.025)
   canvas=ET.SubElement(props,'Vector2',name='CanvasSize')
   for axis in 'XY':ET.SubElement(canvas,axis).text='512'
-  _,p=item(gui,'ImageLabel','Expression',ref+'Image')
+  window,wp=item(gui,'Frame','FaceWindow',ref+'Window')
+  val(wp,'float','BackgroundTransparency',1);val(wp,'bool','ClipsDescendants','true')
+  for prop,xy in [('Position',[.19,.14]),('Size',[.62,.64])]:
+   dim=ET.SubElement(wp,'UDim2',name=prop)
+   for axis,value in zip(['XS','XO','YS','YO'],[xy[0],0,xy[1],0]):ET.SubElement(dim,axis).text=str(value)
+  _,p=item(window,'ImageLabel','Expression',ref+'Image')
   val(p,'float','BackgroundTransparency',1);val(p,'bool','Active','false')
   content(p,'Image',assets['textures'][emotion])
-  for prop,xy in [('ImageRectOffset',[768,288]),('ImageRectSize',[512,512])]:
-   vector=ET.SubElement(p,'Vector2',name=prop)
-   for axis,value in zip('XY',xy):ET.SubElement(vector,axis).text=str(value)
-  for prop,xy in [('Position',[.19,.14]),('Size',[.62,.64])]:
+  layout_source=(ROOT/'src/shared/VerityFaceLayout.luau').read_text()
+  layout={k:float(re.search(r'\b'+k+r'\s*=\s*([.0-9]+)',layout_source)[1]) for k in ['X','Y','Width','Height']}
+  for prop,xy in [('Position',[-layout['X']/layout['Width'],-layout['Y']/layout['Height']]),('Size',[1/layout['Width'],1/layout['Height']])]:
    dim=ET.SubElement(p,'UDim2',name=prop)
    for axis,value in zip(['XS','XO','YS','YO'],[xy[0],0,xy[1],0]):ET.SubElement(dim,axis).text=str(value)
  def body(parent,name,ref,color,diameter,xyz,emotion='Joy'):

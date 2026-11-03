@@ -1,3 +1,5 @@
+-- Prevent stale Rojo preview/game scripts from starting a second runtime.
+if game:GetService("ReplicatedStorage"):GetAttribute("VerityRuntimeMode")=="Core" then return end
 -- Cosmetic local rendering for every server-owned descriptor; no position remotes.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +10,7 @@ local configModule = shared and shared:WaitForChild("VerityCompanionConfig",15)
 if not configModule then warn("[Verity companion] Config unavailable"); return end
 local Config = require(configModule)
 local Levels = require(shared:WaitForChild("VerityCompanionLevels",15))
+local FaceUI = require(ReplicatedStorage:WaitForChild("World"):WaitForChild("VerityFaceUI"))
 local templates = ReplicatedStorage:WaitForChild("VerityCompanionAssets",15)
 if not templates or not templates:FindFirstChild("Joy") then
     warn("[Verity companion] Sync VerityCompanionAssets with the updated Rojo project")
@@ -28,6 +31,7 @@ local function emotion(entry)
     if entry.appearance then entry.appearance:Destroy() end
     -- The authored image face uses no PBR texture pack or imported UV coordinates.
     entry.appearance = appearance:Clone()
+    FaceUI.Configure(entry.appearance,entry.body)
     entry.appearance.Enabled = entry.visible
     entry.appearance.Parent = entry.body
 end
@@ -168,6 +172,7 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             entry.body.Transparency=if visible then 0 else 1
             entry.appearance.Enabled=visible
         end
+        if visible then FaceUI.Refresh(entry.appearance,0) end
     end
 end)
 task.spawn(function()
