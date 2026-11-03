@@ -10,7 +10,7 @@ def font(size, bold=False):
         except OSError: pass
     return ImageFont.load_default()
 
-def preview(filename, nodes, output_dir, zoom=1, focus=None):
+def preview(filename, nodes, output_dir, zoom=1, focus=None, title='VERITY / STANDARD INTERIOR'):
     width,height=1800,1300; scale=2.15*zoom
     def project(x,y,z):return (width/2+(x-z*0.52)*scale,height/2+80+(x*.27+z*.47-y)*scale)
     canvas=Image.new('RGB',(width,height),'#E9F0F5');draw=ImageDraw.Draw(canvas)
@@ -19,7 +19,6 @@ def preview(filename, nodes, output_dir, zoom=1, focus=None):
         if 'pos' not in n or n['alpha']>=1:continue
         x,y,z=n['pos'];sx,sy,sz=n['size']
         if focus:
-            if sz<130 and (abs(z-focus[2])>65 or abs(x-focus[0])>100):continue
             x-=focus[0];z-=focus[2]
         color=tuple(int(n['color'][i:i+2],16) for i in (0,2,4))
         if n['shape']=='Cylinder':
@@ -48,11 +47,14 @@ def preview(filename, nodes, output_dir, zoom=1, focus=None):
         x0,x1=x-sx/2,x+sx/2;y0,y1=y-sy/2,y+sy/2;z0,z1=z-sz/2,z+sz/2
         for ps,factor in [([(x0,y1,z0),(x1,y1,z0),(x1,y1,z1),(x0,y1,z1)],1.0), ([(x0,y0,z1),(x1,y0,z1),(x1,y1,z1),(x0,y1,z1)],.81), ([(x1,y0,z0),(x1,y0,z1),(x1,y1,z1),(x1,y1,z0)],.9)]:
             depth=sum(p[0]+p[2]+p[1]*.02 for p in ps)/4
-            faces.append((depth,ps,tuple(int(c*factor) for c in color),n.get('topSurface')=='Studs' and factor==1.0))
+            faces.append((depth,ps,tuple(int(c*factor) for c in color),n.get('topSurface')=='Studs' and factor==1.0,n.get('alpha',0)))
     pixels=np.array(canvas); depthbuffer=np.full((height,width),-np.inf,dtype=np.float32)
-    for face in faces:
+    opaque=[f for f in faces if len(f)<5 or f[4]==0]
+    transparent=sorted([f for f in faces if len(f)>4 and f[4]>0],key=lambda f:sum(.52*p[0]+.6104*p[1]+p[2] for p in f[1])/len(f[1]))
+    for face in opaque+transparent:
         _,ps,col=face[:3]
         patterned=len(face)>3 and face[3]
+        transparency=face[4] if len(face)>4 else 0
         for k in range(1,len(ps)-1):
             points=[ps[0],ps[k],ps[k+1]]; uv=np.array([project(*p) for p in points]); depths=np.array([.52*p[0]+.6104*p[1]+p[2] for p in points])
             xmin=max(0,int(np.floor(uv[:,0].min())));xmax=min(width-1,int(np.ceil(uv[:,0].max())))
@@ -65,7 +67,7 @@ def preview(filename, nodes, output_dir, zoom=1, focus=None):
             w1=((c[1]-a[1])*(xx-c[0])+(a[0]-c[0])*(yy-c[1]))/den;w2=1-w0-w1
             dep=w0*depths[0]+w1*depths[1]+w2*depths[2]
             view=depthbuffer[ymin:ymax+1,xmin:xmax+1];mask=(w0>=-1e-6)&(w1>=-1e-6)&(w2>=-1e-6)&(dep>view)
-            view[mask]=dep[mask]
+            if transparency==0:view[mask]=dep[mask]
             target=pixels[ymin:ymax+1,xmin:xmax+1]
             if patterned:
                 # Approximation of classic Roblox square studs for this software preview.
@@ -80,9 +82,11 @@ def preview(filename, nodes, output_dir, zoom=1, focus=None):
                 colors=np.clip(np.asarray(col)[None,None,:]*shade[:,:,None],0,255).astype(np.uint8)
                 target[mask]=colors[mask]
             else:
-                target[mask]=col
+                if transparency:
+                    target[mask]=(target[mask]*transparency+np.array(col)*(1-transparency)).astype(np.uint8)
+                else:target[mask]=col
     canvas=Image.fromarray(pixels);draw=ImageDraw.Draw(canvas)
     draw.rounded_rectangle((40,35,650,115),radius=14,fill='white')
-    draw.text((65,54),'VERITY / STANDARD INTERIOR',fill='#34445D',font=font(26, True))
+    draw.text((65,54),title,fill='#34445D',font=font(26, True))
     draw.text((65,88),'GEOMETRY PREVIEW - NOT A STUDIO SCREENSHOT',fill='#64748B',font=font(13))
     canvas.save(output_dir/filename)

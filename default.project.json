@@ -12,14 +12,6 @@
         "$path": "src/server/MapBootstrap.server.luau"
       }
     },
-    "ServerStorage": {
-      "InteriorTemplates": {
-        "$className": "Folder",
-        "StandardInterior": {
-          "$path": "assets/interiors/StandardInterior.rbxmx"
-        }
-      }
-    },
     "Workspace": {
       "$properties": {
         "StreamingEnabled": true

@@ -225,6 +225,53 @@ p('Markers/LivingRoomEntry',(0,3,-19),(1,1,1),'white',False,1)
 p('Markers/StairBottom',(19,3,-23.5),(1,1,1),'white',False,1)
 p('Markers/UpstairsPoint',(10,19,-52),(1,1,1),'white',False,1)
 
+# v3: a walk-in house, integrated on each real plot. Replace solid facade panels
+# with actual doorway/window openings; no character teleport or separate room.
+remove={'Geometry/WallFront','Geometry/LivingLeft','Geometry/LivingRight','Geometry/UpperFront','Geometry/UpperLeftLining','Geometry/UpperRightLining'}
+nodes=[n for n in nodes if n['path'] not in remove and not n['path'].startswith(('Furniture/Entry/Door','Furniture/Entry/Handle'))]
+for n in nodes:
+    if n['path'] in ('Geometry/Floor','Geometry/LivingFloor','Geometry/UpperFloorMain','Geometry/UpperFloorFront','Geometry/UpperLanding'):
+        n['color']='86A9BF';n['topSurface']='Studs'
+for side in (-1,1):
+    p(f'Geometry/FrontSill{side}',(side*10.5,1,14.5),(13,2,1),'wall')
+    for x,width in ((side*16,2),(side*4.5,1)):
+        p(f'Geometry/FrontPier{side}_{x}',(x,6,14.5),(width,8,1),'mint')
+    p(f'Geometry/FrontGlass{side}',(side*10,6,14.5),(10,8,.15),'blue',alpha=.72)
+    p(f'Geometry/OpenDoorPost{side}',(side*4.125,4.5,14.5),(.25,9,1.4),'navy',collide=False)
+p('Geometry/FrontHeader',(0,11,14.5),(34,2,1),'mint')
+p('Geometry/OpenDoorLintel',(0,9.5,14.5),(8,1,1),'mint')
+# Side glazing opens views of the living room and the upper floor to neighbours.
+for side in (-1,1):
+    x=side*24.5
+    for name,y,h in (('Sill',1,2),('FloorBand',15.5,3),('RoofBand',29,2)):
+        p(f'Geometry/Side{name}{side}',(x,y,-34),(1,h,40),'wall')
+    for z in (-53,-40,-27,-15):p(f'Geometry/SidePier{side}_{z}',(x,15,z),(1,26,2),'mint')
+    for j,(z,length) in enumerate(((-46.5,11),(-33.5,11),(-21,10))):
+        p(f'Geometry/LivingGlass{side}_{j}',(x,8,z),(.15,12,length),'blue',alpha=.78)
+        p(f'Geometry/UpperGlass{side}_{j}',(x,22.5,z),(.15,11,length),'blue',alpha=.78)
+p('Geometry/UpperFrontSill',(0,17,-14.5),(50,2,1),'upperwall')
+p('Geometry/UpperFrontHeader',(0,29,-14.5),(50,2,1),'mint')
+for x in (-24,-10,3,16,24):p('Geometry/UpperFacadePier'+str(x),(x,23,-14.5),(1,10,1),'mint')
+for j,(x,width) in enumerate(((-17,13),(-3.5,12),(9.5,12),(20,7))):
+    p(f'Geometry/UpperFrontGlass{j}',(x,23,-14.5),(width,10,.15),'blue',alpha=.78)
+# Visible plastic roof caps with the same fine stud surface as the map.
+for name,pos,size in [('Lobby',(0,13.1,0),(34,.2,30)),('Upper',(0,31.1,-34),(50,.2,42))]:
+    p('Geometry/RoofCap'+name,pos,size,'mint',studs=True)
+for n in nodes:
+    if n['path'].startswith(('Geometry/FrontPier','Geometry/FrontHeader','Geometry/OpenDoorLintel','Geometry/SidePier','Geometry/UpperFacadePier','Geometry/UpperFrontHeader','Geometry/RoofCap')):
+        n['accent']=True
+# Extra decoration downstairs; upstairs intentionally stays sparse.
+p('Furniture/Decor/BookcaseBack',(-14.75,2.75,-3.25),(.25,5.5,3.5),'wood')
+for y in (.4,2.6,5.3):p('Furniture/Decor/Bookshelf'+str(y),(-13.75,y,-3.25),(2.25,.25,3.5),'wood')
+for j,z in enumerate((-4.5,-3.7,-2.9,-2.1)):
+    p(f'Furniture/Decor/Book{j}',(-13.7,1.4,z),(1.5,1.5,.55),('blue','pink','yellow','purple')[j],collide=False)
+plant('LivingCorner',-20,-48)
+p('Furniture/Decor/FloorLampBase',(-18,.25,-21),(2.5,.5,2.5),'navy')
+p('Furniture/Decor/FloorLampStem',(-18,3.5,-21),(.35,6,.35),'wood',collide=False)
+p('Furniture/Decor/FloorLampShade',(-18,6.5,-21),(3,1.5,3),'yellow',collide=False)
+p('Furniture/Media/Speaker',(-21,4.4,4),(1.1,1.5,1.1),'navy',collide=False)
+p('Furniture/Media/SpeakerInset',(-20.4,4.4,4),(.1,.8,.8),'mint',collide=False)
+
 def lua(v):
     if isinstance(v,str):return json.dumps(v)
     if isinstance(v,bool):return str(v).lower()
@@ -251,7 +298,7 @@ def model_xml():
         props=E.SubElement(q,'Properties');field(props,'string','Name',name);lookup[n['path']]=q
         if 'pos' not in n:continue
         for key,val in [('Anchored',True),('CanCollide',n['collide']),('CanTouch',False),('CanQuery',n['alpha']<1),('CastShadow',n['alpha']<1)]:field(props,'bool',key,str(val).lower())
-        field(props,'float','Transparency',n['alpha']);field(props,'token','Material',272);field(props,'token','TopSurface',3 if n['topSurface']=='Studs' else 0);field(props,'token','BottomSurface',0);field(props,'token','shape',1)
+        field(props,'float','Transparency',n['alpha']);field(props,'token','Material',256 if n['topSurface']=='Studs' else 272);field(props,'token','TopSurface',3 if n['topSurface']=='Studs' else 0);field(props,'token','BottomSurface',0);field(props,'token','shape',1)
         field(props,'Color3uint8','Color3uint8',0xFF000000|int(n['color'],16))
         size=E.SubElement(props,'Vector3',name='size')
         for key,val in zip(('X','Y','Z'),n['size']):E.SubElement(size,key).text=str(val)
@@ -271,6 +318,7 @@ field(sp,'string','Name','PreviewSpawn');field(sp,'bool','Anchored','true');fiel
 sz=E.SubElement(sp,'Vector3',name='size')
 for key,value in zip(('X','Y','Z'),(4,1,3)):E.SubElement(sz,key).text=str(value)
 lighting=E.SubElement(doc,'Item',{'class':'Lighting','referent':'Lighting'});lp=E.SubElement(lighting,'Properties');field(lp,'string','Name','Lighting');field(lp,'float','ClockTime',13.5);field(lp,'float','Brightness',2)
+field(lp,'token','Technology',1)
 ambient=E.SubElement(lp,'Color3',name='Ambient')
 for key,value in zip(('R','G','B'),(.6,.63,.7)):E.SubElement(ambient,key).text=str(value)
 E.ElementTree(doc).write(OUT/'InteriorPreview.rbxlx',encoding='utf-8',xml_declaration=True)
@@ -278,7 +326,7 @@ E.ElementTree(doc).write(OUT/'InteriorPreview.rbxlx',encoding='utf-8',xml_declar
 # Cutaways are review views only; the exported model remains fully enclosed.
 hidden={'Geometry/WallFront','Geometry/WallRight','Geometry/Ceiling','Geometry/SkirtingFront','Geometry/SkirtingRight','Geometry/LivingRight','Geometry/LivingBack','Geometry/LivingLeft','Geometry/UpperCeiling','Geometry/UpperFront','Geometry/UpperBackLining','Geometry/UpperLeftLining','Geometry/UpperRightLining','Geometry/UpperFloorMain','Geometry/UpperFloorFront','Geometry/UpperLanding'}
 # Keep the first-floor halves of the distant living-room walls in the cutaway.
-cutaway=[dict(n) for n in nodes if n['path'] not in hidden and not n['path'].startswith(('Geometry/PassageWall','Geometry/PassageLintel','Furniture/Entry/Door','Furniture/Entry/Handle','Furniture/Lamps/','Geometry/Upper','Furniture/Upper/','Furniture/Plants/UpperCorner','Furniture/Gallery/VerityUpstairs'))]
+cutaway=[dict(n) for n in nodes if n['path'] not in hidden and not n['path'].startswith(('Geometry/RoofCap','Geometry/PassageWall','Geometry/PassageLintel','Furniture/Entry/Door','Furniture/Entry/Handle','Furniture/Lamps/','Geometry/Upper','Furniture/Upper/','Furniture/Plants/UpperCorner','Furniture/Gallery/VerityUpstairs'))]
 for name,pos,size in [('CutawayBack',(0,7.5,-54.5),(50,15,1)),('CutawayLeft',(-24.5,7.5,-34),(1,15,40))]:
     cutaway.append(dict(path=name,cls='Part',pos=pos,size=size,color=COL['wall'],alpha=0,shape='Block'))
 preview('interior-cutaway.png',cutaway,OUT,zoom=6.5,focus=(0,0,-20))
@@ -312,5 +360,5 @@ for n in nodes:
         assert z-sz/2>=-54.001 and z+sz/2<=14.001,n['path']
         assert y-sy/2>=0 and y+sy/2<=30,n['path']
 for path in (OUT/'StandardInterior.rbxmx',OUT/'InteriorPreview.rbxlx'):E.parse(path)
-report=dict(version=2,parts=sum('pos'in n for n in nodes),lobbySize=[32,12,28],livingRoomSize=[48,15,40],upperFloorLevel=16,upperRoomSize=[48,14,40],shellBounds=[50,32,70],pivot=[0,0,0],streaming='Atomic',pointLights=5,stairSteps=32,stairRise=.5,stairTread=.75,stairWidth=8,portraitCount=3,clearanceRadius=1.5,centralAisle='static clearance passed',stairHeadroom='static clearance passed',upperLanding='static clearance passed',entryExit='static clearance passed',furnitureBounds='passed',externalAssets=0,studioPlaytest='not run',multiplayerTransitions='not implemented; Core task')
+report=dict(version=3,parts=sum('pos'in n for n in nodes),lobbySize=[32,12,28],livingRoomSize=[48,15,40],upperFloorLevel=16,upperRoomSize=[48,14,40],shellBounds=[50,32.2,70],pivot=[0,0,0],streaming='Atomic',pointLights=5,stairSteps=32,stairRise=.5,stairTread=.75,stairWidth=8,portraitCount=3,clearanceRadius=1.5,centralAisle='static clearance passed',stairHeadroom='static clearance passed',upperLanding='static clearance passed',entryExit='static clearance passed',furnitureBounds='passed',externalAssets=0,studioPlaytest='not run',entryMode='physical doorway; no teleports')
 (OUT/'validation.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))
