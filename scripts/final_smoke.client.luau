@@ -2,7 +2,7 @@
 if not game:GetService("RunService"):IsStudio() then return end
 local Players=game:GetService("Players")
 local player=Players.LocalPlayer
-local bridge=game.ReplicatedStorage:WaitForChild("FinalSmokeBridge",60)
+local bridge=game.ReplicatedStorage:WaitForChild("CompleteSmokeBridge",60)
 local command=bridge:WaitForChild("Command",10);local report=bridge:WaitForChild("Report",10)
 local Main=require(player:WaitForChild("PlayerScripts"):WaitForChild("VerityClient"):WaitForChild("MainUIController"))
 local function untilValue(fn,timeout)
@@ -85,10 +85,45 @@ command.OnClientEvent:Connect(function(token,kind,payload)
 			local m=ownModel()
 			return {success=true,purchases=count,level=ui.ctx.net.state.VerityLevel,scale=m:GetScale(),
 				completed=ui.visuals.completed,label=ui.refs.Panels.VERITY.Scale.Text}
-		elseif kind=="inspect" then
+		elseif kind=="presentation" then
+   local m=assert(ownModel())
+   local root=player.Character.HumanoidRootPart
+   root.Name="StreamingMissingRoot"
+   task.wait(.2)
+   local hidden=m:GetAttribute("CompanionMode")=="Hidden"
+   root.Name="HumanoidRootPart"
+   untilValue(function()return m:GetAttribute("CompanionMode")~="Hidden"end)
+   local group=ui.visuals.effects.groups[m]
+   local auraOutside=group and (Vector3.new(group.rings[1][1].Position.X,0,group.rings[1][1].Position.Z)-Vector3.new(m:GetPivot().Position.X,0,m:GetPivot().Position.Z)).Magnitude>.85*m:GetScale()
+   local camera=workspace.CurrentCamera
+   local cf,cameraType=camera.CFrame,camera.CameraType
+   camera.CameraType=Enum.CameraType.Scriptable
+   camera.CFrame=CFrame.new(m:GetPivot().Position+Vector3.new(0,.85*m:GetScale(),0))
+   task.wait(.2)
+   local faded=m.Body.LocalTransparencyModifier>.9
+   camera.CFrame=cf;camera.CameraType=cameraType
+   local values=ui.ctx.settings.values
+   values.ReducedMotion=true;values.ReducedEffects=true;ui.ctx.settings.Changed:Fire(values)
+   task.wait(.2)
+   local suppressed=#ui.visuals.effects.active==0
+   for _,group in ui.visuals.effects.groups do for _,part in group.root:GetDescendants()do
+    if part:IsA("BasePart") and part.Transparency<1 then suppressed=false end
+   end end
+   values.ReducedMotion=false;values.ReducedEffects=false;ui.ctx.settings.Changed:Fire(values)
+   return {auraOutside=auraOutside,hiddenOwner=hidden,cameraFade=faded,reducedEffects=suppressed}
+  elseif kind=="preview" then
+   ui:Open("COSMETICS")
+   return {success=ui.cosmetics:Preview(payload.itemId)}
+  elseif kind=="inspect" then
 			local count=0;for _,gui in player.PlayerGui:GetChildren()do if gui.Name=="VerityUI"then count+=1 end end
 			local m=ownModel()
-			return {success=true,level=ui.ctx.net.state.VerityLevel,cash=ui.ctx.net.state.Cash,guiCount=count,
+   local all={}
+   for _,other in game:GetService("CollectionService"):GetTagged("VerityVisual") do
+    all[tostring(other:GetAttribute("OwnerUserId"))]={mode=other:GetAttribute("CompanionMode"),position=other:GetPivot().Position,
+      face=other:GetAttribute("Cosmetic_Face"),cosmeticModel=other:FindFirstChild("Cosmetics") and other.Cosmetics:FindFirstChild("round_glasses")~=nil}
+   end
+   local records=0;for _ in ui.visuals.records do records+=1 end
+   return {visualRecords=records,companions=all,position=m and m:GetPivot().Position,scale=m and m:GetScale(),mode=m and m:GetAttribute("CompanionMode"),success=true,level=ui.ctx.net.state.VerityLevel,cash=ui.ctx.net.state.Cash,guiCount=count,
 				model=m~=nil,presented=m and m:GetAttribute("PresentedLevel"),versionIssue=ui.versions.issue,
 				prototypeCount=#game:GetService("CollectionService"):GetTagged("VerityPrototypeVisual")}
 		elseif kind=="reload" then

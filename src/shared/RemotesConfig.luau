@@ -2,7 +2,7 @@
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
 	"RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
-	"RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSync",
+	"RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
 function RemotesConfig.isOperationId(value: any): boolean
@@ -19,7 +19,14 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 	if name == "RequestPhoneSession" then
 		allowed.open = true
 		if type(payload.open) ~= "boolean" then return false, "INVALID_OPEN" end
-	elseif name == "RequestTaskStart" or name == "RequestTaskComplete" then
+	elseif name == "RequestEquipCosmetic" or name == "RequestCosmeticPurchase" then
+  allowed.itemId = true
+  if type(payload.itemId)~="string" or #payload.itemId<1 or #payload.itemId>64 or not string.match(payload.itemId,"^[%w_%-]+$") then return false,"INVALID_ITEM" end
+  if name == "RequestEquipCosmetic" then
+   allowed.equipped=true
+   if type(payload.equipped)~="boolean" then return false,"INVALID_EQUIPMENT" end
+  end
+ elseif name == "RequestTaskStart" or name == "RequestTaskComplete" then
 		allowed.taskId = true
 		if payload.taskId ~= "PRESS_BUTTON" and payload.taskId ~= "REACH_POINT"
 			and payload.taskId ~= "STAND_ON_PLATFORM" then return false, "INVALID_TASK" end

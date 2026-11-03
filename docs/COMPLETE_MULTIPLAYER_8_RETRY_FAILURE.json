@@ -1,0 +1,29 @@
+{
+  "players": 8,
+  "checks": [
+    "ephemeral smoke profiles",
+    "no obsolete private rooms",
+    "no hidden template import",
+    "no doorway transition remote",
+    "correct World v5",
+    "UI map version agrees for Player8",
+    "one real UI; no fake money/model before unpack Player8",
+    "walk-in guest access has no private owner gate",
+    "UI transport unpacks owned Verity Player8",
+    "real phone handler receives Core reward Player8",
+    "duplicate wire request not paid twice Player8",
+    "UI map version agrees for Player7",
+    "one real UI; no fake money/model before unpack Player7",
+    "walk-in guest access has no private owner gate"
+  ],
+  "dataMode": "Studio Memory",
+  "status": "FAIL",
+  "profileReattach": "production lifecycle; not network reconnect",
+  "maxScale": 15,
+  "seededTestMoney": true,
+  "syntheticCosmeticReceipt": true,
+  "kind": "15x flying companion / UI / Core / cosmetics end-to-end",
+  "assertions": 15,
+  "error": "ServerScriptService.FinalSmoke:16: UI transport unpacks owned Verity Player7",
+  "recordedUtc": "2026-11-03 16:58:12 UTC"
+}

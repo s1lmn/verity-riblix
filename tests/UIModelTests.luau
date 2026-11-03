@@ -17,7 +17,7 @@ local function snapshot()
 end
 
 check("100 scales, 99 strict increases, endpoints and high levels distinct",function()
-	assert(Model.Scale(1)==1 and Model.Scale(100)==5)
+	assert(Model.Scale(1)==1 and Model.Scale(100)==15)
 	for level=1,99 do
 		assert(Model.IsFinite(Model.Scale(level)))
 		assert(Model.Scale(level+1)>Model.Scale(level))

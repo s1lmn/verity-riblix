@@ -7,6 +7,10 @@ assert(Shared,"Shared modules missing")
 local Levels=require(Shared.LevelConfig)
 local Profile=require(Shared.VerityAnimationProfile)
 local Version=require(Shared.ProjectVersion)
+local Follow=require(Shared.CompanionConfig)
+local Cosmetics=require(script.Parent.CosmeticFactory)
+local Catalog=require(Shared.CosmeticCatalog)
+local Players=game:GetService("Players")
 local Factory=require(script.Parent.VerityFactory)
 local VFX=require(script.Parent.VerityVFXService)
 local Client=game:GetService("Players").LocalPlayer
@@ -25,7 +29,7 @@ local function key(owner,plot) return tostring(owner)..":"..tostring(plot) end
 function Controller.new(settings,options)
 	local editPreview=options and options.editPreview==true
 	assert(RunService:IsClient() or (editPreview and RunService:IsStudio() and not RunService:IsRunning()),"Visuals require a client; explicit Studio edit preview is the only exception")
-	local self=setmetatable({cleanup=Cleanup.new(),settings=settings,records={},byOwner={},pending={},dead=false,effects=VFX.new(),
+	local self=setmetatable({cleanup=Cleanup.new(),settings=settings,records={},byOwner={},pending={},houseBounds={},dead=false,effects=VFX.new(),
 		Started=Instance.new("BindableEvent"),Completed=Instance.new("BindableEvent"),elapsed=0,completed=0},Controller)
 	self.cleanup:Add(self.effects);self.cleanup:Add(self.Started);self.cleanup:Add(self.Completed)
 	self.cleanup:Add(CollectionService:GetInstanceAddedSignal(Profile.Tag):Connect(function(model) self:Register(model) end))
@@ -39,8 +43,8 @@ function Controller.new(settings,options)
 		self.cleanup:Add(RunService.RenderStepped:Connect(function(dt)
 			self.elapsed+=dt
 			if self.elapsed<Profile.FrameInterval then return end
-			self.elapsed=0
-			self:Tick(os.clock())
+			local elapsed=self.elapsed;self.elapsed=0
+			self:Tick(os.clock(),elapsed)
 		end))
 	end
 	return self
@@ -67,7 +71,7 @@ function Controller:Register(model,attempt)
 	local identity=key(owner,plot)
 	if self.byOwner[identity] then self:Remove(self.byOwner[identity].model) end
 	local anchor=model:GetAttribute("VerityOrigin")
-	local record={model=model,key=identity,origin=if typeof(anchor)=="CFrame" then anchor else model:GetPivot(),level=level,revision=revision,
+	local record={model=model,owner=owner,plot=plot,key=identity,origin=if typeof(anchor)=="CFrame" then anchor else model:GetPivot(),level=level,revision=revision,
 		ledger=Ledger.new(),tints={},cleanup=Cleanup.new(),idleStart=os.clock(),baseYaw=0,lastYaw=0,lastLift=0,completed=0}
 	for _,p in model:GetDescendants() do if p:IsA("BasePart") and p:GetAttribute("VerityTint") then table.insert(record.tints,p) end end
 	record.ledger:Seed(revision,level)
@@ -77,7 +81,19 @@ function Controller:Register(model,attempt)
 	for _,attribute in {"OwnerUserId","PlotId"} do
 		record.cleanup:Add(model:GetAttributeChangedSignal(attribute):Connect(function() self:Remove(model);self:Register(model) end))
 	end
-	return record
+
+ local function refreshCosmetics()
+  local pivot,savedScale=model:GetPivot(),model:GetScale()
+  model:ScaleTo(1);model:PivotTo(CFrame.identity)
+  local equipped={};for slot in Catalog.Slots do local id=model:GetAttribute("Cosmetic_"..slot);if Catalog.Items[id] then equipped[slot]=id end end
+  Cosmetics.Apply(model,equipped)
+  record.visibility=nil
+  Factory.SetStage(model,record.stageLevel or record.level)
+  model:ScaleTo(savedScale);model:PivotTo(pivot)
+ end
+ for slot in Catalog.Slots do record.cleanup:Add(model:GetAttributeChangedSignal("Cosmetic_"..slot):Connect(refreshCosmetics)) end
+ refreshCosmetics()
+ return record
 end
 
 function Controller:Apply(record,scale,lift,yaw,color,level)
@@ -126,12 +142,96 @@ function Controller:Finish(record,now)
 	self.Completed:Fire(event,record.model)
 end
 
-function Controller:Tick(now)
+local function visibility(record,alpha)
+ if record.visibility==alpha then return end
+ record.visibility=alpha
+ for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then p.LocalTransparencyModifier=alpha end end
+ local primary=record.model.PrimaryPart
+ local label=primary and primary:FindFirstChild("LevelLabel");if label then label.Enabled=alpha<.7 end
+end
+
+function Controller:Follow(record,now,dt)
+ if not record.model:GetAttribute("FollowOwner") then return true end
+ local owner=Players:GetPlayerByUserId(record.owner)
+ local char=owner and owner.Character
+ local root=char and char:FindFirstChild("HumanoidRootPart")
+ local hum=char and char:FindFirstChildOfClass("Humanoid")
+ if not root or not hum or hum.Health<=0 then record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);return false end
+ local scale=Levels.getVerityScale(record.model:GetAttribute("VerityLevel"))
+ local x,y,z=Follow.Offset(scale,record.plot)
+ local target=root.CFrame:PointToWorldSpace(Vector3.new(x,y,z))
+ local mode="Following"
+ if scale>Follow.IndoorMaxScale then
+  if not record.surfaceAt or now-record.surfaceAt>=Follow.RayInterval then
+   record.surfaceAt=now
+   local ray=RaycastParams.new();ray.FilterType=Enum.RaycastFilterType.Include
+   local world=workspace:FindFirstChild("GeneratedWorld");ray.FilterDescendantsInstances=if world then {world} else {}
+   local height=-math.huge
+   local plots=world and world:FindFirstChild("Plots")
+   local radius=scale*Follow.EnvelopeRadius
+   local ownerRoof
+   if plots then for _,plot in plots:GetChildren() do
+    local house=plot:FindFirstChild("House")
+    if house and house.PrimaryPart then
+     local bounds=self.houseBounds[house]
+     if not bounds then local cf,size=house:GetBoundingBox();bounds={cf=cf,size=size};self.houseBounds[house]=bounds end
+     local ownerLocal=bounds.cf:PointToObjectSpace(root.Position)
+     local size=bounds.size
+     local top=bounds.cf.Position.Y+size.Y/2
+     if math.abs(ownerLocal.X)<size.X/2 and math.abs(ownerLocal.Z)<size.Z/2 and math.abs(ownerLocal.Y)<size.Y/2+3 then
+      ownerRoof=math.max(ownerRoof or -math.huge,top)
+     end
+     local targetLocal=bounds.cf:PointToObjectSpace(target)
+     if math.abs(targetLocal.X)<=size.X/2+radius and math.abs(targetLocal.Z)<=size.Z/2+radius then height=math.max(height,top) end
+    end
+   end end
+   record.ownerRoof=ownerRoof
+   for house in self.houseBounds do if not house:IsDescendantOf(workspace) then self.houseBounds[house]=nil end end
+   local r=scale*Follow.EnvelopeRadius
+   for _,delta in {Vector3.zero,Vector3.new(r,0,0),Vector3.new(-r,0,0),Vector3.new(0,0,r),Vector3.new(0,0,-r)} do
+    local hit=workspace:Raycast(Vector3.new(target.X+delta.X,180,target.Z+delta.Z),Vector3.new(0,-300,0),ray)
+    if hit then height=math.max(height,hit.Position.Y) end
+   end
+   record.surfaceY=height
+  end
+  if record.ownerRoof then
+   target=Vector3.new(root.Position.X,record.ownerRoof+Follow.RoofClearance,root.Position.Z);mode="RoofHover"
+  elseif target.Y<(record.surfaceY or -math.huge)+Follow.RoofClearance then
+   target=Vector3.new(target.X,record.surfaceY+Follow.RoofClearance,target.Z);mode="RoofHover"
+  end
+ else
+  local ray=RaycastParams.new();ray.FilterType=Enum.RaycastFilterType.Include
+  local world=workspace:FindFirstChild("GeneratedWorld");ray.FilterDescendantsInstances=if world then {world} else {}
+  local start=root.Position+Vector3.new(0,1,0)
+  local desiredCenter=target+Vector3.new(0,.85*scale,0)
+  local delta=desiredCenter-start
+  if delta.Magnitude>.01 then
+   local hit=workspace:Spherecast(start,.85*scale,delta,ray)
+   if hit then target=start+delta.Unit*math.max(0,hit.Distance-.25)-Vector3.new(0,.85*scale,0) end
+  end
+ end
+ local cf=CFrame.new(target)*root.CFrame.Rotation
+ local distance=(record.origin.Position-target).Magnitude
+ local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
+ if not record.followStarted or teleport or distance>Follow.TeleportDistance or (record.mode~=mode and mode=="RoofHover") then
+  record.origin=cf;record.followStarted=true
+ else record.origin=record.origin:Lerp(cf,Follow.Blend(dt or 1/30)) end
+ record.lastRoot=root.Position;record.mode=mode
+ record.model:SetAttribute("CompanionMode",mode)
+ local camera=workspace.CurrentCamera
+ local center=record.origin.Position+Vector3.new(0,.85*record.model:GetScale(),0)
+ local alpha=if camera then math.clamp((.9*record.model:GetScale()+Follow.CameraMargin-(camera.CFrame.Position-center).Magnitude)/Follow.CameraMargin,0,1) else 0
+ visibility(record,alpha)
+ return true
+end
+
+function Controller:Tick(now,dt)
 	local camera=workspace.CurrentCamera
 	if self.settings.values.ReducedEffects then self.effects:SuppressBursts() end
 	for model,record in self.records do
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
-		local near=camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<Profile.IdleDistance
+		if not self:Follow(record,now,dt) then continue end
+		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<Profile.IdleDistance
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
 			local event=record.ledger:Pop()
@@ -161,7 +261,7 @@ function Controller:Tick(now)
 			local hover=if stage>=2 then 0.05*scale else 0
 			local lift=if reduced or not near then 0 else hover+math.sin(phase*(if stage==5 then 1.4 else 2))*scale*(if stage==0 then 0.012 elseif stage==5 then 0.035 else 0.025)
 			local yaw=record.baseYaw+(if reduced or not near then 0 elseif stage>=4 then phase*(if stage==5 then 0.16 else 0.24) else math.sin(phase*1.5)*(if stage==1 then 0.12 else 0.08))
-			if near or record.lastLift~=0 then self:Apply(record,scale,lift,yaw,Factory.Color(record.level),record.level) end
+			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale,lift,yaw,Factory.Color(record.level),record.level) end
 		end
 		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,near)
 	end
@@ -172,6 +272,7 @@ function Controller:Remove(model)
 	self.pending[model]=nil
 	local record=self.records[model]
 	if not record then return end
+	visibility(record,0)
 	record.cleanup:Destroy()
 	self.effects:Remove(model)
 	self.records[model]=nil

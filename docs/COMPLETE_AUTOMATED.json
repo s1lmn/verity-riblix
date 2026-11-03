@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "coreAssertions": 639,
+  "uiLogicGroups": 10,
+  "animationGroups": 4,
+  "compiledFiles": 90,
+  "strictPureModules": 3,
+  "productionSourceRoundtrip": 71,
+  "sourceFingerprint": "b129259f0d51de54f18a2f98f6f5575ff07fd6b7f594ceef5acfb57fd5ad0fdb",
+  "recordedUtc": "2026-11-03T17:09:42.175852+00:00",
+  "scope": "Luau CLI and Rojo; does not claim live DataStore, Roblox purchases or mobile FPS"
+}

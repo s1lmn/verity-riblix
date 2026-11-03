@@ -24,6 +24,7 @@ local function part(parent, name, size, position, color, shape, tint)
 		mesh.Parent=p
 	elseif shape then p.Shape=shape end
 	p.Material = Enum.Material.SmoothPlastic
+ p.Reflectance = 0
 	p.Color = color
 	p.Anchored, p.CanCollide, p.CanTouch, p.CanQuery, p.CastShadow = true, false, false, false, false
 	if tint then p:SetAttribute("VerityTint", true) end
@@ -36,7 +37,7 @@ function Factory.Create(parent, origin, metadata)
 	local level = metadata.level or 1
 	local scale = Levels.getVerityScale(level)
 	local model = Instance.new("Model")
-	model.Name, model.ModelStreamingMode = "Verity", Enum.ModelStreamingMode.Atomic
+	model.Name, model.ModelStreamingMode = "Verity", Enum.ModelStreamingMode.Persistent
 	local ink, white, pink = Color3.fromHex("22264B"), Color3.fromHex("FFF9FF"), Color3.fromHex("FF5CB8")
 	local color = Factory.Color(level)
 	local root = part(model, "Root", Vector3.one * 0.04, Vector3.zero, white)
@@ -67,6 +68,10 @@ function Factory.Create(parent, origin, metadata)
 	model:SetAttribute("StateRevision", metadata.stateRevision or 0)
 	model:SetAttribute("PresentationVersion", Version.Presentation)
 	model:SetAttribute("VerityOrigin", origin)
+ model:SetAttribute("FollowOwner", metadata.followOwner == true)
+ for name,position in {Face=Vector3.new(0,1.02,-.85),Head=Vector3.new(0,1.72,0),Ears=Vector3.new(.85,.85,0)} do
+  local attachment=Instance.new("Attachment");attachment.Name="Cosmetic"..name;attachment.Position=position;attachment.Parent=root
+ end
 	model:ScaleTo(scale)
 	model:PivotTo(origin)
 	local gui = Instance.new("BillboardGui")
@@ -80,13 +85,13 @@ function Factory.Create(parent, origin, metadata)
 	title.Text = "VERITY • LVL " .. level
 	title.Parent, gui.Parent = gui, root
 	model.Parent = parent
-	CollectionService:AddTag(model, Profile.Tag)
+	if not metadata.preview then CollectionService:AddTag(model, Profile.Tag) end
 	return model
 end
 
 function Factory.SetStage(model, level)
 	local crown = model:FindFirstChild("Crown")
-	if crown then for _, p in crown:GetChildren() do if p:IsA("BasePart") then p.Transparency = if level == 100 then 0 else 1 end end end
+	if crown then for _, p in crown:GetChildren() do if p:IsA("BasePart") then p.Transparency = if level == 100 and model:GetAttribute("Cosmetic_Head")==nil then 0 else 1 end end end
 end
 
 return Factory

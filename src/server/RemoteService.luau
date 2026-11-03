@@ -41,7 +41,7 @@ function RemoteService:Handle(userId, name, payload)
 	if not sequence or sequence % 1 ~= 0 or sequence < 1 or sequence > 1e15 then
 		return self:_result(userId, name, payload.operationId, "INVALID_OPERATION_ID")
 	end
-	local fingerprint = name .. ":" .. tostring(payload.open) .. ":" .. tostring(payload.taskId)
+	local fingerprint = name .. ":" .. tostring(payload.open) .. ":" .. tostring(payload.taskId) .. ":" .. tostring(payload.itemId) .. ":" .. tostring(payload.equipped)
 	for id, operation in session.Operations do
 		if now - operation.at > Config.OperationTTL then session.Operations[id] = nil end
 	end

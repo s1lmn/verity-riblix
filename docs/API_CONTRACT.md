@@ -1,3 +1,33 @@
+# Текущий контракт Core World UI со спутником
+
+Этот раздел расширяет существующий protocolVersion=1 без второго набора remotes.
+Рост задаётся LevelConfig: 1 + 14*((level-1)/99)^0.85, 1..100, максимум 15×.
+Версия профиля 2; DataStoreName сохранён для миграции существующих v1 профилей.
+
+## Косметика
+
+RequestEquipCosmetic: {operationId: numeric-string, itemId: stable-id, equipped: boolean}.
+RequestCosmeticPurchase: {operationId: numeric-string, itemId: stable-id}.
+Клиент не передаёт цену, productId, ownerUserId, receipt или результат покупки.
+Операции используют общий возрастающий sequence, fingerprint, TTL/cache и rate limit.
+Отказы: NOT_OWNED, PRODUCT_UNAVAILABLE, ALREADY_OWNED, BOX_NOT_OPENED, BUSY.
+Snapshot добавляет CosmeticsOwned (id→true), CosmeticsEquipped (slot→id), CosmeticsCatalog
+(массив id/name/slot/category/available/productId), CompanionMode="FollowOwner".
+Слоты Face/Head/Ears; по одному предмету на слот, предметы разных слотов совместимы.
+Цена приходит из Roblox. Выдача только ProcessReceipt после успешного сохранения.
+
+## Спутник
+
+Factory создаёт один tagged VerityVisual после подтверждённой распаковки/загрузки.
+Сервер задаёт OwnerUserId/PlotId/VerityLevel/StateRevision/FollowOwner и Cosmetic_<slot>.
+Один VerityVisualController сочетает следование, рост, VFX и аксессуары на каждом клиенте.
+Нет клиентского сообщения о позиции, уровне, награде или владении. Исчезнувший/мёртвый
+персонаж скрывает представление; респавн восстанавливает его. Доход остаётся серверным.
+Большой спутник сохраняет 15×; внутри дома владелец видит его снаружи над крышей.
+Гости могут ходить по всем домам, но не получают права надеть чужие предметы/купить чужой уровень.
+
+## Базовые операции
+
 # VERITY единый контракт локальной финальной версии
 
 Сервер авторитетен для денег, уровней, владения, заданий, cooldown и сохранения.
@@ -78,4 +108,4 @@ DataService: UpdateAsync, session lease180s, autosave60s, fail closed до ис�
 release/BindToClose, повторы и валидация. Ошибка загрузки не создаёт профиль поверх старого.
 Производные масштабы/доходы/HouseTier и физический PlotId не сохраняются как отдельная истина.
 Studio Memory временный; опубликованная игра использует DataStore. Реальные сохранения
-и16/24-player/mobile acceptance остаются отдельными невыполненными проверками.
+и 16-player/mobile acceptance остаются отдельными невыполненными проверками.

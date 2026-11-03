@@ -20,6 +20,12 @@
         "BoostService": {
           "$path": "src/server/BoostService.luau"
         },
+        "CosmeticProducts": {
+          "$path": "src/server/CosmeticProducts.luau"
+        },
+        "CosmeticService": {
+          "$path": "src/server/CosmeticService.luau"
+        },
         "DataService": {
           "$path": "src/server/DataService.luau"
         },

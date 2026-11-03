@@ -3,7 +3,7 @@
 local Protocol = {}
 Protocol.RequestNames = {Sync="RequestSync",OpenBox="RequestOpenBox",UpgradeVerity="RequestUpgradeVerity",
 	UpgradeSwipe="RequestUpgradeSwipe",PhoneSession="RequestPhoneSession",Swipe="RequestSwipe",
-	TaskStart="RequestTaskStart",TaskComplete="RequestTaskComplete"}
+	EquipCosmetic="RequestEquipCosmetic",CosmeticPurchase="RequestCosmeticPurchase",TaskStart="RequestTaskStart",TaskComplete="RequestTaskComplete"}
 function Protocol.State(raw)
 	if type(raw)~="table" then return nil end
 	if raw.protocolVersion~=1 then return if raw.version==1 then raw else nil end

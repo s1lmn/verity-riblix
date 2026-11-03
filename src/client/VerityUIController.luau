@@ -28,7 +28,7 @@ function Verity:Render()
 	r.Level.TextSize=if maxed then 18 else 22
 	r.Level.Size=UDim2.new(1,-4,0,if maxed then 48 else 34)
 	r.Income.Text="INCOME  $"..Model.Format(state.IncomePerSecond).." / sec"..(if maxed then "" else " → $"..Model.Format(state.NextIncomePerSecond))
-	r.Scale.Text=if maxed then "SCALE  5× • final evolution" else string.format("SCALE  %.3f× → %.3f×",Model.Scale(level),Model.Scale(level+1))
+	r.Scale.Text=if maxed then "SCALE  15× • final evolution" else string.format("SCALE  %.3f× → %.3f×",Model.Scale(level),Model.Scale(level+1))
 	r.House.Text=string.format("HOUSE STAGE %d / 6",state.HouseTier)
 	r.Progress.Size=UDim2.fromScale((level-1)/99,1)
 	local nextStage=Model.NextMilestone(level)
@@ -36,7 +36,7 @@ function Verity:Render()
 		else "ALL DISCOVERIES UNLOCKED\nCrown, unique idle, layered aura and celebration effects."
 	local busy=net:IsBusy("UpgradeVerity")
 	local affordable=not maxed and state.NextVerityUpgradeCost~=nil and state.Cash>=state.NextVerityUpgradeCost
-	local text=if maxed then "MAX LEVEL • 5×" elseif not state.VerityUnlocked then "OPEN YOUR DELIVERY BOX FIRST"
+	local text=if maxed then "MAX LEVEL • 15×" elseif not state.VerityUnlocked then "OPEN YOUR DELIVERY BOX FIRST"
 		elseif busy then "WAITING FOR CONFIRMATION…" elseif not affordable then "NEED $"..Model.Format(state.NextVerityUpgradeCost)
 		else "UPGRADE • $"..Model.Format(state.NextVerityUpgradeCost)
 	W.SetButton(r.Buy,text,net.connected and state.VerityUnlocked and not maxed and affordable and not busy,busy)

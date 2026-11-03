@@ -49,11 +49,11 @@ function Builder.Build(playerGui)
 	refs.HUD = hud
 	local nav = W.Frame(safe, "Navigation", UDim2.new(1, -24, 0, 44))
 	nav.BackgroundTransparency, nav.Position = 1, UDim2.fromOffset(12, 72)
-	local names = { "VERITY", "PHONE", "TASKS", "UPGRADES" }
-	local colors = { T.Pink, T.Blue, T.Gold, T.Mint }
+	local names = { "VERITY", "PHONE", "TASKS", "UPGRADES", "COSMETICS" }
+	local colors = { T.Pink, T.Blue, T.Gold, T.Mint, T.Purple }
 	for i, name in names do
-		local button = W.Button(nav, name, name, colors[i])
-		button.Position, button.Size = UDim2.new((i-1)*0.25, 0, 0, 0), UDim2.new(0.25, -6, 1, 0)
+		local button = W.Button(nav, name, if name=="COSMETICS" then "STYLE" else name, colors[i])
+		button.Position, button.Size = UDim2.new((i-1)*0.2, 0, 0, 0), UDim2.new(0.2, -6, 1, 0)
 		refs.Nav[name] = button
 	end
 	refs.Navigation = nav
@@ -121,6 +121,7 @@ function Builder.Build(playerGui)
 	end
 	refs.Panels.TASKS = tasks
 
+	refs.Panels.COSMETICS = panel(safe, "Cosmetics", "STYLE YOUR COMPANION", "Preview, collect and wear cosmetic accessories.")
 	local settings = panel(safe, "SettingsPanel", "MAKE IT YOURS", "Settings apply on this device for this play session.")
 	settings.Sound = W.Button(settings.Body, "UISounds", "UI SOUNDS: ON", T.Soft)
 	settings.Volume = W.Line(settings.Body, "VolumeLabel", "VOLUME 60%", 24, 14, true)

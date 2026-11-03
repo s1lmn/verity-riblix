@@ -2,7 +2,7 @@
 -- Pure, bounded pose sampling. Exact settled scale always comes from LevelConfig.
 local Levels = if script then require(script.Parent.LevelConfig) else require("./LevelConfig")
 local Profile = {}
-Profile.BaseWidth, Profile.BaseDepth, Profile.BaseHeight = 1.7, 1.7, 2.1
+Profile.BaseWidth, Profile.BaseDepth, Profile.BaseHeight = 1.7, 1.7, 2.4
 Profile.MaxExpansion, Profile.Clearance = 1.035, 1.5
 Profile.FrameInterval, Profile.IdleDistance = 1 / 30, 260
 Profile.Tag = "VerityVisual"

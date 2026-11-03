@@ -29,7 +29,7 @@ function PlayerStateService:Snapshot(userId)
 	local multiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local tasks = {}
 	for id, config in TaskConfig do
-		local state = session.Tasks[id] or {Active = false, CooldownUntil = 0}
+		local state = session.Tasks[id] or {Active = false, CooldownUntil = data.TaskCooldowns[id] or 0}
 		tasks[id] = {taskId = id, reward = config.Reward * multiplier,
 			status = if state.Active then "Active" elseif state.CooldownUntil > self.clock() then "Cooldown" else "Ready",
 			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id) else nil,
@@ -53,6 +53,9 @@ function PlayerStateService:Snapshot(userId)
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
 		BoostMultiplier = multiplier, BoostExpiresAt = data.BoostExpiresAt,
 		PhoneOpen = session.PhoneOpen, Tasks = tasks,
+  CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
+  CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
+  CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end
 function PlayerStateService:Publish(userId, force)

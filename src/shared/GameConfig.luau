@@ -20,7 +20,7 @@ return table.freeze({
 	SnapshotInterval = 0.5,
 	IncomeInterval = 1,
 	TaskPollInterval = 0.1,
-	DataVersion = 1,
+	DataVersion = 2,
 	DataStoreName = "Verity_PlayerData_v1",
 	StudioDataMode = "Memory", -- Memory or StudioStore; never fall back after a failed load.
 	SaveInterval = 60,

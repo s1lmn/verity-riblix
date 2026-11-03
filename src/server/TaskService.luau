@@ -11,7 +11,7 @@ function TaskService:_state(userId, taskId)
 	local profile, session = self.data:Get(userId), self.state.sessions[userId]
 	if not profile or not session or not Config[taskId] then return nil, nil end
 	if not session.Tasks[taskId] then
-		session.Tasks[taskId] = {Active = false, CooldownUntil = 0, HoldStartedAt = nil}
+		session.Tasks[taskId] = {Active = false, CooldownUntil = profile.Data.TaskCooldowns[taskId] or 0, HoldStartedAt = nil}
 	end
 	return session.Tasks[taskId], profile
 end
@@ -30,6 +30,7 @@ function TaskService:_reward(userId, taskId, state, profile)
 	state.Active = false
 	state.HoldStartedAt = nil
 	state.CooldownUntil = self.clock() + Config[taskId].Cooldown
+ profile.Data.TaskCooldowns[taskId] = state.CooldownUntil
 	local _, actual = self.economy:AddCash(userId, Config[taskId].Reward * self.economy:GetMultiplier(profile))
 	self.data:Touch(profile)
 	if self.onReward then self.onReward(userId, actual) end

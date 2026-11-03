@@ -17,12 +17,15 @@ local Rewards=require(script.Parent.FloatingRewardController)
 local Verity=require(script.Parent.VerityUIController)
 local Phone=require(script.Parent.PhoneUIController)
 local Tasks=require(script.Parent.TasksUIController)
+local Cosmetics=require(script.Parent.CosmeticsUIController)
 local Tutorial=require(script.Parent.TutorialController)
 local Versions=require(script.Parent.VersionController)
 local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualController)
 local Main={}
 Main.__index=Main
 local Errors={
+ NOT_OWNED="You do not own this accessory.",PRODUCT_UNAVAILABLE="This item is not on sale yet.",
+ ALREADY_OWNED="You already own this item.",BUSY="Finish the previous purchase first.",
 	INSUFFICIENT_CASH="You need a little more Cash for that upgrade.",
 	COOLDOWN="A little too soon. Try again in a moment.",
 	MAX_LEVEL="This upgrade is already maxed out.",
@@ -63,6 +66,7 @@ function Main.new()
 	self.verity=self.cleanup:Add(Verity.new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
+ self.cosmetics=self.cleanup:Add(Cosmetics.new(ctx))
 	self.tutorial=self.cleanup:Add(Tutorial.new(ctx))
 	self.ledger=Ledger.new()
 	self.versions=self.cleanup:Add(Versions.new(ctx))
@@ -186,7 +190,7 @@ function Main:Render()
 	self.refs.Status.Text=if self.versions.issue then self.versions.issue elseif not ctx.net.connected then "Waiting for Core • interface ready" elseif not state then "Loading confirmed player progress…" else "SERVER CONNECTED • ALL LEVELS FREE"
 	self.refs.Income.Text=if state then "+$"..Model.Format(state.IncomePerSecond).." / sec" else "+$— / sec"
 	self.refs.Level.Text=if state then string.format("LVL %d / 100",state.VerityLevel) else "LVL — / 100"
-	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render()
+	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()
 	local selected=GuiService.SelectedObject
 	if ctx.active and selected and selected:IsDescendantOf(self.refs.Panels[ctx.active].Root) and not selected.Selectable then self:SetFocus(ctx.active) end
 end

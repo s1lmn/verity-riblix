@@ -15,7 +15,7 @@ function WorldIntegration.ReadLayouts(world, count)
 		local plot = assert(plotFolder:FindFirstChild(string.format("Plot_%02d", id)), "World plot missing")
 		local lawn = assert(plot:FindFirstChild("Lawn"), "World lawn missing")
 		local platform = assert(plot:FindFirstChild("VerityPlatform"), "World Verity platform missing")
-		assert(platform.Size.X >= span and platform.Size.Z >= depth, "Configured Verity envelope exceeds approved platform")
+		-- A flying companion no longer reserves or occupies this decorative platform.
 		layouts[id] = {PlotId = id, X = lawn.Position.X, Z = lawn.Position.Z,
 			Side = if lawn.Position.X < 0 then -1 else 1, Width = lawn.Size.X, Depth = lawn.Size.Z,
 			ReservationWidth = span, ReservationDepth = depth,
@@ -155,13 +155,15 @@ function WorldIntegration:UpdatePlot(userId, state)
 		local verity = self.verities[userId]
 		if not verity then
 			verity = self.verityFactory.Create(model, self.anchors[plotId].VerityPoint.CFrame,
-				{ownerUserId = userId, plotId = plotId, level = state.VerityLevel, stateRevision = state.stateRevision})
+				{ownerUserId = userId, plotId = plotId, level = state.VerityLevel, stateRevision = state.stateRevision, followOwner = true})
 			self.verities[userId] = verity
 		end
 		verity:SetAttribute("VerityLevel", state.VerityLevel)
 		verity:SetAttribute("StateRevision", state.stateRevision)
 		verity:SetAttribute("IncomePerSecond", state.IncomePerSecond)
 		verity:SetAttribute("VerityScale", state.VerityScale)
+  local cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
+  for slot in cosmetics.Slots do verity:SetAttribute("Cosmetic_"..slot,(state.CosmeticsEquipped or {})[slot]) end
 	end
 	local worldPlot = self.anchors[plotId].WorldPlot
 	if worldPlot then

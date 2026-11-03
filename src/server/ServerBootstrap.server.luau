@@ -76,6 +76,8 @@ local Upgrade = require(script.Parent.UpgradeService).new(Data, State, Economy, 
 local Phone = require(script.Parent.PhoneService).new(Data, State, Economy, clock)
 local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock,
 	function(userId, taskId) return World:IsNearTask(userId, taskId) end)
+local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, require(script.Parent.CosmeticProducts), clock)
+State.CosmeticsCatalog = function() return Cosmetics:Catalog() end
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
 Tasks.onReward = function(id, reward)
 	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
@@ -87,6 +89,21 @@ State.send = function(userId, snapshot)
 end
 local Remote = require(script.Parent.RemoteService).new(Data, State, clock,
 	function(userId, result) send(userId, "ActionResult", result) end)
+Remote:Register("RequestEquipCosmetic", function(id,payload) return Cosmetics:Equip(id,payload.itemId,payload.equipped) end)
+Remote:Register("RequestCosmeticPurchase", function(id,payload)
+ local status,product=Cosmetics:PreparePurchase(id,payload.itemId)
+ if status=="OK" then task.defer(function()
+  local player=Players:GetPlayerByUserId(id)
+  if not player then return end
+  local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,product) end)
+  if not ok then Cosmetics:ClosePrompt(id,product);send(id,"NotificationEvent",{protocolVersion=1,code="PURCHASE_ERROR"}) end
+ end) end
+ return status
+end)
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(id,product,_purchased)
+ -- Closes prompt only. Never grants an entitlement from this event.
+ Cosmetics:ClosePrompt(id,product)
+end)
 Remote:Register("RequestOpenBox", function(id) return Delivery:Open(id) end)
 Remote:Register("RequestUpgradeVerity", function(id) return Upgrade:UpgradeVerity(id) end)
 Remote:Register("RequestUpgradeSwipe", function(id) return Upgrade:UpgradeSwipe(id) end)
@@ -124,21 +141,30 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	BoostService = Boost, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local spawning = {}
 local function spawnPlayer(player)
 	local id = player.UserId
-	if closing or player.Parent ~= Players or not State.sessions[id] or spawning[id] then return end
+	if closing or player.Parent ~= Players or not State.sessions[id] then return end
+	if spawning[id] then
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health <= 0 then task.delay(0.5, function() spawnPlayer(player) end) end
+		return
+	end
 	spawning[id] = true
 	local ok, reason = pcall(function() player:LoadCharacterAsync() end)
 	spawning[id] = nil
-	local plotId = Plots.owners[id]
-	if not ok then warn("Character load failed", id, reason); return end
-	if not closing and player.Parent == Players and plotId and player.Character then
-		player.Character:PivotTo(World.anchors[plotId].SpawnPoint.CFrame)
+	if not ok then
+		warn("Character load failed", id, reason)
+		if player.Parent == Players and not (player.Character and player.Character:GetAttribute("SpawnReady")) then
+			player:Kick("Character unavailable. Please rejoin.")
+		end
+		return
 	end
+	-- Position as soon as the rig exists in onCharacter. Appearance loading may
+	-- finish much later; never teleport a player back after they started moving.
 end
 local function disconnectPlayer(userId)
 	for _, connection in playerConnections[userId] or {} do connection:Disconnect() end
@@ -149,6 +175,8 @@ local function onCharacter(player, character)
 	local humanoid = character:WaitForChild("Humanoid", 10)
 	local plotId = Plots.owners[player.UserId]
 	if not root or not humanoid or not plotId or player.Parent ~= Players or player.Character ~= character then return end
+	character:PivotTo(World.anchors[plotId].SpawnPoint.CFrame)
+	character:SetAttribute("SpawnReady", true)
 	local death = humanoid.Died:Connect(function()
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
@@ -198,6 +226,7 @@ local function removePlayer(player)
 	end
 	if not Data:ReleaseAsync(id) then warn("Profile release did not complete", id) end
 end
+Runtime.Services.PlayerLifecycle = {Attach = onPlayer, Detach = removePlayer}
 Players.PlayerAdded:Connect(onPlayer)
 Players.PlayerRemoving:Connect(removePlayer)
 for _, player in Players:GetPlayers() do task.spawn(onPlayer, player) end
@@ -233,7 +262,10 @@ task.spawn(function()
 end)
 -- Disabled until real owned product IDs are configured; no placeholder IDs.
 MarketplaceService.ProcessReceipt = function(receipt)
-	local granted = Boost:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId)
+	local granted
+ if Cosmetics.products[receipt.ProductId] then
+  granted = Cosmetics:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId)
+ else granted = Boost:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId) end
 	return if granted then Enum.ProductPurchaseDecision.PurchaseGranted else Enum.ProductPurchaseDecision.NotProcessedYet
 end
 game:BindToClose(function()

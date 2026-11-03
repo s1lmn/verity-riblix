@@ -58,7 +58,7 @@ function Adapter:Attach(folder)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
 							local messages={OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
-								TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
+								PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
 							local message=messages[payload.code]
 							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
