@@ -7,6 +7,9 @@ local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Model=require(script.Parent.UIModel)
 local Cleanup=require(script.Parent.Cleanup)
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local Profile=require(ReplicatedStorage.Shared.VerityAnimationProfile)
+local Factory=require(ReplicatedStorage.World.VerityFactory)
 local Presentation={}
 Presentation.__index=Presentation
 
@@ -17,8 +20,8 @@ function Presentation.new(ctx)
  self.layer=layer;self.cleanup:Add(layer)
  local card=W.Round(W.Frame(layer,"DiscoveryCard",UDim2.fromOffset(340,128),T.Paper),20)
  card.AnchorPoint=Vector2.new(.5,1);card.Position=UDim2.new(.5,0,1,-16);card.ZIndex=51
- W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Pink:Lerp(T.Paper,.78)),Rotation=20},card)
- local stroke=W.Stroke(card,T.Purple,1.5);stroke.Transparency=.35
+ self.gradient=W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Pink:Lerp(T.Paper,.78)),Rotation=20},card)
+ local stroke=W.Stroke(card,T.Purple,1.5);stroke.Transparency=.35;self.stroke=stroke
  local tag=W.Text(card,"Eyebrow","НОВАЯ СТУПЕНЬ РОСТА",10,true,T.Purple)
  tag.Position,tag.Size,tag.ZIndex=UDim2.fromOffset(16,10),UDim2.new(1,-74,0,16),52
  local title=W.Text(card,"Title","Verity растёт!",25,true)
@@ -57,7 +60,14 @@ function Presentation:Start(event,model)
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not hum or hum.Health<=0 or not model:IsDescendantOf(workspace) then return false end
  local now=os.clock()
- self.active={event=event,model=model,started=now}
+ local oldColor,newColor=Factory.Color(event.oldLevel),Factory.Color(event.newLevel)
+ self.active={event=event,model=model,started=now,oldColor=oldColor,newColor=newColor}
+ self.gradient.Color=ColorSequence.new(oldColor:Lerp(T.Paper,.86),newColor:Lerp(T.Paper,.7))
+ self.stroke.Color=newColor:Lerp(T.Ink,.28)
+ self.fill.BackgroundColor3=oldColor
+ for index,piece in self.confetti do
+  piece.BackgroundColor3=({oldColor,newColor,T.Gold,newColor:Lerp(T.Paper,.45)})[index%4+1]
+ end
  self.ctx.presenting=true;self.ctx.close();self.ctx.refs.Banner.Visible=false
  self.layer.Visible=true;self.count+=1
  self.ctx.refs.Gui:SetAttribute("RevealCount",self.count)
@@ -67,10 +77,10 @@ function Presentation:Start(event,model)
  local special=milestone and milestone.level==event.newLevel
  self:RenderCopy()
  self.ctx.sound:Play(if special then "Milestone" else "LevelUp")
- if not self.ctx.settings.values.ReducedEffects then
+ if not self.ctx.settings.values.ReducedEffects and not self.ctx.settings.values.ReducedMotion then
   local glow=Instance.new("Highlight")
   glow.Name="UpgradeGlow";glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
-  glow.FillColor=T.Gold;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
+  glow.FillColor=oldColor;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
   self.active.glow=glow
  end
  local camera=workspace.CurrentCamera
@@ -94,7 +104,7 @@ function Presentation:CameraPose(camera,model,scale,angle,progress)
  local distance=math.max(5,radius/math.sin(half))*1.18
  local height=math.max(1,camera.ViewportSize.Y)
  distance*=1+.25*math.clamp((500-height)/250,0,1)
- local arc=angle+(smooth(progress)-.5)*.14
+ local arc=angle+(smooth(progress)-.5)*.22
  local direction=pivot:VectorToWorldSpace(Vector3.new(math.sin(arc),if angle==math.pi then 1.6 else .22,-math.cos(arc))).Unit
  local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
  local ignore={model};local char=Players.LocalPlayer.Character;if char then table.insert(ignore,char)end
@@ -154,7 +164,10 @@ function Presentation:Tick(now)
  self.title.TextSize=if short then 20 else 25
  self.detail.Position=UDim2.fromOffset(16,if short then 60 else 65)
  self.fill.Parent.Position=UDim2.new(0,16,1,-14)
- self.fill.Size=UDim2.fromScale(if a.completed then 1 else math.min(.93,age/2.1),1)
+ local progress=math.clamp(age/Profile.Duration(a.event.newLevel),0,1)
+ local hue=smooth((progress-.16)/.53)
+ self.fill.Size=UDim2.fromScale(if a.completed then 1 else progress,1)
+ self.fill.BackgroundColor3=a.oldColor:Lerp(a.newColor,hue)
  if self.camera then
   local saved=self.camera;local camera=saved.instance
   if camera.CameraType~=Enum.CameraType.Scriptable then self.camera=nil;self:Stop();return end
@@ -164,8 +177,15 @@ function Presentation:Tick(now)
   camera.CFrame=pose;camera.Focus=a.model:GetPivot()
  end
  if a.glow then
-  if self.ctx.settings.values.ReducedEffects then a.glow:Destroy();a.glow=nil
-  else a.glow.FillTransparency=.83+.14*math.min(1,age/2.5);a.glow.OutlineTransparency=.15+.8*math.min(1,age/3)end
+  if self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion then
+   a.glow:Destroy();a.glow=nil
+  else
+   local flare=math.max(0,1-math.abs(progress-Profile.Bloom)/.22)
+   a.glow.FillColor=a.oldColor:Lerp(a.newColor,hue)
+   a.glow.OutlineColor=a.newColor:Lerp(T.Paper,.48)
+   a.glow.FillTransparency=.96-flare*.18
+   a.glow.OutlineTransparency=.82-flare*.55
+  end
  end
  local burstAge=a.completed and now-a.completed
  for i,piece in self.confetti do

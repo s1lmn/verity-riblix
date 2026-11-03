@@ -6,6 +6,7 @@ Profile.BaseWidth, Profile.BaseDepth, Profile.BaseHeight = 1.7, 1.7, 2.4
 Profile.MaxExpansion, Profile.Clearance = 1.035, 1.5
 Profile.FrameInterval, Profile.IdleDistance = 1 / 30, 260
 Profile.Tag = "VerityVisual"
+Profile.Bloom = 0.53
 
 local function smooth(t: number): number
 	t = math.clamp(t, 0, 1)
@@ -40,7 +41,8 @@ function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reduc
 	local stage = Profile.Stage(newLevel)
 	local lift = if reducedMotion then 0 else math.sin(math.pi * t) * target * (if stage == 5 then 0.13 else 0.06)
 	local yaw = if reducedMotion then 0 elseif newLevel == 75 or newLevel == 100 then 2 * math.pi * smooth(t) else math.sin(math.pi * 2 * t) * 0.12
-	return { scale = scale, lift = lift, yaw = yaw, blend = smooth(t), stage = stage }
+	local blend = if reducedMotion then smooth(t) else smooth((t - 0.16) / 0.53)
+	return { scale = scale, lift = lift, yaw = yaw, blend = blend, stage = stage }
 end
 
 function Profile.Footprint(): number

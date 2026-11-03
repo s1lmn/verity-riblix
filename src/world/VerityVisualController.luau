@@ -269,6 +269,7 @@ end
 
 function Controller:Tick(now,dt)
 	local camera=workspace.CurrentCamera
+	local showingGrowth=false
 	if self.settings.values.ReducedEffects then self.effects:SuppressBursts() end
 	for model,record in self.records do
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
@@ -289,13 +290,21 @@ function Controller:Tick(now,dt)
 			local event=active.event
 			local alpha=math.min(1,(now-active.started)/Profile.Duration(event.newLevel))
 			local pose=Profile.Sample(event.oldLevel,event.newLevel,alpha,reduced)
+			local oldColor,newColor=Factory.Color(event.oldLevel),Factory.Color(event.newLevel)
+			local ownGrowth=Client and event.ownerUserId==Client.UserId
+				and not reduced and not self.settings.values.ReducedEffects and near
+			if ownGrowth then
+				showingGrowth=true
+				self.effects:Growth(model:GetPivot(),model:GetScale(),alpha,Profile.Bloom,
+					oldColor,newColor,Profile.IsMilestone(event.newLevel))
+			end
 			local targetLift=if pose.stage>=2 and not reduced then event.newScale*0.05 else 0
 			local lift=active.lift+(targetLift-active.lift)*pose.blend+pose.lift
-			self:Apply(record,pose.scale,lift,active.yaw+pose.yaw,Factory.Color(event.oldLevel):Lerp(Factory.Color(event.newLevel),pose.blend),if alpha>=0.58 then event.newLevel else event.oldLevel)
+			self:Apply(record,pose.scale,lift,active.yaw+pose.yaw,oldColor:Lerp(newColor,pose.blend),if alpha>=0.58 then event.newLevel else event.oldLevel)
 			scale,stage=pose.scale,pose.stage
-			if alpha>=0.45 and not active.burst then
+			if alpha>=Profile.Bloom and not active.burst then
 				active.burst=true
-				if near and not self.settings.values.ReducedEffects then self.effects:Burst(model,model:GetPivot(),scale,event.newLevel,now) end
+				if near and not ownGrowth and not reduced and not self.settings.values.ReducedEffects then self.effects:Burst(model,model:GetPivot(),scale,event.newLevel,now) end
 			end
 			if alpha>=1 then self:Finish(record,now);scale=event.newScale end
 		else
@@ -307,6 +316,7 @@ function Controller:Tick(now,dt)
 		end
 		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,near)
 	end
+	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)
 end
 

@@ -81,6 +81,64 @@ function VFX:Update(model, origin, scale, stage, now, reducedEffects, near)
 	end
 end
 
+local TAU = 2 * math.pi
+
+function VFX:HideGrowth()
+	local growth = self.growth
+	if not growth or not growth.visible then return end
+	growth.visible = false
+	for _, part in growth.parts do part.Transparency = 1 end
+end
+
+-- One reusable pool for the local owner's purchase. The sphere stays unobscured.
+function VFX:Growth(origin, scale, progress, bloom, oldColor, newColor, milestone)
+	if not self.growth then
+		local parts = {}
+		for i = 1, 36 do
+			parts[i] = piece(self.folder, if i <= 20 then "GrowthRibbon" else "GrowthSpark")
+			if i > 20 then parts[i].Shape = Enum.PartType.Ball end
+		end
+		self.growth = {parts = parts, gold = Color3.fromRGB(255, 220, 111), white = Color3.fromRGB(255, 244, 255)}
+	end
+	local growth = self.growth
+	growth.visible = true
+	local gold, white = growth.gold, growth.white
+	local center = origin.Position + Vector3.new(0, .85 * scale, 0)
+	local charge = math.clamp(progress / bloom, 0, 1)
+	local release = math.clamp((progress - bloom) / (1 - bloom), 0, 1)
+	local energy = math.sin(math.pi * progress) ^ .7
+	local spin = charge * 3.6 + release * 1.15
+	local radius = scale * (1.22 - .22 * charge + .42 * release)
+	for i, part in growth.parts do
+		if i <= 20 then
+			local strand = if i <= 10 then 1 else -1
+			local trail = ((i - 1) % 10) / 9
+			local angle = spin * strand - trail * 1.95 * strand + (if strand == 1 then 0 else math.pi)
+			local y = strand * scale * (.34 - .15 * charge) + math.sin(angle) * scale * .27
+			local position = center + Vector3.new(math.cos(angle) * radius, y, math.sin(angle) * radius)
+			local tangent = Vector3.new(-math.sin(angle), .21 * math.cos(angle), math.cos(angle))
+			local width = scale * (.027 + (1 - trail) * .026)
+			part.Size = Vector3.new(width, width, radius * .23)
+			part.CFrame = CFrame.lookAt(position, position + tangent)
+			local color = if strand == 1 then oldColor:Lerp(newColor, charge) else newColor:Lerp(gold, if milestone then .55 else .22)
+			part.Color = color:Lerp(white, .22 * (1 - trail))
+			part.Transparency = 1 - energy * (1 - .58 * trail) * (1 - .72 * release)
+		else
+			local index = i - 21
+			if release <= 0 or (not milestone and index >= 10) then part.Transparency = 1; continue end
+			local count = if milestone then 16 else 10
+			local angle = index * TAU / count
+			local spread = 1 - (1 - release)^2
+			local distance = scale * (1.02 + spread * (if milestone then 1.1 else .65))
+			local y = scale * ((index % 4 - 1.5) * .16 + math.sin(release * math.pi) * .5)
+			part.Position = center + Vector3.new(math.cos(angle) * distance, y, math.sin(angle) * distance)
+			part.Size = Vector3.one * scale * (.09 + (index % 3) * .018) * (1 - release * .65)
+			part.Color = if index % 3 == 0 then gold elseif index % 3 == 1 then newColor else oldColor:Lerp(white, .4)
+			part.Transparency = .12 + .88 * release
+		end
+	end
+end
+
 function VFX:Burst(model, origin, scale, level, now)
  if level<25 then return end
 	self.pulses[model]={started=now,level=level}
