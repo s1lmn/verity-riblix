@@ -56,11 +56,9 @@ connections[#connections+1] = source.ChildRemoved:Connect(remove)
 local ray = RaycastParams.new()
 ray.FilterType = Enum.RaycastFilterType.Exclude
 ray.RespectCanCollide = true
-local elapsed = 0
 connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
-    elapsed += dt
-    if elapsed < 1/30 then return end
-    local step = math.min(elapsed,.25); elapsed = 0
+    -- Render every display frame; a 30 Hz transform cap visibly steps on 60+ Hz screens.
+    local step = math.min(dt,.1)
     local camera = workspace.CurrentCamera
     if not camera then return end
     local gui = localPlayer:FindFirstChildOfClass("PlayerGui")
@@ -76,7 +74,12 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
         if valid then
             ray.FilterDescendantsInstances = {character,visuals}
             local origin = root.Position+Vector3.new(0,1.6,0)
-            local offset = root.CFrame:VectorToWorldSpace(Config.FollowOffset)
+            local snap = not entry.position or (entry.rootPosition and (root.Position-entry.rootPosition).Magnitude>Config.SnapDistance)
+            entry.rootPosition = root.Position
+            local heading = root.CFrame.Rotation
+            if snap or not entry.heading then entry.heading=heading
+            else entry.heading=entry.heading:Lerp(heading,1-math.exp(-Config.HeadingSpeed*step)) end
+            local offset = entry.heading:VectorToWorldSpace(Config.FollowOffset)
             local target = root.Position+offset
             local direction = target-origin
             local hit = if direction.Magnitude>.01 then workspace:Spherecast(origin,1.4,direction,ray) else nil
@@ -84,19 +87,24 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             local ground = workspace:Raycast(target+Vector3.new(0,1.5,0),Vector3.new(0,-5,0),ray)
             if ground then target = Vector3.new(target.X,math.max(target.Y,ground.Position.Y+1.5),target.Z) end
             local bob = if reduced then 0 else math.sin(os.clock()*2.4+entry.ownerId%13)*.12
-            target += Vector3.new(0,bob,0)
             local forward = Vector3.new(root.CFrame.LookVector.X,0,root.CFrame.LookVector.Z)
             if forward.Magnitude<.01 then forward=Vector3.new(0,0,-1) end
-            local gaze = camera.CFrame.Position-target
+            if snap or (entry.position-target).Magnitude>Config.SnapDistance then entry.position=target
+            else entry.position=entry.position:Lerp(target,1-math.exp(-Config.FollowSpeed*step)) end
+            -- Idle is an additive visual offset, never fed back into the follow filter.
+            local position = entry.position+Vector3.new(0,bob,0)
+            local gaze = camera.CFrame.Position-position
             gaze = Vector3.new(gaze.X,0,gaze.Z)
             if gaze.Magnitude<.01 then gaze=forward end
-            local goal = CFrame.lookAt(target,target+gaze)
-            if not entry.current or (entry.current.Position-target).Magnitude>Config.SnapDistance then entry.current=goal
-            else entry.current=entry.current:Lerp(goal,1-math.exp(-Config.FollowSpeed*step)) end
-            entry.body.CFrame = entry.current
-            visible = (camera.CFrame.Position-target).Magnitude>2
+            local facing = CFrame.lookAt(position,position+gaze).Rotation
+            if snap or not entry.facing then entry.facing=facing
+            else entry.facing=entry.facing:Lerp(facing,1-math.exp(-Config.FacingSpeed*step)) end
+            entry.body.CFrame = CFrame.new(position)*entry.facing
+            visible = (camera.CFrame.Position-position).Magnitude>2
             if owner==localPlayer and (camera.Focus.Position-camera.CFrame.Position).Magnitude<1 then visible=false end
-        else entry.current=nil end
+        else
+            entry.position,entry.heading,entry.facing,entry.rootPosition=nil,nil,nil,nil
+        end
         if entry.visible~=visible then entry.visible=visible;entry.body.Transparency=if visible then 0 else 1 end
     end
 end)

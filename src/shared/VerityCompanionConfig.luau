@@ -6,6 +6,8 @@ return table.freeze({
     BaseDiameter = 2.8,
     FollowOffset = Vector3.new(3.5, 1.6, 3.2),
     FollowSpeed = 10,
+    HeadingSpeed = 6,
+    FacingSpeed = 8,
     SnapDistance = 40,
     RenderDistance = 180,
 })
