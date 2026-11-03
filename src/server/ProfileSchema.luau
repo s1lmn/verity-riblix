@@ -2,11 +2,12 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.GameConfig)
 local Numeric = require(Shared.Numeric)
+local Houses = require(Shared.HouseConfig)
 local Catalog = require(Shared.CosmeticCatalog)
 local Schema = {}
 function Schema.new()
 	return {DataVersion = 2, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
-		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, TutorialStep = 1,
+		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, TutorialStep = 1,
 		TutorialCompleted = false, BoostExpiresAt = 0, Receipts = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}}
 end
 -- Missing v1 fields are reconciled. Corrupt/future profiles fail closed, not reset.
@@ -27,6 +28,7 @@ function Schema.validate(raw)
 	if data.TotalEarned < data.Cash then return nil, "INVALID_TOTAL_EARNED" end
 	if not Numeric.isInteger(data.VerityLevel, 1, 100)
 		or not Numeric.isInteger(data.SwipeUpgradeLevel, 0, 40)
+		or not Numeric.isInteger(data.HouseIncomeLevel, 0, #Houses.IncomeUpgrades)
 		or not Numeric.isInteger(data.TutorialStep, 1, 7) then return nil, "INVALID_LEVEL" end
 	if type(data.VerityUnlocked) ~= "boolean" or type(data.TutorialCompleted) ~= "boolean" then
 		return nil, "INVALID_BOOLEAN"
@@ -35,6 +37,10 @@ function Schema.validate(raw)
 		and data.DeliveryState ~= "Opened" then return nil, "INVALID_DELIVERY" end
 	if data.VerityUnlocked ~= (data.DeliveryState == "Opened") then return nil, "INCONSISTENT_DELIVERY" end
 	if not data.VerityUnlocked and data.VerityLevel ~= 1 then return nil, "LOCKED_LEVEL" end
+	local houseUpgrade = Houses.IncomeUpgrades[data.HouseIncomeLevel]
+	if houseUpgrade and (not data.VerityUnlocked or data.VerityLevel < houseUpgrade.Level) then
+		return nil, "INVALID_HOUSE_UPGRADE"
+	end
 	if data.TutorialCompleted ~= (data.TutorialStep == 7) then return nil, "INVALID_TUTORIAL" end
 	if type(data.Receipts) ~= "table" then return nil, "INVALID_RECEIPTS" end
 	local receipts, count = {}, 0

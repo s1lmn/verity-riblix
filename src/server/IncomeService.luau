@@ -1,6 +1,7 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.EconomyConfig)
+local Houses = require(Shared.HouseConfig)
 local IncomeService = {}
 IncomeService.__index = IncomeService
 function IncomeService.new(data, state, economy, clock)
@@ -17,6 +18,7 @@ function IncomeService:Settle(userId)
 	local elapsed = now - before
 	local boosted = math.max(0, math.min(now, profile.Data.BoostExpiresAt) - before)
 	self.economy:AddCash(userId, Economy.getIncome(profile.Data.VerityLevel)
+		* Houses.getIncomeMultiplier(profile.Data.HouseIncomeLevel)
 		* (elapsed + boosted * (Economy.Boost.Multiplier - 1)))
 end
 function IncomeService:Tick()

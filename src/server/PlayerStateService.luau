@@ -26,6 +26,7 @@ function PlayerStateService:Snapshot(userId)
 	local profile, session = self.data:Get(userId), self.sessions[userId]
 	if not profile or not session then return nil end
 	local data, level = profile.Data, profile.Data.VerityLevel
+	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel)
 	local multiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local tasks = {}
 	for id, config in TaskConfig do
@@ -44,8 +45,9 @@ function PlayerStateService:Snapshot(userId)
 		VerityScale = Levels.getVerityScale(level),
 		NextVerityScale = if level < 100 then Levels.getVerityScale(level + 1) else nil,
 		NextMilestoneLevel = Levels.getNextMilestone(level),
-		IncomePerSecond = if data.VerityUnlocked then Economy.getIncome(level) * multiplier else 0,
-		NextIncomePerSecond = if level < 100 then Economy.getIncome(level + 1) * multiplier else nil,
+		HouseIncomeLevel = data.HouseIncomeLevel,
+		IncomePerSecond = if data.VerityUnlocked then Economy.getIncome(level) * houseMultiplier * multiplier else 0,
+		NextIncomePerSecond = if level < 100 then Economy.getIncome(level + 1) * houseMultiplier * multiplier else nil,
 		SwipeIncome = Economy.getSwipeIncome(data.SwipeUpgradeLevel) * multiplier,
 		NextSwipeIncome = if data.SwipeUpgradeLevel < 40 then
 			Economy.getSwipeIncome(data.SwipeUpgradeLevel + 1) * multiplier else nil,

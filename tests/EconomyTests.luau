@@ -43,4 +43,25 @@ return function(load, check)
 	h.advance(10)
 	check(h.Upgrade:UpgradeVerity(3) == "OK")
 	check(r.Data.Cash == 50 - load("src/shared/EconomyConfig").LevelCost[1], "Settle old level before upgrade")
+
+	local workshop = make(load)
+	local owner = workshop.join(4)
+	check(workshop.Upgrade:UpgradeHouse(4) == "BOX_NOT_OPENED")
+	owner.Data.VerityUnlocked = true
+	owner.Data.DeliveryState = "Opened"
+	check(workshop.Upgrade:UpgradeHouse(4) == "INSUFFICIENT_CASH" and owner.Data.HouseIncomeLevel == 0)
+	workshop.advance(10)
+	check(workshop.Upgrade:UpgradeHouse(4) == "HOUSE_UPGRADED")
+	check(owner.Data.Cash == 25 and owner.Data.HouseIncomeLevel == 1, "Settle old income before charging for house")
+	check(workshop.Upgrade:UpgradeHouse(4) == "HOUSE_LEVEL_REQUIRED")
+	workshop.advance(4)
+	workshop.Income:Tick()
+	check(owner.Data.Cash == 50 and workshop.State:Snapshot(4).IncomePerSecond == 6.25, "Workshop income and HUD agree")
+	check(workshop.Economy:GetSwipeIncome(4) == 2, "Workshop does not change swipe income")
+	local schema = load("src/server/ProfileSchema")
+	local restored = schema.validate(schema.copy(owner.Data))
+	check(restored.HouseIncomeLevel == 1, "House upgrade persists in profile")
+	local oldProfile = schema.new()
+	oldProfile.HouseIncomeLevel = nil
+	check(schema.validate(oldProfile).HouseIncomeLevel == 0, "Existing profile gains a zero-upgrade default")
 end

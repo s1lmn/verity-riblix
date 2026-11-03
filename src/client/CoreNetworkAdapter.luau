@@ -59,6 +59,15 @@ function Adapter:Attach(folder)
 						if payload.protocolVersion==1 then
 							local messages={OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
 								PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
+							if payload.source=="Workshop" then
+								messages={
+									HOUSE_UPGRADED="Мастерская улучшена! Пассивный доход вырос.",
+									INSUFFICIENT_CASH="На улучшение мастерской пока не хватает денег.",
+									HOUSE_LEVEL_REQUIRED="Сначала подними уровень Verity.",
+									BOX_NOT_OPENED="Сначала распакуй Verity",
+									MAX_LEVEL="Все улучшения куплены",
+								}
+							end
 							local message=messages[payload.code]
 							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end

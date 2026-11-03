@@ -5,6 +5,38 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.GameConfig)
 local Tasks = require(Shared.TaskConfig)
 local Levels = require(Shared.LevelConfig)
+local Houses = require(Shared.HouseConfig)
+
+local function updateWorkshop(anchors, state)
+	local level = if state then state.HouseIncomeLevel else 0
+	local nextUpgrade = Houses.IncomeUpgrades[level + 1]
+	local unlocked = state and state.VerityUnlocked
+	local canBuy = unlocked and nextUpgrade and state.VerityLevel >= nextUpgrade.Level
+	local status = if not unlocked then "Сначала распакуй Verity" elseif not nextUpgrade then "Все улучшения куплены"
+		elseif canBuy then nextUpgrade.Name else "Следующее улучшение требует уровень Verity %d"
+	local required = if unlocked and nextUpgrade and not canBuy then nextUpgrade.Level else nil
+	local last = anchors.WorkshopStatus
+	local owned = state ~= nil
+	if last and last.level == level and last.status == status and last.required == required and last.owned == owned then return end
+	anchors.WorkshopStatus = {level = level, status = status, required = required, owned = owned}
+	for index, crystal in anchors.WorkshopLights do
+		crystal.Material = if index <= level then Enum.Material.Neon else Enum.Material.SmoothPlastic
+		crystal.Transparency = if index <= level then 0 else .7
+	end
+	local prompt = anchors.WorkshopPrompt
+	prompt.Enabled = canBuy == true
+	if canBuy then
+		LocaleText.SetWorld(prompt, "ObjectText", nextUpgrade.Name)
+		LocaleText.SetWorld(prompt, "ActionText", "Купить за $%d (+25%% дохода Verity)", nextUpgrade.Cost)
+	end
+	local label = anchors.WorkshopSign
+	label.Parent.Enabled = owned
+	if required then LocaleText.SetWorld(label, "Text", "Мастерская Verity • +%d%% дохода\nСледующее улучшение требует уровень Verity %d", level * 25, required)
+	else
+		LocaleText.SetWorld(label, "Text", "Мастерская Verity • +%d%% дохода\n%s", level * 25, status)
+		label:SetAttribute("Text_locale_en", string.format("Verity Workshop • +%d%% income\n%s", level * 25, LocaleText.Get("en", status)))
+	end
+end
 local houseColors = {
 	Color3.fromRGB(134, 224, 188), Color3.fromRGB(103, 214, 255),
 	Color3.fromRGB(157, 137, 255), Color3.fromRGB(255, 137, 203),
@@ -134,6 +166,50 @@ function WorldIntegration.new(workspace, players, plots, world)
 		prompt:AddTag("VerityHouseClaim")
 		prompt.Parent = anchors.ClaimPoint
 		anchors.ClaimPrompt = prompt
+		local workshop = anchors.UpgradeStation
+		local buy = Instance.new("ProximityPrompt")
+		buy.Name = "UpgradeHouseIncome"
+		buy.HoldDuration = .45
+		buy.MaxActivationDistance = Config.MaxInteractionDistance
+		buy.RequiresLineOfSight = false
+		buy.Enabled = false
+		buy:SetAttribute("WorkshopPlotId", id)
+		buy:AddTag("VerityHouseWorkshop")
+		buy.Parent = workshop
+		anchors.WorkshopPrompt = buy
+		local workshopGui = Instance.new("BillboardGui")
+		workshopGui.Name = "VerityWorkshop"
+		workshopGui.Size = UDim2.fromOffset(240, 50)
+		workshopGui.StudsOffsetWorldSpace = Vector3.new(0, 3.7, 0)
+		workshopGui.MaxDistance = 60
+		workshopGui.Enabled = false
+		workshopGui.Parent = workshop
+		local workshopLabel = Instance.new("TextLabel")
+		workshopLabel.Size = UDim2.fromScale(1, 1)
+		workshopLabel.TextWrapped = true
+		workshopLabel.Font = Enum.Font.GothamBold
+		workshopLabel.TextSize = 13
+		workshopLabel.BackgroundColor3 = Color3.fromRGB(241, 229, 255)
+		workshopLabel.TextColor3 = Color3.fromRGB(45, 30, 70)
+		workshopLabel.Parent = workshopGui
+		local workshopCorner = Instance.new("UICorner")
+		workshopCorner.CornerRadius = UDim.new(0, 9)
+		workshopCorner.Parent = workshopLabel
+		anchors.WorkshopSign = workshopLabel
+		anchors.WorkshopLights = {}
+		for index = 1, #Houses.IncomeUpgrades do
+			local crystal = Instance.new("Part")
+			crystal.Name = "IncomeCrystal"
+			crystal.Shape = Enum.PartType.Ball
+			crystal.Size = Vector3.one * .4
+			crystal.CFrame = workshop.CFrame * CFrame.new((index - 3) * .52, workshop.Size.Y / 2 + .32, 0)
+			crystal.Anchored = true
+			crystal.CanCollide, crystal.CanQuery, crystal.CanTouch = false, false, false
+			crystal.Color = houseColors[index + 1]
+			crystal.Transparency = .7
+			crystal.Parent = model
+			anchors.WorkshopLights[index] = crystal
+		end
 		local sign = Instance.new("BillboardGui")
 		sign.Name = "HouseStatus"
 		sign.Adornee = self.anchors[id].HouseEntrance or self.anchors[id].SpawnPoint
@@ -209,6 +285,7 @@ function WorldIntegration:UpdatePlot(userId, state)
 		updateHouseSign(self.anchors[plotId], self.players:GetPlayerByUserId(userId), state.HouseTier)
 	end
 	model:SetAttribute("OwnerUserId", userId)
+	updateWorkshop(self.anchors[plotId], state)
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
 		model:SetAttribute(key, state[key])
 	end
@@ -258,6 +335,7 @@ function WorldIntegration:ClearPlot(plotId)
 	model:SetAttribute("OwnerUserId", 0)
 	updateHouseSign(self.anchors[plotId], nil)
 	self.anchors[plotId].ClaimPrompt.Enabled = true
+	updateWorkshop(self.anchors[plotId], nil)
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 		model:SetAttribute(key, nil)
 	end

@@ -1,6 +1,7 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.EconomyConfig)
+local Houses = require(Shared.HouseConfig)
 local UpgradeService = {}
 UpgradeService.__index = UpgradeService
 function UpgradeService.new(data, state, economy, income, verity)
@@ -32,5 +33,18 @@ function UpgradeService:UpgradeSwipe(userId)
 	profile.Data.SwipeUpgradeLevel += 1
 	self.data:Touch(profile)
 	return "OK"
+end
+function UpgradeService:UpgradeHouse(userId)
+	local profile = self.data:Get(userId)
+	if not profile or not self.state.sessions[userId] then return "NOT_READY" end
+	if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
+	local nextUpgrade = Houses.IncomeUpgrades[profile.Data.HouseIncomeLevel + 1]
+	if not nextUpgrade then return "MAX_LEVEL" end
+	if profile.Data.VerityLevel < nextUpgrade.Level then return "HOUSE_LEVEL_REQUIRED" end
+	self.income:Settle(userId)
+	if not self.economy:TrySpendCash(userId, nextUpgrade.Cost) then return "INSUFFICIENT_CASH" end
+	profile.Data.HouseIncomeLevel += 1
+	self.data:Touch(profile)
+	return "HOUSE_UPGRADED"
 end
 return UpgradeService

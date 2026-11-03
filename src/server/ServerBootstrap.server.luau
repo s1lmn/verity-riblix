@@ -140,7 +140,14 @@ for _, name in Protocol.Requests do
 		Remote:Handle(player.UserId, name, payload)
 	end)
 end
-for _, anchors in World.anchors do
+for plotId, anchors in World.anchors do
+	anchors.WorkshopPrompt.Triggered:Connect(function(player)
+		local id = player.UserId
+		if Plots.owners[id] ~= plotId or not World:IsNear(id, plotId, "UpgradeStation") then return end
+		local status = Upgrade:UpgradeHouse(id)
+		State:Publish(id, true)
+		send(id, "NotificationEvent", {protocolVersion = 1, code = status, source = "Workshop"})
+	end)
 	local box = anchors.Model:FindFirstChild("CoreDeliveryBox")
 	if box then
 		box.OpenBox.Triggered:Connect(function(player)

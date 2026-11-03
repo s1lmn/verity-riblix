@@ -1,6 +1,18 @@
 --!strict
 local Numeric = require(script.Parent.Numeric)
 local HouseConfig = {}
+HouseConfig.IncomeUpgrades = table.freeze({
+	table.freeze({Level = 1, Cost = 25, Name = "Сад светлячков"}),
+	table.freeze({Level = 10, Cost = 500, Name = "Чайная Verity"}),
+	table.freeze({Level = 25, Cost = 8000, Name = "Мастерская звёзд"}),
+	table.freeze({Level = 50, Cost = 350000, Name = "Облачная теплица"}),
+	table.freeze({Level = 75, Cost = 14000000, Name = "Обсерватория Verity"}),
+})
+HouseConfig.IncomeStep = 0.25
+
+function HouseConfig.getIncomeMultiplier(upgrades: number): number
+	return 1 + upgrades * HouseConfig.IncomeStep
+end
 function HouseConfig.getHouseTier(level: number): number
 	assert(Numeric.isInteger(level, 1, 100), "Invalid Verity level")
 	if level >= 100 then return 6 end
