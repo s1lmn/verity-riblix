@@ -67,7 +67,7 @@ function Main.new()
 	end
 	self.verity=self.cleanup:Add(Verity.new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
-	self.houseSelection=self.cleanup:Add(HouseSelection.new(ctx))
+	self.houseSelection=self.cleanup:Add(HouseSelection.new())
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
  ctx.tasks=self.tasks
  self.cosmetics=self.cleanup:Add(Cosmetics.new(ctx))
@@ -202,7 +202,7 @@ function Main:Render()
 	local ctx=self.ctx
 	local state=ctx.net.state
 	self.refs.Status.Text=if self.versions.issue then self.versions.issue elseif not ctx.net.connected then "Connecting…" elseif not state then "Loading progress…" else ""
- self.refs.Status.Visible=ctx.active==nil and (self.versions.issue~=nil or not ctx.net.connected or state==nil)
+ self.refs.Status.Visible=ctx.active==nil and (self.versions.issue~=nil or not ctx.net.connected or (state==nil and not Players.LocalPlayer:GetAttribute("HouseSelectionReady")))
 	self.refs.Income.Text=if state then "+$"..Model.Format(state.IncomePerSecond).." / sec" else "+$— / sec"
 	self.refs.Level.Text=if state then string.format("LVL %d / 100",state.VerityLevel) else "LVL — / 100"
 	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()

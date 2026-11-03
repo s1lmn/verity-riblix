@@ -174,7 +174,12 @@ function Tutorial:DrawRoute(root,now)
 end
 function Tutorial:Render()
  local ctx=self.ctx
- self.goal=Goals.Resolve(ctx.net.state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow());self:Update(os.clock())
+ self.goal=Goals.Resolve(ctx.net.state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow())
+ if not self.goal and Players.LocalPlayer:GetAttribute("HouseSelectionReady")
+  and not Players.LocalPlayer:GetAttribute("HousePlotId") then
+  self.goal={id="claim-house",kind="Wait",title="Выбери дом",detail="Подойди к свободному дому и нажми «Занять дом»"}
+ end
+ self:Update(os.clock())
 end
 function Tutorial:HintText(text)
  self.ctx.refs.TutorialText.Text=text

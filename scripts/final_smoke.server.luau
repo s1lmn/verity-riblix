@@ -32,11 +32,13 @@ local ok,failure=pcall(function()
   local players = Players:GetPlayers()
   if #players ~= expected then return nil end
   for _, player in players do
-   if not player:GetAttribute("HouseSelectionReady") then return nil end
+   if not player:GetAttribute("HouseSelectionReady") or not player.Character
+    or not player.Character:GetAttribute("SpawnReady") then return nil end
   end
   return players
  end, 60, "House selection not ready")
  for plotId, player in rosterForClaim do
+  player.Character:PivotTo(s.WorldIntegration.anchors[plotId].ClaimPoint.CFrame)
   assert(s.PlayerLifecycle.ClaimHouse(player, plotId) == "OK", "Smoke house claim failed")
  end
 	waitFor(function()
@@ -146,6 +148,7 @@ local ok,failure=pcall(function()
  local savedCooldown=profile.Data.TaskCooldowns.PRESS_BUTTON
  local savedPlot = s.PlotService.owners[id]
  s.PlayerLifecycle.Detach(first);s.PlayerLifecycle.Attach(first)
+ first.Character:PivotTo(s.WorldIntegration.anchors[savedPlot].ClaimPoint.CFrame)
  assert(s.PlayerLifecycle.ClaimHouse(first, savedPlot) == "OK", "Reattached player could not reclaim house")
  check(s.DataService:Get(id).Data.VerityLevel==savedLevel and s.DataService:Get(id).Data.VerityUnlocked,"production profile reattach restores unlocked level")
  check(s.DataService:Get(id).Data.CosmeticsEquipped.Face=="round_glasses","production profile reattach restores equipped cosmetics")

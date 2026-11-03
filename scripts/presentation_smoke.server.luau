@@ -24,11 +24,13 @@ local ok,failure=pcall(function()
   local players = Players:GetPlayers()
   if #players ~= expected then return nil end
   for _, player in players do
-   if not player:GetAttribute("HouseSelectionReady") then return nil end
+   if not player:GetAttribute("HouseSelectionReady") or not player.Character
+    or not player.Character:GetAttribute("SpawnReady") then return nil end
   end
   return players
  end, 60, "House selection not ready")
  for plotId, player in rosterForClaim do
+  player.Character:PivotTo(s.WorldIntegration.anchors[plotId].ClaimPoint.CFrame)
   assert(s.PlayerLifecycle.ClaimHouse(player, plotId) == "OK", "Smoke house claim failed")
  end
  waitFor(function()

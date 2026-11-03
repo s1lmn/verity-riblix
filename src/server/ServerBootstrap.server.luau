@@ -149,10 +149,6 @@ Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyServi
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local spawning = {}
-local houseSelection = Instance.new("RemoteEvent")
-houseSelection.Name = "ChooseHouse"
-houseSelection:SetAttribute("PlotCount", Plots.count)
-houseSelection.Parent = ReplicatedStorage
 local function spawnPlayer(player)
 	local id = player.UserId
 	if closing or player.Parent ~= Players or not Data:Get(id) then return end
@@ -214,8 +210,10 @@ local function claimHouse(player, requestedPlot)
 	if closing or player.Parent ~= Players or not player:GetAttribute("HouseSelectionReady") or not Data:Get(userId) then
 		return "NOT_READY"
 	end
-	if type(requestedPlot) ~= "number" then return "INVALID_PLOT" end
+	local anchors = World.anchors[requestedPlot]
+	if not anchors then return "INVALID_PLOT" end
 	if Plots.owners[userId] then return "ALREADY_CLAIMED" end
+	if not World:IsNear(userId, requestedPlot, "ClaimPoint") then return "TOO_FAR" end
 	local plotId, reason = Plots:Assign(userId, requestedPlot)
 	if not plotId then return reason end
 
@@ -223,8 +221,7 @@ local function claimHouse(player, requestedPlot)
 	local spawnPoint = World.anchors[plotId].SpawnPoint
 	spawnPoint.Enabled = true
 	player.RespawnLocation = spawnPoint
-	if World:GetCharacter(userId) then player.Character:PivotTo(spawnPoint.CFrame) end
-	houseSelection:SetAttribute("Owner" .. plotId, userId)
+	anchors.ClaimPrompt.Enabled = false
 	player:SetAttribute("HousePlotId", plotId)
 	State:Publish(userId, true)
 	Verity:Event(userId, "PlotAssigned", {state = State:Snapshot(userId), presentation = false})
@@ -232,10 +229,11 @@ local function claimHouse(player, requestedPlot)
 	return "OK"
 end
 
-houseSelection.OnServerEvent:Connect(function(player, plotId)
-	local result = claimHouse(player, plotId)
-	houseSelection:FireClient(player, result)
-end)
+for plotId, anchors in World.anchors do
+	anchors.ClaimPrompt.Triggered:Connect(function(player)
+		claimHouse(player, plotId)
+	end)
+end
 local function removePlayer(player)
 	local id = player.UserId
 	player:SetAttribute("HouseSelectionReady", nil)
@@ -250,7 +248,6 @@ local function removePlayer(player)
 	local plotId = Plots:Release(id)
 	State:Remove(id)
 	if plotId then
-		houseSelection:SetAttribute("Owner" .. plotId, nil)
 		World:ClearPlot(plotId)
 		emit({protocolVersion = 1, type = "PlotReleased", eventId = guid(), ownerUserId = id, plotId = plotId})
 	end

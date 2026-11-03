@@ -120,6 +120,17 @@ function WorldIntegration.new(workspace, players, plots, world)
 		if sourceMarkers then
 			self.anchors[id].HouseEntrance = assert(sourceMarkers:FindFirstChild("HouseEntrance"))
 		end
+		local anchors = self.anchors[id]
+		anchors.ClaimPoint = anchors.HouseEntrance or anchors.SpawnPoint
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "ClaimHouse"
+		prompt.ActionText = "Занять дом"
+		prompt.ObjectText = string.format("Свободный дом %02d", id)
+		prompt.MaxActivationDistance = Config.MaxInteractionDistance
+		prompt.RequiresLineOfSight = false
+		prompt:AddTag("VerityHouseClaim")
+		prompt.Parent = anchors.ClaimPoint
+		anchors.ClaimPrompt = prompt
 		local sign = Instance.new("BillboardGui")
 		sign.Name = "HouseStatus"
 		sign.Adornee = self.anchors[id].HouseEntrance or self.anchors[id].SpawnPoint
@@ -236,6 +247,7 @@ function WorldIntegration:ClearPlot(plotId)
 	if verity then verity:Destroy(); self.verities[owner] = nil end
 	model:SetAttribute("OwnerUserId", 0)
 	updateHouseSign(self.anchors[plotId], nil)
+	self.anchors[plotId].ClaimPrompt.Enabled = true
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 		model:SetAttribute(key, nil)
 	end
