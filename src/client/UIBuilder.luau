@@ -126,7 +126,7 @@ function Builder.Build(playerGui)
 	phone.Caption.Size = UDim2.new(1, 0, 0, 18)
 	phone.Reward = W.Text(phone.Controls, "Reward", "$— per swipe", 19, true)
 	phone.Reward.Position, phone.Reward.Size = UDim2.fromOffset(0, 19), UDim2.new(1, 0, 0, 26)
-	phone.Next = W.Button(phone.Controls, "NextPost", "NEXT POST ↑", T.Blue)
+	phone.Next = W.Button(phone.Controls, "NextPost", "ЛИСТАТЬ ↑", T.Blue)
 	phone.Next.Position, phone.Next.Size = UDim2.fromOffset(0, 50), UDim2.new(1, 0, 0, 44)
 	phone.Power = W.Button(phone.Controls, "SwipePower", "SWIPE POWER ↗", T.Mint)
 	phone.Power.Position, phone.Power.Size = UDim2.fromOffset(0, 102), UDim2.new(1, 0, 0, 44)
@@ -174,10 +174,13 @@ function Builder.Build(playerGui)
 	refs.Panels.SETTINGS = settings
 
 
- refs.Tutorial=W.Round(W.Frame(safe,"Tutorial",UDim2.fromOffset(190,36),T.Paper),9)
+ refs.Tutorial=W.Round(W.Frame(safe,"Tutorial",UDim2.fromOffset(220,54),T.Paper),9)
  refs.Tutorial.BackgroundTransparency=.08;W.Stroke(refs.Tutorial,T.Gold,1)
- refs.TutorialText=W.Text(refs.Tutorial,"Hint","Waiting for delivery…",11,false,T.Ink)
- refs.TutorialText.Position,refs.TutorialText.Size=UDim2.fromOffset(8,4),UDim2.new(1,-16,1,-8)
+ refs.GuideTitle=W.Text(refs.Tutorial,"GuideTitle","Твоя следующая цель",11,true,T.Ink)
+ refs.GuideTitle.TextWrapped=false;refs.GuideTitle.TextTruncate=Enum.TextTruncate.AtEnd
+ refs.GuideTitle.Position,refs.GuideTitle.Size=UDim2.fromOffset(8,4),UDim2.new(1,-16,0,16)
+ refs.TutorialText=W.Text(refs.Tutorial,"Hint","Подожди доставку…",11,false,T.Ink)
+ refs.TutorialText.Position,refs.TutorialText.Size=UDim2.fromOffset(8,21),UDim2.new(1,-54,1,-25)
  refs.Tutorial.Visible=false
 
 	refs.Toasts = W.Frame(safe, "Notifications", UDim2.new(1, -32, 0, 108))
@@ -215,8 +218,8 @@ function Builder.Build(playerGui)
   local railWidth=columns*side+(columns-1)*gap+4
   local rows=math.ceil(#buttons/columns)
   local contentHeight=rows*(side+gap)-gap+4
-  local hintHeight=if short then 28 else 36
-  local available=math.max(44,size.Y-navTop-hintHeight-20)
+  local hintHeight=if open and size.X>=640 then 68 elseif short then 44 else 54
+  local available=math.max(44,size.Y-navTop-hintHeight-16)
   local navHeight=math.min(contentHeight,available)
   nav.Position=UDim2.fromOffset(10,navTop);nav.Size=UDim2.fromOffset(railWidth,navHeight)
   nav.CanvasSize=UDim2.fromOffset(0,contentHeight)
@@ -226,8 +229,10 @@ function Builder.Build(playerGui)
    button.Position=UDim2.fromOffset(2+((i-1)%columns)*(side+gap),2+math.floor((i-1)/columns)*(side+gap))
   end
   refs.Tutorial.Position=UDim2.fromOffset(12,navTop+navHeight+8)
-  refs.Tutorial.Size=UDim2.fromOffset(math.min(190,size.X-24),hintHeight)
+  refs.Tutorial.Size=UDim2.fromOffset(if open and size.X>=640 then 150 else math.min(220,size.X-24),hintHeight)
   refs.TutorialText.TextSize=if short then 10 else 11
+  refs.GuideTitle.TextSize=if short then 10 else 11
+  refs.TutorialText.Position=UDim2.fromOffset(8,if short then 18 else 21)
   refs.Status.Position=refs.Tutorial.Position
   local narrow=size.X<640
   hud.Visible,nav.Visible=not (narrow and open),not (narrow and open)

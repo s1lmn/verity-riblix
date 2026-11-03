@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "coreAssertions": 661,
+  "guidanceCases": 22,
+  "compiledProductionSources": 72,
+  "sourceFingerprint": "38f68faf58e37325331e5d796b5463a10d319d2d2ba65857ebf40b21539db979",
+  "recordedUtc": "2026-11-03T18:27:50.433391+00:00",
+  "scope": "Core and guidance selection in Luau CLI; Rojo roundtrip; desktop Studio. Not a physical mobile or cloud DataStore test."
+}

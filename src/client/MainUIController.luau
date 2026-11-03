@@ -66,6 +66,7 @@ function Main.new()
 	self.verity=self.cleanup:Add(Verity.new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
+ ctx.tasks=self.tasks
  self.cosmetics=self.cleanup:Add(Cosmetics.new(ctx))
 	self.tutorial=self.cleanup:Add(Tutorial.new(ctx))
 	self.ledger=Ledger.new()
@@ -208,7 +209,7 @@ function Main:Tick(dt)
 	local now=os.clock()
 	if self.versions.issue then self.refs.Status.Text=self.versions.issue end
 	ctx.rewards:Tick(now)
-	self.tasks:Render();self.tasks:Tick()
+	self.tasks:Render();self.tutorial:Render()
 	self.phone:ReconcileSession()
 	self.verity:Render()
 	self.refs.Banner.Visible=now<self.bannerUntil

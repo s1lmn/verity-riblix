@@ -53,6 +53,7 @@ function PlayerStateService:Snapshot(userId)
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
 		BoostMultiplier = multiplier, BoostExpiresAt = data.BoostExpiresAt,
 		PhoneOpen = session.PhoneOpen, Tasks = tasks,
+  DeliveryPosition = if self.DeliveryPosition then self.DeliveryPosition(userId) else nil,
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
   CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},

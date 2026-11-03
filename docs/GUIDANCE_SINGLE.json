@@ -1,0 +1,30 @@
+{
+  "players": 1,
+  "checks": [
+    "guidance geometry stays client-local",
+    "guide points only to own delivery evev1111",
+    "no synthetic starting money or progress evev1111",
+    "real guide route walks downstairs and through house doorway evev1111",
+    "guided box opens through validated Core request evev1111",
+    "box marker switches to phone UI arrow evev1111",
+    "phone explains the swipe action evev1111",
+    "real swipes and passive income fund first level evev1111",
+    "guide reaches first real purchased level evev1111",
+    "task selection closes menu and guides correct target PRESS_BUTTON",
+    "confirmed reward clears old waypoint PRESS_BUTTON",
+    "task selection closes menu and guides correct target REACH_POINT",
+    "confirmed reward clears old waypoint REACH_POINT",
+    "task selection closes menu and guides correct target STAND_ON_PLATFORM",
+    "confirmed reward clears old waypoint STAND_ON_PLATFORM",
+    "UI reload leaves one guidance controller and marker folder",
+    "respawn preserves one live guidance system"
+  ],
+  "dataMode": "Studio Memory",
+  "syntheticMoney": false,
+  "syntheticLevelChanges": false,
+  "status": "PASS",
+  "kind": "guided real onboarding and three physical task routes",
+  "assertions": 17,
+  "recordedUtc": "2026-11-03 18:27:43 UTC",
+  "sourceFingerprint": "38f68faf58e37325331e5d796b5463a10d319d2d2ba65857ebf40b21539db979"
+}

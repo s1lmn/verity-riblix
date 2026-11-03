@@ -92,8 +92,8 @@ function WorldIntegration.new(workspace, players, plots, world)
 			box.Parent = model
 			local prompt = Instance.new("ProximityPrompt")
 			prompt.Name = "OpenBox"
-			prompt.ActionText = "Open Verity"
-			prompt.ObjectText = "Delivery"
+			prompt.ActionText = "Распаковать"
+			prompt.ObjectText = "Коробка Verity"
 			prompt.MaxActivationDistance = Config.MaxInteractionDistance
 			prompt.Enabled = false
 			prompt.Parent = box

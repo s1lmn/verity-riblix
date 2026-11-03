@@ -70,6 +70,10 @@ local Plots = require(script.Parent.PlotService).new(Config.PlotCount, Config.Se
 	function(userId, plotId, pointName) return World:IsNear(userId, plotId, pointName) end,
 	if generatedWorld then WorldModule.ReadLayouts(generatedWorld, Config.PlotCount) else nil)
 World = WorldModule.new(workspace, Players, Plots, generatedWorld)
+State.DeliveryPosition = function(userId)
+ local plotId=Plots.owners[userId];local anchors=plotId and World.anchors[plotId]
+ return anchors and anchors.DeliveryPoint.Position
+end
 local Verity = require(script.Parent.VerityService).new(Data, State, guid, emit)
 local Delivery = require(script.Parent.DeliveryService).new(Data, State, Plots, Income, Verity, clock, Config.DeliveryDelay)
 local Upgrade = require(script.Parent.UpgradeService).new(Data, State, Economy, Income, Verity)

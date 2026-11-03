@@ -52,7 +52,7 @@ function Phone:Render()
 	local busy=net:IsBusy("Swipe")
 	self.refs.Reward.Text=if state then "$"..Model.Format(state.SwipeIncome).." per swipe" else "$— per swipe"
 	self.refs.Session.Text=if not state then "Waiting for server session…" elseif not ready then "Phone session is closed / connecting…" elseif busy then "Waiting for confirmed reward…" else "Touch ↑  •  Drag ↑  •  Wheel ↑  •  Next"
-	W.SetButton(self.refs.Next,if busy then "WAITING…" else "NEXT POST ↑",ready and not busy,busy)
+	W.SetButton(self.refs.Next,if busy then "ПОДОЖДИ…" else "ЛИСТАТЬ ↑",ready and not busy,busy)
 end
 
 function Phone:Destroy() self.cleanup:Destroy() end
