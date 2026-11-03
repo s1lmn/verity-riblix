@@ -1,43 +1,37 @@
-# Textured Verity companion — one base character
+# Textured Verity — first ten looks
 
-One uploaded UV sphere, eight uploaded textures, smooth following and idle. No changes to map, house geometry, existing UI controllers or economy. Old native prototypes and the 100-level renderer are not replaced or tagged onto this model.
-
-## Run the current build
-
-Open the complete place and press Play in Roblox Studio. Shared.VerityCompanionConfig.StudioPreview is true: every Studio player gets one base Verity without an emotion-selection menu. The automatic preview spawn is ONLY available in Studio. Normal live creation remains Core-owned; no unlock, cash or save state is fabricated.
+Ten bright plastic spheres based on the approved hero. No stripes, extra appendages, early-level neon or new UI. All ten reuse one UV mesh and eight transparent expression images; their native sphere body supplies the independent pigment. Each companion has two anchored, noncolliding local Parts. The old opaque yellow hero textures remain historical sources, not the current runtime textures.
 
 ## Core integration
 
 ```luau
 local Companion = require(game.ReplicatedStorage.World.VerityCompanionService)
-Companion.Attach(player) -- after confirmed unlock/restoration, not before
-Companion.SetEmotion(player, "Love", 3) -- confirmed earning reaction
-Companion.SetEmotion(player, "Playful", 2) -- confirmed combat reaction
-Companion.Detach(player) -- PlayerRemoving already cleans up
+Companion.Attach(player, savedLevel) -- confirmed unlock/restoration; currently 1..10
+Companion.SetLevel(player, confirmedLevel) -- after a real upgrade, not from a client claim
+Companion.SetEmotion(player, "Stars", 2) -- successful upgrade reaction
+Companion.SetEmotion(player, "Love", 3) -- confirmed swipe/earning
+Companion.SetEmotion(player, "Playful", 2) -- confirmed combat action
+Companion.Detach(player)
 ```
 
-Attach is idempotent. SetEmotion accepts Joy, Love, Playful, Wink, Laugh, Surprise, Confident, Stars. An optional 0..10-second duration resets to Joy; later reactions supersede earlier reset timers. Duration zero/nil persists until changed. No client economy events are invented. Core must call these operations after its real validations. The service is server-only.
+Attach is idempotent; omitting its level defaults a new companion to 1 and preserves an existing descriptor's level. SetLevel returns false if no companion is attached. Only integer levels 1..10 are authored and accepted. This milestone does not implement levels 11..100, economy, saves, unlocks or purchases. Core must supply its saved/confirmed level; no fake upgrade controls were added.
 
-CompanionBootstrap creates the empty ReplicatedStorage.VerityCompanions root immediately, even in a published server; delayed box opening therefore works after the client initially starts. In Studio it also enables the explicit preview. Manual emotion buttons and their preview remote have been removed. Only server logic calls SetEmotion; the client observes the confirmed Emotion attribute.
+SetEmotion accepts Joy, Love, Playful, Wink, Laugh, Surprise, Confident, Stars. Optional duration 0..10 seconds returns to Joy; a later reaction supersedes an earlier reset timer. Zero/nil persists. Calls are server-only. No manual emotion menu or client emotion remote exists. Event mappings are ready for Core; this does not claim earning/combat callbacks already exist.
 
-Each descriptor carries OwnerUserId and Emotion. Clients render one anchored noncolliding Part+SpecialMesh per owner using the SAME mesh; expressions swap only TextureId. One RenderStepped connection at display frame rate follows visible players with exponential interpolation, teleport catch-up, a small idle bob, distance culling, camera proximity/first-person hiding and missing-character/death hiding. Respawn reconnects by player identity. Surface casts help avoid solid walls and floors. Facial orientation faces the viewing camera horizontally for readability. ReducedMotion disables bobbing. No per-frame remote position traffic. Removal disconnects the per-model signal; script teardown destroys local visuals and controls.
+Descriptors have OwnerUserId, Emotion and Level. The client reacts to confirmed attributes. Changing level smoothly changes color and size with a small expansion pulse. A jump queues each intermediate look; restoration, hidden companions and level decreases apply immediately. Growth comes from Shared.LevelConfig.getVerityScale, unchanged: 1 + 14 * ((level - 1) / 99)^0.85. Level 1 diameter is 2.8 studs; level 10 is approximately 7.91 studs. Higher levels move farther from the owner and use a larger wall/floor query radius.
 
-Base size is 2.8 studs. There is no level-dependent growth in this one-character milestone. The existing shared LevelConfig is unchanged; large companion sizes need a later design/geometry pass before connecting progression.
+Existing display-frame flight interpolation, independently smoothed heading/facing, bobbing, teleport catch-up, distance culling, first-person hiding and respawn recovery remain. ReducedMotion disables idle bob and expansion pulse and uses a linear color/size transition. Every visible owner shares one client render connection; there is no per-frame network transform traffic. Removing a descriptor destroys both Parts and disconnects its signals.
 
-## Assets
+## Assets and Studio files
 
-Real imported IDs: src/shared/VerityCompanionConfig.luau and assets/verity-hero/roblox-assets.json. The importer deduplicated the same mesh across all expression imports. Source textures/GLB/OBJ and an offline review viewer are in assets/verity-hero. No temporary file URIs, runtime EditableMesh/EditableImage calls, external code or missing numeric IDs.
+`assets/verity-ten-textured/Verity_FirstTen_Textured.rbxmx` contains all ten static models. The models subfolder contains each separately. They already have their level's size: do not apply LevelConfig a second time. The Integration configuration records Level, AppliedScale, AlreadyScaled and all eight emotion IDs. To change a static model's face, set Face.SharedFace.TextureId to its corresponding Integration string value. Runtime animation is in src/world-client/VerityCompanion.client.luau; the static models contain no scripts.
 
-Assets were uploaded by the logged-in Studio account. A game under a different creator/group may need asset permissions in Creator Dashboard. This work does not establish published-game permissions or multiplayer/device performance.
+Canonical current cloud IDs: src/shared/VerityCompanionConfig.luau and assets/verity-ten-textured/roblox-assets.json. Transparent PNGs and the reproducible import GLB are included. Their eight actual texture IDs were read from imported Studio MeshParts on 2026-11-03. The approved mesh ID is reused. No runtime EditableImage/EditableMesh or local-file URI dependencies.
 
-## Validation
+Assets belong to the logged-in Studio account. A different experience creator/group may need the normal asset permission grant. Published-game access and device performance were not verified.
 
-Compilation/build and the previous 14 pure test groups pass; new world-client code is compiled separately. Actual imported mesh+image IDs were read back from Studio objects. Studio log confirms a real PlayServer, PlayClient and player join for the delivered v1 build, without companion script errors in that recorded run. That is startup evidence, not proof of movement, collision handling, eight emotions or respawn. Exact additional checks and remaining limits are in assets/verity-hero/companion-checks.json.
+## Build and verification boundary
 
+The complete Rojo build includes the new shared palette, service API and renderer. StudioPreview still creates a level-1 companion only in Studio; production creation remains Core-owned. No progression is fabricated. Historical prototype renderers/factories must not be attached to these models.
 
-## Accepted feedback: action-driven reactions
-
-The user accepted the base character, deferred movement smoothing, and rejected manual emotion selection. The test panel/remote were removed; do not re-add them to the default build. Core must call SetEmotion after its actual confirmed actions: paid swipe / earning -> Love (about 2–3 s), successful upgrade -> Stars (about 2 s), confirmed combat action -> Playful (about 1–2 s), failed action -> Surprise (about 1 s), then Joy via the existing duration timer. These are presentation mappings, not new economy or combat implementations. Core is still absent: there is no claim that earning/combat callbacks already execute. Movement-smoothing refinement is deferred per user.
-
-
-Flight smoothing update: removed the visible 30 Hz transform cap. Follow position, owner heading and camera-facing rotation now have independent frame-rate-adjusted exponential filters; idle bob is applied after following without feedback. Owner teleports reset filters, and missing/dead character clears them. HeadingSpeed=6 and FacingSpeed=8 control turn softness. No Play test or device performance measurement was run for this update.
+This update is checked by Luau compilation and offline Rojo packaging only. Textures were uploaded/read back in Studio Edit mode. No Play, movement test, emotion playback test, multiplayer session or mobile profiling was run, per the user's request. Earlier hero checks describe the earlier build and are not evidence for this update.

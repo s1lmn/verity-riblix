@@ -1,0 +1,19 @@
+{
+  "mesh": "rbxassetid://131241398783580",
+  "textures": {
+    "Joy": "rbxassetid://80981300413243",
+    "Love": "rbxassetid://101077299500859",
+    "Playful": "rbxassetid://99399481880095",
+    "Wink": "rbxassetid://119902996931782",
+    "Laugh": "rbxassetid://114743070543492",
+    "Surprise": "rbxassetid://134567600691675",
+    "Confident": "rbxassetid://138239462151078",
+    "Stars": "rbxassetid://79774909235274"
+  },
+  "source": "Actual Studio importer readback, 2026-11-03. Transparent RGBA shared faces. No Play test.",
+  "partsPerCompanion": 2,
+  "levelRange": [
+    1,
+    10
+  ]
+}

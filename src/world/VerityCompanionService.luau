@@ -18,16 +18,31 @@ end
 function Service.Initialize()
     return folder()
 end
-function Service.Attach(player)
+local function validLevel(level)
+    return type(level)=="number" and level==level and level%1==0 and level>=1 and level<=10
+end
+function Service.SetLevel(player, level)
+    assert(validLevel(level), "Only companion levels 1..10 are authored")
+    local descriptor=folder():FindFirstChild(tostring(player.UserId))
+    if not descriptor then return false end
+    descriptor:SetAttribute("Level",level)
+    return true
+end
+function Service.Attach(player, level)
     assert(player:IsA("Player") and player.Parent == Players, "Expected connected owner")
+    assert(level == nil or validLevel(level), "Only companion levels 1..10 are authored")
     local root = folder()
     local name = tostring(player.UserId)
     local existing = root:FindFirstChild(name)
-    if existing then return existing end
+    if existing then
+        if level ~= nil then Service.SetLevel(player,level) end
+        return existing
+    end
     local descriptor = Instance.new("Folder")
     descriptor.Name = name
     descriptor:SetAttribute("OwnerUserId", player.UserId)
     descriptor:SetAttribute("Emotion", "Joy")
+    descriptor:SetAttribute("Level", level or 1)
     descriptor.Parent = root
     return descriptor
 end
@@ -58,7 +73,7 @@ function Service.StartStudioPreview()
     local root = folder()
     if root:GetAttribute("StudioPreviewStarted") then return end
     root:SetAttribute("StudioPreviewStarted", true)
-    Players.PlayerAdded:Connect(Service.Attach)
+    Players.PlayerAdded:Connect(function(player) Service.Attach(player) end)
     for _, player in Players:GetPlayers() do Service.Attach(player) end
 end
 return Service
