@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "sourceFingerprint": "ec6a432643a4988a47229fd908cea233e067897c669c627726e98120d819b96d",
+  "baseCommit": "df63c9ecefcaf848b67af954582a9526e08f4607",
+  "baselineGameFingerprint": "b129259f0d51de54f18a2f98f6f5575ff07fd6b7f594ceef5acfb57fd5ad0fdb",
+  "changedModules": [
+    "src/client/MainUIController.luau",
+    "src/client/TutorialController.luau",
+    "src/client/UIBuilder.luau"
+  ],
+  "recordedUtc": "2026-11-03T17:37:24.162093+00:00",
+  "compiledChangedModules": 3,
+  "rojoBuild": "PASS",
+  "livePanels": [
+    "VERITY",
+    "PHONE",
+    "TASKS",
+    "UPGRADES",
+    "COSMETICS",
+    "SETTINGS"
+  ],
+  "liveGuiCount": 1,
+  "healthyConnectionBannerVisible": false,
+  "visualInspection": "Roblox Studio screenshot",
+  "simulatedGuiCanvasSizes": [
+    [
+      2647,
+      695
+    ],
+    [
+      1920,
+      1080
+    ],
+    [
+      1062,
+      487
+    ],
+    [
+      844,
+      390
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      320,
+      568
+    ]
+  ],
+  "layoutChecks": [
+    "6 square buttons",
+    "44px minimum target",
+    "no button intersections",
+    "compact HUD <=150px",
+    "tutorial inside safe bounds"
+  ],
+  "scope": "GUI canvas simulations and live desktop Studio; not physical mobile/gamepad tests. Full gameplay reports remain at baseline fingerprint."
+}

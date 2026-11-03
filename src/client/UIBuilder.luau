@@ -3,9 +3,48 @@ local W = require(script.Parent.UIWidgets)
 local T = require(script.Parent.UITheme)
 local Builder = {}
 
+-- Small native vector icons; no uploaded images or external asset IDs.
+local function icon(button, kind, caption)
+ button.Text=""
+ local root=W.Frame(button,"Icon",UDim2.fromOffset(26,26))
+ root.BackgroundTransparency=1;root.AnchorPoint=Vector2.new(.5,.5);root.Position=UDim2.fromScale(.5,.37)
+ local function box(x,y,w,h,r,outline)
+  local f=W.Frame(root,"Shape",UDim2.fromOffset(w,h),T.Ink);f.Position=UDim2.fromOffset(x,y)
+  if r then W.Round(f,r) end
+  if outline then f.BackgroundTransparency=1;local stroke=W.Stroke(f,T.Ink,1.8);stroke.Transparency=0 end
+  return f
+ end
+ local function line(x1,y1,x2,y2)
+  local dx,dy=x2-x1,y2-y1
+  local f=box((x1+x2)/2,(y1+y2)/2,math.sqrt(dx*dx+dy*dy),2,1)
+  f.AnchorPoint=Vector2.new(.5,.5);f.Rotation=math.deg(math.atan2(dy,dx));return f
+ end
+ if kind=="VERITY" then
+  box(3,3,20,20,10,true);box(8,9,3,4,2);box(16,9,3,4,2)
+  line(9,17,11,19);line(11,19,16,19);line(16,19,18,17)
+ elseif kind=="PHONE" then
+  box(6,1,14,24,4,true);box(10,5,6,1,1);box(12,20,2,2,1)
+ elseif kind=="TASKS" then
+  box(4,3,18,21,3,true)
+  for _,y in {8,13,18} do box(7,y,2,2,1);box(12,y,7,2,1) end
+ elseif kind=="UPGRADES" then
+  line(13,3,13,22);line(6,10,13,3);line(13,3,20,10);line(6,24,20,24)
+ elseif kind=="COSMETICS" then
+  local points={{4,4},{9,2},{10,6},{16,6},{17,2},{22,4},{25,10},{20,13},{19,9},{19,24},{7,24},{7,9},{6,13},{1,10},{4,4}}
+  for i=2,#points do line(points[i-1][1],points[i-1][2],points[i][1],points[i][2]) end
+ else
+  box(5,5,16,16,8,true);box(10,10,6,6,3,true)
+  for i=0,7 do local a=i*math.pi/4;local tooth=box(13+math.cos(a)*10,13+math.sin(a)*10,4,3,1)
+   tooth.AnchorPoint=Vector2.new(.5,.5);tooth.Rotation=math.deg(a) end
+ end
+ local label=W.Text(button,"Caption",caption,8,true,T.Ink)
+ label.Position=UDim2.new(0,1,1,-13);label.Size=UDim2.new(1,-2,0,11)
+ label.TextXAlignment=Enum.TextXAlignment.Center;label.TextWrapped=false
+end
+
 local function panel(parent, name, title, subtitle)
 	local root = W.Round(W.Frame(parent, name, UDim2.fromOffset(640, 500)))
-	root.AnchorPoint = Vector2.new(0.5, 0)
+	root.AnchorPoint = Vector2.zero
 	root.Visible = false
 	root.Active = true
 	root.SelectionGroup = true
@@ -35,33 +74,32 @@ function Builder.Build(playerGui)
 	local safe = W.Frame(gui, "SafeRoot")
 	safe.BackgroundTransparency = 1
 	local refs = { Gui = gui, Safe = safe, Panels = {}, Nav = {} }
-	local hud = W.Round(W.Frame(safe, "HUD", UDim2.new(1, -24, 0, 58)))
-	hud.Position = UDim2.fromOffset(12, 6)
-	W.Stroke(hud)
-	local labels = { {"Cash", "$—", T.Ink}, {"Income", "+$— / sec", T.Purple}, {"Level", "LVL — / 100", T.Ink} }
-	for i, item in labels do
-		local label = W.Text(hud, item[1], item[2], 17, true, item[3])
-		label.Position, label.Size = UDim2.new((i - 1) / 3, 8, 0, 7), UDim2.new(1/3, -16, 0, 24)
-		refs[item[1]] = label
-		local caption = W.Text(hud, item[1] .. "Caption", ({ "YOUR CASH", "PASSIVE INCOME", "VERITY GROWTH" })[i], 9, true, T.Muted)
-		caption.Position, caption.Size = UDim2.new((i - 1) / 3, 8, 0, 33), UDim2.new(1/3, -16, 0, 16)
-	end
-	refs.HUD = hud
-	local nav = W.Frame(safe, "Navigation", UDim2.new(1, -24, 0, 44))
-	nav.BackgroundTransparency, nav.Position = 1, UDim2.fromOffset(12, 72)
-	local names = { "VERITY", "PHONE", "TASKS", "UPGRADES", "COSMETICS" }
-	local colors = { T.Pink, T.Blue, T.Gold, T.Mint, T.Purple }
-	for i, name in names do
-		local button = W.Button(nav, name, if name=="COSMETICS" then "STYLE" else name, colors[i])
-		button.Position, button.Size = UDim2.new((i-1)*0.2, 0, 0, 0), UDim2.new(0.2, -6, 1, 0)
-		refs.Nav[name] = button
-	end
-	refs.Navigation = nav
-	refs.Status = W.Text(safe, "ConnectionStatus", "Connecting to game server…", 12, true, T.Gold)
-	refs.Status.Position, refs.Status.Size = UDim2.fromOffset(16, 121), UDim2.new(1, -76, 0, 24)
-	refs.SettingsButton = W.Button(safe, "Settings", "…", T.Paper)
-	refs.SettingsButton.Size, refs.SettingsButton.AnchorPoint = UDim2.fromOffset(44, 44), Vector2.new(1, 0)
-	refs.SettingsButton.Position = UDim2.new(1, -12, 0, 120)
+
+ local hud=W.Round(W.Frame(safe,"HUD",UDim2.fromOffset(150,64)),10)
+ hud.Position=UDim2.fromOffset(12,8);hud.BackgroundTransparency=.08;W.Stroke(hud,T.Ink,1)
+ refs.Cash=W.Text(hud,"Cash","$—",16,true)
+ refs.Income=W.Text(hud,"Income","+$— / sec",11,true,T.Purple)
+ refs.Level=W.Text(hud,"Level","LVL — / 100",10,true,T.Muted)
+ refs.Cash.Position,refs.Cash.Size=UDim2.fromOffset(10,5),UDim2.new(1,-20,0,21)
+ refs.Income.Position,refs.Income.Size=UDim2.fromOffset(10,28),UDim2.new(1,-20,0,15)
+ refs.Level.Position,refs.Level.Size=UDim2.fromOffset(10,46),UDim2.new(1,-20,0,13)
+ refs.HUD=hud
+ local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
+  Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
+  ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
+ local names={"VERITY","PHONE","TASKS","UPGRADES","COSMETICS"}
+ local colors={T.Pink,T.Blue,T.Gold,T.Mint,T.Purple}
+ local captions={"VERITY","PHONE","TASKS","POWER","STYLE"}
+ local buttons={}
+ for i,name in names do
+  local button=W.Button(nav,name,"",colors[i]);button.Size=UDim2.fromOffset(52,52)
+  icon(button,name,captions[i]);refs.Nav[name]=button;table.insert(buttons,button)
+ end
+ refs.SettingsButton=W.Button(nav,"Settings","",T.Paper)
+ icon(refs.SettingsButton,"SETTINGS","SETTINGS");table.insert(buttons,refs.SettingsButton)
+ refs.Navigation=nav
+ refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
+ refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
 
 	local verity = panel(safe, "Verity", "GROW YOUR VERITY", "Every level grows. Every stage feels different.")
 	verity.Level = W.Line(verity.Body, "Level", "Waiting for your Verity…", 34, 22, true)
@@ -135,12 +173,12 @@ function Builder.Build(playerGui)
 	settings.Effects = W.Button(settings.Body, "ReducedEffects", "REDUCED EFFECTS: OFF", T.Soft)
 	refs.Panels.SETTINGS = settings
 
-	refs.Tutorial = W.Round(W.Frame(safe, "Tutorial", UDim2.new(1, -24, 0, 62)), 12)
-	refs.Tutorial.Position = UDim2.fromOffset(12, 166)
-	refs.Tutorial.BackgroundColor3 = T.Gold
-	refs.TutorialText = W.Text(refs.Tutorial, "Hint", "Welcome! Waiting for your neighborhood…", 13, true)
-	refs.TutorialText.Position, refs.TutorialText.Size = UDim2.fromOffset(12, 6), UDim2.new(1, -24, 1, -12)
-	refs.Tutorial.Visible = false
+
+ refs.Tutorial=W.Round(W.Frame(safe,"Tutorial",UDim2.fromOffset(190,36),T.Paper),9)
+ refs.Tutorial.BackgroundTransparency=.08;W.Stroke(refs.Tutorial,T.Gold,1)
+ refs.TutorialText=W.Text(refs.Tutorial,"Hint","Waiting for delivery…",11,false,T.Ink)
+ refs.TutorialText.Position,refs.TutorialText.Size=UDim2.fromOffset(8,4),UDim2.new(1,-16,1,-8)
+ refs.Tutorial.Visible=false
 
 	refs.Toasts = W.Frame(safe, "Notifications", UDim2.new(1, -32, 0, 108))
 	refs.Toasts.BackgroundTransparency, refs.Toasts.ZIndex = 1, 20
@@ -161,42 +199,72 @@ function Builder.Build(playerGui)
 	refs.BannerText = W.Text(refs.Banner, "Message", "", 16, true)
 	refs.BannerText.Position, refs.BannerText.Size, refs.BannerText.ZIndex = UDim2.fromOffset(12, 6), UDim2.new(1, -24, 1, -12), 26
 	refs.BannerText.TextXAlignment = Enum.TextXAlignment.Center
-	refs.Layout = function(open)
-		local size = safe.AbsoluteSize
-		local compact = size.X < 520 or size.Y < 500
-		hud.Size = UDim2.new(1, -24, 0, 58)
-		refs.Cash.TextSize, refs.Income.TextSize, refs.Level.TextSize = if compact then 14 else 20, if compact then 13 else 18, if compact then 13 else 17
-		for _, button in refs.Nav do button.TextSize = if size.X < 380 then 10 else 13 end
-		local width = math.min(size.X - 24, 680)
-		local landscape = size.X > size.Y and size.Y < 600
-		local top = if landscape and open then 6 else 168
-		local height = math.max(100, math.min(size.Y - top - 8, 660))
-		hud.Visible, nav.Visible, refs.SettingsButton.Visible = not (landscape and open), not (landscape and open), not (landscape and open)
-		refs.Status.Visible = not open
-		for _, item in refs.Panels do
-			item.Root.Position = UDim2.new(0.5, 0, 0, top)
-			item.Root.Size = UDim2.fromOffset(width, height)
-		end
-		if landscape then
-			phone.Subtitle.Position, phone.Subtitle.Size = UDim2.fromOffset(18, 40), UDim2.new(1, -86, 0, 20)
-			phone.Body.Position, phone.Body.Size = UDim2.fromOffset(16, 66), UDim2.new(1, -32, 1, -78)
-			phone.Viewport.Size, phone.Viewport.Position = UDim2.new(0.5, -6, 1, 0), UDim2.new()
-			phone.Controls.Position, phone.Controls.Size = UDim2.new(0.5, 6, 0, 0), UDim2.new(0.5, -6, 1, 0)
-			phone.Body.ScrollingEnabled = height - 78 < 184
-			phone.Body.CanvasSize = UDim2.fromOffset(0, math.max(184, height - 78))
-		else
-			phone.Subtitle.Position, phone.Subtitle.Size = UDim2.fromOffset(18, 42), UDim2.new(1, -86, 0, 30)
-			phone.Body.Position, phone.Body.Size = UDim2.fromOffset(16, 80), UDim2.new(1, -32, 1, -94)
-			phone.Body.ScrollingEnabled = false
-			phone.Body.CanvasSize = UDim2.new()
-			local artHeight = math.max(90, height - 292)
-			phone.Viewport.Position, phone.Viewport.Size = UDim2.new(), UDim2.new(1, -4, 0, artHeight)
-			phone.Controls.Position, phone.Controls.Size = UDim2.fromOffset(0, artHeight + 8), UDim2.new(1, -4, 0, 190)
-		end
-		refs.Toasts.Size, refs.Toasts.Position = UDim2.fromOffset(math.min(size.X - 32, 440), 108), UDim2.new(0.5, 0, 0, 4)
-		refs.Tutorial.Size = UDim2.fromOffset(math.min(size.X - 24, 500), 62)
-		refs.Banner.Size = UDim2.fromOffset(math.min(size.X - 32, 440), 70)
-	end
+
+ refs.Layout=function(open)
+  local size=safe.AbsoluteSize
+  local short=size.Y<360
+  local columns=if size.Y<520 then 2 else 1
+  local side=if short then 44 elseif columns==2 then 48 else 52
+  local gap=6
+  local hudHeight=if short then 54 else 64
+  hud.Size=UDim2.fromOffset(150,hudHeight)
+  refs.Cash.TextSize=if short then 14 else 16
+  refs.Income.Position=UDim2.fromOffset(10,if short then 24 else 28)
+  refs.Level.Position=UDim2.fromOffset(10,if short then 39 else 46)
+  local navTop=8+hudHeight+10
+  local railWidth=columns*side+(columns-1)*gap+4
+  local rows=math.ceil(#buttons/columns)
+  local contentHeight=rows*(side+gap)-gap+4
+  local hintHeight=if short then 28 else 36
+  local available=math.max(44,size.Y-navTop-hintHeight-20)
+  local navHeight=math.min(contentHeight,available)
+  nav.Position=UDim2.fromOffset(10,navTop);nav.Size=UDim2.fromOffset(railWidth,navHeight)
+  nav.CanvasSize=UDim2.fromOffset(0,contentHeight)
+  nav.ScrollingEnabled=contentHeight>navHeight
+  for i,button in buttons do
+   button.Size=UDim2.fromOffset(side,side)
+   button.Position=UDim2.fromOffset(2+((i-1)%columns)*(side+gap),2+math.floor((i-1)/columns)*(side+gap))
+  end
+  refs.Tutorial.Position=UDim2.fromOffset(12,navTop+navHeight+8)
+  refs.Tutorial.Size=UDim2.fromOffset(math.min(190,size.X-24),hintHeight)
+  refs.TutorialText.TextSize=if short then 10 else 11
+  refs.Status.Position=refs.Tutorial.Position
+  local narrow=size.X<640
+  hud.Visible,nav.Visible=not (narrow and open),not (narrow and open)
+  local panelX=if narrow then 12 else 10+math.max(150,railWidth)+12
+  local width=math.min(if narrow then size.X-24 else size.X-panelX-12,420)
+  local top=8
+  local height=math.max(100,math.min(size.Y-16,560))
+  for _,item in refs.Panels do
+   item.Root.Position=UDim2.fromOffset(panelX,top)
+   item.Root.Size=UDim2.fromOffset(width,height)
+   item.Title.TextSize=if width<360 then 18 else 21
+  end
+  local landscape=size.X>size.Y and size.Y<600
+  if landscape then
+   phone.Subtitle.Position,phone.Subtitle.Size=UDim2.fromOffset(18,40),UDim2.new(1,-86,0,20)
+   phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,66),UDim2.new(1,-32,1,-78)
+   phone.Viewport.Size,phone.Viewport.Position=UDim2.new(.5,-6,1,0),UDim2.new()
+   phone.Controls.Position,phone.Controls.Size=UDim2.new(.5,6,0,0),UDim2.new(.5,-6,1,0)
+   phone.Body.ScrollingEnabled=height-78<184
+   phone.Body.CanvasSize=UDim2.fromOffset(0,math.max(184,height-78))
+  else
+   phone.Subtitle.Position,phone.Subtitle.Size=UDim2.fromOffset(18,42),UDim2.new(1,-86,0,30)
+   phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,80),UDim2.new(1,-32,1,-94)
+   phone.Body.ScrollingEnabled=false;phone.Body.CanvasSize=UDim2.new()
+   local artHeight=math.max(90,height-292)
+   phone.Viewport.Position,phone.Viewport.Size=UDim2.new(),UDim2.new(1,-4,0,artHeight)
+   phone.Controls.Position,phone.Controls.Size=UDim2.fromOffset(0,artHeight+8),UDim2.new(1,-4,0,190)
+  end
+  refs.Toasts.AnchorPoint=Vector2.new(1,0)
+  refs.Toasts.Size,refs.Toasts.Position=UDim2.fromOffset(math.min(size.X-24,300),108),UDim2.new(1,-12,0,72)
+  refs.Banner.AnchorPoint=Vector2.new(1,0)
+  refs.Banner.Size,refs.Banner.Position=UDim2.fromOffset(math.min(size.X-24,300),54),UDim2.new(1,-12,0,8)
+  refs.BannerText.TextSize=13
+  refs.Reward.AnchorPoint=Vector2.new(1,0)
+  refs.Reward.Position=UDim2.new(1,-16,0,12);refs.Reward.Size=UDim2.fromOffset(140,24);refs.Reward.TextSize=16
+ end
+
 	return refs
 end
 

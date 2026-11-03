@@ -2,12 +2,12 @@
 local Tutorial={}
 Tutorial.__index=Tutorial
 local Steps={
-	"1 / 6 • Your Verity is arriving! Find the delivery box near your home.",
-	"2 / 6 • Open your delivery box using its world prompt.",
-	"3 / 6 • Your flying Verity follows you and earns while you play. Your confirmed income is at the top.",
-	"4 / 6 • Open PHONE to explore the Verity Feed.",
-	"5 / 6 • Swipe up or press NEXT POST. Earn after the server confirms.",
-	"6 / 6 • Open VERITY and buy your first level when you have enough Cash.",
+ "1/6 · Your delivery is on its way",
+ "2/6 · E: open your delivery box",
+ "3/6 · Verity follows you & earns Cash",
+ "4/6 · Open PHONE",
+ "5/6 · Swipe up to earn Cash",
+ "6/6 · VERITY: buy your first level",
 }
 
 function Tutorial.new(ctx) return setmetatable({ctx=ctx},Tutorial) end

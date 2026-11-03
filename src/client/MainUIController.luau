@@ -187,7 +187,8 @@ end
 function Main:Render()
 	local ctx=self.ctx
 	local state=ctx.net.state
-	self.refs.Status.Text=if self.versions.issue then self.versions.issue elseif not ctx.net.connected then "Waiting for Core • interface ready" elseif not state then "Loading confirmed player progress…" else "SERVER CONNECTED • ALL LEVELS FREE"
+	self.refs.Status.Text=if self.versions.issue then self.versions.issue elseif not ctx.net.connected then "Connecting…" elseif not state then "Loading progress…" else ""
+ self.refs.Status.Visible=ctx.active==nil and (self.versions.issue~=nil or not ctx.net.connected or state==nil)
 	self.refs.Income.Text=if state then "+$"..Model.Format(state.IncomePerSecond).." / sec" else "+$— / sec"
 	self.refs.Level.Text=if state then string.format("LVL %d / 100",state.VerityLevel) else "LVL — / 100"
 	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()
