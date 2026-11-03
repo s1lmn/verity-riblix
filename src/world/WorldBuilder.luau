@@ -1,7 +1,7 @@
 --!strict
 local Recipe = require(script.Parent.MapRecipe)
 local WorldBuilder = {}
-local VERSION = "brick-neighborhood-3"
+local VERSION = "brick-floor-4"
 
 function WorldBuilder.Build(parent: Instance?, plotCount: number?): Model
     local target = parent or workspace
@@ -31,7 +31,7 @@ function WorldBuilder.Build(parent: Instance?, plotCount: number?): Model
             obj.CanQuery = n.alpha < 1
             obj.CastShadow = n.alpha < 1
             obj.Material = Enum.Material.SmoothPlastic
-            obj.TopSurface = Enum.SurfaceType.Smooth
+            obj.TopSurface = if n.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
             obj.BottomSurface = Enum.SurfaceType.Smooth
             obj.Size = Vector3.new(n.size[1], n.size[2], n.size[3])
             obj.CFrame = CFrame.new(Vector3.new(n.pos[1], n.pos[2], n.pos[3]) + (offset or Vector3.zero))

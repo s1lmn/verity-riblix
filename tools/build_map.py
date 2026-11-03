@@ -127,6 +127,16 @@ part('GeneratedWorld/Plaza/SignPostLeft',(-10,6,-238),(0.7,12,0.7),'wood')
 part('GeneratedWorld/Plaza/SignPostRight',(10,6,-238),(0.7,12,0.7),'wood')
 part('GeneratedWorld/Plaza/WelcomeSign',(0,11,-238),(23,5,0.8),'cream')
 
+# Only walking/ground surfaces receive the classic fine stud pattern.
+# Existing architectural geometry, colors and large studs are left intact.
+for n in nodes:
+    path=n['path']
+    name=path.rsplit('/',1)[-1]
+    environment_floor=path.startswith(env+'/') and (name in ('Ground','Road') or name.startswith(('Sidewalk','OuterGreen','EndPath')))
+    plot_floor=path.startswith('GeneratedWorld/Plots/Plot_') and name in ('Lawn','Path')
+    if environment_floor or plot_floor:
+        n['topSurface']='Studs'
+
 # Roblox XML serialization: the model and place use exactly the same geometry as the builder.
 refs=0
 def prop(parent,tag,name,value):
@@ -146,7 +156,7 @@ def populate(root):
         if 'pos' not in n: continue
         for k,v in [('Anchored',True),('CanCollide',n['collide']),('CanTouch',False),('CanQuery',n['alpha']<1),('CastShadow',n['alpha']<1)]: prop(p,'bool',k,str(v).lower())
         prop(p,'float','Transparency',n['alpha']);prop(p,'float','Reflectance',0)
-        prop(p,'token','Material',256);prop(p,'token','TopSurface',0);prop(p,'token','BottomSurface',0)
+        prop(p,'token','Material',256);prop(p,'token','TopSurface',3 if n.get('topSurface')=='Studs' else 0);prop(p,'token','BottomSurface',0)
         if n['cls']=='Part':prop(p,'token','shape',{'Ball':0,'Block':1,'Cylinder':2}[n['shape']])
         prop(p,'Color3uint8','Color3uint8',0xFF000000 | int(n['color'],16))
         size=E.SubElement(p,'Vector3',name='size')
@@ -182,7 +192,7 @@ def lua(v):
 (OUT/'src/world/WorldBuilder.luau').write_text('''--!strict
 local Recipe = require(script.Parent.MapRecipe)
 local WorldBuilder = {}
-local VERSION = "brick-neighborhood-3"
+local VERSION = "brick-floor-4"
 
 function WorldBuilder.Build(parent: Instance?, plotCount: number?): Model
     local target = parent or workspace
@@ -212,7 +222,7 @@ function WorldBuilder.Build(parent: Instance?, plotCount: number?): Model
             obj.CanQuery = n.alpha < 1
             obj.CastShadow = n.alpha < 1
             obj.Material = Enum.Material.SmoothPlastic
-            obj.TopSurface = Enum.SurfaceType.Smooth
+            obj.TopSurface = if n.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
             obj.BottomSurface = Enum.SurfaceType.Smooth
             obj.Size = Vector3.new(n.size[1], n.size[2], n.size[3])
             obj.CFrame = CFrame.new(Vector3.new(n.pos[1], n.pos[2], n.pos[3]) + (offset or Vector3.zero))
@@ -333,9 +343,11 @@ def preview(filename,zoom=1,focus=None):
         x0,x1=x-sx/2,x+sx/2;y0,y1=y-sy/2,y+sy/2;z0,z1=z-sz/2,z+sz/2
         for ps,factor in [([(x0,y1,z0),(x1,y1,z0),(x1,y1,z1),(x0,y1,z1)],1.0), ([(x0,y0,z1),(x1,y0,z1),(x1,y1,z1),(x0,y1,z1)],.81), ([(x1,y0,z0),(x1,y0,z1),(x1,y1,z1),(x1,y1,z0)],.9)]:
             depth=sum(p[0]+p[2]+p[1]*.02 for p in ps)/4
-            faces.append((depth,ps,tuple(int(c*factor) for c in color)))
+            faces.append((depth,ps,tuple(int(c*factor) for c in color),n.get('topSurface')=='Studs' and factor==1.0))
     pixels=np.array(canvas); depthbuffer=np.full((height,width),-np.inf,dtype=np.float32)
-    for _,ps,col in faces:
+    for face in faces:
+        _,ps,col=face[:3]
+        patterned=len(face)>3 and face[3]
         for k in range(1,len(ps)-1):
             points=[ps[0],ps[k],ps[k+1]]; uv=np.array([project(*p) for p in points]); depths=np.array([.52*p[0]+.6104*p[1]+p[2] for p in points])
             xmin=max(0,int(np.floor(uv[:,0].min())));xmax=min(width-1,int(np.ceil(uv[:,0].max())))
@@ -348,7 +360,22 @@ def preview(filename,zoom=1,focus=None):
             w1=((c[1]-a[1])*(xx-c[0])+(a[0]-c[0])*(yy-c[1]))/den;w2=1-w0-w1
             dep=w0*depths[0]+w1*depths[1]+w2*depths[2]
             view=depthbuffer[ymin:ymax+1,xmin:xmax+1];mask=(w0>=-1e-6)&(w1>=-1e-6)&(w2>=-1e-6)&(dep>view)
-            view[mask]=dep[mask];pixels[ymin:ymax+1,xmin:xmax+1][mask]=col
+            view[mask]=dep[mask]
+            target=pixels[ymin:ymax+1,xmin:xmax+1]
+            if patterned:
+                # Approximation of classic Roblox square studs for this software preview.
+                # The exported map uses native TopSurface, not a texture or extra Parts.
+                wx=w0*points[0][0]+w1*points[1][0]+w2*points[2][0]
+                wz=w0*points[0][2]+w1*points[1][2]+w2*points[2][2]
+                u=np.mod(wx,2)/2;v=np.mod(wz,2)/2
+                inside=(u>.22)&(u<.78)&(v>.22)&(v<.78)
+                light=inside&((u<.32)|(v<.32))
+                shadow=inside&((u>.66)|(v>.66))
+                shade=np.where(shadow,.77,np.where(light,1.12,np.where(inside,1.035,1.0)))
+                colors=np.clip(np.asarray(col)[None,None,:]*shade[:,:,None],0,255).astype(np.uint8)
+                target[mask]=colors[mask]
+            else:
+                target[mask]=col
     canvas=Image.fromarray(pixels);draw=ImageDraw.Draw(canvas)
     draw.rounded_rectangle((40,35,650,115),radius=14,fill='white')
     draw.text((65,54),'VERITY / BRICK NEIGHBORHOOD',fill='#34445D',font=font(26, True))
@@ -356,6 +383,7 @@ def preview(filename,zoom=1,focus=None):
     canvas.save(OUT/filename)
 preview('map-overview.png')
 preview('houses-preview.png',1.8,(0,0,-120))
+preview('floor-preview.png',4.5,(18,0,-155))
 for path in (OUT/'VerityNeighborhood.rbxmx',OUT/'VerityNeighborhood.rbxlx'):
     E.parse(path)
 (OUT/'validation.json').write_text(json.dumps({'plots':16,'parts':sum('pos'in n for n in nodes),'plotFootprint':[64,48],'houseFootprint':[28,30],'reservedVerityPad':[17,17],'checks':['16 unique plots','non-overlapping lot bounds','all lot geometry within bounds','required integration anchors present','XML parses'],'studioPlaytest':'not run'},indent=2))
