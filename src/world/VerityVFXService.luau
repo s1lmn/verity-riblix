@@ -1,9 +1,10 @@
 --!nonstrict
 -- Client-only effects with bounded geometry and no uploaded textures.
 local Profile = if script then require(game:GetService("ReplicatedStorage").Shared.VerityAnimationProfile) else nil
+local Celebration=require(game:GetService("ReplicatedStorage").Shared.VerityUpgradeCelebration)
 local VFX = {}
 VFX.__index = VFX
-local MAX_BURST_PARTS = 64
+local MAX_BURST_PARTS = Celebration.MaxParticles
 local SEGMENTS = 12
 
 function VFX.Radius(scale, index)
@@ -188,29 +189,57 @@ function VFX:Growth(origin, scale, progress, peak, newColor, milestone)
 	end
 end
 
-function VFX:Burst(model, origin, scale, level, now)
- if level<25 then return end
-	self.pulses[model]={started=now,level=level}
-	local count=if level==100 then 24 elseif level==10 or level==25 or level==50 or level==75 then 16 else 6
-	for i=1,count do
-		if #self.active>=MAX_BURST_PARTS then break end
-		local p=table.remove(self.free)
-		if not p then
-			if self.created>=MAX_BURST_PARTS then break end
-			p=piece(self.folder,"UpgradeSpark")
-			self.created+=1
-		end
-		local angle=i*math.pi*2/count
-		p.Color=if level==100 then Color3.fromHex("FFD85A") elseif level==50 then Color3.fromHex("59C9FF") else Color3.fromHex("FF5CB8")
-		p.Shape=Enum.PartType.Ball
-		p.Size=Vector3.one*math.clamp(scale*0.045,0.10,0.45)
-		table.insert(self.active,{part=p,owner=model,position=origin.Position+Vector3.new(math.cos(angle)*scale*.95,scale*.85,math.sin(angle)*scale*.95),
-			velocity=Vector3.new(math.cos(angle)*4,3+(i%3),math.sin(angle)*4),started=now,lifetime=0.65+(i%3)*0.08})
-	end
+function VFX:Acquire()
+    if #self.active>=MAX_BURST_PARTS then return nil end
+    local p=table.remove(self.free)
+    if not p then
+        if self.created>=MAX_BURST_PARTS then return nil end
+        p=piece(self.folder,"UpgradeSpark");self.created+=1
+        local gui=Instance.new("BillboardGui");gui.Name="Star";gui.AlwaysOnTop=false
+        gui.LightInfluence=0;gui.MaxDistance=260;gui.Enabled=false;gui.Parent=p
+        local image=Instance.new("TextLabel");image.Name="Glyph";image.BackgroundTransparency=1
+        image.Size=UDim2.fromScale(1,1);image.TextScaled=true;image.Font=Enum.Font.GothamBold;image.Parent=gui
+    end
+    return p
+end
+
+function VFX:Recycle(p)
+    p.Transparency=1;p.Star.Enabled=false;table.insert(self.free,p)
+end
+
+function VFX:Emit(model,origin,scale,level,now,charge,tint)
+    local look=Celebration.Get(level)
+    local count=if charge then look.chargeCount else look.burstCount
+    local palette={Color3.fromHex("FFD85A"),Color3.fromHex("FF70BF"),Color3.fromHex("6AE6FF"),Color3.fromHex("FFFFFF")}
+    for i=1,count do
+        local p=self:Acquire();if not p then break end
+        local angle=i*math.pi*2/count
+        local color=if tint then tint:Lerp(palette[4],(i%4)*.12) else palette[(i-1)%#palette+1]
+        p.Color=color;p.Shape=Enum.PartType.Ball
+        local size=math.clamp(scale*.055,.09,.6)
+        p.Size=Vector3.one*size
+        p.Star.Size=UDim2.fromScale(size*2.4,size*2.4)
+        p.Star.Glyph.Text=if i%2==0 then "★" else "✦"
+        p.Star.Glyph.TextColor3=color
+        table.insert(self.active,{part=p,owner=model,star=i%3~=0,charge=charge,scale=scale,angle=angle,index=i,
+            offset=origin.Position-model:GetPivot().Position,
+            position=origin.Position+Vector3.new(math.cos(angle)*scale*.96,scale*(.85+(i%5-2)*.08),math.sin(angle)*scale*.96),
+            velocity=Vector3.new(math.cos(angle),.7+(i%4)*.23,math.sin(angle))*math.min(4.5,scale*.6+1.5),
+            started=now,lifetime=if charge then look.duration*.54 else look.lifetime+(i%3)*.12})
+    end
+end
+
+function VFX:BeginUpgrade(model,origin,scale,level,now,tint)
+    self:Emit(model,origin,scale,level,now,true,tint)
+end
+
+function VFX:Burst(model, origin, scale, level, now, tint)
+    self.pulses[model]={started=now,level=level}
+    self:Emit(model,origin,scale,level,now,false,tint)
 end
 
 function VFX:SuppressBursts()
-	for _,item in self.active do item.part.Transparency=1;table.insert(self.free,item.part) end
+	for _,item in self.active do self:Recycle(item.part) end
 	table.clear(self.active);table.clear(self.pulses)
 end
 
@@ -218,24 +247,40 @@ function VFX:Tick(now)
 	for i=#self.active,1,-1 do
 		local item=self.active[i]
 		local t=now-item.started
-		if t>=item.lifetime then
-			item.part.Transparency=1
-			table.insert(self.free,item.part)
+		if t>=item.lifetime or not item.owner:IsDescendantOf(workspace) then
+			self:Recycle(item.part)
 			table.remove(self.active,i)
 		else
-			item.part.Transparency=0.12+0.88*t/item.lifetime
-			item.part.CFrame=CFrame.new(item.position+item.velocity*t-Vector3.new(0,4*t*t,0))
+			local u=t/item.lifetime
+            local fade=math.clamp((u-.3)/.7,0,1)
+            local twinkle=.82+.18*math.sin(t*15+item.index*2.1)
+            local position
+            if item.charge then
+                local center=item.owner:GetPivot().Position+item.offset+Vector3.new(0,item.scale*.85,0)
+                local angle=item.angle+t*8
+                local radius=item.scale*(1.2-.28*u)
+                position=center+Vector3.new(math.cos(angle)*radius,item.scale*(-.5+u*.95+.12*math.sin(item.index)),math.sin(angle)*radius)
+            else position=item.position+item.velocity*t-Vector3.new(0,1.6*t*t,0) end
+            item.part.CFrame=CFrame.new(position)*CFrame.Angles(t,0,t*2)
+            item.part.Transparency=if item.star then 1 else 1-(1-fade)*twinkle
+            item.part.Star.Enabled=item.star
+            item.part.Star.Glyph.TextTransparency=1-(1-fade)*twinkle
+            item.part.Star.Glyph.Rotation=item.index*17+t*110
 		end
 	end
 end
 
 function VFX:Remove(model)
-	self.pulses[model]=nil
 	local group=self.groups[model]
 	if group then group.root:Destroy();self.groups[model]=nil end
+	self:CancelUpgrade(model)
+end
+
+function VFX:CancelUpgrade(model)
+	self.pulses[model]=nil
 	for i=#self.active,1,-1 do
 		local item=self.active[i]
-		if item.owner==model then item.part.Transparency=1;table.insert(self.free,item.part);table.remove(self.active,i) end
+		if item.owner==model then self:Recycle(item.part);table.remove(self.active,i) end
 	end
 end
 

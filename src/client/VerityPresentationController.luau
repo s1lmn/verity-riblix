@@ -3,6 +3,8 @@ local Locale = require(script.Parent.Locale)
 -- Own confirmed purchases only. The existing world animator remains the model owner.
 local Players=game:GetService("Players")
 local Run=game:GetService("RunService")
+local Celebration=require(game:GetService("ReplicatedStorage").Shared.VerityUpgradeCelebration)
+local Lighting=game:GetService("Lighting")
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Model=require(script.Parent.UIModel)
@@ -76,6 +78,7 @@ function Presentation:Start(event,model)
  for index,piece in self.confetti do
   piece.BackgroundColor3=({oldColor,newColor,T.Gold,newColor:Lerp(T.Paper,.45)})[index%4+1]
  end
+ self.active.look=Celebration.Get(event.newLevel)
  self.ctx.presenting=true;self.ctx.close();self.ctx.refs.Banner.Visible=false
  self.layer.Visible=true;self.count+=1
  self.ctx.refs.Gui:SetAttribute("RevealCount",self.count)
@@ -90,9 +93,13 @@ function Presentation:Start(event,model)
   glow.Name="UpgradeGlow";glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
   glow.FillColor=newColor;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
   self.active.glow=glow
+  if self.active.look.special then
+   local color=Instance.new("ColorCorrectionEffect");color.Name="VerityUpgradeColor";color.Parent=Lighting
+   self.active.color=color
+  end
  end
  local camera=workspace.CurrentCamera
- if camera and not self.ctx.settings.values.ReducedMotion and camera.CameraType==Enum.CameraType.Custom then
+ if camera and not self.ctx.settings.values.ReducedMotion and not game:GetService("VRService").VREnabled and camera.CameraType==Enum.CameraType.Custom then
   self.camera={instance=camera,kind=camera.CameraType,subject=camera.CameraSubject,cf=camera.CFrame,fov=camera.FieldOfView}
   camera.CameraType=Enum.CameraType.Scriptable
   -- Front facing candidates, with an elevated fallback for large rooftop companions.
@@ -164,6 +171,9 @@ function Presentation:Tick(now)
  local char=Players.LocalPlayer.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not hum or hum.Health<=0 or not a.model:IsDescendantOf(workspace) or now-a.started>5 then self:Stop();return end
  local age=now-a.started
+ local impactAge=age-a.look.duration*Profile.Bloom
+ local subtle=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
+ local pulse=if subtle then 0 else Celebration.Pulse(impactAge)
  if a.completed and now-a.completed>1.25 then self:Stop();return end
  local size=self.ctx.refs.Safe.AbsoluteSize
  local short=size.Y<400
@@ -177,7 +187,7 @@ function Presentation:Tick(now)
  local glow=Profile.Glow(progress)
  local reduced=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
  self.wash.Visible=not reduced
- self.wash.BackgroundTransparency=1-glow*.46
+ self.wash.BackgroundTransparency=1-glow*.46-(if a.look.special then pulse*.08 else 0)
  self.washGradient.Rotation=24+smooth(progress)*34
  self.fill.Size=UDim2.fromScale(if a.completed then 1 else progress,1)
  self.fill.BackgroundColor3=a.oldColor:Lerp(a.newColor,hue)
@@ -185,9 +195,10 @@ function Presentation:Tick(now)
   local saved=self.camera;local camera=saved.instance
   if camera.CameraType~=Enum.CameraType.Scriptable then self.camera=nil;self:Stop();return end
   local pose,_,fov=self:CameraPose(camera,a.model,a.event.newScale,a.angle or 0,age/2.5)
-  camera.FieldOfView=fov
-  -- A steady close view; no camera shake, full rotations or input locks.
-  camera.CFrame=pose;camera.Focus=a.model:GetPivot()
+  local x,y,roll=Celebration.Shake(impactAge,a.event.newLevel,subtle)
+  camera.FieldOfView=fov-(if a.look.special then pulse*2 else 0)
+  -- Apply to a fresh pose: never accumulate shake or fight another camera owner.
+  camera.CFrame=pose*CFrame.new(x,y,0)*CFrame.Angles(0,0,roll);camera.Focus=a.model:GetPivot()
  end
  if a.glow then
   if self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion then
@@ -198,6 +209,11 @@ function Presentation:Tick(now)
    a.glow.FillTransparency=.96-flare*.18
    a.glow.OutlineTransparency=.82-flare*.55
   end
+ end
+ if a.color then
+  a.color.TintColor=Color3.new(1,1,1):Lerp(a.newColor,pulse*.12)
+  a.color.Saturation=pulse*.15
+  a.color.Brightness=pulse*.035
  end
  local burstAge=a.completed and now-a.completed
  for i,piece in self.confetti do
@@ -222,6 +238,7 @@ end
 function Presentation:Stop()
  self:ReleaseCamera()
  local a=self.active;if a and a.glow then a.glow:Destroy()end
+ if a and a.color then a.color:Destroy()end
  self.active=nil;self.ctx.presenting=false;self.layer.Visible=false
  self.ctx.refs.Gui:SetAttribute("RevealActive",false)
 end

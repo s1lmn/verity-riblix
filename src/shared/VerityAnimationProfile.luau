@@ -1,6 +1,7 @@
 --!strict
 -- Pure, bounded pose sampling. Exact settled scale always comes from LevelConfig.
 local Levels = if script then require(script.Parent.LevelConfig) else require("./LevelConfig")
+local Celebration = if script then require(script.Parent.VerityUpgradeCelebration) else require("./VerityUpgradeCelebration")
 local Profile = {}
 Profile.BaseWidth, Profile.BaseDepth, Profile.BaseHeight = 1.7, 1.7, 2.4
 Profile.MaxExpansion, Profile.Clearance = 1.035, 1.5
@@ -25,7 +26,7 @@ function Profile.IsMilestone(level: number): boolean
 end
 
 function Profile.Duration(level: number): number
-	return if Profile.IsMilestone(level) then 2.45 else 1.8
+	return Celebration.Get(level).duration
 end
 
 function Profile.Glow(progress: number): number
