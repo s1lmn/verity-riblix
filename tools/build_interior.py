@@ -7,7 +7,7 @@ from render_interior import preview
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'assets/interiors'
 OUT.mkdir(parents=True,exist_ok=True)
-COL={'cream':'FFF6DD','white':'FFFFFF','navy':'303A79','mint':'36DDB5','pink':'FF67B8','yellow':'FFDA39','blue':'43CAFF','purple':'A179FF','leaf':'55CF53','lime':'99E63B','wood':'E1AD6D','sand':'FFDCAF','wall':'FFF9ED','tile':'E7F6EF','dark':'25345D'}
+COL={'cream':'D5C8AE','white':'FFFFFF','navy':'303A79','mint':'36DDB5','pink':'FF67B8','yellow':'FFDA39','blue':'43CAFF','purple':'A179FF','leaf':'55CF53','lime':'99E63B','wood':'C69D70','sand':'8396A8','wall':'728AA2','tile':'B2BFCB','dark':'25345D','upperwall':'779C94'}
 nodes=[]
 def group(path):
     nodes.append(dict(path=path,cls='Folder'))
@@ -128,6 +128,103 @@ for j,x in enumerate((-6,7)):
 p('Markers/EntryPoint',(0,3,8.5),(1,1,1),'white',False,1)
 p('Markers/ExitPoint',(0,2.5,11.5),(1,1,1),'white',False,1)
 
+# v2: preserve the first room's entrance contract, enlarge the house behind it.
+# Its kitchen rotates onto the right-hand wall so the back passage stays clear.
+kept=[]
+living=[]
+for n in nodes:
+    path=n['path']
+    if 'pos' not in n:
+        kept.append(n);continue
+    if path in ('Geometry/WallBack','Geometry/BackSeam4','Geometry/BackSeam8') or path.startswith(('Furniture/Lamps/','Furniture/Decor/WallArt')):
+        continue
+    if path.startswith(('Furniture/Sofa/','Furniture/CoffeeTable/','Furniture/Media/','Furniture/Decor/Rug')):
+        n['pos'][2]-=33
+        if path.startswith('Furniture/Media/'):n['pos'][0]-=8
+        living.append(n);continue
+    if path.startswith('Furniture/Kitchen/'):
+        x,y,z=n['pos'];sx,sy,sz=n['size']
+        n['pos']=[-z+2,y,x-4];n['size']=[sz,sy,sx]
+    if path=='Geometry/Ceiling':n['color']=COL['tile']
+    kept.append(n)
+nodes=kept+living
+group('Geometry/Stairs');group('Furniture/Gallery');group('Furniture/Upper')
+
+p('Geometry/LivingFloor',(0,-.5,-34),(48,1,40),'cream',studs=True)
+p('Geometry/LivingBack',(0,15,-54.5),(50,30,1),'wall')
+p('Geometry/LivingLeft',(-24.5,15,-34),(1,30,40),'wall')
+p('Geometry/LivingRight',(24.5,15,-34),(1,30,40),'wall')
+# Wide, genuinely open 11 x 9 stud passage from the original room.
+for side in (-1,1):
+    p(f'Geometry/PassageWall{side}',(side*15.25,7.5,-14.5),(19.5,15,1),'wall')
+    p(f'Geometry/PassageFrame{side}',(side*5.625,4.5,-14.25),(.25,9,1.5),'navy',collide=False)
+p('Geometry/PassageLintel',(0,12,-14.5),(11,6,1),'wall')
+p('Geometry/PassageFrameTop',(0,9.125,-14.25),(11.5,.25,1.5),'navy',collide=False)
+p('Geometry/UpperFront',(0,23,-14.5),(50,14,1),'upperwall')
+p('Geometry/UpperBackLining',(0,23,-53.9),(48,14,.2),'upperwall',collide=False)
+p('Geometry/UpperLeftLining',(-23.9,23,-34),(.2,14,40),'upperwall',collide=False)
+p('Geometry/UpperRightLining',(23.9,23,-34),(.2,14,40),'upperwall',collide=False)
+p('Geometry/UpperFloorMain',(-5,15.5,-34),(38,1,40),'cream',studs=True)
+p('Geometry/UpperFloorFront',(19,15.5,-19.5),(10,1,11),'cream',studs=True)
+p('Geometry/UpperLanding',(19,15.5,-52),(10,1,4),'cream',studs=True)
+p('Geometry/UpperCeiling',(0,30.5,-34),(50,1,42),'tile')
+# 32 half-stud risers, .75 stud treads. Full opening above the entire flight.
+for i in range(32):
+    top=(i+1)*.5;z=-26-(i+.5)*.75
+    p(f'Geometry/Stairs/Step{i:02}',(19,top/2,z),(8,top,.75),'wood')
+    p(f'Geometry/Stairs/Nosing{i:02}',(19,top+.025,z+.275),(8,.05,.2),'mint',collide=False)
+    for x in (14.75,23.25):
+        p(f'Geometry/Stairs/Handrail{i:02}_{x}',(x,top+3,z),(.3,.3,.85),'navy')
+        if i%4==0 or i==31:
+            p(f'Geometry/Stairs/Post{i:02}_{x}',(x,top+1.5,z),(.3,3,.3),'mint')
+p('Geometry/UpperOpeningRail',(13.75,18,-37.5),(.3,.3,25),'navy')
+p('Geometry/UpperOpeningFrontRail',(19,18,-24.75),(10,.3,.3),'navy')
+for z in (-49,-45,-41,-37,-33,-29,-25):
+    p('Geometry/UpperOpeningPost'+str(z),(13.75,17,z),(.3,2,.3),'mint')
+for x in (16,20,23):p('Geometry/UpperFrontPost'+str(x),(x,17,-24.75),(.3,2,.3),'mint')
+
+# Minimal upper room: one plant, a window and a portrait; no invented use yet.
+plant('UpperCorner',-20,-20)
+for n in nodes:
+    if n['path'].startswith('Furniture/Plants/UpperCorner'):n['pos'][1]+=16
+p('Furniture/Upper/WindowFrame',(-12,23,-53.7),(12,7,.3),'navy',collide=False)
+p('Furniture/Upper/WindowGlass',(-12,23,-53.45),(11.25,6.25,.15),'blue',collide=False)
+p('Furniture/Upper/WindowMullion',(-12,23,-53.3),(.35,6.25,.15),'tile',collide=False)
+p('Furniture/Upper/WindowCrossbar',(-12,23,-53.3),(11.25,.35,.15),'tile',collide=False)
+
+# Asset-free framed Verity portraits made from shallow toy-block shapes.
+# This stylised mascot is replaceable once the final Verity reference is supplied.
+def portrait(name,x,y,z,face='back',body='pink',crown=False):
+    prefix='Furniture/Gallery/'+name
+    group(prefix)
+    def art(partname,u,v,w,h,color,depth=.06,layer=0):
+        if face=='back':p(prefix+'/'+partname,(x+u,y+v,z+layer),(w,h,depth),color,collide=False)
+        else:p(prefix+'/'+partname,(x+layer,y+v,z+u),(depth,h,w),color,collide=False)
+    art('Frame',0,0,7.5,7,'navy',.35)
+    art('Canvas',0,0,6.8,6.3,'blue',.1,.25)
+    art('Ground',0,-2.4,6.3,.8,'mint',.06,.35)
+    art('Body',0,-.5,3.8,3.1,body,.08,.4)
+    art('Head',0,.4,4.3,2.8,body,.08,.45)
+    art('EarL',-1.4,2,1,1.3,body,.08,.45)
+    art('EarR',1.4,2,1,1.3,body,.08,.45)
+    for side in (-1,1):
+        art('EyeWhite'+str(side),side*.9,.6,.9,1.15,'white',.06,.55)
+        art('Pupil'+str(side),side*.85,.5,.45,.7,'navy',.06,.65)
+        art('Cheek'+str(side),side*1.5,-.4,.55,.3,'yellow',.06,.6)
+    art('Smile',0,-.6,.9,.25,'navy',.06,.6)
+    if crown:
+        art('CrownBand',0,2.25,2.8,.5,'yellow',.08,.65)
+        for j,u in enumerate((-1,0,1)):art('CrownTip'+str(j),u,2.7,.55,.65,'yellow',.08,.65)
+portrait('VerityWelcome',-15.7,7,1,face='left',body='pink')
+portrait('VerityCrown',-10,7,-53.8,body='mint',crown=True)
+portrait('VerityUpstairs',7,23,-53.8,body='purple',crown=True)
+for j,(x,y,z) in enumerate(((-5,11.5,-1),(-10,14.5,-35),(8,14.5,-44),(-10,29.5,-30),(8,29.5,-44))):
+    p(f'Furniture/Lamps/CeilingPlate{j}',(x,y+.25,z),(4,.25,4),'navy',collide=False)
+    p(f'Furniture/Lamps/Diffuser{j}',(x,y,z),(3.5,.25,3.5),'tile',collide=False,light=True)
+p('Markers/LivingRoomEntry',(0,3,-19),(1,1,1),'white',False,1)
+p('Markers/StairBottom',(19,3,-23.5),(1,1,1),'white',False,1)
+p('Markers/UpstairsPoint',(10,19,-52),(1,1,1),'white',False,1)
+
 def lua(v):
     if isinstance(v,str):return json.dumps(v)
     if isinstance(v,bool):return str(v).lower()
@@ -178,29 +275,42 @@ ambient=E.SubElement(lp,'Color3',name='Ambient')
 for key,value in zip(('R','G','B'),(.6,.63,.7)):E.SubElement(ambient,key).text=str(value)
 E.ElementTree(doc).write(OUT/'InteriorPreview.rbxlx',encoding='utf-8',xml_declaration=True)
 
-# Cutaway for review only: the actual model always retains all walls and ceiling.
-hidden={'Geometry/WallFront','Geometry/WallRight','Geometry/Ceiling','Geometry/SkirtingFront','Geometry/SkirtingRight'}
-cutaway=[n for n in nodes if n['path'] not in hidden and not n['path'].startswith(('Furniture/Entry/Door','Furniture/Entry/Handle','Furniture/Decor/WallArt','Furniture/Lamps/'))]
-preview('interior-cutaway.png',cutaway,OUT,zoom=11.4,focus=(0,0,0))
+# Cutaways are review views only; the exported model remains fully enclosed.
+hidden={'Geometry/WallFront','Geometry/WallRight','Geometry/Ceiling','Geometry/SkirtingFront','Geometry/SkirtingRight','Geometry/LivingRight','Geometry/LivingBack','Geometry/LivingLeft','Geometry/UpperCeiling','Geometry/UpperFront','Geometry/UpperBackLining','Geometry/UpperLeftLining','Geometry/UpperRightLining','Geometry/UpperFloorMain','Geometry/UpperFloorFront','Geometry/UpperLanding'}
+# Keep the first-floor halves of the distant living-room walls in the cutaway.
+cutaway=[dict(n) for n in nodes if n['path'] not in hidden and not n['path'].startswith(('Geometry/PassageWall','Geometry/PassageLintel','Furniture/Entry/Door','Furniture/Entry/Handle','Furniture/Lamps/','Geometry/Upper','Furniture/Upper/','Furniture/Plants/UpperCorner','Furniture/Gallery/VerityUpstairs'))]
+for name,pos,size in [('CutawayBack',(0,7.5,-54.5),(50,15,1)),('CutawayLeft',(-24.5,7.5,-34),(1,15,40))]:
+    cutaway.append(dict(path=name,cls='Part',pos=pos,size=size,color=COL['wall'],alpha=0,shape='Block'))
+preview('interior-cutaway.png',cutaway,OUT,zoom=6.5,focus=(0,0,-20))
+upper=[dict(n) for n in nodes if n['path'].startswith(('Geometry/UpperFloor','Geometry/UpperLanding','Geometry/UpperOpening','Geometry/UpperFrontPost','Furniture/Upper/','Furniture/Plants/UpperCorner','Furniture/Gallery/VerityUpstairs'))]
+for n in upper:
+    if 'pos'in n:n['pos']=list(n['pos']);n['pos'][1]-=16
+for name,pos,size in [('UpperViewBack',(0,7,-54.5),(50,14,1)),('UpperViewLeft',(-24.5,7,-34),(1,14,40))]:
+    upper.append(dict(path=name,cls='Part',pos=pos,size=size,color=COL['upperwall'],alpha=0,shape='Block'))
+preview('upstairs-cutaway.png',upper,OUT,zoom=8,focus=(0,0,-34))
 
 # Clearance check for a 2-stud-radius character in the central circulation lane.
-def blocked(x,z,radius=2):
+def blocked(x,z,feet=0,radius=1.5,step_allowance=.1):
     for n in nodes:
-        if 'pos' not in n or not n['collide'] or n['path']=='Geometry/Floor':continue
+        if 'pos' not in n or not n['collide'] or n['path'].startswith('Geometry/Stairs/Step'):continue
         px,py,pz=n['pos'];sx,sy,sz=n['size']
-        if py+sy/2<=.3 or py-sy/2>=6:continue
+        if py+sy/2<=feet+step_allowance or py-sy/2>=feet+5.5:continue
         if abs(x-px)<sx/2+radius and abs(z-pz)<sz/2+radius:return True
     return False
-for z in (8.5,7,5,3,1,-1,-3,-5,-6):assert not blocked(-3.5,z),z
+for z in range(-22,10):assert not blocked(0,z),('entrance passage',z)
+for x in range(20):assert not blocked(x,-22),('stair approach',x)
+for i in range(32):assert not blocked(19,-26-(i+.5)*.75,(i+1)*.5,step_allowance=.55),('stair headroom',i)
+for x in range(20):assert not blocked(x,-52,16),('upstairs landing',x)
+for z in range(-52,-18):assert not blocked(0,z,16),('upstairs room',z)
 for marker in ('Markers/EntryPoint','Markers/ExitPoint'):
     n=next(n for n in nodes if n['path']==marker);assert not blocked(n['pos'][0],n['pos'][2])
 for n in nodes:
     if 'pos' not in n:continue
     if n['path'].startswith('Furniture/'):
         x,y,z=n['pos'];sx,sy,sz=n['size']
-        assert abs(x)+sx/2<=16.001,n['path']
-        assert abs(z)+sz/2<=14.001,n['path']
-        assert y-sy/2>=0 and y+sy/2<=12,n['path']
+        assert abs(x)+sx/2<=24.001,n['path']
+        assert z-sz/2>=-54.001 and z+sz/2<=14.001,n['path']
+        assert y-sy/2>=0 and y+sy/2<=30,n['path']
 for path in (OUT/'StandardInterior.rbxmx',OUT/'InteriorPreview.rbxlx'):E.parse(path)
-report=dict(parts=sum('pos'in n for n in nodes),innerSizeStuds=[32,12,28],pivot=[0,0,0],streaming='Atomic',pointLights=2,clearanceRadius=2,centralAisle='static clearance passed',entryExit='static clearance passed',furnitureBounds='passed',shell='four full walls, floor and ceiling',externalAssets=0,studioPlaytest='not run',multiplayerTransitions='not implemented; Core task')
+report=dict(version=2,parts=sum('pos'in n for n in nodes),lobbySize=[32,12,28],livingRoomSize=[48,15,40],upperFloorLevel=16,upperRoomSize=[48,14,40],shellBounds=[50,32,70],pivot=[0,0,0],streaming='Atomic',pointLights=5,stairSteps=32,stairRise=.5,stairTread=.75,stairWidth=8,portraitCount=3,clearanceRadius=1.5,centralAisle='static clearance passed',stairHeadroom='static clearance passed',upperLanding='static clearance passed',entryExit='static clearance passed',furnitureBounds='passed',externalAssets=0,studioPlaytest='not run',multiplayerTransitions='not implemented; Core task')
 (OUT/'validation.json').write_text(json.dumps(report,indent=2));print(json.dumps(report,indent=2))

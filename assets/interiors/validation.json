@@ -1,9 +1,26 @@
 {
-  "parts": 140,
-  "innerSizeStuds": [
+  "version": 2,
+  "parts": 375,
+  "lobbySize": [
     32,
     12,
     28
+  ],
+  "livingRoomSize": [
+    48,
+    15,
+    40
+  ],
+  "upperFloorLevel": 16,
+  "upperRoomSize": [
+    48,
+    14,
+    40
+  ],
+  "shellBounds": [
+    50,
+    32,
+    70
   ],
   "pivot": [
     0,
@@ -11,12 +28,18 @@
     0
   ],
   "streaming": "Atomic",
-  "pointLights": 2,
-  "clearanceRadius": 2,
+  "pointLights": 5,
+  "stairSteps": 32,
+  "stairRise": 0.5,
+  "stairTread": 0.75,
+  "stairWidth": 8,
+  "portraitCount": 3,
+  "clearanceRadius": 1.5,
   "centralAisle": "static clearance passed",
+  "stairHeadroom": "static clearance passed",
+  "upperLanding": "static clearance passed",
   "entryExit": "static clearance passed",
   "furnitureBounds": "passed",
-  "shell": "four full walls, floor and ceiling",
   "externalAssets": 0,
   "studioPlaytest": "not run",
   "multiplayerTransitions": "not implemented; Core task"
