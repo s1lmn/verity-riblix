@@ -20,7 +20,7 @@ rojo build default.project.json -o builds/VerityUI.rbxlx
 | --- | --- |
 | `src/client` | `StarterPlayer.StarterPlayerScripts.VerityClient` |
 | `src/shared/LevelConfig.luau` | `ReplicatedStorage.Shared.LevelConfig` |
-| `src/world`, MapBootstrap, интерьер | Исходные пути World, без изменений |
+| `src/world`, MapBootstrap, открытые дома v5 | Актуальные пути World из main; скрытый шаблон ServerStorage не подключается |
 
 `StarterGui.ScreenOrientation = Sensor`: поддерживаются обе ориентации. ScreenGui использует CoreUISafeInsets и ClipToDeviceSafeArea. HUD и навигация расположены сверху, вне нижних зон управления. В коротком горизонтальном окне открытая панель временно занимает верхнюю область, навигация возвращается по Close/Back. На узком высоком экране лента перестраивается в одну колонку. Списки заданий и настроек прокручиваются.
 
@@ -51,7 +51,7 @@ fixture.Main:Open("PHONE")
 
 ## Что нужно от Core
 
-Реализовать серверные каналы и полный снимок из `UI_API_PROPOSAL.md`; закрепить итог в `API_CONTRACT.md`. На старте UI синхронизируется закрытием телефонной сессии через существующий `RequestPhoneSession`. Публиковать revision результата и соответствующий снимок, точно коррелировать operationId. Обучение, cooldown и награды заданий остаются на сервере. В Complete перехода интерьера необходима позиция назначения.
+Реализовать серверные каналы и полный снимок из `UI_API_PROPOSAL.md`; закрепить итог в `API_CONTRACT.md`. На старте UI синхронизируется закрытием телефонной сессии через существующий `RequestPhoneSession`. Публиковать revision результата и соответствующий снимок, точно коррелировать operationId. Обучение, cooldown и награды заданий остаются на сервере. Вход в дома v5 — обычное перемещение по общей карте, без InteriorTransition, затемнения и скрытых комнат.
 
 Числа в примерах payload — образцы формы, не готовый баланс. 100 уровней, DataStore, баланс 20–30 часов, доставка и полноценная работа заданий не реализованы UI-веткой.
 

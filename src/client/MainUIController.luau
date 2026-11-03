@@ -18,7 +18,6 @@ local Verity=require(script.Parent.VerityUIController)
 local Phone=require(script.Parent.PhoneUIController)
 local Tasks=require(script.Parent.TasksUIController)
 local Tutorial=require(script.Parent.TutorialController)
-local Interior=require(script.Parent.InteriorTransitionController)
 local Main={}
 Main.__index=Main
 local Errors={
@@ -63,7 +62,6 @@ function Main.new()
 	self.phone=self.cleanup:Add(Phone.new(ctx))
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
 	self.tutorial=self.cleanup:Add(Tutorial.new(ctx))
-	self.interior=self.cleanup:Add(Interior.new(ctx))
 	self.ledger=Ledger.new()
 	for _,obj in refs.Gui:GetDescendants() do
 		if obj:IsA("TextButton") then
@@ -114,8 +112,7 @@ function Main.new()
 		ctx.notifications:Show(payload.message,payload.kind)
 	end))
 	self.cleanup:Add(ctx.net.World.Event:Connect(function(event)
-		if event.kind=="InteriorTransition" then self.interior:Handle(event)
-		elseif event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
+		if event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
 	local function back(_,state)
 		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
@@ -194,7 +191,7 @@ function Main:Tick(dt)
 	end
 	local now=os.clock()
 	ctx.rewards:Tick(now)
-	self.tasks:Render();self.tasks:Tick();self.interior:Tick()
+	self.tasks:Render();self.tasks:Tick()
 	self.phone:ReconcileSession()
 	self.verity:Render()
 	self.refs.Banner.Visible=now<self.bannerUntil

@@ -31,3 +31,7 @@ World is occupied: existing main contains map and interior work. No Egor assignm
 - [x] Client implementation and proposed API.
 - [x] Static/logic/build verification.
 - [x] Studio verification with evidence and handoff. See UI_TEST_REPORT.md for executed checks and remaining Core/World integration gates.
+
+## Актуализация при слиянии
+
+Во время отправки main обновился до `0cb7913` с открытыми домами карты v5. Прежний план отдельного интерьерного перехода отменён: InteriorTransitionController удалён, UI не затемняет вход. Актуальные правила — `INTERIORS.md`; первоначальные проверки старого перехода в UI_TEST_REPORT сохраняются только как история.

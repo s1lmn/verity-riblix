@@ -1,24 +1,28 @@
 {
+  "version": 5,
   "plots": 16,
-  "parts": 1549,
+  "walkInHouses": 16,
+  "parts": 7534,
+  "rowSpacing": 72,
   "plotFootprint": [
-    64,
-    48
+    120,
+    72
   ],
   "houseFootprint": [
-    28,
-    30
+    70,
+    50
   ],
-  "reservedVerityPad": [
-    17,
-    17
-  ],
+  "entry": "physical doorways; all players may visit",
+  "glass": "transparency .72-.78; collision enabled",
+  "floor": "muted blue 86A9BF with native fine Studs",
   "checks": [
-    "16 unique plots",
-    "non-overlapping lot bounds",
-    "all lot geometry within bounds",
-    "required integration anchors present",
-    "XML parses"
+    "lot bounds do not overlap",
+    "all lot objects fit their lot",
+    "outside path and 16 entrances have static clearance",
+    "house internal route/stair tests run in build_interior",
+    "XML parsed"
   ],
-  "studioPlaytest": "not run"
+  "pointLights": 80,
+  "studioPlaytest": "not run",
+  "mobileFPS": "not measured"
 }

@@ -3,16 +3,21 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": {
-        "$path": "src/shared"
-      },
       "World": {
         "$path": "src/world"
+      },
+      "Shared": {
+        "$path": "src/shared"
       }
     },
     "ServerScriptService": {
       "MapBootstrap": {
         "$path": "src/server/MapBootstrap.server.luau"
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true
       }
     },
     "StarterPlayer": {
@@ -25,19 +30,6 @@
     "StarterGui": {
       "$properties": {
         "ScreenOrientation": "Sensor"
-      }
-    },
-    "ServerStorage": {
-      "InteriorTemplates": {
-        "$className": "Folder",
-        "StandardInterior": {
-          "$path": "assets/interiors/StandardInterior.rbxmx"
-        }
-      }
-    },
-    "Workspace": {
-      "$properties": {
-        "StreamingEnabled": true
       }
     }
   }
