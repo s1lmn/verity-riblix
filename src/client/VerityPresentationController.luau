@@ -3,6 +3,8 @@ local Locale = require(script.Parent.Locale)
 -- Own confirmed purchases only. The existing world animator remains the model owner.
 local Players=game:GetService("Players")
 local Run=game:GetService("RunService")
+local Celebration=require(game:GetService("ReplicatedStorage").Shared.VerityUpgradeCelebration)
+local Lighting=game:GetService("Lighting")
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Model=require(script.Parent.UIModel)
@@ -31,6 +33,8 @@ function Presentation.new(ctx)
  local skip=W.Button(card,"Skip","×",T.Paper)
  skip.Position,skip.Size,skip.AnchorPoint,skip.ZIndex=UDim2.new(1,-6,0,2),UDim2.fromOffset(44,44),Vector2.new(1,0),54
  self.card,self.title,self.detail,self.tag,self.fill=card,title,detail,tag,fill
+ local flash=W.Frame(layer,"MilestoneFlash",UDim2.fromScale(1,1),T.Gold)
+ flash.BackgroundTransparency=1;flash.ZIndex=49;flash.Active=false;self.flash=flash
  self.cleanup:Add(skip.Activated:Connect(function()self:Stop()end))
  self.confetti={}
  for i=1,18 do
@@ -58,6 +62,7 @@ function Presentation:Start(event,model)
  if not hum or hum.Health<=0 or not model:IsDescendantOf(workspace) then return false end
  local now=os.clock()
  self.active={event=event,model=model,started=now}
+ self.active.look=Celebration.Get(event.newLevel)
  self.ctx.presenting=true;self.ctx.close();self.ctx.refs.Banner.Visible=false
  self.layer.Visible=true;self.count+=1
  self.ctx.refs.Gui:SetAttribute("RevealCount",self.count)
@@ -72,9 +77,14 @@ function Presentation:Start(event,model)
   glow.Name="UpgradeGlow";glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
   glow.FillColor=T.Gold;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
   self.active.glow=glow
+  if self.active.look.special then
+   local bloom=Instance.new("BloomEffect");bloom.Name="VerityUpgradeBloom";bloom.Intensity=0;bloom.Size=24;bloom.Threshold=1;bloom.Parent=Lighting
+   local color=Instance.new("ColorCorrectionEffect");color.Name="VerityUpgradeColor";color.Parent=Lighting
+   self.active.bloom,self.active.color=bloom,color
+  end
  end
  local camera=workspace.CurrentCamera
- if camera and not self.ctx.settings.values.ReducedMotion and camera.CameraType==Enum.CameraType.Custom then
+ if camera and not self.ctx.settings.values.ReducedMotion and not game:GetService("VRService").VREnabled and camera.CameraType==Enum.CameraType.Custom then
   self.camera={instance=camera,kind=camera.CameraType,subject=camera.CameraSubject,cf=camera.CFrame,fov=camera.FieldOfView}
   camera.CameraType=Enum.CameraType.Scriptable
   -- Front facing candidates, with an elevated fallback for large rooftop companions.
@@ -146,6 +156,9 @@ function Presentation:Tick(now)
  local char=Players.LocalPlayer.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not hum or hum.Health<=0 or not a.model:IsDescendantOf(workspace) or now-a.started>5 then self:Stop();return end
  local age=now-a.started
+ local impactAge=age-a.look.duration*.45
+ local subtle=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
+ local pulse=if subtle then 0 else Celebration.Pulse(impactAge)
  if a.completed and now-a.completed>1.25 then self:Stop();return end
  local size=self.ctx.refs.Safe.AbsoluteSize
  local short=size.Y<400
@@ -159,13 +172,19 @@ function Presentation:Tick(now)
   local saved=self.camera;local camera=saved.instance
   if camera.CameraType~=Enum.CameraType.Scriptable then self.camera=nil;self:Stop();return end
   local pose,_,fov=self:CameraPose(camera,a.model,a.event.newScale,a.angle or 0,age/2.5)
-  camera.FieldOfView=fov
-  -- A steady close view; no camera shake, full rotations or input locks.
-  camera.CFrame=pose;camera.Focus=a.model:GetPivot()
+  local x,y,roll=Celebration.Shake(impactAge,a.event.newLevel,subtle)
+  camera.FieldOfView=fov-(if a.look.special then pulse*2 else 0)
+  -- Apply to a fresh pose: never accumulate shake or fight another camera owner.
+  camera.CFrame=pose*CFrame.new(x,y,0)*CFrame.Angles(0,0,roll);camera.Focus=a.model:GetPivot()
  end
  if a.glow then
   if self.ctx.settings.values.ReducedEffects then a.glow:Destroy();a.glow=nil
-  else a.glow.FillTransparency=.83+.14*math.min(1,age/2.5);a.glow.OutlineTransparency=.15+.8*math.min(1,age/3)end
+  else a.glow.FillTransparency=math.clamp(.83+.14*math.min(1,age/2.5)-pulse*.3,0,1);a.glow.OutlineTransparency=math.clamp(.15+.8*math.min(1,age/3)-pulse*.25,0,1)end
+ end
+ self.flash.BackgroundTransparency=1-(if a.look.special then pulse*.10 else 0)
+ if a.bloom then
+  if subtle then a.bloom:Destroy();a.color:Destroy();a.bloom,a.color=nil,nil
+  else a.bloom.Intensity=pulse*.9;a.color.Saturation=pulse*.15;a.color.Brightness=pulse*.035 end
  end
  local burstAge=a.completed and now-a.completed
  for i,piece in self.confetti do
@@ -190,6 +209,9 @@ end
 function Presentation:Stop()
  self:ReleaseCamera()
  local a=self.active;if a and a.glow then a.glow:Destroy()end
+ if a and a.bloom then a.bloom:Destroy()end
+ if a and a.color then a.color:Destroy()end
+ self.flash.BackgroundTransparency=1
  self.active=nil;self.ctx.presenting=false;self.layer.Visible=false
  self.ctx.refs.Gui:SetAttribute("RevealActive",false)
 end

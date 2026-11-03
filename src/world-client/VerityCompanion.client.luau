@@ -12,6 +12,8 @@ local Config = require(configModule)
 local Levels = require(shared:WaitForChild("VerityCompanionLevels",15))
 local FaceUI = require(ReplicatedStorage:WaitForChild("World"):WaitForChild("VerityFaceUI"))
 local Personality = require(shared.VerityPersonality)
+local Celebration = require(shared.VerityUpgradeCelebration)
+local UpgradeVFX = require(ReplicatedStorage.World.VerityVFXService)
 local templates = ReplicatedStorage:WaitForChild("VerityCompanionAssets",15)
 if not templates or not templates:FindFirstChild("Joy") then
     warn("[Verity companion] Sync VerityCompanionAssets with the updated Rojo project")
@@ -20,6 +22,7 @@ end
 if Config.MeshId == "" then warn("[Verity companion] Upload mesh/textures and configure real IDs first"); return end
 local source = ReplicatedStorage:WaitForChild("VerityCompanions",30)
 if not source then return end
+local effects = UpgradeVFX.new()
 local localPlayer = Players.LocalPlayer
 local visuals = Instance.new("Folder")
 visuals.Name = "LocalVerityCompanions"
@@ -41,6 +44,7 @@ local function readLevel(descriptor)
     return if Levels.IsValid(level) then level else nil
 end
 local function setImmediate(entry, level)
+    effects:CancelUpgrade(entry.body)
     local look=Levels.Get(level)
     entry.scale=look.Scale
     entry.color=Color3.fromHex(look.Hex)
@@ -56,15 +60,27 @@ local function levelChanged(entry)
     for nextLevel=entry.requested+1,level do entry.queue[#entry.queue+1]=nextLevel end
     entry.requested=level
 end
-local function updateLook(entry, dt, reduced)
+local function updateLook(entry, dt, reduced, reducedEffects)
     if not entry.transition and #entry.queue>0 then
         local look=Levels.Get(table.remove(entry.queue,1))
         entry.transition={elapsed=0,look=look,fromScale=entry.scale,fromColor=entry.color}
+        entry.transition.duration=Celebration.Get(look.Level).duration
+        if not reduced and not reducedEffects then
+            local scale=look.Scale*Config.BaseDiameter/1.7
+            effects:BeginUpgrade(entry.body,CFrame.new(entry.body.Position-Vector3.new(0,.85*scale,0)),scale,look.Level,os.clock())
+        end
     end
     local transition=entry.transition
     if not transition then return end
     transition.elapsed+=dt
-    local t=math.min(1,transition.elapsed/transition.look.Duration)
+    local t=math.min(1,transition.elapsed/transition.duration)
+    if t>=.45 and not transition.burst then
+        transition.burst=true
+        if not reduced and not reducedEffects then
+            local scale=entry.scale*Config.BaseDiameter/1.7
+            effects:Burst(entry.body,CFrame.new(entry.body.Position-Vector3.new(0,.85*scale,0)),scale,transition.look.Level,os.clock())
+        end
+    end
     local alpha=if reduced then t else 1-(1-t)^3
     local pulse=if reduced then 1 else 1+transition.look.Bounce*math.sin(math.pi*t)^2
     entry.scale=(transition.fromScale+(transition.look.Scale-transition.fromScale)*alpha)*pulse
@@ -102,6 +118,7 @@ local function remove(descriptor)
     if not entry then return end
     entry.changed:Disconnect()
     entry.levelChanged:Disconnect()
+    effects:Remove(entry.body)
     entry.body:Destroy()
     entries[descriptor] = nil
 end
@@ -119,6 +136,8 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
     local gui = localPlayer:FindFirstChildOfClass("PlayerGui")
     local settings = gui and gui:FindFirstChild("VerityUI")
     local reduced = (settings and settings:GetAttribute("ReducedMotion")==true) or workspace:GetAttribute("VerityReducedMotion")==true
+    local reducedEffects = (settings and settings:GetAttribute("ReducedEffects")==true) or workspace:GetAttribute("VerityReducedEffects")==true
+    if reduced or reducedEffects then effects:SuppressBursts() end
     for _, entry in entries do
         local owner = Players:GetPlayerByUserId(entry.ownerId)
         local character = owner and owner.Character
@@ -127,7 +146,7 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
         local valid = root and humanoid and humanoid.Health>0 and (root.Position-camera.CFrame.Position).Magnitude<Config.RenderDistance
         local visible = false
         if valid then
-            updateLook(entry,step,reduced)
+            updateLook(entry,step,reduced,reducedEffects)
             local radius=Config.BaseDiameter*entry.scale/2
             entry.body.Size=Vector3.new(1,1,1)*(radius*2)
             entry.body.Color=entry.color
@@ -168,6 +187,7 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             visible = (camera.CFrame.Position-position).Magnitude>2
             if owner==localPlayer and (camera.Focus.Position-camera.CFrame.Position).Magnitude<1 then visible=false end
         else
+            effects:CancelUpgrade(entry.body)
             entry.lifeState=nil
             entry.position,entry.heading,entry.facing,entry.rootPosition=nil,nil,nil,nil
             if entry.transition or #entry.queue>0 then setImmediate(entry,entry.requested) end
@@ -177,13 +197,15 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             entry.body.Transparency=if visible then 0 else 1
             entry.appearance.Enabled=visible
         end
+        if not visible then effects:CancelUpgrade(entry.body) end
         if visible then
             FaceUI.Refresh(entry.appearance,0)
             entry.faceLife=entry.faceLife or {}
             local name=entry.descriptor:GetAttribute("Emotion") or "Joy"
-            FaceUI.Animate(entry.appearance,os.clock(),entry.ownerId,name,entry.descriptor:GetAttribute("ReactionRevision"),entry.faceLife,reduced,settings and settings:GetAttribute("ReducedEffects")==true)
+            FaceUI.Animate(entry.appearance,os.clock(),entry.ownerId,name,entry.descriptor:GetAttribute("ReactionRevision"),entry.faceLife,reduced,reducedEffects)
         end
     end
+    effects:Tick(os.clock())
 end)
 task.spawn(function()
     -- Preload typed instances; a bare mesh ID can be mistaken for an image request.
@@ -194,4 +216,5 @@ script.Destroying:Connect(function()
     for _, connection in connections do connection:Disconnect() end
     for descriptor in entries do remove(descriptor) end
     visuals:Destroy()
+    effects:Destroy()
 end)

@@ -192,7 +192,7 @@ function Controller:Follow(record,now,dt)
  local char=owner and owner.Character
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
- if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);return false end
+ if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model);return false end
  local scale=Levels.getVerityScale(record.model:GetAttribute("VerityLevel"))
  local x,y,z=Follow.Offset(scale,record.plot)
  local heading=root.CFrame.Rotation
@@ -278,12 +278,13 @@ function Controller:Follow(record,now,dt)
  local center=record.origin.Position+Vector3.new(0,.85*record.model:GetScale(),0)
  local alpha=if camera then math.clamp((.9*record.model:GetScale()+Follow.CameraMargin-(camera.CFrame.Position-center).Magnitude)/Follow.CameraMargin,0,1) else 0
  visibility(record,alpha)
+ if alpha>=.7 then self.effects:CancelUpgrade(record.model) end
  return true
 end
 
 function Controller:Tick(now,dt)
 	local camera=workspace.CurrentCamera
-	if self.settings.values.ReducedEffects then self.effects:SuppressBursts() end
+	if self.settings.values.ReducedEffects or self.settings.values.ReducedMotion then self.effects:SuppressBursts() end
 	for model,record in self.records do
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
 		if not self:Follow(record,now,dt) then continue end
@@ -294,6 +295,9 @@ function Controller:Tick(now,dt)
 			if event then
 				record.active={event=event,started=now,yaw=record.lastYaw,lift=record.lastLift,burst=false}
 				self.Started:Fire(event,model)
+				if near and not reduced and not self.settings.values.ReducedEffects then
+					self.effects:BeginUpgrade(model,model:GetPivot(),event.newScale,event.newLevel,now)
+				end
 			end
 		end
 		local active=record.active
@@ -319,7 +323,7 @@ function Controller:Tick(now,dt)
 			scale,stage=pose.scale,pose.stage
 			if alpha>=0.45 and not active.burst then
 				active.burst=true
-				if near and not self.settings.values.ReducedEffects then self.effects:Burst(model,model:GetPivot(),scale,event.newLevel,now) end
+				if near and not reduced and not self.settings.values.ReducedEffects then self.effects:Burst(model,model:GetPivot(),scale,event.newLevel,now) end
 			end
 			if alpha>=1 then self:Finish(record,now);scale=event.newScale end
 		else
