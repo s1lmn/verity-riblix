@@ -59,3 +59,8 @@
 Первые десять ярких шариков по референсу пользователя: разные лица/движения, светящиеся глаза и эффекты на уровнях 5 и 10. [Галерея для Roblox Studio](assets/verity/Verity_First10_Preview.rbxlx) · [лица и цвета](assets/verity/verity-first-ten.png) · [анимационный эскиз](assets/verity/verity-motion-sketch.gif) · [документация Core/UI](docs/VERITY_FIRST_TEN.md).
 
 Открыть галерею и нажать Play: площадки показывают апгрейд, отдельный тестовый экземпляр переключает уровни 1–10. Сцена изолирована от экономики и основной карты. До утверждения внешности это изолированный художественный кандидат; действующая VerityFactory и общий контроллер 1–100 сохранены. Внедрение выбранной геометрии в игровой контракт выполняется после доводки, без двух аниматоров на одной модели. Luau/сборки/геометрия проверены; статус реального Studio-теста — в `assets/verity/test-report.json`. Уровни 11–100 пока не создавались.
+
+
+## Textured companion baseline
+
+New one-character integration: actual uploaded mesh + eight textures, follow/idle, respawn and Studio-only emotion controls. [Run and Core handoff](docs/VERITY_COMPANION.md). Studio Play verified the original v1 follow/emotion/lifecycle implementation; later initializer/guard/camera-facing edits passed static/pure checks and are explicitly distinguished in the report. Core economy remains unimplemented; this preview never fabricates earnings or unlocks in live servers.

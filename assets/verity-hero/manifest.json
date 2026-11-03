@@ -1,0 +1,21 @@
+{
+  "triangles": 2208,
+  "verticesWithUVSeam": 1225,
+  "diameterStuds": 2.8,
+  "forward": "-Z",
+  "emotions": [
+    "Joy",
+    "Love",
+    "Playful",
+    "Wink",
+    "Laugh",
+    "Surprise",
+    "Confident",
+    "Stars"
+  ],
+  "textureSize": [
+    2048,
+    1024
+  ],
+  "parts": 1
+}
