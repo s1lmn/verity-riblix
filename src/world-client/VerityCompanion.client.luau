@@ -24,10 +24,11 @@ local entries, connections = {}, {}
 local function emotion(entry)
     local name = entry.descriptor:GetAttribute("Emotion") or "Joy"
     local template = templates:FindFirstChild(name) or templates.Joy
-    local appearance = template:FindFirstChildOfClass("SurfaceAppearance")
+    local appearance = template:FindFirstChildOfClass("SurfaceGui")
     if entry.appearance then entry.appearance:Destroy() end
-    -- ColorMap is plugin-only. Clone the authored appearance instead of writing it.
+    -- The authored image face uses no PBR texture pack or imported UV coordinates.
     entry.appearance = appearance:Clone()
+    entry.appearance.Enabled = entry.visible
     entry.appearance.Parent = entry.body
 end
 local function readLevel(descriptor)
@@ -74,7 +75,7 @@ local function attach(descriptor)
     if not descriptor:IsA("Folder") or entries[descriptor] then return end
     local ownerId = descriptor:GetAttribute("OwnerUserId")
     if type(ownerId) ~= "number" then return end
-    -- One mesh with Overlay alpha: transparent texels reveal the body's pigment.
+    -- One solid-colour mesh and a camera-facing image face on its front surface.
     local part = templates.Joy:Clone()
     part.Name = "Verity_"..ownerId
     part.Anchored = true
@@ -84,7 +85,7 @@ local function attach(descriptor)
     part.Color = Color3.new(1,1,1)
     part.Material = Enum.Material.SmoothPlastic
     part.Parent = visuals
-    local entry = {descriptor=descriptor,ownerId=ownerId,body=part,appearance=part:FindFirstChildOfClass("SurfaceAppearance"),visible=false}
+    local entry = {descriptor=descriptor,ownerId=ownerId,body=part,appearance=part:FindFirstChildOfClass("SurfaceGui"),visible=false}
     setImmediate(entry,readLevel(descriptor) or 1)
     entries[descriptor] = entry
     entry.changed = descriptor:GetAttributeChangedSignal("Emotion"):Connect(function() emotion(entry) end)
@@ -165,6 +166,7 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
         if entry.visible~=visible then
             entry.visible=visible
             entry.body.Transparency=if visible then 0 else 1
+            entry.appearance.Enabled=visible
         end
     end
 end)

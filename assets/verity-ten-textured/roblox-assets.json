@@ -16,5 +16,5 @@
     1,
     10
   ],
-  "rendering": "MeshPart with authored SurfaceAppearance AlphaMode=Overlay; clone appearances to change emotion"
+  "rendering": "One solid-color MeshPart plus a Front SurfaceGui/ImageLabel using a crop of the shared RGBA image; no PBR texture pack or mesh UV dependence"
 }

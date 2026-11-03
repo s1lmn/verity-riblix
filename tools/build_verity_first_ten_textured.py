@@ -42,9 +42,22 @@ if asset_file.exists():
   for key,value in zip(['X','Y','Z','R00','R01','R02','R10','R11','R12','R20','R21','R22'],[*xyz,1,0,0,0,1,0,0,0,1]):ET.SubElement(node,key).text=str(value)
  def content(props,name,value):ET.SubElement(ET.SubElement(props,'Content',name=name),'url').text=value
  def appearance(parent,emotion,ref):
-  _,props=item(parent,'SurfaceAppearance','FaceAppearance',ref)
-  val(props,'token','AlphaMode',0) # Overlay: transparent texels reveal MeshPart.Color.
-  content(props,'ColorMap',assets['textures'][emotion])
+  # Image rendering avoids PBR texture-pack processing and importer UV changes.
+  gui,props=item(parent,'SurfaceGui','FaceGui',ref)
+  val(props,'token','Face',5);val(props,'token','SizingMode',0)
+  val(props,'bool','AlwaysOnTop','false');val(props,'float','LightInfluence',0)
+  val(props,'float','ZOffset',.025)
+  canvas=ET.SubElement(props,'Vector2',name='CanvasSize')
+  for axis in 'XY':ET.SubElement(canvas,axis).text='512'
+  _,p=item(gui,'ImageLabel','Expression',ref+'Image')
+  val(p,'float','BackgroundTransparency',1);val(p,'bool','Active','false')
+  content(p,'Image',assets['textures'][emotion])
+  for prop,xy in [('ImageRectOffset',[768,288]),('ImageRectSize',[512,512])]:
+   vector=ET.SubElement(p,'Vector2',name=prop)
+   for axis,value in zip('XY',xy):ET.SubElement(vector,axis).text=str(value)
+  for prop,xy in [('Position',[.19,.14]),('Size',[.62,.64])]:
+   dim=ET.SubElement(p,'UDim2',name=prop)
+   for axis,value in zip(['XS','XO','YS','YO'],[xy[0],0,xy[1],0]):ET.SubElement(dim,axis).text=str(value)
  def body(parent,name,ref,color,diameter,xyz,emotion='Joy'):
   part,p=item(parent,'MeshPart',name,ref)
   for flag,value in [('Anchored',True),('CanCollide',False),('CanTouch',False),('CanQuery',False),('CastShadow',False)]:val(p,'bool',flag,str(value).lower())

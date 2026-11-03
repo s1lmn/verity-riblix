@@ -145,7 +145,9 @@ for n in nodes:
     if path.startswith('Furniture/Kitchen/'):
         x,y,z=n['pos'];sx,sy,sz=n['size']
         n['pos']=[-z+2,y,x-4];n['size']=[sz,sy,sx]
-    if path=='Geometry/Ceiling':n['color']=COL['tile']
+    if path=='Geometry/Ceiling':
+        n['color']=COL['tile']
+        n['pos'][2]=.5;n['size'][2]=29 # Ends at passage wall, not inside it.
     kept.append(n)
 nodes=kept+living
 group('Geometry/Stairs');group('Furniture/Gallery');group('Furniture/Upper')
@@ -157,9 +159,9 @@ p('Geometry/LivingRight',(24.5,15,-34),(1,30,40),'wall')
 # Wide, genuinely open 11 x 9 stud passage from the original room.
 for side in (-1,1):
     p(f'Geometry/PassageWall{side}',(side*15.25,7.5,-14.5),(19.5,15,1),'wall')
-    p(f'Geometry/PassageFrame{side}',(side*5.625,4.5,-14.25),(.25,9,1.5),'navy',collide=False)
+    p(f'Geometry/PassageFrame{side}',(side*5.625,4.5,-14.25),(.4,9,1.7),'navy',collide=False)
 p('Geometry/PassageLintel',(0,12,-14.5),(11,6,1),'wall')
-p('Geometry/PassageFrameTop',(0,9.125,-14.25),(11.5,.25,1.5),'navy',collide=False)
+p('Geometry/PassageFrameTop',(0,9.125,-14.25),(11.5,.25,1.7),'navy',collide=False)
 p('Geometry/UpperFront',(0,23,-14.5),(50,14,1),'upperwall')
 p('Geometry/UpperBackLining',(0,23,-53.9),(48,14,.2),'upperwall',collide=False)
 p('Geometry/UpperLeftLining',(-23.9,23,-34),(.2,14,40),'upperwall',collide=False)
@@ -237,15 +239,19 @@ for side in (-1,1):
     for x,width in ((side*16,2),(side*4.5,1)):
         p(f'Geometry/FrontPier{side}_{x}',(x,6,14.5),(width,8,1),'mint')
     p(f'Geometry/FrontGlass{side}',(side*10,6,14.5),(10,8,.15),'blue',alpha=.72)
-    p(f'Geometry/OpenDoorPost{side}',(side*4.125,4.5,14.5),(.25,9,1.4),'navy',collide=False)
+    p(f'Geometry/OpenDoorPost{side}',(side*4.125,4.5,14.5),(.4,9,1.4),'navy',collide=False)
 p('Geometry/FrontHeader',(0,11,14.5),(34,2,1),'mint')
 p('Geometry/OpenDoorLintel',(0,9.5,14.5),(8,1,1),'mint')
 # Side glazing opens views of the living room and the upper floor to neighbours.
 for side in (-1,1):
     x=side*24.5
     for name,y,h in (('Sill',1,2),('FloorBand',15.5,3),('RoofBand',29,2)):
-        p(f'Geometry/Side{name}{side}',(x,y,-34),(1,h,40),'wall')
-    for z in (-53,-40,-27,-15):p(f'Geometry/SidePier{side}_{z}',(x,15,z),(1,26,2),'mint')
+        p(f'Geometry/Side{name}{side}',(x,y,-34.5),(1,h,39),'wall')
+    # Piers meet the floor band instead of sharing its entire coloured face.
+    for z in (-53,-40,-27,-15):
+        center,length=(-15.5,1) if z==-15 else (z,2)
+        for tier,y,h in (('Lower',8,12),('Upper',22.5,11)):
+            p(f'Geometry/SidePier{side}_{z}{tier}',(x,y,center),(1,h,length),'mint')
     for j,(z,length) in enumerate(((-46.5,11),(-33.5,11),(-21,10))):
         p(f'Geometry/LivingGlass{side}_{j}',(x,8,z),(.15,12,length),'blue',alpha=.78)
         p(f'Geometry/UpperGlass{side}_{j}',(x,22.5,z),(.15,11,length),'blue',alpha=.78)
@@ -255,7 +261,7 @@ for x in (-24,-10,3,16,24):p('Geometry/UpperFacadePier'+str(x),(x,23,-14.5),(1,1
 for j,(x,width) in enumerate(((-17,13),(-3.5,12),(9.5,12),(20,7))):
     p(f'Geometry/UpperFrontGlass{j}',(x,23,-14.5),(width,10,.15),'blue',alpha=.78)
 # Visible plastic roof caps with the same fine stud surface as the map.
-for name,pos,size in [('Lobby',(0,13.1,0),(34,.2,30)),('Upper',(0,31.1,-34),(50,.2,42))]:
+for name,pos,size in [('Lobby',(0,13.1,.5),(34,.2,29)),('Upper',(0,31.1,-34),(50,.2,42))]:
     p('Geometry/RoofCap'+name,pos,size,'mint',studs=True)
 for n in nodes:
     if n['path'].startswith(('Geometry/FrontPier','Geometry/FrontHeader','Geometry/OpenDoorLintel','Geometry/SidePier','Geometry/UpperFacadePier','Geometry/UpperFrontHeader','Geometry/RoofCap')):

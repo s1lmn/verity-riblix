@@ -6,6 +6,7 @@ assert(RunService:IsServer(), "VerityCompanionService is server-only")
 local Config = require(ReplicatedStorage.Shared.VerityCompanionConfig)
 local Service = {}
 local tokens = {}
+local previewCooldown = {}
 local function folder()
     local current = ReplicatedStorage:FindFirstChild("VerityCompanions")
     if not current then
@@ -63,6 +64,7 @@ function Service.SetEmotion(player, emotion, seconds)
 end
 function Service.Detach(player)
     tokens[player.UserId] = nil
+    previewCooldown[player.UserId] = nil
     local root = ReplicatedStorage:FindFirstChild("VerityCompanions")
     local descriptor = root and root:FindFirstChild(tostring(player.UserId))
     if descriptor then descriptor:Destroy() end
@@ -73,6 +75,22 @@ function Service.StartStudioPreview()
     local root = folder()
     if root:GetAttribute("StudioPreviewStarted") then return end
     root:SetAttribute("StudioPreviewStarted", true)
+    -- Temporary visual review control. This remote never exists in live servers.
+    local preview = Instance.new("RemoteEvent")
+    preview.Name = "StudioSetLevel"
+    preview.OnServerEvent:Connect(function(player, level)
+        if not RunService:IsStudio() or not Config.StudioPreview or not validLevel(level) then return end
+        local now = os.clock()
+        if now-(previewCooldown[player.UserId] or -math.huge)<.2 then return end
+        previewCooldown[player.UserId] = now
+        local descriptor = root:FindFirstChild(tostring(player.UserId))
+        if not descriptor then return end
+        local previous = descriptor:GetAttribute("Level") or 1
+        if Service.SetLevel(player,level) then
+            Service.SetEmotion(player,if level>previous then "Stars" else "Joy",2)
+        end
+    end)
+    preview.Parent = root
     Players.PlayerAdded:Connect(function(player) Service.Attach(player) end)
     for _, player in Players:GetPlayers() do Service.Attach(player) end
 end

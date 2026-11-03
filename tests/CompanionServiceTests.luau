@@ -9,7 +9,7 @@ return function(loadService)
         local pending={}
         local methods={}
         local function instance(class)
-            return setmetatable({_class=class,_children={},_attrs={}}, {
+            return setmetatable({_class=class,_children={},_attrs={},OnServerEvent=if class=="RemoteEvent" then event() else nil}, {
                 __index=function(self,k) if k=="Parent" then return rawget(self,"_parent") end return methods[k] end,
                 __newindex=function(self,k,v)
                     if k=="Parent" then
@@ -51,5 +51,20 @@ return function(loadService)
     players.PlayerRemoving:Fire(p);assert(second.dead)
     assert(s.SetEmotion(p,"Love")==false,"Detached owner accepted state update")
     s.StartStudioPreview();assert(not storage.VerityCompanions and not storage:FindFirstChild("VerityCompanions"):FindFirstChild("StudioEmotionRequest"))
+    assert(not storage:FindFirstChild("VerityCompanions"):FindFirstChild("StudioSetLevel"),"Debug upgrade remote leaked into production")
+    local preview,owner,replicated=fixture(true)
+    preview.StartStudioPreview()
+    local root=replicated:FindFirstChild("VerityCompanions")
+    local request=root:FindFirstChild("StudioSetLevel")
+    assert(request,"Studio preview missing level control")
+    local descriptor=preview.Attach(owner)
+    for _,bad in {0,11,1.5,math.huge,0/0,"10",false} do
+        request.OnServerEvent:Fire(owner,bad)
+        assert(descriptor:GetAttribute("Level")==1,"Invalid debug level was accepted")
+    end
+    request.OnServerEvent:Fire(owner,10)
+    assert(descriptor:GetAttribute("Level")==10 and descriptor:GetAttribute("Emotion")=="Stars")
+    request.OnServerEvent:Fire(owner,1)
+    assert(descriptor:GetAttribute("Level")==10,"Preview rate limit failed")
     print("PASS companion ownership, idempotency, delayed unlock root, 8-emotion validation, timer races, removal, live preview guard")
 end
