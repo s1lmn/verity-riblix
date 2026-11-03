@@ -1,5 +1,6 @@
 --!nonstrict
--- Client-only, bounded native geometry. No physics, lights or uploaded textures.
+-- Client-only effects with bounded geometry and no uploaded textures.
+local Profile = if script then require(game:GetService("ReplicatedStorage").Shared.VerityAnimationProfile) else nil
 local VFX = {}
 VFX.__index = VFX
 local MAX_BURST_PARTS = 64
@@ -82,59 +83,107 @@ function VFX:Update(model, origin, scale, stage, now, reducedEffects, near)
 end
 
 local TAU = 2 * math.pi
+local RIBBONS = 30
+local WAVES = 48
+local SPARKS = 40
+
+local function makeGrowth(parent)
+	local parts = {}
+	for i = 1, RIBBONS + WAVES + SPARKS do
+		local name = if i <= RIBBONS then "GrowthRibbon" elseif i <= RIBBONS + WAVES then "GrowthWave" else "GrowthSpark"
+		parts[i] = piece(parent, name)
+		if name == "GrowthSpark" and i % 3 == 0 then parts[i].Shape = Enum.PartType.Ball end
+	end
+	local source = piece(parent, "GrowthLight")
+	local light = Instance.new("PointLight")
+	light.Enabled = false
+	light.Shadows = false
+	light.Parent = source
+	local bloom = Instance.new("BloomEffect")
+	bloom.Name = "VerityGrowthBloom"
+	bloom.Enabled = false
+	bloom.Size = 48
+	bloom.Threshold = .92
+	bloom.Parent = game:GetService("Lighting")
+	return {
+		parts = parts, source = source, light = light, bloom = bloom,
+		white = Color3.fromRGB(255, 248, 255),
+	}
+end
 
 function VFX:HideGrowth()
 	local growth = self.growth
 	if not growth or not growth.visible then return end
 	growth.visible = false
+	growth.light.Enabled = false
+	growth.bloom.Enabled = false
 	for _, part in growth.parts do part.Transparency = 1 end
 end
 
--- One reusable pool for the local owner's purchase. The sphere stays unobscured.
-function VFX:Growth(origin, scale, progress, bloom, oldColor, newColor, milestone)
-	if not self.growth then
-		local parts = {}
-		for i = 1, 36 do
-			parts[i] = piece(self.folder, if i <= 20 then "GrowthRibbon" else "GrowthSpark")
-			if i > 20 then parts[i].Shape = Enum.PartType.Ball end
-		end
-		self.growth = {parts = parts, gold = Color3.fromRGB(255, 220, 111), white = Color3.fromRGB(255, 244, 255)}
-	end
+-- One reusable pool for the local owner's purchase, with no replicated geometry.
+function VFX:Growth(origin, scale, progress, peak, newColor, milestone)
+	if not self.growth then self.growth = makeGrowth(self.folder) end
 	local growth = self.growth
 	growth.visible = true
-	local gold, white = growth.gold, growth.white
+	local white = growth.white
 	local center = origin.Position + Vector3.new(0, .85 * scale, 0)
-	local charge = math.clamp(progress / bloom, 0, 1)
-	local release = math.clamp((progress - bloom) / (1 - bloom), 0, 1)
+	local charge = math.clamp(progress / peak, 0, 1)
+	local release = math.clamp((progress - peak) / (1 - peak), 0, 1)
 	local energy = math.sin(math.pi * progress) ^ .7
-	local spin = charge * 3.6 + release * 1.15
-	local radius = scale * (1.22 - .22 * charge + .42 * release)
+	local pulse = Profile.Glow(progress)
+	local light = growth.light
+	growth.source.Position = center
+	light.Enabled = true
+	light.Color = newColor
+	light.Brightness = energy * (1.2 + pulse * (if milestone then 6.2 else 4.8))
+	light.Range = math.clamp(scale * (9 + pulse * 6), 12, 60)
+	local bloom = growth.bloom
+	bloom.Enabled = true
+	bloom.Intensity = energy * (.25 + pulse * (if milestone then 1.85 else 1.4))
+
+	local spin = charge * 4.3 + release * 1.45
+	local radius = scale * (1.36 - .23 * charge + .48 * release)
 	for i, part in growth.parts do
-		if i <= 20 then
-			local strand = if i <= 10 then 1 else -1
+		if i <= RIBBONS then
+			local strand = math.floor((i - 1) / 10)
+			local direction = if strand == 1 then -1 else 1
 			local trail = ((i - 1) % 10) / 9
-			local angle = spin * strand - trail * 1.95 * strand + (if strand == 1 then 0 else math.pi)
-			local y = strand * scale * (.34 - .15 * charge) + math.sin(angle) * scale * .27
+			local angle = direction * (spin - trail * 1.98) + strand * TAU / 3
+			local tilt = (strand - 1) * .4
+			local y = scale * (tilt + math.sin(angle) * .35)
 			local position = center + Vector3.new(math.cos(angle) * radius, y, math.sin(angle) * radius)
-			local tangent = Vector3.new(-math.sin(angle), .21 * math.cos(angle), math.cos(angle))
-			local width = scale * (.027 + (1 - trail) * .026)
+			local tangent = Vector3.new(-math.sin(angle), .25 * math.cos(angle), math.cos(angle))
+			local width = scale * (.032 + (1 - trail) * .043)
 			part.Size = Vector3.new(width, width, radius * .23)
 			part.CFrame = CFrame.lookAt(position, position + tangent)
-			local color = if strand == 1 then oldColor:Lerp(newColor, charge) else newColor:Lerp(gold, if milestone then .55 else .22)
-			part.Color = color:Lerp(white, .22 * (1 - trail))
-			part.Transparency = 1 - energy * (1 - .58 * trail) * (1 - .72 * release)
+			part.Color = newColor:Lerp(white, (.12 + strand * .16) * (1 - trail))
+			part.Transparency = 1 - energy * (1 - .52 * trail) * (1 - .74 * release)
+		elseif i <= RIBBONS + WAVES then
+			local index = i - RIBBONS - 1
+			local wave = math.floor(index / 16)
+			local t = math.clamp((release - wave * .12) / .79, 0, 1)
+			if t <= 0 or t >= 1 then part.Transparency = 1; continue end
+			local angle = index % 16 * TAU / 16 + wave * .23
+			local ringRadius = scale * (1 + t * (if milestone then 1.35 else 1.1))
+			local rotation = CFrame.new(center) * CFrame.Angles(.28 + wave * .22, wave * 1.25, 0)
+			part.CFrame = rotation * CFrame.new(math.cos(angle) * ringRadius, 0, math.sin(angle) * ringRadius)
+				* CFrame.Angles(0, -angle, 0)
+			part.Size = Vector3.new(scale * .033, scale * .033, ringRadius * .36)
+			part.Color = newColor:Lerp(white, wave * .14)
+			part.Transparency = 1 - .9 * math.sin(math.pi * t) ^ .72
 		else
-			local index = i - 21
-			if release <= 0 or (not milestone and index >= 10) then part.Transparency = 1; continue end
-			local count = if milestone then 16 else 10
-			local angle = index * TAU / count
+			local index = i - RIBBONS - WAVES - 1
+			if release <= 0 or (not milestone and index >= 28) then part.Transparency = 1; continue end
+			local angle = index * 2.399963
 			local spread = 1 - (1 - release)^2
-			local distance = scale * (1.02 + spread * (if milestone then 1.1 else .65))
-			local y = scale * ((index % 4 - 1.5) * .16 + math.sin(release * math.pi) * .5)
-			part.Position = center + Vector3.new(math.cos(angle) * distance, y, math.sin(angle) * distance)
-			part.Size = Vector3.one * scale * (.09 + (index % 3) * .018) * (1 - release * .65)
-			part.Color = if index % 3 == 0 then gold elseif index % 3 == 1 then newColor else oldColor:Lerp(white, .4)
-			part.Transparency = .12 + .88 * release
+			local distance = scale * (1 + spread * (1 + (index % 5) * .18))
+			local y = scale * ((index % 9 - 4) * .13 + math.sin(release * math.pi) * (.35 + index % 3 * .26))
+			local position = center + Vector3.new(math.cos(angle) * distance, y, math.sin(angle) * distance)
+			local size = scale * (.051 + (index % 4) * .018) * (1 - release * .65)
+			part.CFrame = CFrame.lookAt(position, center)
+			part.Size = Vector3.new(size, size, size * (if index % 3 == 0 then 1 else 2.8))
+			part.Color = newColor:Lerp(white, (index % 5) * .11)
+			part.Transparency = 1 - .94 * math.sin(math.pi * release) ^ .68
 		end
 	end
 end
@@ -191,6 +240,7 @@ function VFX:Remove(model)
 end
 
 function VFX:Destroy()
+	if self.growth then self.growth.bloom:Destroy(); self.growth = nil end
 	table.clear(self.active);table.clear(self.free);table.clear(self.groups);table.clear(self.pulses)
 	self.folder:Destroy()
 end

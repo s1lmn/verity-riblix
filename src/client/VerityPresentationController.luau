@@ -18,12 +18,22 @@ function Presentation.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),seen={},order={},count=0},Presentation)
  local layer=W.Frame(ctx.refs.Safe,"VerityReveal");layer.BackgroundTransparency=1;layer.ZIndex=50;layer.Visible=false
  self.layer=layer;self.cleanup:Add(layer)
+ local wash=W.Frame(layer,"ColorWash",UDim2.fromScale(1,1),Color3.new(1,1,1))
+ wash.ZIndex=50;wash.BackgroundTransparency=1
+ self.wash=wash
+ self.washGradient=W.New("UIGradient",{
+  Rotation=28,
+  Transparency=NumberSequence.new({
+   NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(.27,.24),
+   NumberSequenceKeypoint.new(.53,.84),NumberSequenceKeypoint.new(.72,.34),NumberSequenceKeypoint.new(1,0),
+  }),
+ },wash)
  local card=W.Round(W.Frame(layer,"DiscoveryCard",UDim2.fromOffset(340,128),T.Paper),20)
  card.AnchorPoint=Vector2.new(.5,1);card.Position=UDim2.new(.5,0,1,-16);card.ZIndex=51
  self.gradient=W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Pink:Lerp(T.Paper,.78)),Rotation=20},card)
  local stroke=W.Stroke(card,T.Purple,1.5);stroke.Transparency=.35;self.stroke=stroke
  local tag=W.Text(card,"Eyebrow","НОВАЯ СТУПЕНЬ РОСТА",10,true,T.Purple)
- tag.Position,tag.Size,tag.ZIndex=UDim2.fromOffset(16,10),UDim2.new(1,-74,0,16),52
+ tag.Position,tag.Size,tag.ZIndex=UDim2.fromOffset(16,10),UDim2.new(1,-32,0,16),52
  local title=W.Text(card,"Title","Verity растёт!",25,true)
  title.Position,title.Size,title.ZIndex=UDim2.fromOffset(16,29),UDim2.new(1,-32,0,32),52
  local detail=W.Text(card,"Detail","",12,false,T.Muted)
@@ -31,10 +41,7 @@ function Presentation.new(ctx)
  local track=W.Round(W.Frame(card,"Track",UDim2.new(1,-32,0,4),T.Soft),2)
  track.Position,track.ZIndex=UDim2.fromOffset(16,110),52
  local fill=W.Round(W.Frame(track,"Fill",UDim2.fromScale(0,1),T.Purple),2);fill.ZIndex=53
- local skip=W.Button(card,"Skip","×",T.Paper)
- skip.Position,skip.Size,skip.AnchorPoint,skip.ZIndex=UDim2.new(1,-6,0,2),UDim2.fromOffset(44,44),Vector2.new(1,0),54
  self.card,self.title,self.detail,self.tag,self.fill=card,title,detail,tag,fill
- self.cleanup:Add(skip.Activated:Connect(function()self:Stop()end))
  self.confetti={}
  for i=1,18 do
   local piece=W.Round(W.Frame(layer,"Spark",UDim2.fromOffset(5+i%3,9+i%4),({T.Pink,T.Gold,T.Mint,T.Blue})[i%4+1]),2)
@@ -62,6 +69,7 @@ function Presentation:Start(event,model)
  local now=os.clock()
  local oldColor,newColor=Factory.Color(event.oldLevel),Factory.Color(event.newLevel)
  self.active={event=event,model=model,started=now,oldColor=oldColor,newColor=newColor}
+ self.washGradient.Color=ColorSequence.new(newColor,newColor:Lerp(T.Paper,.28))
  self.gradient.Color=ColorSequence.new(oldColor:Lerp(T.Paper,.86),newColor:Lerp(T.Paper,.7))
  self.stroke.Color=newColor:Lerp(T.Ink,.28)
  self.fill.BackgroundColor3=oldColor
@@ -80,7 +88,7 @@ function Presentation:Start(event,model)
  if not self.ctx.settings.values.ReducedEffects and not self.ctx.settings.values.ReducedMotion then
   local glow=Instance.new("Highlight")
   glow.Name="UpgradeGlow";glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
-  glow.FillColor=oldColor;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
+  glow.FillColor=newColor;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
   self.active.glow=glow
  end
  local camera=workspace.CurrentCamera
@@ -166,6 +174,11 @@ function Presentation:Tick(now)
  self.fill.Parent.Position=UDim2.new(0,16,1,-14)
  local progress=math.clamp(age/Profile.Duration(a.event.newLevel),0,1)
  local hue=smooth((progress-.16)/.53)
+ local glow=Profile.Glow(progress)
+ local reduced=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
+ self.wash.Visible=not reduced
+ self.wash.BackgroundTransparency=1-glow*.46
+ self.washGradient.Rotation=24+smooth(progress)*34
  self.fill.Size=UDim2.fromScale(if a.completed then 1 else progress,1)
  self.fill.BackgroundColor3=a.oldColor:Lerp(a.newColor,hue)
  if self.camera then
@@ -180,8 +193,7 @@ function Presentation:Tick(now)
   if self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion then
    a.glow:Destroy();a.glow=nil
   else
-   local flare=math.max(0,1-math.abs(progress-Profile.Bloom)/.22)
-   a.glow.FillColor=a.oldColor:Lerp(a.newColor,hue)
+   local flare=glow
    a.glow.OutlineColor=a.newColor:Lerp(T.Paper,.48)
    a.glow.FillTransparency=.96-flare*.18
    a.glow.OutlineTransparency=.82-flare*.55

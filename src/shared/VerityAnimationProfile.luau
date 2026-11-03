@@ -25,7 +25,11 @@ function Profile.IsMilestone(level: number): boolean
 end
 
 function Profile.Duration(level: number): number
-	return if Profile.IsMilestone(level) then 2.1 else 1.5
+	return if Profile.IsMilestone(level) then 2.45 else 1.8
+end
+
+function Profile.Glow(progress: number): number
+	return smooth((progress - 0.06) / 0.45) * (1 - smooth((progress - Profile.Bloom) / 0.47))
 end
 
 function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reducedMotion: boolean)

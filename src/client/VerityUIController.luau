@@ -9,7 +9,6 @@ Verity.__index=Verity
 function Verity.new(ctx)
 	local self=setmetatable({ctx=ctx,refs=ctx.refs.Panels.VERITY,cleanup=Cleanup.new()},Verity)
 	self.cleanup:Add(self.refs.Buy.Activated:Connect(function() ctx.request("UpgradeVerity") end))
-	self.cleanup:Add(ctx.refs.Panels.UPGRADES.Buy.Activated:Connect(function() ctx.request("UpgradeSwipe") end))
 	return self
 end
 
@@ -17,10 +16,8 @@ function Verity:Render()
 	local net=self.ctx.net
 	local state=net.state
 	local r=self.refs
-	local power=self.ctx.refs.Panels.UPGRADES
 	if not state then
 		W.SetButton(r.Buy,Locale.Text("WAITING FOR SERVER"),false,false)
-		W.SetButton(power.Buy,Locale.Text("WAITING FOR SERVER"),false,false)
 		return
 	end
 	local level=state.VerityLevel
@@ -44,21 +41,14 @@ function Verity:Render()
 		elseif busy then Locale.Text("WAITING FOR CONFIRMATION…") elseif not affordable then Locale.Text("NEED $")..Locale.Number(state.NextVerityUpgradeCost)
 		else Locale.Text("UPGRADE • $")..Locale.Number(state.NextVerityUpgradeCost)
 	W.SetButton(r.Buy,text,net.connected and state.VerityUnlocked and not maxed and affordable and not busy,busy)
-	power.Level.Text=string.format(Locale.Text("SWIPE POWER %d / 40"),state.SwipeUpgradeLevel)
-	local swipeMax=state.SwipeUpgradeLevel==40
-	power.Income.Text=Locale.Text("PER SWIPE  $")..Locale.Number(state.SwipeIncome)..(if swipeMax then Locale.Text(" • MAXED") else " → $"..Locale.Number(state.NextSwipeIncome))
-	power.Cost.Text=if swipeMax then Locale.Text("All Swipe Power upgrades unlocked.") else Locale.Text("NEXT UPGRADE  $")..Locale.Number(state.NextSwipeUpgradeCost)
-	local swipeBusy=net:IsBusy("UpgradeSwipe")
-	local swipeAffordable=not swipeMax and state.NextSwipeUpgradeCost~=nil and state.Cash>=state.NextSwipeUpgradeCost
-	W.SetButton(power.Buy,if swipeMax then Locale.Text("MAXED") elseif swipeBusy then Locale.Text("WAITING FOR CONFIRMATION…")
-		elseif not swipeAffordable then Locale.Text("NEED $")..Locale.Number(state.NextSwipeUpgradeCost) else Locale.Text("UPGRADE SWIPE • $")..Locale.Number(state.NextSwipeUpgradeCost),
-		net.connected and swipeAffordable and not swipeBusy,swipeBusy)
+	r.Boost.Visible=false
 	local boost=state.Boost
 	if type(boost)=="table" and Model.IsFinite(boost.multiplier) and Model.IsFinite(boost.endsAt) then
 		local remaining=math.max(0,math.ceil(boost.endsAt-workspace:GetServerTimeNow()))
-		power.Boost.Text=if remaining>0 then string.format(Locale.Text("ACTIVE BOOST  %.2f× • %ds remaining\n%s"),boost.multiplier,remaining,
+		r.Boost.Visible=remaining>0
+		r.Boost.Text=if remaining>0 then string.format(Locale.Text("ACTIVE BOOST  %.2f× • %ds remaining\n%s"),boost.multiplier,remaining,
 			if type(boost.description)=="string" then string.sub(Locale.Text(boost.description),1,100) else Locale.Text("Server-verified earning boost.")) else Locale.Text("No active boost. Free progression remains available.")
-	else power.Boost.Text=Locale.Text("No active boost. All levels are available through free progression.") end
+	end
 end
 
 function Verity:Destroy() self.cleanup:Destroy() end

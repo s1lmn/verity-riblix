@@ -320,7 +320,7 @@ function Controller:Tick(now,dt)
 			if ownGrowth then
 				showingGrowth=true
 				self.effects:Growth(model:GetPivot(),model:GetScale(),alpha,Profile.Bloom,
-					oldColor,newColor,Profile.IsMilestone(event.newLevel))
+					newColor,Profile.IsMilestone(event.newLevel))
 			end
 			local targetLift=if pose.stage>=2 and not reduced then event.newScale*0.05 else 0
 			local lift=active.lift+(targetLift-active.lift)*pose.blend+pose.lift

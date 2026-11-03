@@ -41,15 +41,19 @@ end
 function Animation:BindButton(button)
 	local scale = Instance.new("UIScale")
 	scale.Name, scale.Parent = "FeedbackScale", button
+	local fixedSize = button:GetAttribute("FixedFeedbackSize") == true
 	local hover, pressed = false, false
 	local function update()
 		local state = button:GetAttribute("UIState")
 		local enabled = state ~= "Disabled" and state ~= "Loading"
 		local color = if enabled then button:GetAttribute("BaseColor") else T.Disabled
 		if state == "Success" then color = T.Mint end
-		if enabled and hover then color = color:Lerp(T.White, 0.12) end
+		if enabled and pressed and fixedSize then color = color:Lerp(T.Ink, 0.12)
+		elseif enabled and hover then color = color:Lerp(T.White, 0.12) end
 		self:Tween(button, 0.12, { BackgroundColor3 = color })
-		self:Tween(scale, 0.12, { Scale = if enabled and pressed then 0.97 elseif enabled and hover then 1.015 else 1 })
+		if not fixedSize then
+			self:Tween(scale, 0.12, { Scale = if enabled and pressed then 0.97 elseif enabled and hover then 1.015 else 1 })
+		end
 	end
 	self.cleanup:Add(button.MouseEnter:Connect(function() hover = true; update() end))
 	self.cleanup:Add(button.MouseLeave:Connect(function() hover = false; pressed = false; update() end))

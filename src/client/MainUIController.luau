@@ -124,7 +124,7 @@ function Main.new()
 				-- Also close when the companion is temporarily not streamed in.
 				ctx.close()
 			elseif result.action=="UpgradeSwipe" then
-				ctx.animation:Success(if ctx.active=="PHONE" then refs.Panels.PHONE.Power else refs.Panels.UPGRADES.Buy)
+				ctx.animation:Success(refs.Panels.PHONE.Power)
 				ctx.sound:Play("UpgradeSwipe")
 				ctx.notifications:Show("Сила свайпа повышена!")
 			end
@@ -145,7 +145,7 @@ function Main.new()
 		if not animated and event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
 	local function back(_,state)
-		if state==Enum.UserInputState.Begin and ctx.presenting then self.presentation:Stop();return Enum.ContextActionResult.Sink end
+		if ctx.presenting then return Enum.ContextActionResult.Pass end
 		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
 		return Enum.ContextActionResult.Pass
 	end
@@ -183,7 +183,7 @@ function Main.GetCurrent() return Main.current end
 function Main:SetFocus(name)
 	if UserInputService.PreferredInput~=Enum.PreferredInput.Gamepad then return end
 	local panel=self.refs.Panels[name]
-	local target=panel and (if name=="PHONE" then panel.Next elseif name=="VERITY" or name=="UPGRADES" then panel.Buy else panel.Close)
+	local target=panel and (if name=="PHONE" then panel.Next elseif name=="VERITY" then panel.Buy else panel.Close)
 	if target and not target.Selectable then target=panel.Close end
 	GuiService.SelectedObject=target
 end
@@ -191,7 +191,7 @@ end
 function Main:Open(name)
 	local ctx=self.ctx
 	if name and name~="SETTINGS" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
-	if name and self.presentation then self.presentation:Stop() end
+	if name and ctx.presenting then return end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
 	ctx.active=name

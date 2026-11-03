@@ -4,10 +4,10 @@ local T = require(script.Parent.UITheme)
 local Builder = {}
 
 -- Small native vector icons; no uploaded images or external asset IDs.
-local function icon(button, kind, caption)
+local function icon(button, kind)
  button.Text=""
  local root=W.Frame(button,"Icon",UDim2.fromOffset(26,26))
- root.BackgroundTransparency=1;root.AnchorPoint=Vector2.new(.5,.5);root.Position=UDim2.fromScale(.5,.37)
+ root.BackgroundTransparency=1;root.AnchorPoint=Vector2.new(.5,.5);root.Position=UDim2.fromScale(.5,.5)
  local function box(x,y,w,h,r,outline)
   local f=W.Frame(root,"Shape",UDim2.fromOffset(w,h),T.Ink);f.Position=UDim2.fromOffset(x,y)
   if r then W.Round(f,r) end
@@ -27,8 +27,6 @@ local function icon(button, kind, caption)
  elseif kind=="TASKS" then
   box(4,3,18,21,3,true)
   for _,y in {8,13,18} do box(7,y,2,2,1);box(12,y,7,2,1) end
- elseif kind=="UPGRADES" then
-  line(13,3,13,22);line(6,10,13,3);line(13,3,20,10);line(6,24,20,24)
  elseif kind=="COSMETICS" then
   local points={{4,4},{9,2},{10,6},{16,6},{17,2},{22,4},{25,10},{20,13},{19,9},{19,24},{7,24},{7,9},{6,13},{1,10},{4,4}}
   for i=2,#points do line(points[i-1][1],points[i-1][2],points[i][1],points[i][2]) end
@@ -37,9 +35,7 @@ local function icon(button, kind, caption)
   for i=0,7 do local a=i*math.pi/4;local tooth=box(13+math.cos(a)*10,13+math.sin(a)*10,4,3,1)
    tooth.AnchorPoint=Vector2.new(.5,.5);tooth.Rotation=math.deg(a) end
  end
- local label=W.Text(button,"Caption",caption,8,true,T.Ink)
- label.Position=UDim2.new(0,1,1,-13);label.Size=UDim2.new(1,-2,0,11)
- label.TextXAlignment=Enum.TextXAlignment.Center;label.TextWrapped=false
+
 end
 
 local function panel(parent, name, title, subtitle)
@@ -87,16 +83,15 @@ function Builder.Build(playerGui)
  local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
   Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
   ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
- local names={"VERITY","PHONE","TASKS","UPGRADES","COSMETICS"}
- local colors={T.Pink,T.Blue,T.Gold,T.Mint,T.Purple}
- local captions={"VERITY","PHONE","TASKS","POWER","STYLE"}
+ local names={"VERITY","PHONE","TASKS","COSMETICS"}
+ local colors={T.Pink,T.Blue,T.Gold,T.Purple}
  local buttons={}
  for i,name in names do
   local button=W.Button(nav,name,"",colors[i]);button.Size=UDim2.fromOffset(52,52)
-  icon(button,name,captions[i]);refs.Nav[name]=button;table.insert(buttons,button)
+  icon(button,name);refs.Nav[name]=button;table.insert(buttons,button)
  end
  refs.SettingsButton=W.Button(nav,"Settings","",T.Paper)
- icon(refs.SettingsButton,"SETTINGS","SETTINGS");table.insert(buttons,refs.SettingsButton)
+ icon(refs.SettingsButton,"SETTINGS");table.insert(buttons,refs.SettingsButton)
  refs.Navigation=nav
  refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
  refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
@@ -111,6 +106,8 @@ function Builder.Build(playerGui)
 	verity.Milestone = W.Line(verity.Body, "Milestone", "Next discovery: —", 66, 15, true)
 	verity.Buy = W.Button(verity.Body, "UpgradeVerity", "WAITING FOR SERVER", T.Mint)
 	verity.Note = W.Line(verity.Body, "Note", "All 100 levels and all five discoveries are available for free.", 38, 12, false, T.Muted)
+	verity.Boost = W.Line(verity.Body, "Boost", "", 48, 13, false, T.Muted)
+	verity.Boost.Visible = false
 	refs.Panels.VERITY = verity
 
 	local phone = panel(safe, "Phone", "ТВОЙ ТЕЛЕФОН", "Листай. Зарабатывай. Расти.")
@@ -128,7 +125,8 @@ function Builder.Build(playerGui)
 	phone.Reward = W.Text(phone.Controls, "Reward", "$— per swipe", 19, true)
 	phone.Reward.Position, phone.Reward.Size = UDim2.fromOffset(0, 19), UDim2.new(1, 0, 0, 26)
 	phone.Next = W.Button(phone.Controls, "NextPost", "ЛИСТАТЬ ↑", T.Blue)
-	phone.Next.Position, phone.Next.Size = UDim2.fromOffset(0, 50), UDim2.new(1, 0, 0, 48)
+	phone.Next:SetAttribute("FixedFeedbackSize", true)
+	phone.Next.Position, phone.Next.Size = UDim2.fromOffset(4, 50), UDim2.new(1, -8, 0, 48)
 	phone.Power = W.Button(phone.Controls, "SwipePower", "SWIPE POWER ↗", T.Mint)
 	phone.Power.Position, phone.Power.Size = UDim2.fromOffset(0, 108), UDim2.new(1, 0, 0, 56)
 	phone.Power.TextSize=12;phone.Power.TextWrapped=true
@@ -141,14 +139,6 @@ function Builder.Build(playerGui)
 	phone.Session.Position, phone.Session.Size = UDim2.fromOffset(0, 258), UDim2.new(1, 0, 0, 30)
 	refs.Panels.PHONE = phone
 
-	local upgrades = panel(safe, "Upgrades", "SWIPE POWER", "Make every confirmed swipe count.")
-	upgrades.Level = W.Line(upgrades.Body, "PowerLevel", "POWER — / 40", 34, 22, true)
-	upgrades.Income = W.Line(upgrades.Body, "SwipeIncome", "Current → next reward: —", 50, 17, true, T.Purple)
-	upgrades.Cost = W.Line(upgrades.Body, "Cost", "Next upgrade: —", 28, 16)
-	upgrades.Buy = W.Button(upgrades.Body, "UpgradeSwipe", "WAITING FOR SERVER", T.Mint)
-	upgrades.Boost = W.Line(upgrades.Body, "Boost", "Boost information is waiting for the server.", 64, 13, false, T.Muted)
-	W.Line(upgrades.Body, "FreeAccess", "Boosts only change earning speed. All levels, sizes and effects are free to unlock.", 52, 13, false, T.Muted)
-	refs.Panels.UPGRADES = upgrades
 
 	local tasks = panel(safe, "Tasks", "NEIGHBORHOOD TASKS", "Three little adventures. Your own cooldowns.")
 	tasks.Rows = {}
@@ -259,7 +249,7 @@ function Builder.Build(playerGui)
   phone.Subtitle.Visible=not (compactPhone and height<300)
   phone.Reward.Position,phone.Reward.Size=UDim2.fromOffset(0,if compactPhone then 0 else 19),UDim2.new(1,0,0,if compactPhone then 20 else 26)
   phone.Reward.TextSize=if compactPhone then 16 else 19
-  phone.Next.Position,phone.Next.Size=UDim2.fromOffset(0,if compactPhone then 24 else 50),UDim2.new(1,0,0,if compactPhone then 44 else 48)
+  phone.Next.Position,phone.Next.Size=UDim2.fromOffset(4,if compactPhone then 24 else 50),UDim2.new(1,-8,0,if compactPhone then 44 else 48)
   phone.Power.Position,phone.Power.Size=UDim2.fromOffset(0,if compactPhone then 72 else 108),UDim2.new(1,0,0,if compactPhone then 44 else 56)
   phone.Grow.Position,phone.Grow.Size=UDim2.fromOffset(0,if compactPhone then 120 else 194),UDim2.new(1,0,0,if compactPhone then 44 else 56)
   phone.Power.TextSize,phone.Grow.TextSize=if compactPhone then 11 else 12,if compactPhone then 11 else 12
