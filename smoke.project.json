@@ -1,5 +1,5 @@
 {
-  "name": "VERITY Integrated Smoke",
+  "name": "VERITY Local Final Smoke",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
@@ -29,11 +29,11 @@
         "EconomyService": {
           "$path": "src/server/EconomyService.luau"
         },
+        "GameplayInteractions": {
+          "$path": "src/server/GameplayInteractions.luau"
+        },
         "IncomeService": {
           "$path": "src/server/IncomeService.luau"
-        },
-        "InteriorService": {
-          "$path": "src/server/InteriorService.luau"
         },
         "PhoneService": {
           "$path": "src/server/PhoneService.luau"
@@ -69,36 +69,31 @@
           "$path": "src/server/WorldIntegration.luau"
         }
       },
-      "CoreSmoke": {
-        "$path": "scripts/studio_smoke.server.luau"
-      },
-      "CoreMultiplayerSmoke": {
-        "$path": "scripts/studio_multiplayer.server.luau"
+      "FinalSmoke": {
+        "$path": "scripts/final_smoke.server.luau"
       }
     },
-    "ServerStorage": {
-      "$className": "ServerStorage",
-      "InteriorTemplates": {
-        "$className": "Folder",
-        "StandardInterior": {
-          "$path": "assets/interiors/StandardInterior.rbxmx"
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "VerityClient": {
+          "$path": "src/client"
+        },
+        "VerityWorldVisuals": {
+          "$path": "src/world-client"
+        },
+        "FinalSmoke": {
+          "$path": "scripts/final_smoke.client.luau"
         }
+      }
+    },
+    "StarterGui": {
+      "$properties": {
+        "ScreenOrientation": "Sensor"
       }
     },
     "Workspace": {
       "$properties": {
         "StreamingEnabled": true
-      }
-    },
-    "StarterPlayer": {
-      "$className": "StarterPlayer",
-      "$ignoreUnknownInstances": true,
-      "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
-        "$ignoreUnknownInstances": true,
-        "CoreSmoke": {
-          "$path": "scripts/studio_smoke.client.luau"
-        }
       }
     }
   }

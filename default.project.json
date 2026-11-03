@@ -1,5 +1,5 @@
 {
-  "name": "VERITY Integrated Neighborhood",
+  "name": "VERITY Local Final",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
@@ -29,11 +29,11 @@
         "EconomyService": {
           "$path": "src/server/EconomyService.luau"
         },
+        "GameplayInteractions": {
+          "$path": "src/server/GameplayInteractions.luau"
+        },
         "IncomeService": {
           "$path": "src/server/IncomeService.luau"
-        },
-        "InteriorService": {
-          "$path": "src/server/InteriorService.luau"
         },
         "PhoneService": {
           "$path": "src/server/PhoneService.luau"
@@ -70,13 +70,19 @@
         }
       }
     },
-    "ServerStorage": {
-      "$className": "ServerStorage",
-      "InteriorTemplates": {
-        "$className": "Folder",
-        "StandardInterior": {
-          "$path": "assets/interiors/StandardInterior.rbxmx"
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "VerityClient": {
+          "$path": "src/client"
+        },
+        "VerityWorldVisuals": {
+          "$path": "src/world-client"
         }
+      }
+    },
+    "StarterGui": {
+      "$properties": {
+        "ScreenOrientation": "Sensor"
       }
     },
     "Workspace": {

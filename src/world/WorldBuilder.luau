@@ -1,64 +1,67 @@
---!strict
 local Recipe = require(script.Parent.MapRecipe)
+local InteriorFactory = require(script.Parent.InteriorFactory)
 local WorldBuilder = {}
-local VERSION = "brick-floor-4"
-
-function WorldBuilder.Build(parent: Instance?, plotCount: number?): Model
+local VERSION = "open-neighborhood-5"
+local ROW_SPACING = 72
+function WorldBuilder.Build(parent, plotCount)
     local target = parent or workspace
     local count = plotCount or 16
-    assert(count >= 16 and count <= 128 and count % 2 == 0, "PlotCount must be even, 16..128")
+    assert(type(count) == "number" and count >= 16 and count <= 128 and count % 2 == 0, "PlotCount must be even, 16..128")
     local existing = target:FindFirstChild("GeneratedWorld")
     if existing then
         assert(existing:IsA("Model"), "GeneratedWorld name is occupied")
-        if existing:GetAttribute("BuilderVersion") == VERSION and existing:GetAttribute("PlotCount") == count then
-            return existing
-        end
-        error("GeneratedWorld already exists; preserve it or remove it explicitly before building")
+        if existing:GetAttribute("BuilderVersion") == VERSION and existing:GetAttribute("PlotCount") == count then return existing end
+        error("Preserve/remove the previous GeneratedWorld explicitly before rebuilding v5")
     end
     local root = Instance.new("Model")
     root.Name = "GeneratedWorld"
     root:SetAttribute("BuilderVersion", VERSION)
     root:SetAttribute("PlotCount", count)
-    local objects: {[string]: Instance} = {[""] = root}
-    local function create(n: any, path: string, offset: Vector3?)
+    local objects = {[""] = root}
+    local function create(data, path, offset)
         local parentPath = path:match("^(.*)/[^/]+$") or ""
-        local obj = Instance.new(n.cls) :: any
-        obj.Name = path:match("[^/]+$") or "GeneratedWorld"
-        if n.pos then
-            obj.Anchored = true
-            obj.CanCollide = n.collide
-            obj.CanTouch = false
-            obj.CanQuery = n.alpha < 1
-            obj.CastShadow = n.alpha < 1
-            obj.Material = Enum.Material.SmoothPlastic
-            obj.TopSurface = if n.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
-            obj.BottomSurface = Enum.SurfaceType.Smooth
-            obj.Size = Vector3.new(n.size[1], n.size[2], n.size[3])
-            obj.CFrame = CFrame.new(Vector3.new(n.pos[1], n.pos[2], n.pos[3]) + (offset or Vector3.zero))
-            if n.upright then obj.CFrame *= CFrame.Angles(0, 0, math.pi/2) end
-            obj.Color = Color3.fromHex(n.color)
-            obj.Transparency = n.alpha
-            if obj:IsA("Part") then obj.Shape = Enum.PartType[n.shape] end
-            if obj:IsA("SpawnLocation") then obj.Neutral = true; obj.Duration = 0 end
+        local destination = assert(objects[parentPath], "Missing map parent " .. parentPath)
+        local shift = offset or Vector3.zero
+        local object
+        if data.house then
+            local pos = Vector3.new(data.origin[1], data.origin[2], data.origin[3]) + shift
+            object = InteriorFactory.CreateHouse(destination, CFrame.new(pos) * CFrame.Angles(0, data.yaw, 0), Color3.fromHex(data.accent))
+        else
+            object = Instance.new(data.cls)
+            object.Name = path:match("[^/]+$")
+            if data.pos then
+                object.Anchored = true
+                object.CanCollide = data.collide
+                object.CanTouch = false
+                object.CanQuery = data.alpha < 1
+                object.CastShadow = data.alpha == 0
+                object.Material = if data.topSurface == "Studs" then Enum.Material.Plastic else Enum.Material.SmoothPlastic
+                object.TopSurface = if data.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
+                object.BottomSurface = Enum.SurfaceType.Smooth
+                object.Size = Vector3.new(data.size[1], data.size[2], data.size[3])
+                object.CFrame = CFrame.new(Vector3.new(data.pos[1], data.pos[2], data.pos[3]) + shift)
+                if data.upright then object.CFrame *= CFrame.Angles(0, 0, math.pi/2) end
+                object.Color = Color3.fromHex(data.color)
+                object.Transparency = data.alpha
+                if object:IsA("Part") then object.Shape = Enum.PartType[data.shape] end
+                if object:IsA("SpawnLocation") then object.Neutral = true; object.Duration = 0 end
+            end
+            object.Parent = destination
         end
-        obj.Parent = assert(objects[parentPath], "Missing parent " .. parentPath)
-        objects[path] = obj
-        return obj
+        objects[path] = object
+        return object
     end
-    -- Environment adapts to the chosen number of pairs. Recipe positions represent 8 pairs.
-    local extra = (count / 2 - 8) * 48
-    for _, n in Recipe do
-        if n.path ~= "" and not n.path:match("^Plots/Plot_") then
-            local obj = create(n, n.path)
-            if obj:IsA("BasePart") then
-                if n.path == "Environment/Ground" then obj.Size += Vector3.new(0, 0, extra)
-                elseif n.path:match("^Environment/Sidewalk") or n.path:match("^Environment/Curb") or n.path:match("^Environment/OuterGreen") or n.path == "Environment/Road" then
-                    obj.Size += Vector3.new(0, 0, extra)
-                elseif n.path:match("^Plaza/") or n.path:match("^Environment/EndPath") or n.path:match("^Environment/ParkTree") or n.path:match("^Environment/Bench") or n.path:match("^Environment/Crosswalk") then
-                    local sign = if obj.Position.Z < 0 then -1 else 1
-                    obj.CFrame += Vector3.new(0,0,sign*extra/2)
-                elseif (n.path:match("RoadDash") or n.path:match("Lamp")) and math.abs(obj.Position.Z) > 192 + extra/2 then
-                    obj:Destroy()
+    local extra = (count / 2 - 8) * ROW_SPACING
+    for _, data in Recipe do
+        if data.path ~= "" and not data.path:match("^Plots/Plot_") then
+            local object = create(data, data.path)
+            if object:IsA("BasePart") then
+                local name = object.Name
+                if name == "Ground" or name == "Road" or name:match("^Sidewalk") or name:match("^Curb") then
+                    object.Size += Vector3.new(0, 0, extra)
+                elseif name:match("^EndPath") or name:match("^Crosswalk") or data.path:match("^Plaza/") or data.path:match("^Environment/Park") then
+                    local sign = if object.Position.Z < 0 then -1 else 1
+                    object.CFrame += Vector3.new(0, 0, sign * extra / 2)
                 end
             end
         end
@@ -67,18 +70,17 @@ function WorldBuilder.Build(parent: Instance?, plotCount: number?): Model
         local templateId = ((id - 1) % 16) + 1
         local sourcePrefix = string.format("Plots/Plot_%02d", templateId)
         local destination = string.format("Plots/Plot_%02d", id)
-        local sourceRow = math.floor((templateId-1)/2)
-        local row = math.floor((id-1)/2)
-        local offset = Vector3.new(0,0,(row-(count/2-1)/2)*48 - (sourceRow-3.5)*48)
-        for _, n in Recipe do
-            if n.path == sourcePrefix or n.path:sub(1,#sourcePrefix+1) == sourcePrefix .. "/" then
-                local obj = create(n, destination .. n.path:sub(#sourcePrefix+1), offset)
-                if n.path == sourcePrefix then obj:SetAttribute("PlotId", id) end
+        local sourceRow = math.floor((templateId - 1) / 2)
+        local row = math.floor((id - 1) / 2)
+        local offset = Vector3.new(0, 0, (row - (count/2 - 1)/2) * ROW_SPACING - (sourceRow - 3.5) * ROW_SPACING)
+        for _, data in Recipe do
+            if data.path == sourcePrefix or data.path:sub(1, #sourcePrefix + 1) == sourcePrefix .. "/" then
+                local object = create(data, destination .. data.path:sub(#sourcePrefix + 1), offset)
+                if data.path == sourcePrefix then object:SetAttribute("PlotId", id) end
             end
         end
     end
     root.Parent = target
     return root
 end
-
 return WorldBuilder

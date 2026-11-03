@@ -45,8 +45,8 @@ def main():
     run(sys.executable, "scripts/run_tests.py", "--luau", args.luau)
     run(sys.executable, "scripts/simulate_balance.py")
     (ROOT / "build").mkdir(exist_ok=True)
-    run(args.rojo, "build", "default.project.json", "-o", "build/verity-integrated.rbxlx")
-    check_build(ROOT / "build/verity-integrated.rbxlx")
+    run(args.rojo, "build", "default.project.json", "-o", "build/VERITY-Final.rbxlx")
+    check_build(ROOT / "build/VERITY-Final.rbxlx")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import json
 root = Path(__file__).resolve().parents[1]
 core = {"$className": "Folder"}
 for source in sorted((root / "src/server").glob("*.luau")):
-    if source.name == "MapBootstrap.server.luau":
+    if source.name in ("MapBootstrap.server.luau", "InteriorService.luau"):
         continue
     name = source.name.removesuffix(".server.luau").removesuffix(".luau")
     core[name] = {"$path": source.relative_to(root).as_posix()}

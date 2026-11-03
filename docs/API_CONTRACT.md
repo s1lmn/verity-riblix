@@ -1,213 +1,81 @@
-# VERITY Core API v1
+# VERITY единый контракт локальной финальной версии
 
-Status: integrated Core/World contract, 3 November 2026. Core owns this contract and `src/shared`.
-World and UI should request contract changes rather than editing server payouts.
+Сервер авторитетен для денег, уровней, владения, заданий, cooldown и сохранения.
+Shared.LevelConfig — единственный источник масштаба:1/1.4/2/3/4/5 на уровнях
+1/10/25/50/75/100, линейная интерполяция между точками. Все99 переходов строго растут.
+Milestones содержит объекты level/name/reward для UI; isMilestone/getNextMilestone — Core API.
 
-## Runtime layout and ownership
+## Запросы
 
-| Location | Owner | Purpose |
-|---|---|---|
-| `ReplicatedStorage.Shared` | Core | Pure configs, progression, number formatting, request validation |
-| `ReplicatedStorage.Remotes` | Core | RemoteEvents, created by ServerBootstrap |
-| `ServerScriptService.Core` | Core | Server services and Runtime integration module |
-| `Workspace.CorePlots.Plot_01` etc. | Core | Mirrored state, owned SpawnLocation and fallback delivery box |
-| `Workspace.GeneratedWorld.Plots.Plot_01` etc. | World geometry, Core ownership | Approved map and markers; confirmed state attributes |
-| `Workspace.PlayerInteriors` | Core | Lazy private room copies from the World template |
-| `src/world` | World | Final map, Verity, houses, VFX, lighting, audio |
-| `src/client` | UI | HUD, feed, gestures, tutorial presentation, settings |
+ReplicatedStorage.Remotes содержит RemoteEvents. Каждый запрос — одна таблица с
+operationId: канонической положительной десятичной строкой1..1e15. Один возрастающий
+счётчик на подключение игрока, общий для всех действий; повторы сохраняют исходный ID.
+UI сериализует запросы и повторяет неизвестный результат тем же ID, не создавая новую покупку.
+Дополнительное поле version в запрос не отправляется.
 
-The integrated Rojo project maps Core, Shared, World and the ServerStorage interior template.
-UI is not present yet. Core is mapped explicitly to exclude World's standalone MapBootstrap;
-ServerBootstrap is the only active startup owner. Preserve unrelated Studio children.
+| Remote | Дополнительные поля |
+|---|---|
+| RequestSync | нет |
+| RequestOpenBox | нет; загруженный профиль, владелец и дистанция проверяются сервером |
+| RequestUpgradeVerity | нет; распаковка, деньги, предел100 |
+| RequestUpgradeSwipe | нет; деньги, предел40 |
+| RequestPhoneSession | open:boolean |
+| RequestSwipe | нет; открытая сессия, интервал0.75s |
+| RequestTaskStart / RequestTaskComplete | taskId: PRESS_BUTTON / REACH_POINT / STAND_ON_PLATFORM |
 
-## Requests
+Чужие суммы, координаты, уровни, PlotId, owner и неизвестные поля не принимаются.
+Дубликаты возвращают cached result без исполнения; watermark запрещает повтор после eviction.
+Лимит:20 burst,8 requests/sec/player; flood отбрасывается без усиления ответами.
 
-All are client-to-server **RemoteEvents**. Pass exactly one plain table. Every request
-requires `operationId`: a positive, canonical decimal integer encoded as a string
-(`"1"`, `"2"`, ...; maximum `1e15`). One increasing sequence per local player connection,
-shared across all actions. Never reuse an ID for a new action. Retry a timed-out action
-with the identical ID and payload. Serialize outstanding requests so packets on
-different remotes cannot race each other. A new Roblox connection starts a new sequence.
+## Ответы и состояние
 
-| Remote | Additional fields | Checks |
-|---|---|---|
-| `RequestSync` | none | Ready profile; returns own state and WorldSnapshot |
-| `RequestOpenBox` | none | Loaded profile, assigned plot, owner alive within 12 studs, Delivered |
-| `RequestUpgradeVerity` | none | Box opened, cash, level <100 |
-| `RequestUpgradeSwipe` | none | Box opened, cash, swipe level <40 |
-| `RequestPhoneSession` | `open: boolean` | Box opened for opening; close always permitted when ready |
-| `RequestSwipe` | none | Open phone session, unlocked Verity, >=0.75 seconds since paid swipe |
-| `RequestTaskStart` | `taskId` | Valid task, own cooldown, unlocked Verity |
-| `RequestTaskComplete` | `taskId` | Active task, alive character, server spatial/hold check |
+ActionResult wire: {protocolVersion=1,action=полное имя remote,operationId?,status,
+reward,stateRevision,replayed,nextOperationSequence}. OK означает успех.
+Корректный ID сохраняется при ошибке схемы. Частые отказы: NOT_READY, TOO_FAR,
+INSUFFICIENT_CASH, BOX_NOT_OPENED, MAX_LEVEL, PHONE_CLOSED, COOLDOWN, STALE_OPERATION.
 
-`taskId` is `PRESS_BUTTON`, `REACH_POINT`, or `STAND_ON_PLATFORM`. Amount, level, PlotId,
-owner, client timestamps, arbitrary fields, nested payloads and extra arguments are rejected.
-State/rules never come from client values. Server methods behind these handlers do not yield.
+PlayerStateUpdated — полный подтверждённый snapshot с protocolVersion/stateRevision/serverTime,
+Cash/TotalEarned, уровнями, доходами, ценами, VerityUnlocked/DeliveryState, HouseTier,
+VerityScale/NextVerityScale/NextMilestoneLevel, PhoneOpen, TutorialStep/TutorialCompleted,
+BoostMultiplier/BoostExpiresAt и NextOperationSequence. Tasks — записи по taskId с
+taskId/reward/status/cooldownEndsAt/targetPosition и Core-полями Active/CooldownUntil.
+Отсутствующая следующая цена на максимуме — nil, не0. Награды вычисляются сервером.
 
-Before rendering, attach all listeners, then call RequestSync. If NOT_READY, retry with
-a fresh operationId after a short delay. On STALE_OPERATION use nextOperationSequence
-from ActionResult. A stale/reordered request is never executed. Duplicate responses have
-`replayed=true`: reconcile state, do not celebrate/pay again. Cached results live 120s,
-bounded to 256/player; a monotonic watermark rejects older IDs even after eviction.
-Limits: a global per-player bucket, burst 20, refill 8/s. Flood packets are dropped silently.
+CoreProtocol преобразует wire-формат во внутренний UI-формат version/success/errorCode,
+короткие имена действий, PhoneSessionOpen и kind. UI не меняет цены и не начисляет деньги.
+После покупки он ждёт соответствующую revision snapshot. RequestSync восстанавливает поздний UI.
 
-## Server-to-client events
+## Мировая презентация
 
-`ActionResult = {protocolVersion=1, action, operationId?, status, reward=number,
-replayed=boolean, stateRevision=number, nextOperationSequence=number}`.
-Reward is the actual awarded amount; for purchases it is zero. Replay echoes the original
-result and cannot change cash. `OK` alone means success. Common failures:
-`NOT_READY`, `INVALID_PAYLOAD`, `INVALID_OPERATION_ID`, `UNEXPECTED_FIELD`, `INVALID_OPEN`,
-`INVALID_TASK`, `OPERATION_CONFLICT`, `STALE_OPERATION`, `BUSY`, `INSUFFICIENT_CASH`,
-`MAX_LEVEL`, `BOX_NOT_OPENED`, `NOT_DELIVERED`, `ALREADY_OPENED`, `TOO_FAR`, `COOLDOWN`,
-`PHONE_CLOSED`, `NOT_ACTIVE`, `ALREADY_ACTIVE`, `HOLD_REQUIRED`, `INTERNAL_ERROR`.
-The server echoes a syntactically valid operationId even when another payload field is
-rejected. Missing/invalid operation IDs cannot be echoed. Do not show a successful reward
-for rejection. A schema rejection does not consume the monotonic sequence watermark.
+WorldEvent wire: {protocolVersion=1,type,eventId,ownerUserId,plotId,stateRevision,...}.
+VerityLevelChanged содержит oldLevel/newLevel/oldScale/newScale/milestoneLevel?.
+Одна покупка = один переход; события HouseTierChanged/MilestoneReached с purchaseEventId
+не создают вторую презентацию. WorldSnapshot/PlotAssigned применяют baseline без истории.
+UI адаптирует type→kind. Канонический VerityVisualController получает подтверждённые события,
+очередь проигрывает все переходы, а не перескакивает на последний уровень.
 
-`PlayerStateUpdated` is an absolute snapshot for its recipient. Fields:
+Core создаёт tagged VerityVisual после распаковки. Модель содержит OwnerUserId/PlotId,
+VerityLevel/StateRevision/PresentationVersion/VerityOrigin. Клиент меняет только позу/цвет/VFX.
+Стриминг восстанавливает актуальную форму без повторения старых празднований.
+VerityPrototypeVisual принадлежит отдельной арт-галерее и не создаётся игровым bootstrap.
 
-```text
-protocolVersion, balanceVersion, stateRevision, serverTime, ownerUserId,
-PlotId, Cash, TotalEarned, VerityLevel, VerityUnlocked, DeliveryState,
-SwipeUpgradeLevel, TutorialStep, TutorialCompleted, HouseTier, VerityScale,
-NextVerityScale?, NextMilestoneLevel?, IncomePerSecond, NextIncomePerSecond?,
-SwipeIncome, NextSwipeIncome?, NextVerityUpgradeCost?, NextSwipeUpgradeCost?,
-BoostMultiplier, BoostExpiresAt, PhoneOpen, InteriorLocation, NextOperationSequence,
-Tasks = {[taskId] = {Active, CooldownUntil, HoldStartedAt?}}
-```
+## Карта, дома и задания
 
-Times are Unix seconds on `Workspace:GetServerTimeNow()`'s clock, including fractional
-seconds. Cooldowns are session-only. Defaults for task IDs absent from Tasks: inactive,
-zero cooldown. Maximum-level next values are nil/absent. UI must display MAX, not cost 0.
-Income/Swipe values include the currently confirmed boost. Ignore snapshots older than
-the last applied stateRevision for that owner's current plot assignment.
-Snapshots are coalesced to 2/s for passive updates and immediate for actions.
-Tutorial: 1 wait for delivery, 2 open box, 4 explain passive income/highlight phone,
-5 swipe once, 6 upgrade Verity, 7 completed. Steps 3 and 4 are one confirmed unpack action;
-UI can present the short explanation locally without another server mutation.
+WorldBuilder создаёт открытый район v5 один раз. Core привязывает владение/SpawnLocation
+к готовым World-маркерам и зеркалирует состояние на участке. Все дома и мебель общие;
+гости входят пешком. Никаких частных комнат, серверных дверных телепортов или fade-событий.
+При выходе освобождаются владение, персонаж и Verity; физический дом остаётся на карте.
+Улучшать можно только собственный профиль: клиент не выбирает owner/PlotId.
 
-`NotificationEvent = {protocolVersion=1, code=string, source=string}` for prompt results.
+GameplayInteractions добавляет три отдельных игровых объекта на существующей площади.
+Кнопка использует checked ProximityPrompt. Reach проверяется серверным polling, платформа
+требует непрерывного нахождения над прямоугольником не менее1s. Cooldown индивидуален.
+Все выплаты проходят EconomyService. NotificationEvent сообщает подтверждённую награду.
 
-## World events
+## Данные
 
-Core broadcasts WorldEvent to all clients and the server-only `WorldSignal` BindableEvent.
-Clients cannot initiate WorldEvent. Header (except WorldSnapshot):
-`{protocolVersion=1, type, eventId, ownerUserId, plotId, stateRevision?}`.
-
-| type | Additional fields | Presentation |
-|---|---|---|
-| `PlotAssigned` | `state` full owner snapshot, `presentation=false` | Apply current form |
-| `PlotReleased` | none | Remove old owner's visuals/queued effects |
-| `DeliveryStarted` | `duration` | Optional delivery animation; gameplay independent |
-| `BoxOpened` | none | Unpack |
-| `VeritySpawned` | `level` | Create Lv1 form |
-| `VerityLevelChanged` | `oldLevel,newLevel,oldScale,newScale,milestoneLevel?` | One confirmed level animation |
-| `HouseTierChanged` | `houseTier,purchaseEventId,presentation=false` | Same purchase; no duplicate celebration |
-| `MilestoneReached` | `milestoneLevel,purchaseEventId,presentation=false` | Same purchase; no duplicate celebration |
-| `WorldSnapshot` | `plots` full owner snapshots, `presentation=false` | Recipient-only resync, no past celebrations |
-
-The user selected the team's **5x** progression on3 November2026. getVerityScale linearly
-interpolates the points (level,scale)=(1,1),(10,1.4),(25,2),(50,3),(75,4),(100,5).
-The working scale is never rounded; all99 adjacent increases are strict.
-99 ordered increases, 1 through 100 only. Deduplicate live events by eventId, queue all
-confirmed transitions per owner. At streaming/rejoin/resync apply exact current form
-without replaying historical effects. Correlate house/milestone with purchaseEventId.
-On PlotReleased/PlotAssigned clear previous owner/revision state for that physical plot.
-Anchor attributes carry current state for recovery if a client missed a remote.
-Separate attributes are eventually replicated: StateRevision is a hint, not an atomic
-snapshot barrier. Use RequestSync for a consistent complete snapshot.
-
-## World server integration
-
-Wait until `ServerScriptService.Core:GetAttribute("CoreReady") == true` (check before
-subscribing to avoid a missed signal), then:
-
-```lua
-local services = require(game.ServerScriptService.Core.Runtime).GetServices()
-local layout = services.PlotService:GetLayout(1)
--- World-created anchored BasePart in Workspace, with TaskId attribute:
-services.WorldIntegration:RegisterTaskTarget("REACH_POINT", targetPart)
-services.WorldSignal:Connect(function(event) ... end)
-```
-
-Do not mutate profile tables from World/UI. Server-only services are trusted integration
-APIs, not security boundaries against other server scripts. World may call checked
-DeliveryService:Open(userId), TaskService:Start/Complete(userId,taskId) from its prompts;
-publish PlayerStateService afterward. Never call AddCash from visual code.
-
-Each Core plot model and corresponding World plot has `PlotId, OwnerUserId` attributes (0 = free), plus confirmed
-VerityLevel/VerityScale/HouseTier/VerityUnlocked/DeliveryState/IncomePerSecond/StateRevision.
-World owns the approved map geometry. WorldIntegration.anchors[id] references actual
-World DeliveryPoint/VerityOrigin/UpgradeStation and InteriorEntrance/InteriorReturn.
-SpawnPoint is a separate invisible Core SpawnLocation at the supplied World spawn marker.
-Do not move the approved markers after assignment or create a second neighborhood.
-SpawnPoint is a Core-owned SpawnLocation; it is enabled only for an occupied plot and
-assigned as that player's RespawnLocation. Core disables CharacterAutoLoads, loads after
-profile/plot readiness, and owns subsequent death respawns. World/UI must not introduce
-a second character-loading loop or independently assign RespawnLocation.
-Disable GameConfig.InteractionFallback after final pads/box interactions are integrated.
-Core fallback pads and boxes are temporary integration proxies, not finished map art.
-Task targets have no fallback yet; World must register all three. Core polls platform
-standing every 0.1s; a death or observed departure resets the continuous hold.
-
-## Geometry and capacity
-
-All lengths in studs. Approved World map v4 has64-stud-wide lawns,48-stud row spacing,
-26-stud road and17x17 Verity platforms. Core reads actual plot positions from World,
-not the former standalone proxy layout. Base model envelope2x2x3, maximum5x, animation
-expansion1.15 and margin2 per side give a reserved footprint15.5x15.5, height19.25.
-WorldIntegration verifies the configured footprint fits each existing platform. No houses,
-floors or exterior decorations are resized. The eventual Verity model must respect this
-base envelope. GetLayout returns approved actual Lawn dimensions/positions for integrated maps.
-WorldBuilder supports even PlotCount16..128. ServerCapacity cannot exceed PlotCount; set
-the actual experience MaxPlayers separately. The rooms use a128-stud grid outside the map.
-
-## Personal interiors
-
-InteriorService owns one lazy room per connected owner. The template is
-ServerStorage.InteriorTemplates.StandardInterior; copies live at
-Workspace.PlayerInteriors.Interior_<UserId>. Room location and slot are session-only.
-Entry/exit are server ProximityPrompt paths. No client-supplied coordinates or owner IDs,
-extra request remotes, separate place, or second persistence/economy service are used.
-Owner, current plot, living character, distance<=8 studs, location, transition lock and1s
-cooldown are checked. After streaming, token/character/profile/ownership/distance are checked
-again. Death cancels a pending operation and respawns outside; leaving destroys the room and
-prompts and releases the slot. Foreign characters observed inside a room are returned outside.
-
-InteriorTransition is server->one owner only:
-
-```text
-{version=1, operationId=server GUID, phase="Begin"|"Complete"|"Failed",
- direction="Enter"|"Exit", errorCode?}
-```
-
-All phases share one ID. Rejection before Begin uses NotificationEvent if feedback is needed.
-Started failures use ROOM_UNAVAILABLE/STREAM_TIMEOUT/TRANSITION_CANCELLED. An8s watchdog ends
-pending operations without moving a late/new character. UI must correlate IDs, clear its fade
-on Failed/death/removal and use its own bounded timeout. Core does not wait for UI acknowledgement.
-Atomic room streaming is requested before movement, but does not guarantee client readiness;
-the final UI controller must handle missing streamed geometry without an infinite black screen.
-
-## Persistence and optional boosts
-
-Default fields include DataVersion=1, Cash/TotalEarned=0, VerityLevel=1, unlocked=false,
-delivery NotDelivered, swipe level0, tutorial1/incomplete, BoostExpiresAt=0, Receipts={}.
-Derived HouseTier/income/scale and physical PlotId are not persisted.
-Record envelope `{Data=profile, Lock={SessionId,ExpiresAt}?}`. Keys `player_<UserId>`.
-UpdateAsync acquires/refreshes a 180s lease; autosave 60s, fail closed 15s before expiry.
-No defaults on failed/corrupt/future-version loads. Studio Memory is explicitly ephemeral;
-StudioStore uses a separate `_Studio` store, never production by accident.
-
-Products are unconfigured: Core never invents IDs or grants a client claim. Configured
-server-confirmed ProcessReceipt writes entitlement and receipt ledger together before
-PurchaseGranted. Multiplier affects income/swipes/tasks, never size or unlock availability.
-Same multiplier does not stack; time extends up to 24h. Receipt IDs are never evicted;
-at 5000 entries new purchases fail closed pending a ledger migration. Boost expiry persists
-as an absolute timestamp; offline time consumes duration but earns no offline cash.
-
-## Validation status
-
-See VALIDATION.md and balance-simulation.json. A source test is not a Studio playtest.
-World visuals, UI, multiplayer transport, production DataStore and mobile performance
-must be validated after integration on an actual connected place.
+DataService: UpdateAsync, session lease180s, autosave60s, fail closed до истечения lease,
+release/BindToClose, повторы и валидация. Ошибка загрузки не создаёт профиль поверх старого.
+Производные масштабы/доходы/HouseTier и физический PlotId не сохраняются как отдельная истина.
+Studio Memory временный; опубликованная игра использует DataStore. Реальные сохранения
+и16/24-player/mobile acceptance остаются отдельными невыполненными проверками.

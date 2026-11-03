@@ -1,0 +1,14 @@
+{
+  "rojoVersion": "7.7.1",
+  "sourceProjectBuild": "passed",
+  "staticMapRoundTrip": "passed",
+  "houses": 16,
+  "parts": 7534,
+  "lights": 80,
+  "doorLeafCount": 0,
+  "houseMaterialSurfaceChecks": "passed",
+  "studioImport": "initial v5 geometry opened and visible; no playtest",
+  "studioPlaytest": "not run",
+  "multiplayerTests": "not run",
+  "mobileFPS": "not measured"
+}

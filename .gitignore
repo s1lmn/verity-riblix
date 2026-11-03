@@ -1,6 +1,7 @@
 .idea/
 .worktrees/
 build/
+builds/
 __pycache__/
 *.pyc
 .venv/

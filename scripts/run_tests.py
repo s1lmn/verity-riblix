@@ -12,7 +12,7 @@ def main():
     parser.add_argument("--luau", required=True)
     args = parser.parse_args()
     sources = sorted((ROOT / "src").rglob("*.luau"))
-    tests = sorted((ROOT / "tests").glob("*Tests.luau"))
+    tests = [ROOT / "tests" / (name + ".luau") for name in ("BoostTests", "DataValidationTests", "EconomyTests", "LevelTests", "PersistenceConcurrencyTests", "RemoteValidationTests", "TaskAndPlotTests", "CoreProtocolTests")]
     build = ROOT / "build"
     build.mkdir(exist_ok=True)
     chunks = ["local factories, cache = {}, {}\n"]

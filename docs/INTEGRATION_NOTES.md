@@ -1,3 +1,5 @@
+> Исторический документ. Актуальная локальная сборка и запуск: LOCAL_FINAL.md и README.md.
+
 # Core handoff
 
 Updated integration: World baseline origin/main31649dd is now combined with Core on

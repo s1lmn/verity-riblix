@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "parts": 375,
+  "version": 3,
+  "parts": 433,
   "lobbySize": [
     32,
     12,
@@ -19,7 +19,7 @@
   ],
   "shellBounds": [
     50,
-    32,
+    32.2,
     70
   ],
   "pivot": [
@@ -42,5 +42,5 @@
   "furnitureBounds": "passed",
   "externalAssets": 0,
   "studioPlaytest": "not run",
-  "multiplayerTransitions": "not implemented; Core task"
+  "entryMode": "physical doorway; no teleports"
 }

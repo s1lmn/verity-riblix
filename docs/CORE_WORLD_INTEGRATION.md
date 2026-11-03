@@ -1,3 +1,5 @@
+> Исторический документ. Актуальная локальная сборка и запуск: LOCAL_FINAL.md и README.md.
+
 # Core and World integration
 
 World baseline: origin/main e81e404 (two-storey interior v2), including map v4 from31649dd.

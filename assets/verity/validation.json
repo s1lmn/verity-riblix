@@ -1,0 +1,26 @@
+{
+  "levels": 10,
+  "reference": "plain smile ball; no ears or limbs",
+  "specialLevels": [
+    5,
+    10
+  ],
+  "sharedGrowth": "src/shared/LevelConfig.luau",
+  "maxFirstTenScale": 2.823661599293202,
+  "maxFirstTenBodyDiameter": 7.906252478020965,
+  "maxFirstTenAuraDiameter": 9.063953733731179,
+  "platformSize": 17,
+  "partCounts": [
+    39,
+    39,
+    63,
+    51,
+    51,
+    43,
+    45,
+    63,
+    37,
+    77
+  ],
+  "studioPlaytest": "not run"
+}

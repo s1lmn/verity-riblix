@@ -1,3 +1,5 @@
+> Исторический документ. Актуальная локальная сборка и запуск: LOCAL_FINAL.md и README.md.
+
 # Setup
 
 ## Tool versions used

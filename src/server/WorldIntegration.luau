@@ -27,8 +27,10 @@ function WorldIntegration.new(workspace, players, plots, world)
 	local folder = Instance.new("Folder")
 	folder.Name = "CorePlots"
 	folder.Parent = workspace
-	local self = setmetatable({workspace = workspace, players = players, plots = plots,
+	local self = setmetatable({workspace = workspace, players = players, plots = plots, verities = {},
 		folder = folder, anchors = {}, targets = {}, connections = {}}, WorldIntegration)
+	local worldModules = game:GetService("ReplicatedStorage"):FindFirstChild("World")
+	if worldModules then self.verityFactory = require(worldModules.VerityFactory) end
 	for id = 1, plots.count do
 		local layout = plots:GetLayout(id)
 		local sourcePlot = if world then world.Plots:FindFirstChild(string.format("Plot_%02d", id)) else nil
@@ -100,8 +102,7 @@ function WorldIntegration.new(workspace, players, plots, world)
 		self.anchors[id].Model = model
 		self.anchors[id].WorldPlot = sourcePlot
 		if sourceMarkers then
-			self.anchors[id].InteriorEntrance = assert(sourceMarkers:FindFirstChild("InteriorEntrance"))
-			self.anchors[id].InteriorReturn = assert(sourceMarkers:FindFirstChild("InteriorReturn"))
+			self.anchors[id].HouseEntrance = assert(sourceMarkers:FindFirstChild("HouseEntrance"))
 		end
 		if id % 8 == 0 then task.wait() end
 	end
@@ -150,6 +151,18 @@ function WorldIntegration:UpdatePlot(userId, state)
 		model:SetAttribute(key, state[key])
 	end
 	model:SetAttribute("StateRevision", state.stateRevision)
+	if state.VerityUnlocked and self.verityFactory then
+		local verity = self.verities[userId]
+		if not verity then
+			verity = self.verityFactory.Create(model, self.anchors[plotId].VerityPoint.CFrame,
+				{ownerUserId = userId, plotId = plotId, level = state.VerityLevel, stateRevision = state.stateRevision})
+			self.verities[userId] = verity
+		end
+		verity:SetAttribute("VerityLevel", state.VerityLevel)
+		verity:SetAttribute("StateRevision", state.stateRevision)
+		verity:SetAttribute("IncomePerSecond", state.IncomePerSecond)
+		verity:SetAttribute("VerityScale", state.VerityScale)
+	end
 	local worldPlot = self.anchors[plotId].WorldPlot
 	if worldPlot then
 		worldPlot:SetAttribute("OwnerUserId", userId)
@@ -168,6 +181,9 @@ function WorldIntegration:UpdatePlot(userId, state)
 end
 function WorldIntegration:ClearPlot(plotId)
 	local model = self.anchors[plotId].Model
+	local owner = model:GetAttribute("OwnerUserId")
+	local verity = self.verities[owner]
+	if verity then verity:Destroy(); self.verities[owner] = nil end
 	model:SetAttribute("OwnerUserId", 0)
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 		model:SetAttribute(key, nil)

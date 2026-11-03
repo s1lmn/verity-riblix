@@ -3,6 +3,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Levels = require(Shared.LevelConfig)
 local Houses = require(Shared.HouseConfig)
 local Economy = require(Shared.EconomyConfig)
+local TaskConfig = require(Shared.TaskConfig)
 local PlayerStateService = {}
 PlayerStateService.__index = PlayerStateService
 function PlayerStateService.new(data, clock)
@@ -27,9 +28,12 @@ function PlayerStateService:Snapshot(userId)
 	local data, level = profile.Data, profile.Data.VerityLevel
 	local multiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local tasks = {}
-	for id, state in session.Tasks do
-		tasks[id] = {Active = state.Active, CooldownUntil = state.CooldownUntil,
-			HoldStartedAt = state.HoldStartedAt}
+	for id, config in TaskConfig do
+		local state = session.Tasks[id] or {Active = false, CooldownUntil = 0}
+		tasks[id] = {taskId = id, reward = config.Reward * multiplier,
+			status = if state.Active then "Active" elseif state.CooldownUntil > self.clock() then "Cooldown" else "Ready",
+			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id) else nil,
+			Active = state.Active, CooldownUntil = state.CooldownUntil, HoldStartedAt = state.HoldStartedAt}
 	end
 	return {protocolVersion = 1, balanceVersion = Economy.BalanceVersion, stateRevision = profile.Revision,
 		serverTime = self.clock(), ownerUserId = userId, PlotId = session.PlotId,
@@ -48,7 +52,7 @@ function PlayerStateService:Snapshot(userId)
 		NextVerityUpgradeCost = Economy.LevelCost[level],
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
 		BoostMultiplier = multiplier, BoostExpiresAt = data.BoostExpiresAt,
-		PhoneOpen = session.PhoneOpen, Tasks = tasks, InteriorLocation = session.InteriorLocation or "Outside",
+		PhoneOpen = session.PhoneOpen, Tasks = tasks,
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end
 function PlayerStateService:Publish(userId, force)

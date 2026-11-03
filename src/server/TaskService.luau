@@ -32,6 +32,7 @@ function TaskService:_reward(userId, taskId, state, profile)
 	state.CooldownUntil = self.clock() + Config[taskId].Cooldown
 	local _, actual = self.economy:AddCash(userId, Config[taskId].Reward * self.economy:GetMultiplier(profile))
 	self.data:Touch(profile)
+	if self.onReward then self.onReward(userId, actual) end
 	return "OK", actual
 end
 function TaskService:Complete(userId, taskId)
@@ -48,6 +49,11 @@ function TaskService:Complete(userId, taskId)
 end
 function TaskService:Tick()
 	for userId, session in self.state.sessions do
+		local reach = session.Tasks.REACH_POINT
+		if reach and reach.Active then
+			local near, alive = self.isNear(userId, "REACH_POINT")
+			if near and alive then self:Complete(userId, "REACH_POINT") end
+		end
 		local state = session.Tasks.STAND_ON_PLATFORM
 		if state and state.Active then
 			local near, alive = self.isNear(userId, "STAND_ON_PLATFORM")

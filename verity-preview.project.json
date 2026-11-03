@@ -1,0 +1,52 @@
+{
+  "name": "VerityFirstTenReview",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "World": {
+        "$className": "Folder",
+        "VerityDefinitions": {
+          "$path": "src/world/VerityDefinitions.luau"
+        },
+        "VerityRecipe": {
+          "$path": "src/world/VerityRecipe.luau"
+        },
+        "VerityVisualConfig": {
+          "$path": "src/world/VerityVisualConfig.luau"
+        },
+        "VerityMotion": {
+          "$path": "src/world/VerityMotion.luau"
+        },
+        "VerityPrototypeFactory": {
+          "$path": "src/world/VerityPrototypeFactory.luau"
+        },
+        "VerityVisualService": {
+          "$path": "src/world/VerityVisualService.luau"
+        }
+      },
+      "Shared": {
+        "$className": "Folder",
+        "LevelConfig": {
+          "$path": "src/shared/LevelConfig.luau"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "GalleryBootstrap": {
+        "$path": "examples/verity/GalleryBootstrap.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "VerityWorldVisuals": {
+          "$path": "src/world-client"
+        }
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true
+      }
+    }
+  }
+}
