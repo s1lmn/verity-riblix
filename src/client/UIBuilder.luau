@@ -113,7 +113,7 @@ function Builder.Build(playerGui)
 	verity.Note = W.Line(verity.Body, "Note", "All 100 levels and all five discoveries are available for free.", 38, 12, false, T.Muted)
 	refs.Panels.VERITY = verity
 
-	local phone = panel(safe, "Phone", "VERITY FEED", "A little scroll. A bigger dream.")
+	local phone = panel(safe, "Phone", "ТВОЙ ТЕЛЕФОН", "Листай. Зарабатывай. Расти.")
 	phone.Body:FindFirstChildOfClass("UIListLayout"):Destroy()
 	phone.Body.AutomaticCanvasSize = Enum.AutomaticSize.None
 	phone.Body.ScrollingEnabled = false
@@ -122,16 +122,23 @@ function Builder.Build(playerGui)
 	phone.Controls = W.Frame(phone.Body, "Controls", UDim2.new(1, 0, 0.38, -8))
 	phone.Controls.BackgroundTransparency = 1
 	phone.Controls.Position = UDim2.new(0, 0, 0.62, 8)
-	phone.Caption = W.Text(phone.Controls, "Caption", "SWIPE UP TO EARN", 12, true, T.Muted)
+	W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Blue:Lerp(T.Paper,.88)),Rotation=110},phone.Root)
+	phone.Caption = W.Text(phone.Controls, "Caption", "ТВОЙ ДОХОД", 10, true, T.Muted)
 	phone.Caption.Size = UDim2.new(1, 0, 0, 18)
 	phone.Reward = W.Text(phone.Controls, "Reward", "$— per swipe", 19, true)
 	phone.Reward.Position, phone.Reward.Size = UDim2.fromOffset(0, 19), UDim2.new(1, 0, 0, 26)
 	phone.Next = W.Button(phone.Controls, "NextPost", "ЛИСТАТЬ ↑", T.Blue)
-	phone.Next.Position, phone.Next.Size = UDim2.fromOffset(0, 50), UDim2.new(1, 0, 0, 44)
+	phone.Next.Position, phone.Next.Size = UDim2.fromOffset(0, 50), UDim2.new(1, 0, 0, 48)
 	phone.Power = W.Button(phone.Controls, "SwipePower", "SWIPE POWER ↗", T.Mint)
-	phone.Power.Position, phone.Power.Size = UDim2.fromOffset(0, 102), UDim2.new(1, 0, 0, 44)
+	phone.Power.Position, phone.Power.Size = UDim2.fromOffset(0, 108), UDim2.new(1, 0, 0, 56)
+	phone.Power.TextSize=12;phone.Power.TextWrapped=true
+	phone.PowerHint=W.Text(phone.Controls,"PowerHint","Больше дохода за каждое движение",11,false,T.Muted)
+	phone.PowerHint.Position,phone.PowerHint.Size=UDim2.fromOffset(2,168),UDim2.new(1,-4,0,18)
+	phone.Grow=W.Button(phone.Controls,"GrowVerity","ВЫРАСТИТЬ VERITY",T.Pink:Lerp(T.Paper,.28))
+	phone.Grow.Position,phone.Grow.Size=UDim2.fromOffset(0,194),UDim2.new(1,0,0,56)
+	phone.Grow.TextSize=12;phone.Grow.TextWrapped=true
 	phone.Session = W.Text(phone.Controls, "Session", "Waiting for server session…", 11, false, T.Muted)
-	phone.Session.Position, phone.Session.Size = UDim2.fromOffset(0, 152), UDim2.new(1, 0, 0, 32)
+	phone.Session.Position, phone.Session.Size = UDim2.fromOffset(0, 258), UDim2.new(1, 0, 0, 30)
 	refs.Panels.PHONE = phone
 
 	local upgrades = panel(safe, "Upgrades", "SWIPE POWER", "Make every confirmed swipe count.")
@@ -246,20 +253,35 @@ function Builder.Build(playerGui)
    item.Title.TextSize=if width<360 then 18 else 21
   end
   local landscape=size.X>size.Y and size.Y<600
+  local compactPhone=landscape and height<380
+  phone.Caption.Visible=not compactPhone;phone.PowerHint.Visible=not compactPhone;phone.Session.Visible=not compactPhone
+  phone.Subtitle.Visible=not (compactPhone and height<300)
+  phone.Reward.Position,phone.Reward.Size=UDim2.fromOffset(0,if compactPhone then 0 else 19),UDim2.new(1,0,0,if compactPhone then 20 else 26)
+  phone.Reward.TextSize=if compactPhone then 16 else 19
+  phone.Next.Position,phone.Next.Size=UDim2.fromOffset(0,if compactPhone then 24 else 50),UDim2.new(1,0,0,if compactPhone then 44 else 48)
+  phone.Power.Position,phone.Power.Size=UDim2.fromOffset(0,if compactPhone then 72 else 108),UDim2.new(1,0,0,if compactPhone then 44 else 56)
+  phone.Grow.Position,phone.Grow.Size=UDim2.fromOffset(0,if compactPhone then 120 else 194),UDim2.new(1,0,0,if compactPhone then 44 else 56)
+  phone.Power.TextSize,phone.Grow.TextSize=if compactPhone then 11 else 12,if compactPhone then 11 else 12
   if landscape then
    phone.Subtitle.Position,phone.Subtitle.Size=UDim2.fromOffset(18,40),UDim2.new(1,-86,0,20)
    phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,66),UDim2.new(1,-32,1,-78)
    phone.Viewport.Size,phone.Viewport.Position=UDim2.new(.5,-6,1,0),UDim2.new()
    phone.Controls.Position,phone.Controls.Size=UDim2.new(.5,6,0,0),UDim2.new(.5,-6,1,0)
-   phone.Body.ScrollingEnabled=height-78<184
-   phone.Body.CanvasSize=UDim2.fromOffset(0,math.max(184,height-78))
+   local header=if compactPhone and height<300 then 66 else 78
+   phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,header-12),UDim2.new(1,-32,1,-header)
+   local controlsHeight=if compactPhone then 164 else 290
+   phone.Body.ScrollingEnabled=height-header<controlsHeight
+   phone.Body.CanvasSize=UDim2.fromOffset(0,math.max(controlsHeight,height-header))
+   phone.Viewport.Size=UDim2.new(.5,-6,0,math.max(controlsHeight,height-header))
+   phone.Controls.Size=UDim2.new(.5,-6,0,controlsHeight)
   else
    phone.Subtitle.Position,phone.Subtitle.Size=UDim2.fromOffset(18,42),UDim2.new(1,-86,0,30)
    phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,80),UDim2.new(1,-32,1,-94)
-   phone.Body.ScrollingEnabled=false;phone.Body.CanvasSize=UDim2.new()
-   local artHeight=math.max(90,height-292)
+   local artHeight=math.max(100,height-392)
+   phone.Body.ScrollingEnabled=artHeight+8+290>height-94
+   phone.Body.CanvasSize=UDim2.fromOffset(0,artHeight+8+290)
    phone.Viewport.Position,phone.Viewport.Size=UDim2.new(),UDim2.new(1,-4,0,artHeight)
-   phone.Controls.Position,phone.Controls.Size=UDim2.fromOffset(0,artHeight+8),UDim2.new(1,-4,0,190)
+   phone.Controls.Position,phone.Controls.Size=UDim2.fromOffset(0,artHeight+8),UDim2.new(1,-4,0,290)
   end
   refs.Toasts.AnchorPoint=Vector2.new(1,0)
   refs.Toasts.Size,refs.Toasts.Position=UDim2.fromOffset(math.min(size.X-24,300),108),UDim2.new(1,-12,0,72)

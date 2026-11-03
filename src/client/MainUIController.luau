@@ -20,6 +20,7 @@ local Tasks=require(script.Parent.TasksUIController)
 local Cosmetics=require(script.Parent.CosmeticsUIController)
 local Tutorial=require(script.Parent.TutorialController)
 local Versions=require(script.Parent.VersionController)
+local Presentation=require(script.Parent.VerityPresentationController)
 local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualController)
 local Main={}
 Main.__index=Main
@@ -72,9 +73,13 @@ function Main.new()
 	self.ledger=Ledger.new()
 	self.versions=self.cleanup:Add(Versions.new(ctx))
 	self.visuals=self.cleanup:Add(Visuals.new(ctx.settings))
-	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event)
-		if event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
+	self.presentation=self.cleanup:Add(Presentation.new(ctx))
+	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event,model)
+		if event.ownerUserId==Players.LocalPlayer.UserId then
+			self.ledger:Push(event);self.presentation:Start(event,model)
+		end
 	end))
+	self.cleanup:Add(self.visuals.Completed.Event:Connect(function(event) self.presentation:Complete(event) end))
 	for _,obj in refs.Gui:GetDescendants() do
 		if obj:IsA("TextButton") then
 			ctx.animation:BindButton(obj)
@@ -106,10 +111,13 @@ function Main.new()
 		if result.success then
 			if result.action=="Swipe" or result.action=="TaskStart" then
 				if result.reward and result.reward>0 then ctx.rewards:Add(result.reward);ctx.sound:Play("Reward") end
+			elseif result.action=="UpgradeVerity" then
+				-- Also close when the companion is temporarily not streamed in.
+				ctx.close()
 			elseif result.action=="UpgradeSwipe" then
-				ctx.animation:Success(refs.Panels.UPGRADES.Buy)
+				ctx.animation:Success(if ctx.active=="PHONE" then refs.Panels.PHONE.Power else refs.Panels.UPGRADES.Buy)
 				ctx.sound:Play("UpgradeSwipe")
-				ctx.notifications:Show("SWIPE POWER UPGRADED")
+				ctx.notifications:Show("Сила свайпа повышена!")
 			end
 		else ctx.notifications:Show(Errors[result.errorCode] or "That action could not finish. Please check your progress.","Error") end
 	end))
@@ -128,6 +136,7 @@ function Main.new()
 		if not animated and event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
 	local function back(_,state)
+		if state==Enum.UserInputState.Begin and ctx.presenting then self.presentation:Stop();return Enum.ContextActionResult.Sink end
 		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
 		return Enum.ContextActionResult.Pass
 	end
@@ -172,6 +181,7 @@ end
 
 function Main:Open(name)
 	local ctx=self.ctx
+	if name and self.presentation then self.presentation:Stop() end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
 	ctx.active=name
@@ -215,7 +225,7 @@ function Main:Tick(dt)
 	self.refs.Banner.Visible=now<self.bannerUntil
 	if now>=self.nextPresentation then
 		local event=self.ledger:Pop()
-		if event then
+		if event and not self.presentation:Has(event.eventId) then
 			local milestone=nil
 			for _,entry in Model.Milestones do if entry.level==event.newLevel then milestone=entry end end
 			self.refs.BannerText.Text=if milestone then string.format("LEVEL %d • %s\n%s",event.newLevel,milestone.name,milestone.reward)

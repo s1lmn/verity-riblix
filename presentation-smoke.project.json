@@ -1,0 +1,106 @@
+{
+  "name": "VERITY Presentation Smoke - Studio Only",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "World": {
+        "$path": "src/world"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "Core": {
+        "$className": "Folder",
+        "BoostService": {
+          "$path": "src/server/BoostService.luau"
+        },
+        "CosmeticProducts": {
+          "$path": "src/server/CosmeticProducts.luau"
+        },
+        "CosmeticService": {
+          "$path": "src/server/CosmeticService.luau"
+        },
+        "DataService": {
+          "$path": "src/server/DataService.luau"
+        },
+        "DeliveryService": {
+          "$path": "src/server/DeliveryService.luau"
+        },
+        "EconomyService": {
+          "$path": "src/server/EconomyService.luau"
+        },
+        "GameplayInteractions": {
+          "$path": "src/server/GameplayInteractions.luau"
+        },
+        "IncomeService": {
+          "$path": "src/server/IncomeService.luau"
+        },
+        "PhoneService": {
+          "$path": "src/server/PhoneService.luau"
+        },
+        "PlayerStateService": {
+          "$path": "src/server/PlayerStateService.luau"
+        },
+        "PlotService": {
+          "$path": "src/server/PlotService.luau"
+        },
+        "ProfileSchema": {
+          "$path": "src/server/ProfileSchema.luau"
+        },
+        "RemoteService": {
+          "$path": "src/server/RemoteService.luau"
+        },
+        "Runtime": {
+          "$path": "src/server/Runtime.luau"
+        },
+        "ServerBootstrap": {
+          "$path": "src/server/ServerBootstrap.server.luau"
+        },
+        "TaskService": {
+          "$path": "src/server/TaskService.luau"
+        },
+        "UpgradeService": {
+          "$path": "src/server/UpgradeService.luau"
+        },
+        "VerityService": {
+          "$path": "src/server/VerityService.luau"
+        },
+        "WorldIntegration": {
+          "$path": "src/server/WorldIntegration.luau"
+        }
+      },
+      "PresentationSmoke": {
+        "$path": "scripts/presentation_smoke.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "VerityClient": {
+          "$path": "src/client"
+        },
+        "VerityWorldVisuals": {
+          "$path": "src/world-client"
+        },
+        "PresentationSmoke": {
+          "$path": "scripts/presentation_smoke.client.luau"
+        }
+      }
+    },
+    "StarterGui": {
+      "$properties": {
+        "ScreenOrientation": "Sensor"
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "StreamingEnabled": true
+      }
+    }
+  }
+}

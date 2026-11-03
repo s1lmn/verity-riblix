@@ -24,7 +24,7 @@ function Profile.IsMilestone(level: number): boolean
 end
 
 function Profile.Duration(level: number): number
-	return if Profile.IsMilestone(level) then 1.7 else 0.8
+	return if Profile.IsMilestone(level) then 2.1 else 1.5
 end
 
 function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reducedMotion: boolean)

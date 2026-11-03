@@ -69,7 +69,7 @@ function Feed.Draw(parent, index)
 				ring.BackgroundTransparency=0.15
 			end
 		end
-		face(canvas,0.5,0.59,0.52,0.45,if kind=="golden" then T.Gold else T.Pink,true)
+		face(canvas,0.5,0.56,0.55,0.55,if kind=="golden" then T.Gold else T.Pink,false)
 		if kind == "golden" then crown(canvas,0.5,0.24,0.36) end
 		if kind == "party" then
 			shape(canvas,"PartyHat",0.5,0.27,0.22,0.24,T.Gold,4,12)

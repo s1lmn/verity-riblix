@@ -12,7 +12,8 @@ function Phone.new(ctx)
 	self.feed=self.cleanup:Add(Feed.new(self.refs.Viewport,ctx.animation,ctx.settings))
 	self.input=self.cleanup:Add(Swipe.new(self.refs.Viewport,function() return self:Swipe() end,function() return self.open end))
 	self.cleanup:Add(self.refs.Next.Activated:Connect(function() self.input.Emit() end))
-	self.cleanup:Add(self.refs.Power.Activated:Connect(function() ctx.open("UPGRADES") end))
+	self.cleanup:Add(self.refs.Power.Activated:Connect(function() self:Upgrade("UpgradeSwipe") end))
+	self.cleanup:Add(self.refs.Grow.Activated:Connect(function() self:Upgrade("UpgradeVerity") end))
 	return self
 end
 
@@ -45,13 +46,37 @@ function Phone:Swipe()
 	return true
 end
 
+-- Recheck the confirmed quote at activation; button appearance is never authority.
+function Phone:Upgrade(action)
+	local net=self.ctx.net
+	local state=net.state
+	if not self.open or not state or not net.connected or net:IsBusy() then return nil end
+	local grow=action=="UpgradeVerity"
+	local cost=if grow then state.NextVerityUpgradeCost else state.NextSwipeUpgradeCost
+	local maxed=if grow then state.VerityLevel>=100 else state.SwipeUpgradeLevel>=40
+	if not state.VerityUnlocked or maxed or not cost or state.Cash<cost then return nil end
+	return self.ctx.request(action)
+end
+
 function Phone:Render()
 	local net=self.ctx.net
 	local state=net.state
 	local ready=state and state.PhoneSessionOpen and self.open and not net:IsBusy("PhoneSession")
 	local busy=net:IsBusy("Swipe")
-	self.refs.Reward.Text=if state then "$"..Model.Format(state.SwipeIncome).." per swipe" else "$— per swipe"
-	self.refs.Session.Text=if not state then "Waiting for server session…" elseif not ready then "Phone session is closed / connecting…" elseif busy then "Waiting for confirmed reward…" else "Touch ↑  •  Drag ↑  •  Wheel ↑  •  Next"
+	self.refs.Reward.Text=if state then "$"..Model.Format(state.SwipeIncome).." за свайп" else "$— за свайп"
+	self.refs.Session.Text=if not state then "Загружаем прогресс…" elseif not ready then "Подключаем телефон…" elseif busy then "Получаем награду…" else "Листай ленту и расти вместе с Verity"
+	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
+		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ VERITY",100,"VerityLevel","NextVerityUpgradeCost"}} do
+		local maxed=state and state[entry[5]]>=entry[4]
+		local cost=state and state[entry[6]]
+		local pending=net:IsBusy(entry[2])
+		local affordable=cost and state.Cash>=cost
+		local text=entry[3].."\n"..(if not state then "Загрузка…" elseif not state.VerityUnlocked then "Сначала открой коробку"
+			elseif maxed then "Максимальный уровень" elseif pending then "Улучшаем…"
+			elseif not affordable then "Нужно $"..Model.Format(cost) else "$"..Model.Format(cost).."  •  улучшить")
+		W.SetButton(entry[1],text,net.connected and state~=nil and state.VerityUnlocked and not maxed and affordable and not net:IsBusy(),pending)
+	end
+	self.refs.PowerHint.Text=if state then "Свайп $"..Model.Format(state.SwipeIncome)..(if state.NextSwipeIncome then " → $"..Model.Format(state.NextSwipeIncome) else " • MAX") else "Больше дохода за каждое движение"
 	W.SetButton(self.refs.Next,if busy then "ПОДОЖДИ…" else "ЛИСТАТЬ ↑",ready and not busy,busy)
 end
 

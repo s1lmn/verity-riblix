@@ -181,6 +181,10 @@ end
 function Tutorial:Update(now)
  if self.dead then return end
  local ctx,goal=self.ctx,self.goal
+ if ctx.presenting then
+  ctx.refs.Tutorial.Visible=false;self.pointer.Visible=false;self.compass.Visible=false
+  self:SetButton(nil);self:HideWorld();return
+ end
  local char=Players.LocalPlayer.Character;local root=char and char:FindFirstChild("HumanoidRootPart");local hum=char and char:FindFirstChildOfClass("Humanoid")
  local alive=root and hum and hum.Health>0
  ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and not (ctx.active and ctx.refs.Safe.AbsoluteSize.X<640)

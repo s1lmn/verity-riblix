@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "coreAssertions": 661,
+  "uiLogicGroups": 10,
+  "animationProfileGroups": 4,
+  "strictTypecheckedModules": 3,
+  "productionScriptSources": 73,
+  "rojoSourceRoundtrip": "PASS",
+  "sourceFingerprint": "224b7acf5303b1990dd08881ac549c67b53440ec1e779ce7dfa635e407c96c43",
+  "baselineCommit": "5edb19c87c19c8c9a78b2f14363fa8bd00d3cdf7"
+}
