@@ -1,3 +1,5 @@
+-- Prevent stale Rojo preview/game scripts from starting a second runtime.
+if game:GetService("ReplicatedStorage"):GetAttribute("VerityRuntimeMode")=="Core" then return end
 -- Cosmetic local rendering for every server-owned descriptor; no position remotes.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +10,8 @@ local configModule = shared and shared:WaitForChild("VerityCompanionConfig",15)
 if not configModule then warn("[Verity companion] Config unavailable"); return end
 local Config = require(configModule)
 local Levels = require(shared:WaitForChild("VerityCompanionLevels",15))
+local FaceUI = require(ReplicatedStorage:WaitForChild("World"):WaitForChild("VerityFaceUI"))
+local Personality = require(shared.VerityPersonality)
 local templates = ReplicatedStorage:WaitForChild("VerityCompanionAssets",15)
 if not templates or not templates:FindFirstChild("Joy") then
     warn("[Verity companion] Sync VerityCompanionAssets with the updated Rojo project")
@@ -28,6 +32,7 @@ local function emotion(entry)
     if entry.appearance then entry.appearance:Destroy() end
     -- The authored image face uses no PBR texture pack or imported UV coordinates.
     entry.appearance = appearance:Clone()
+    FaceUI.Configure(entry.appearance,entry.body)
     entry.appearance.Enabled = entry.visible
     entry.appearance.Parent = entry.body
 end
@@ -156,10 +161,14 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             local facing = CFrame.lookAt(position,position+gaze).Rotation
             if snap or not entry.facing then entry.facing=facing
             else entry.facing=entry.facing:Lerp(facing,1-math.exp(-Config.FacingSpeed*step)) end
-            entry.body.CFrame = CFrame.new(position)*entry.facing
+            entry.lifeState=entry.lifeState or {}
+            local velocity=entry.facing:VectorToObjectSpace(root.AssemblyLinearVelocity)
+            local pitch,roll,lift=Personality.Step(entry.lifeState,velocity.X,velocity.Z,step,os.clock(),reduced or entry.transition~=nil,snap)
+            entry.body.CFrame = CFrame.new(position+Vector3.new(0,lift*entry.scale,0))*entry.facing*CFrame.Angles(pitch,0,roll)
             visible = (camera.CFrame.Position-position).Magnitude>2
             if owner==localPlayer and (camera.Focus.Position-camera.CFrame.Position).Magnitude<1 then visible=false end
         else
+            entry.lifeState=nil
             entry.position,entry.heading,entry.facing,entry.rootPosition=nil,nil,nil,nil
             if entry.transition or #entry.queue>0 then setImmediate(entry,entry.requested) end
         end
@@ -167,6 +176,12 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             entry.visible=visible
             entry.body.Transparency=if visible then 0 else 1
             entry.appearance.Enabled=visible
+        end
+        if visible then
+            FaceUI.Refresh(entry.appearance,0)
+            entry.faceLife=entry.faceLife or {}
+            local name=entry.descriptor:GetAttribute("Emotion") or "Joy"
+            FaceUI.Animate(entry.appearance,os.clock(),entry.ownerId,name,entry.descriptor:GetAttribute("ReactionRevision"),entry.faceLife,reduced,settings and settings:GetAttribute("ReducedEffects")==true)
         end
     end
 end)

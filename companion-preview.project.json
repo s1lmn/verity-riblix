@@ -11,6 +11,9 @@
       },
       "VerityCompanionAssets": {
         "$path": "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"
+      },
+      "$attributes": {
+        "VerityRuntimeMode": "Preview"
       }
     },
     "ServerScriptService": {

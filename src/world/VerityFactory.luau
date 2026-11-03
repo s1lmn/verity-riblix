@@ -8,6 +8,7 @@ local Levels = require(Shared.LevelConfig)
 local Profile = require(Shared.VerityAnimationProfile)
 local Version = require(Shared.ProjectVersion)
 local Looks = require(Shared.VerityCompanionLevels)
+local FaceUI = require(script.Parent.VerityFaceUI)
 local Factory = {}
 
 function Factory.Color(level)
@@ -56,6 +57,7 @@ function Factory.Create(parent, origin, metadata)
 		artwork.Adornee = nil
 		artwork.Enabled = false
 		artwork.Parent = body
+		FaceUI.Configure(artwork,body)
 	end
  for _,side in {-1,1} do
   part(model,"Eye",Vector3.new(0.12,0.24,0.04),Vector3.new(side*0.29,1.02,-0.79),ink,Enum.PartType.Ball)

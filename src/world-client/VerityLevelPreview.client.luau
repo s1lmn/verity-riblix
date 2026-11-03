@@ -1,3 +1,5 @@
+-- Prevent stale Rojo preview/game scripts from starting a second runtime.
+if game:GetService("ReplicatedStorage"):GetAttribute("VerityRuntimeMode")=="Core" then return end
 -- Temporary Studio-only visual review. Does not spend/save or change Core levels.
 local RunService = game:GetService("RunService")
 if not RunService:IsStudio() then return end

@@ -16,5 +16,19 @@
     1,
     10
   ],
-  "rendering": "One solid-color MeshPart plus a Front SurfaceGui/ImageLabel using a crop of the shared RGBA image; no PBR texture pack or mesh UV dependence"
+  "rendering": "Front SurfaceGui with normalized clipped ImageLabel; shared VerityFaceUI adds loading fallback and visibility lifecycle",
+  "uploadedImageSize": [
+    1024,
+    512
+  ],
+  "sourceImageSize": [
+    2048,
+    1024
+  ],
+  "faceCropNormalized": {
+    "x": 0.375,
+    "y": 0.28125,
+    "width": 0.25,
+    "height": 0.5
+  }
 }

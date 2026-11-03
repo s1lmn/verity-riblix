@@ -1,4 +1,6 @@
 --!nonstrict
+-- Prevent stale Rojo preview/game scripts from starting a second runtime.
+if game:GetService("ReplicatedStorage"):GetAttribute("VerityRuntimeMode")=="Preview" then return end
 local Players = game:GetService("Players")
 -- Load after profile initialization. The player chooses a house before gameplay starts.
 Players.CharacterAutoLoads = false
@@ -85,6 +87,7 @@ local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, requir
 State.CosmeticsCatalog = function() return Cosmetics:Catalog() end
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
 Tasks.onReward = function(id, reward)
+	World:React(id,"Confident",2)
 	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State, send, guid) end

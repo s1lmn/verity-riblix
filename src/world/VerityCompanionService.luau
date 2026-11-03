@@ -55,6 +55,7 @@ function Service.SetEmotion(player, emotion, seconds)
     local token = (tokens[player.UserId] or 0)+1
     tokens[player.UserId] = token
     descriptor:SetAttribute("Emotion", emotion)
+    descriptor:SetAttribute("ReactionRevision",token)
     if seconds and seconds > 0 then
         task.delay(seconds, function()
             if tokens[player.UserId] == token and descriptor.Parent then descriptor:SetAttribute("Emotion", "Joy") end
