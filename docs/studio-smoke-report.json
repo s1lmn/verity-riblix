@@ -50,5 +50,6 @@
     "No final World/UI visuals"
   ],
   "recordedAtUtc": "2026-11-03 11:34:38 UTC",
-  "productionSourceSha256": "8da465905ce07cfc29e8753e13ef2af434e1376b717a9cdffbd5e9f453490164"
+  "productionSourceSha256": "d64760393298264af24e5b3bbaf264ba0c1326d53e00296f088e111932a09d50",
+  "sourceHashNormalization": "Sorted relative src path followed by UTF-8 source with LF newlines"
 }
