@@ -18,7 +18,7 @@ python scripts/verify.py --luau C:/path/to/luau.exe --compiler C:/path/to/luau-c
 ```
 
 This compiles every source/test, runs actual server/shared Luau with fake engine boundaries,
-reruns the deterministic simulation, builds `build/verity-core.rbxlx`, then verifies that
+reruns the deterministic simulation, builds `build/verity-integrated.rbxlx`, then verifies that
 the built script sources match the source tree. No test runner goes into the live place.
 This is syntax/behaviour verification, not a Roblox-aware static typecheck or playtest.
 
@@ -48,6 +48,10 @@ StudioTestService currently supports a maximum of8 clients/session, so it does n
 the separate16-player acceptance requirement. See the official
 [StudioTestService reference](https://create.roblox.com/docs/reference/engine/classes/StudioTestService).
 
+Core is explicitly mapped in both Rojo projects to exclude the World preview MapBootstrap.
+After adding/removing a server source, run `python scripts/update_core_mapping.py`; it preserves
+the other World/UI project nodes. Only ServerBootstrap starts the integrated map/gameplay.
+
 Core owns CharacterAutoLoads=false and LoadCharacterAsync after assignment. Do not add
 another character spawning loop in World/UI. SpawnPoint is an enabled SpawnLocation only
 while its plot is owned; Core assigns Player.RespawnLocation before loading the character.
@@ -60,15 +64,18 @@ coordinate any such change with Core and rerun the Luau tests.
 
 ## Studio
 
-1. Open the generated **VERITY** place in Studio, or create a new VERITY place and connect
+1. Open build/verity-integrated.rbxlx in Studio, or create a new VERITY place and connect
    Rojo to `default.project.json`. Do not sync into the unrelated OskolkiIstoka place.
 2. The default StudioDataMode is `Memory`: no Roblox API access is needed, and progress
    is intentionally lost when the test server stops. This is not a persistence test.
-3. Play: Core creates Remotes and plot anchors, loads a profile, assigns a plot, delivers
-   the box after two seconds, and enables the fallback box ProximityPrompt.
-4. Open the box to enable income. World/UI must integrate before the full game loop can
+3. Play: Core builds the approved World v4 map once, binds its supplied markers, creates
+   Remotes/owned SpawnLocations, loads a profile, assigns a plot and delivers the box.
+4. Open the box to enable income. Verity visuals and UI must integrate before the full game loop can
    be played through menus. There is deliberately no temporary GUI competing with UI's work.
 5. World registers the three anchored task targets; until then tasks reject completion.
+   The map snapshot does not contain these final targets. Temporary test targets are not in
+   the normal build. Enter/Exit prompts are available at the approved house marker and the
+   owner's private standard room. UI supplies InteriorTransition fade separately.
 6. For live DataStore testing, use a published **test** place, Studio API access and
    StudioDataMode `StudioStore`. This writes only `<DataStoreName>_Studio` in Studio.
    Live servers use DataStoreName. Do not enable API access or publish automatically.

@@ -1,5 +1,10 @@
 # Validation status
 
+This document records the earlier Core-only validation. The source and5x progression have
+changed during World integration. Current integrated results are recorded in
+CORE_WORLD_INTEGRATION.md and integrated-*-report.json; old reports retain their original
+source fingerprints and must not be treated as evidence for the new integrated build.
+
 Date: 3 November 2026. This is a Core implementation, not a complete three-role game.
 
 ## Executed locally

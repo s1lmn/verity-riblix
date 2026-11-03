@@ -123,6 +123,28 @@ local ok, failure = pcall(function()
 	check((first.Character.HumanoidRootPart.Position - firstPlot.SpawnPoint.Position).Magnitude < 12, "multiplayer respawn at own plot")
 	check(data:Get(first.UserId).Data.VerityLevel == 2 and data:Get(second.UserId).Data.VerityLevel == 1,
 		"death does not cross-mutate progress")
+	if services.InteriorService then
+		local interiors = services.InteriorService
+		for _, player in roster do
+			local plotId = plots.owners[player.UserId]
+			player.Character:PivotTo(world.anchors[plotId].InteriorEntrance.CFrame)
+			check(interiors:Enter(player, plotId, player.UserId) == "OK", "private room entry for " .. player.Name)
+		end
+		check(#workspace.PlayerInteriors:GetChildren() == expected, "one distinct room per concurrent owner")
+		local a, b = interiors.roomsByUserId[first.UserId], interiors.roomsByUserId[second.UserId]
+		check(a.model ~= b.model and (a.entry.Position - b.entry.Position).Magnitude >= Config.InteriorSpacing,
+			"different owners receive isolated template copies")
+		check(interiors:Exit(first, plots.owners[second.UserId], second.UserId) == "OWNER_ONLY", "foreign exit cannot move another owner")
+		first.Character:PivotTo(b.entry.CFrame)
+		interiors:Tick()
+		check((first.Character.HumanoidRootPart.Position - firstPlot.InteriorReturn.Position).Magnitude < 6,
+			"foreign room intruder returned to own plot")
+		local roomCharacter = second.Character
+		roomCharacter:FindFirstChildOfClass("Humanoid").Health = 0
+		waitUntil(function() return second.Character ~= roomCharacter and second.Character and second.Character:FindFirstChild("HumanoidRootPart") end,
+			Players.RespawnTime + 15, "Room death did not respawn")
+		check(interiors.locationByUserId[second.UserId] == "Outside", "death inside resets interior location")
+	end
 	-- Disconnect one real client, verify cleanup, then fill the released slot.
 	local leaving = roster[#roster]
 	local releasedId = plots.owners[leaving.UserId]
@@ -132,6 +154,9 @@ local ok, failure = pcall(function()
 		and state.sessions[leaving.UserId] == nil and data.profiles[leaving.UserId] == nil end, 15, "Departing client not cleaned")
 	check(world.anchors[releasedId].SpawnPoint.Enabled == false, "leaving disables old SpawnLocation")
 	check(plots.plots[releasedId] == nil, "leaving frees owned plot")
+	if services.InteriorService then
+		check(services.InteriorService.roomsByUserId[leaving.UserId] == nil, "leaving destroys personal room")
+	end
 	Tests:AddPlayers(1)
 	local replacement = waitUntil(function()
 		for _, player in Players:GetPlayers() do

@@ -26,7 +26,7 @@ return function(load, check)
 	check(f.Upgrade:UpgradeVerity(1) == "OK" and p.Data.VerityLevel == 100)
 	check(f.Upgrade:UpgradeVerity(1) == "MAX_LEVEL")
 	local last = f.Events[#f.Events - 2]
-	check(last.type == "VerityLevelChanged" and last.newScale == 15 and last.oldScale < 15)
+	check(last.type == "VerityLevelChanged" and last.newScale == 5 and last.oldScale < 5)
 	check(f.Events[#f.Events].purchaseEventId == last.eventId)
 	p.Data.SwipeUpgradeLevel = 40
 	check(f.Upgrade:UpgradeSwipe(1) == "MAX_LEVEL")

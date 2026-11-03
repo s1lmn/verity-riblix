@@ -21,9 +21,12 @@ def check_build(path):
         props = item.find("Properties")
         name = props.find("string[@name='Name']").text
         source = props.find("*[@name='Source']").text or ""
+        assert name not in actual, f"Duplicate script name in build: {name}"
         actual[name] = source.replace("\r\n", "\n")
     expected = {}
     for source in (ROOT / "src").rglob("*.luau"):
+        if source.name == "MapBootstrap.server.luau":
+            continue  # World preview launcher; Core is the sole integrated bootstrap.
         name = source.stem.removesuffix(".server").removesuffix(".client")
         expected[name] = source.read_text(encoding="utf-8").replace("\r\n", "\n")
     assert expected == actual, "Built scripts differ from source or unexpected scripts present"
@@ -42,8 +45,8 @@ def main():
     run(sys.executable, "scripts/run_tests.py", "--luau", args.luau)
     run(sys.executable, "scripts/simulate_balance.py")
     (ROOT / "build").mkdir(exist_ok=True)
-    run(args.rojo, "build", "default.project.json", "-o", "build/verity-core.rbxlx")
-    check_build(ROOT / "build/verity-core.rbxlx")
+    run(args.rojo, "build", "default.project.json", "-o", "build/verity-integrated.rbxlx")
+    check_build(ROOT / "build/verity-integrated.rbxlx")
 
 
 if __name__ == "__main__":

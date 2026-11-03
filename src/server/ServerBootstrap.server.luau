@@ -54,10 +54,25 @@ local Data = require(script.Parent.DataService).new(store, clock, task.wait, gam
 local State = require(script.Parent.PlayerStateService).new(Data, clock)
 local Economy = require(script.Parent.EconomyService).new(Data, clock)
 local Income = require(script.Parent.IncomeService).new(Data, State, Economy, clock)
+local WorldModule = require(script.Parent.WorldIntegration)
+local generatedWorld, interiorTemplate
+local worldModules = ReplicatedStorage:FindFirstChild("World")
+if worldModules then
+	generatedWorld = require(worldModules.WorldBuilder).Build(workspace, Config.PlotCount)
+	local factory = require(worldModules.InteriorFactory)
+	factory.AddPlotMarkers(generatedWorld)
+	interiorTemplate = factory.EnsureTemplate(game:GetService("ServerStorage"))
+	local lighting = game:GetService("Lighting")
+	lighting.ClockTime = 13.5; lighting.Brightness = 2
+	lighting.Ambient = Color3.fromRGB(158, 166, 184)
+	lighting.OutdoorAmbient = Color3.fromRGB(179, 184, 194)
+	lighting.GlobalShadows = true; lighting.ShadowSoftness = 0.4
+end
 local World
 local Plots = require(script.Parent.PlotService).new(Config.PlotCount, Config.ServerCapacity,
-	function(userId, plotId, pointName) return World:IsNear(userId, plotId, pointName) end)
-World = require(script.Parent.WorldIntegration).new(workspace, Players, Plots)
+	function(userId, plotId, pointName) return World:IsNear(userId, plotId, pointName) end,
+	if generatedWorld then WorldModule.ReadLayouts(generatedWorld, Config.PlotCount) else nil)
+World = WorldModule.new(workspace, Players, Plots, generatedWorld)
 local Verity = require(script.Parent.VerityService).new(Data, State, guid, emit)
 local Delivery = require(script.Parent.DeliveryService).new(Data, State, Plots, Income, Verity, clock, Config.DeliveryDelay)
 local Upgrade = require(script.Parent.UpgradeService).new(Data, State, Economy, Income, Verity)
@@ -65,6 +80,12 @@ local Phone = require(script.Parent.PhoneService).new(Data, State, Economy, cloc
 local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock,
 	function(userId, taskId) return World:IsNearTask(userId, taskId) end)
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
+local Interior
+if interiorTemplate then
+	Interior = require(script.Parent.InteriorService).new({data = Data, state = State, plots = Plots,
+		world = World, players = Players, workspace = workspace, template = interiorTemplate,
+		clock = clock, guid = guid, send = send})
+end
 State.send = function(userId, snapshot)
 	World:UpdatePlot(userId, snapshot)
 	send(userId, "PlayerStateUpdated", snapshot)
@@ -108,7 +129,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	BoostService = Boost, WorldSignal = worldSignal.Event}
+	BoostService = Boost, InteriorService = Interior, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local spawning = {}
@@ -135,6 +156,7 @@ local function onCharacter(player, character)
 	if not root or not humanoid or not plotId or player.Parent ~= Players or player.Character ~= character then return end
 	local death = humanoid.Died:Connect(function()
 		Tasks:OnDeath(player.UserId)
+		if Interior then Interior:OnDeath(player) end
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
 		end)
@@ -154,6 +176,7 @@ local function onPlayer(player)
 	local plotId, plotError = Plots:Assign(player.UserId)
 	if not plotId then Data:ReleaseAsync(player.UserId); player:Kick(plotError); return end
 	State:Attach(player.UserId, plotId)
+	if Interior then Interior:RegisterPlayer(player) end
 	World.anchors[plotId].SpawnPoint.Enabled = true
 	player.RespawnLocation = World.anchors[plotId].SpawnPoint
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
@@ -171,6 +194,7 @@ local function removePlayer(player)
 	disconnectPlayer(id)
 	Delivery:Remove(id)
 	Remote:Remove(id)
+	if Interior then Interior:Remove(player) end
 	local previousPlot = Plots.owners[id]
 	if previousPlot then World.anchors[previousPlot].SpawnPoint.Enabled = false end
 	player.RespawnLocation = nil
@@ -193,6 +217,7 @@ RunService.Heartbeat:Connect(function(dt)
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then
 		stateElapsed = 0
+		if Interior then Interior:Tick() end
 		for id in State.sessions do
 			if not Data:Get(id) then
 				local player = Players:GetPlayerByUserId(id)

@@ -25,11 +25,11 @@ return function(load, check)
 	check(not f.Plots:IsNear(100, "DeliveryPoint"))
 	local larger = load("src/server/PlotService").new(24, 24, function() return true end)
 	for id = 1, 24 do check(larger:Assign(id) == id) end
-	check(larger:GetLayout(24).X > larger:GetLayout(16).X)
+	check(larger:GetLayout(24).Z > larger:GetLayout(16).Z)
 	local previous = larger:GetLayout(1)
 	for id = 3, 23, 2 do
 		local current = larger:GetLayout(id)
-		check(current.X - previous.X >= current.Width, "Reserved plots do not overlap")
+		check(current.Z - previous.Z >= current.Depth, "Reserved plots do not overlap")
 		previous = current
 	end
 end

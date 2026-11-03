@@ -1,6 +1,6 @@
 # VERITY Core API v1
 
-Status: source contract, 3 November 2026. Core owns this contract and `src/shared`.
+Status: integrated Core/World contract, 3 November 2026. Core owns this contract and `src/shared`.
 World and UI should request contract changes rather than editing server payouts.
 
 ## Runtime layout and ownership
@@ -10,12 +10,15 @@ World and UI should request contract changes rather than editing server payouts.
 | `ReplicatedStorage.Shared` | Core | Pure configs, progression, number formatting, request validation |
 | `ReplicatedStorage.Remotes` | Core | RemoteEvents, created by ServerBootstrap |
 | `ServerScriptService.Core` | Core | Server services and Runtime integration module |
-| `Workspace.CorePlots.Plot_01` etc. | Core | Stable ownership, state attributes and interaction anchors |
+| `Workspace.CorePlots.Plot_01` etc. | Core | Mirrored state, owned SpawnLocation and fallback delivery box |
+| `Workspace.GeneratedWorld.Plots.Plot_01` etc. | World geometry, Core ownership | Approved map and markers; confirmed state attributes |
+| `Workspace.PlayerInteriors` | Core | Lazy private room copies from the World template |
 | `src/world` | World | Final map, Verity, houses, VFX, lighting, audio |
 | `src/client` | UI | HUD, feed, gestures, tutorial presentation, settings |
 
-The Core Rojo project deliberately does not own World/UI containers. Add their mappings
-in a coordinated change; `$ignoreUnknownInstances` preserves unrelated Studio children.
+The integrated Rojo project maps Core, Shared, World and the ServerStorage interior template.
+UI is not present yet. Core is mapped explicitly to exclude World's standalone MapBootstrap;
+ServerBootstrap is the only active startup owner. Preserve unrelated Studio children.
 
 ## Requests
 
@@ -70,7 +73,7 @@ PlotId, Cash, TotalEarned, VerityLevel, VerityUnlocked, DeliveryState,
 SwipeUpgradeLevel, TutorialStep, TutorialCompleted, HouseTier, VerityScale,
 NextVerityScale?, NextMilestoneLevel?, IncomePerSecond, NextIncomePerSecond?,
 SwipeIncome, NextSwipeIncome?, NextVerityUpgradeCost?, NextSwipeUpgradeCost?,
-BoostMultiplier, BoostExpiresAt, PhoneOpen, NextOperationSequence,
+BoostMultiplier, BoostExpiresAt, PhoneOpen, InteriorLocation, NextOperationSequence,
 Tasks = {[taskId] = {Active, CooldownUntil, HoldStartedAt?}}
 ```
 
@@ -104,7 +107,9 @@ Clients cannot initiate WorldEvent. Header (except WorldSnapshot):
 | `MilestoneReached` | `milestoneLevel,purchaseEventId,presentation=false` | Same purchase; no duplicate celebration |
 | `WorldSnapshot` | `plots` full owner snapshots, `presentation=false` | Recipient-only resync, no past celebrations |
 
-`getVerityScale(L)=1+14*((L-1)/99)^0.85`, exact unrounded scale.
+The user selected the team's **5x** progression on3 November2026. getVerityScale linearly
+interpolates the points (level,scale)=(1,1),(10,1.4),(25,2),(50,3),(75,4),(100,5).
+The working scale is never rounded; all99 adjacent increases are strict.
 99 ordered increases, 1 through 100 only. Deduplicate live events by eventId, queue all
 confirmed transitions per owner. At streaming/rejoin/resync apply exact current form
 without replaying historical effects. Correlate house/milestone with purchaseEventId.
@@ -131,10 +136,12 @@ APIs, not security boundaries against other server scripts. World may call check
 DeliveryService:Open(userId), TaskService:Start/Complete(userId,taskId) from its prompts;
 publish PlayerStateService afterward. Never call AddCash from visual code.
 
-Each Core plot model has `PlotId, OwnerUserId` attributes (0 = free), plus confirmed
+Each Core plot model and corresponding World plot has `PlotId, OwnerUserId` attributes (0 = free), plus confirmed
 VerityLevel/VerityScale/HouseTier/VerityUnlocked/DeliveryState/IncomePerSecond/StateRevision.
-Anchors: SpawnPoint, DeliveryPoint, UpgradeStation, VerityPoint. Do not move them after
-assignment; build around their positions. World owns all visual children elsewhere.
+World owns the approved map geometry. WorldIntegration.anchors[id] references actual
+World DeliveryPoint/VerityOrigin/UpgradeStation and InteriorEntrance/InteriorReturn.
+SpawnPoint is a separate invisible Core SpawnLocation at the supplied World spawn marker.
+Do not move the approved markers after assignment or create a second neighborhood.
 SpawnPoint is a Core-owned SpawnLocation; it is enabled only for an occupied plot and
 assigned as that player's RespawnLocation. Core disables CharacterAutoLoads, loads after
 profile/plot readiness, and owns subsequent death respawns. World/UI must not introduce
@@ -146,14 +153,41 @@ standing every 0.1s; a death or observed departure resets the continuous hold.
 
 ## Geometry and capacity
 
-All lengths in studs. Base model footprint 4x4, height 5; maximum 15x; animation envelope
-1.15; margin 12 on each side. Reserved footprint = 93x93, reserved height 98.25.
-Plot = 120x150, spacing along street 132, road width 40. 14 studs deeper from plot centre
-is VerityPoint. House, delivery, UpgradeStation and passages must fit in the front strip,
-outside the reserved Verity volume. World must revalidate/reconfigure if its base model
-exceeds these dimensions or its effects/idle exceed this envelope. GetLayout is the
-source for plot positions; alternating sides scale with configurable PlotCount.
-ServerCapacity cannot exceed PlotCount. Set actual MaxPlayers separately in Dashboard.
+All lengths in studs. Approved World map v4 has64-stud-wide lawns,48-stud row spacing,
+26-stud road and17x17 Verity platforms. Core reads actual plot positions from World,
+not the former standalone proxy layout. Base model envelope2x2x3, maximum5x, animation
+expansion1.15 and margin2 per side give a reserved footprint15.5x15.5, height19.25.
+WorldIntegration verifies the configured footprint fits each existing platform. No houses,
+floors or exterior decorations are resized. The eventual Verity model must respect this
+base envelope. GetLayout returns approved actual Lawn dimensions/positions for integrated maps.
+WorldBuilder supports even PlotCount16..128. ServerCapacity cannot exceed PlotCount; set
+the actual experience MaxPlayers separately. The rooms use a128-stud grid outside the map.
+
+## Personal interiors
+
+InteriorService owns one lazy room per connected owner. The template is
+ServerStorage.InteriorTemplates.StandardInterior; copies live at
+Workspace.PlayerInteriors.Interior_<UserId>. Room location and slot are session-only.
+Entry/exit are server ProximityPrompt paths. No client-supplied coordinates or owner IDs,
+extra request remotes, separate place, or second persistence/economy service are used.
+Owner, current plot, living character, distance<=8 studs, location, transition lock and1s
+cooldown are checked. After streaming, token/character/profile/ownership/distance are checked
+again. Death cancels a pending operation and respawns outside; leaving destroys the room and
+prompts and releases the slot. Foreign characters observed inside a room are returned outside.
+
+InteriorTransition is server->one owner only:
+
+```text
+{version=1, operationId=server GUID, phase="Begin"|"Complete"|"Failed",
+ direction="Enter"|"Exit", errorCode?}
+```
+
+All phases share one ID. Rejection before Begin uses NotificationEvent if feedback is needed.
+Started failures use ROOM_UNAVAILABLE/STREAM_TIMEOUT/TRANSITION_CANCELLED. An8s watchdog ends
+pending operations without moving a late/new character. UI must correlate IDs, clear its fade
+on Failed/death/removal and use its own bounded timeout. Core does not wait for UI acknowledgement.
+Atomic room streaming is requested before movement, but does not guarantee client readiness;
+the final UI controller must handle missing streamed geometry without an infinite black screen.
 
 ## Persistence and optional boosts
 

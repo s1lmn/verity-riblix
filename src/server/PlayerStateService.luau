@@ -48,7 +48,7 @@ function PlayerStateService:Snapshot(userId)
 		NextVerityUpgradeCost = Economy.LevelCost[level],
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
 		BoostMultiplier = multiplier, BoostExpiresAt = data.BoostExpiresAt,
-		PhoneOpen = session.PhoneOpen, Tasks = tasks,
+		PhoneOpen = session.PhoneOpen, Tasks = tasks, InteriorLocation = session.InteriorLocation or "Outside",
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end
 function PlayerStateService:Publish(userId, force)

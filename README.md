@@ -1,26 +1,32 @@
-# VERITY GROWING SIMULATOR
+# VERITY Integrated Core and World
 
-Core/server foundation for the three-developer Roblox project. Core owns server state,
-economy, persistence, progression, plots, delivery, tasks and network contracts.
-World owns the final map/models/effects; UI owns the client interface and phone.
+Серверная основа Core объединена с утверждённой картой World v4 и стандартным шаблоном
+персонального интерьера. Геометрия домов, декора и пола сохранена. Участки и взаимодействия
+используют готовые маркеры GeneratedWorld; Core не создаёт второй район.
 
-Start with [the integration contract](docs/API_CONTRACT.md), then [setup](docs/SETUP.md).
-[Validation and limitations](docs/VALIDATION.md) separate source tests from actual playtests.
+Рабочая точка входа — `default.project.json`. Для сборки:
 
-## Layout
+```powershell
+rojo build default.project.json -o build/verity-integrated.rbxlx
+```
 
-- `src/shared`: pure progression/economy/game/task/network definitions.
-- `src/server`: authoritative services and ServerBootstrap.
-- `tests`: executable Luau tests with injected time, storage and spatial boundaries.
-- `scripts`: test runner, build verification, balance simulation.
-- `docs`: API, setup, integration notes, simulation results.
+Core запускает WorldBuilder один раз и отключает отдельный preview MapBootstrap через
+Rojo. Начальный район имеет16 участков; число настраивается через GameConfig. Старые
+VerityNeighborhood.rbxlx, rbxmx и архивы releases сохранены как переданные World-сцены,
+но сами по себе не включают Core.
 
-Level scale is exactly `1 + 14 * ((level - 1) / 99)^0.85`: 100 levels, 99 increases,
-1x to 15x. All levels/milestones remain available without purchases. The current
-price table is a simulated balance candidate and needs real player testing.
+По уточнению пользователя от3 ноября2026 рост составляет1x->5x: опорные масштабы
+1/1.4/2/3/4/5 на уровнях1/10/25/50/75/100, линейная интерполяция между ними.
+Все99 переходов увеличивают модель. Для платформ17x17 базовая модель должна занимать
+не более2x2 studs, высота не более3; полный резерв анимации и эффектов15.5x15.5.
+Модель Verity и финальный UI ещё не предоставлены этой интеграцией.
 
-Core has no client GUI and no final map. Temporary arrival pads and delivery boxes
-allow interaction integration; World replaces them once its map is ready.
-The pre-existing PyCharm `main.py` is unrelated to Roblox and is preserved.
+Core отвечает за профили, деньги, рост, участки, доставку, задания, вход/выход из личной
+комнаты и серверные проверки. World отвечает за модели, материалы, VFX и пространственный
+звук; UI — за интерфейсы, телефон и затемнение при InteriorTransition.
 
-No paid product IDs are configured, no game is published, and no Git push is performed.
+Документы: [API](docs/API_CONTRACT.md), [запуск](docs/SETUP.md),
+[состояние интеграции](docs/CORE_WORLD_INTEGRATION.md), [проверки](docs/VALIDATION.md),
+[интерьеры](docs/INTERIORS.md), [шаблон World](docs/INTERIOR_HANDOFF.md).
+
+Статические сцены и исходные версии карты сохранены в корне и releases/.

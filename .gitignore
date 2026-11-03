@@ -1,8 +1,8 @@
 .idea/
+.worktrees/
 build/
-tools/
 __pycache__/
-*.rbxl
-*.rbxlx
-*.rbxm
-*.rbxmx
+*.pyc
+.venv/
+.DS_Store
+*.lock

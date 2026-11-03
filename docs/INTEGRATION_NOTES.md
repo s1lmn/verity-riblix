@@ -1,5 +1,10 @@
 # Core handoff
 
+Updated integration: World baseline origin/main31649dd is now combined with Core on
+integration/core-world. The user selected5x progression. Follow CORE_WORLD_INTEGRATION.md
+and the updated API_CONTRACT.md for actual marker paths and InteriorTransition. The older
+handoff text below describes the pre-integration boundary and is retained for context.
+
 API_CONTRACT.md is the source contract for World and UI. Share the same files rather
 than independently reimplementing formulas or inventing remotes. The common Rojo mapping
 currently includes Core/Shared only, preserving unknown Studio children. Agree on the

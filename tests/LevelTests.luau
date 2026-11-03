@@ -8,11 +8,14 @@ return function(load, check)
 		local scale, income = Levels.getVerityScale(level), Economy.getIncome(level)
 		check(scale > lastScale and scale < math.huge, "All 99 transitions must grow")
 		check(income > lastIncome and income < math.huge, "Income must increase")
-		check(math.abs(scale - (1 + 14 * ((level - 1) / 99) ^ 0.85)) < 1e-12, "Exact scale formula")
+		check(scale <= 5, "Scale never exceeds agreed5x")
 		if level < 100 then check(Economy.LevelCost[level] > 0, "99 explicit costs required") end
 		lastScale, lastIncome = scale, income
 	end
-	check(Levels.getVerityScale(1) == 1 and Levels.getVerityScale(100) == 15)
+	check(Levels.getVerityScale(1) == 1 and Levels.getVerityScale(100) == 5)
+	for index, level in {1, 10, 25, 50, 75, 100} do
+		check(Levels.getVerityScale(level) == ({1, 1.4, 2, 3, 4, 5})[index], "Agreed scale milestones")
+	end
 	check(not pcall(Levels.getVerityScale, 101))
 	check(not pcall(Levels.getVerityScale, 0 / 0))
 	check(not pcall(Levels.getVerityScale, 1.5))

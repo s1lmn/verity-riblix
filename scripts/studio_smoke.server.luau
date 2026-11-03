@@ -15,10 +15,15 @@ local command, report = Instance.new("RemoteEvent"), Instance.new("RemoteEvent")
 command.Name = "Command"; command.Parent = bridge
 report.Name = "Report"; report.Parent = bridge
 bridge.Parent = Replicated
-local results, clientReady = {}, {}
+local results, clientReady, interiorEvents = {}, {}, {}
 report.OnServerEvent:Connect(function(player, payload)
 	if type(payload) ~= "table" then return end
 	if payload.status == "CLIENT_READY" then clientReady[player] = true; return end
+	if payload.status == "INTERIOR_EVENT" then
+		interiorEvents[player] = interiorEvents[player] or {}
+		table.insert(interiorEvents[player], payload.event)
+		return
+	end
 	if type(payload.operationId) ~= "string" then return end
 	results[player] = results[player] or {}
 	results[player][payload.operationId] = payload
@@ -113,7 +118,7 @@ local ok, reason = pcall(function()
 	profile.Data.VerityLevel = 98; services.DataService:Touch(profile)
 	check(request("RequestUpgradeVerity", 17).status == "OK" and profile.Data.VerityLevel == 99, "live transition 98 to99")
 	check(request("RequestUpgradeVerity", 18).status == "OK" and profile.Data.VerityLevel == 100, "live transition 99 to100")
-	check(state:Snapshot(id).VerityScale == 15 and state:Snapshot(id).HouseTier == 6, "maximum scale15 and house tier6")
+	check(state:Snapshot(id).VerityScale == 5 and state:Snapshot(id).HouseTier == 6, "maximum scale5 and house tier6")
 	check(request("RequestUpgradeVerity", 19).status == "MAX_LEVEL", "live level101 rejected")
 	local levelEvents = {}
 	for _, event in worldEvents do
@@ -128,6 +133,54 @@ local ok, reason = pcall(function()
 	check((root().Position - plot.SpawnPoint.Position).Magnitude < 12, "death respawns at owned plot")
 	check(profile.Data.VerityLevel == 100 and profile.Data.DeliveryState == "Opened", "respawn preserves progress and unpack state")
 	check(request("RequestSync", 20).status == "OK", "client resync after death")
+	if workspace:FindFirstChild("GeneratedWorld") then
+		-- Compare every approved source part; only invisible markers/attributes may be added.
+		local mismatches, inspected = {}, 0
+		for _, part in require(Replicated.World.MapRecipe) do
+			if part.pos then
+				local current = workspace.GeneratedWorld
+				for name in string.gmatch(part.path, "[^/]+") do current = current and current:FindFirstChild(name) end
+				local expectedCF = CFrame.new(part.pos[1], part.pos[2], part.pos[3])
+				if part.upright then expectedCF *= CFrame.Angles(0, 0, math.pi / 2) end
+				local expectedSurface = if part.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
+				if not current or current.ClassName ~= part.cls or current.CFrame ~= expectedCF
+					or current.Size ~= Vector3.new(part.size[1], part.size[2], part.size[3])
+					or current.Color ~= Color3.fromHex(part.color) or current.TopSurface ~= expectedSurface
+					or current.CanCollide ~= part.collide or current.Transparency ~= part.alpha then
+					table.insert(mismatches, part.path)
+				end
+				inspected += 1
+			end
+		end
+		check(#mismatches == 0, "approved World geometry/surfaces preserved: " .. table.concat(mismatches, ","))
+		bridge:SetAttribute("OriginalWorldPartsChecked", inspected)
+		local interior = assert(services.InteriorService)
+		check(interior:Enter(player, session.PlotId + 1, 0) == "OWNER_ONLY", "foreign entrance rejected")
+		player.Character:PivotTo(plot.InteriorEntrance.CFrame); task.wait(0.1)
+		check(interior:Enter(player, session.PlotId, id) == "OK", "owned interior enters with real streaming")
+		local room = assert(interior.roomsByUserId[id])
+		check(room.model:GetAttribute("OwnerUserId") == id and #workspace.PlayerInteriors:GetChildren() == 1, "one owned room created lazily")
+		check((root().Position - room.entry.Position).Magnitude < 6, "interior spawn is at supplied EntryPoint")
+		check(interior:Exit(player, session.PlotId, id) == "COOLDOWN", "interior transition cooldown enforced")
+		local before = profile.Data.Cash
+		task.wait(1.1); services.IncomeService:Settle(id)
+		check(profile.Data.Cash > before, "passive economy continues inside room")
+		check(interior:Exit(player, session.PlotId, id) == "OK", "exit returns through supplied marker")
+		for cycle = 1, 20 do
+			bridge:SetAttribute("InteriorCycles", cycle)
+			task.wait(1.05)
+			player.Character:PivotTo(plot.InteriorEntrance.CFrame)
+			check(interior:Enter(player, session.PlotId, id) == "OK", "repeat interior entry " .. cycle)
+			task.wait(1.05)
+			check(interior:Exit(player, session.PlotId, id) == "OK", "repeat interior exit " .. cycle)
+		end
+		check(interior.roomsByUserId[id] == room and #workspace.PlayerInteriors:GetChildren() == 1, "20 cycles reuse one room without duplicates")
+		check((root().Position - plot.InteriorReturn.Position).Magnitude < 6, "exit position follows current plot")
+		task.wait(0.1)
+		local events = interiorEvents[player] or {}
+		check(#events >= 4 and events[1].phase == "Begin" and events[2].phase == "Complete"
+			and events[1].operationId == events[2].operationId, "private transition phases reach actual client")
+	end
 	connection:Disconnect()
 	targets:Destroy()
 	bridge:SetAttribute("Assertions", assertions)

@@ -4,7 +4,7 @@ RemotesConfig.Requests = table.freeze({
 	"RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
 	"RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSync",
 })
-RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
+RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent", "InteriorTransition"})
 function RemotesConfig.isOperationId(value: any): boolean
 	return type(value) == "string" and #value >= 1 and #value <= 16
 		and string.match(value, "^[1-9]%d*$") ~= nil

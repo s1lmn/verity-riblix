@@ -3,9 +3,27 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.GameConfig)
 local Tasks = require(Shared.TaskConfig)
+local Levels = require(Shared.LevelConfig)
 local WorldIntegration = {}
 WorldIntegration.__index = WorldIntegration
-function WorldIntegration.new(workspace, players, plots)
+function WorldIntegration.ReadLayouts(world, count)
+	local layouts = {}
+	local plotFolder = assert(world:FindFirstChild("Plots"), "World plots missing")
+	local span = Levels.MaxScale * Config.BaseWidth * Config.AnimationExpansion + 2 * Config.EffectMargin
+	local depth = Levels.MaxScale * Config.BaseDepth * Config.AnimationExpansion + 2 * Config.EffectMargin
+	for id = 1, count do
+		local plot = assert(plotFolder:FindFirstChild(string.format("Plot_%02d", id)), "World plot missing")
+		local lawn = assert(plot:FindFirstChild("Lawn"), "World lawn missing")
+		local platform = assert(plot:FindFirstChild("VerityPlatform"), "World Verity platform missing")
+		assert(platform.Size.X >= span and platform.Size.Z >= depth, "Configured Verity envelope exceeds approved platform")
+		layouts[id] = {PlotId = id, X = lawn.Position.X, Z = lawn.Position.Z,
+			Side = if lawn.Position.X < 0 then -1 else 1, Width = lawn.Size.X, Depth = lawn.Size.Z,
+			ReservationWidth = span, ReservationDepth = depth,
+			ReservationHeight = Levels.MaxScale * Config.BaseHeight * Config.AnimationExpansion + Config.EffectMargin}
+	end
+	return layouts
+end
+function WorldIntegration.new(workspace, players, plots, world)
 	local folder = Instance.new("Folder")
 	folder.Name = "CorePlots"
 	folder.Parent = workspace
@@ -13,23 +31,32 @@ function WorldIntegration.new(workspace, players, plots)
 		folder = folder, anchors = {}, targets = {}, connections = {}}, WorldIntegration)
 	for id = 1, plots.count do
 		local layout = plots:GetLayout(id)
+		local sourcePlot = if world then world.Plots:FindFirstChild(string.format("Plot_%02d", id)) else nil
+		local sourceMarkers = if sourcePlot then assert(sourcePlot:FindFirstChild("Markers"), "World markers missing") else nil
 		local model = Instance.new("Model")
 		model.Name = string.format("Plot_%02d", id)
 		model:SetAttribute("PlotId", id)
 		model:SetAttribute("OwnerUserId", 0)
-		local origin = Vector3.new(layout.X, 1, layout.Z)
+		local origin = Vector3.new(layout.X, 0, layout.Z)
 		local points = {
-			VerityPoint = origin + Vector3.new(0, 0, layout.Side * 14),
-			SpawnPoint = origin + Vector3.new(-15, 2, -layout.Side * 62),
-			DeliveryPoint = origin + Vector3.new(0, 1, -layout.Side * 62),
-			UpgradeStation = origin + Vector3.new(15, 1, -layout.Side * 62),
+			VerityPoint = origin + Vector3.new(-layout.Side * 20, 0.8, 9),
+			SpawnPoint = origin + Vector3.new(-layout.Side * 27, 3, -9),
+			DeliveryPoint = origin + Vector3.new(-layout.Side * 24, 1, -15),
+			UpgradeStation = origin + Vector3.new(-layout.Side * 27, 1, 19),
 		}
 		self.anchors[id] = {}
 		for name, position in points do
+			local source = if sourceMarkers then sourceMarkers:FindFirstChild(if name == "VerityPoint" then "VerityOrigin" else name) else nil
+			if name == "UpgradeStation" and sourcePlot then source = sourcePlot:FindFirstChild("UpgradeStation") end
+			if sourcePlot then assert(source and source:IsA("BasePart"), "World integration marker missing: " .. name) end
+			if source and name ~= "SpawnPoint" then
+				self.anchors[id][name] = source
+				continue
+			end
 			local part = Instance.new(if name == "SpawnPoint" then "SpawnLocation" else "Part")
 			part.Name = name
 			part.Size = Vector3.new(1, 1, 1)
-			part.Position = position
+			part.CFrame = if source then source.CFrame else CFrame.new(position)
 			part.Anchored = true
 			part.CanCollide = false
 			part.CanTouch = false
@@ -46,16 +73,18 @@ function WorldIntegration.new(workspace, players, plots)
 		end
 		-- Small temporary arrival pad and box make Core usable before World is merged.
 		if Config.InteractionFallback then
-			local pad = Instance.new("Part")
-			pad.Name = "CoreArrivalPad"
-			pad.Anchored = true
-			pad.Size = Vector3.new(44, 1, 20)
-			pad.Position = Vector3.new(layout.X, 0, layout.Z - layout.Side * 62)
-			pad.Parent = model
+			if not sourcePlot then
+				local pad = Instance.new("Part")
+				pad.Name = "CoreArrivalPad"
+				pad.Anchored = true
+				pad.Size = Vector3.new(44, 1, 40)
+				pad.Position = Vector3.new(layout.X - layout.Side * 12, 0, layout.Z)
+				pad.Parent = model
+			end
 			local box = Instance.new("Part")
 			box.Name = "CoreDeliveryBox"
 			box.Size = Vector3.new(3, 3, 3)
-			box.Position = points.DeliveryPoint
+			box.CFrame = self.anchors[id].DeliveryPoint.CFrame + Vector3.new(0, 1.5, 0)
 			box.Anchored = true
 			box.CanCollide = false
 			box.Parent = model
@@ -69,6 +98,11 @@ function WorldIntegration.new(workspace, players, plots)
 		end
 		model.Parent = folder
 		self.anchors[id].Model = model
+		self.anchors[id].WorldPlot = sourcePlot
+		if sourceMarkers then
+			self.anchors[id].InteriorEntrance = assert(sourceMarkers:FindFirstChild("InteriorEntrance"))
+			self.anchors[id].InteriorReturn = assert(sourceMarkers:FindFirstChild("InteriorReturn"))
+		end
 		if id % 8 == 0 then task.wait() end
 	end
 	return self
@@ -116,6 +150,15 @@ function WorldIntegration:UpdatePlot(userId, state)
 		model:SetAttribute(key, state[key])
 	end
 	model:SetAttribute("StateRevision", state.stateRevision)
+	local worldPlot = self.anchors[plotId].WorldPlot
+	if worldPlot then
+		worldPlot:SetAttribute("OwnerUserId", userId)
+		worldPlot:SetAttribute("PlotId", plotId)
+		for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
+			worldPlot:SetAttribute(key, state[key])
+		end
+		worldPlot:SetAttribute("StateRevision", state.stateRevision)
+	end
 	local box = model:FindFirstChild("CoreDeliveryBox")
 	if box then
 		box.Transparency = if state.DeliveryState == "Delivered" then 0 else 1
@@ -131,5 +174,12 @@ function WorldIntegration:ClearPlot(plotId)
 	end
 	local box = model:FindFirstChild("CoreDeliveryBox")
 	if box then box.Transparency = 1; box.OpenBox.Enabled = false end
+	local worldPlot = self.anchors[plotId].WorldPlot
+	if worldPlot then
+		worldPlot:SetAttribute("OwnerUserId", 0)
+		for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
+			worldPlot:SetAttribute(key, nil)
+		end
+	end
 end
 return WorldIntegration
