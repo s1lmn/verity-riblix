@@ -286,7 +286,9 @@ Lighting.OutdoorAmbient = Color3.fromRGB(179, 184, 194)
 Lighting.GlobalShadows = true
 Lighting.ShadowSoftness = 0.4
 ''')
-(OUT/'default.project.json').write_text(json.dumps({'name':'VerityNeighborhood','tree':{'$className':'DataModel','ReplicatedStorage':{'World':{'$path':'src/world'}},'ServerScriptService':{'MapBootstrap':{'$path':'src/server/MapBootstrap.server.luau'}},'Workspace':{'$properties':{'StreamingEnabled':True}}}},indent=2))
+# Preserve integration mappings (including ServerStorage/InteriorTemplates) on rebuild.
+if not (OUT/'default.project.json').exists():
+    (OUT/'default.project.json').write_text(json.dumps({'name':'VerityNeighborhood','tree':{'$className':'DataModel','ReplicatedStorage':{'World':{'$path':'src/world'}},'ServerScriptService':{'MapBootstrap':{'$path':'src/server/MapBootstrap.server.luau'}},'Workspace':{'$properties':{'StreamingEnabled':True}}}},indent=2))
 
 # Meaningful static spatial checks: house/yard reservation fits, neighbors do not overlap.
 assert len(plots)==16

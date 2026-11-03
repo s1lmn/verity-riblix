@@ -1,0 +1,23 @@
+{
+  "parts": 140,
+  "innerSizeStuds": [
+    32,
+    12,
+    28
+  ],
+  "pivot": [
+    0,
+    0,
+    0
+  ],
+  "streaming": "Atomic",
+  "pointLights": 2,
+  "clearanceRadius": 2,
+  "centralAisle": "static clearance passed",
+  "entryExit": "static clearance passed",
+  "furnitureBounds": "passed",
+  "shell": "four full walls, floor and ceiling",
+  "externalAssets": 0,
+  "studioPlaytest": "not run",
+  "multiplayerTransitions": "not implemented; Core task"
+}
