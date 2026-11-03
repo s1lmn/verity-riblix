@@ -48,6 +48,7 @@ Roblox Studio не запускался: импорт, управление пе
 
 ## Документация и история
 
+- [Согласованная схема персональных интерьеров и задачи World/Core/UI](docs/INTERIORS.md) — один шаблон, отдельная копия владельцу, вход и выход на том же сервере.
 - [Главное техническое задание](docs/VERITY_GROWING_SIMULATOR_16_PLUS.docx) и [текстовая версия](docs/PROJECT_SPEC.md).
 - [Промпты по трём зонам разработки](docs/CODEX_PROMPTS.md) и [исходник DOCX](docs/VERITY_16_PLUS_CODEX_PROMPTS.docx).
 - [Структура документации и уточнения пользователя](docs/PROJECT_DOCUMENTATION.md).
