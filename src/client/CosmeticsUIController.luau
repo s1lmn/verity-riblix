@@ -33,7 +33,7 @@ function UI.new(ctx)
   info.Position,info.Size=UDim2.fromOffset(0,84),UDim2.new(1,0,0,22)
   self.rows[id]={buy=buy,info=info,name=name}
   self.cleanup:Add(previewButton.Activated:Connect(function()
-   self:Preview(id)
+   if self:Preview(id) then ctx.sound:Play("DecorTryOn") end
   end))
   self.cleanup:Add(buy.Activated:Connect(function()
    local state=ctx.net.state;if not state then return end

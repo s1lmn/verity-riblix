@@ -69,7 +69,7 @@ function Adapter:Attach(folder)
 								}
 							end
 							local message=messages[payload.code]
-							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward}) end
+							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
 					end
 				end))

@@ -77,6 +77,8 @@ function Main.new()
 	self.ledger=Ledger.new()
 	self.versions=self.cleanup:Add(Versions.new(ctx))
 	self.visuals=self.cleanup:Add(Visuals.new(ctx.settings))
+ self.cleanup:Add(require(script.Parent.GameplayFeedbackController).new(ctx))
+ self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
 	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event,model)
 		if event.ownerUserId==Players.LocalPlayer.UserId then
@@ -118,7 +120,7 @@ function Main.new()
 	end))
 	self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
 		if result.success then
-			if result.action=="Swipe" or result.action=="TaskStart" then
+			if result.action=="Swipe" then
 				if result.reward and result.reward>0 then ctx.rewards:Add(result.reward);ctx.sound:Play("Reward") end
 			elseif result.action=="UpgradeVerity" then
 				-- Also close when the companion is temporarily not streamed in.
@@ -136,7 +138,7 @@ function Main.new()
 			self.notificationIds[payload.eventId]=true
 			table.insert(self.notificationOrder,payload.eventId)
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
-			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);ctx.sound:Play("Reward") end
+			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" then ctx.sound:Play("Reward") end end
 		end
 		ctx.notifications:Show(payload.message,payload.kind)
 	end))
@@ -158,7 +160,7 @@ function Main.new()
 		return Enum.ContextActionResult.Pass
 	end,false,3000,Enum.KeyCode.ButtonY)
 	self.cleanup:Add(function() ContextActionService:UnbindAction("VerityUIBack");ContextActionService:UnbindAction("VerityUIMenu") end)
-	self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function() self:Open(nil);self.phone.input:Cancel() end))
+	self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function() self:Open(nil);self.phone.input:Cancel();ctx.sound:StopFeedback() end))
 	self.cleanup:Add(UserInputService.WindowFocusReleased:Connect(function() self.phone.input:Cancel() end))
 	self.cleanup:Add(UserInputService:GetPropertyChangedSignal("PreferredInput"):Connect(function()
 		if UserInputService.PreferredInput==Enum.PreferredInput.Gamepad and ctx.active then self:SetFocus(ctx.active) end
@@ -238,6 +240,7 @@ function Main:Tick(dt)
 	local now=os.clock()
 	if self.versions.issue then self.refs.Status.Text=self.versions:IssueText() end
 	ctx.rewards:Tick(now)
+ ctx.sound:Tick(now,dt)
 	self.tasks:Render();self.tutorial:Render()
 	self.phone:ReconcileSession()
 	self.verity:Render()
@@ -249,7 +252,7 @@ function Main:Tick(dt)
 			for _,entry in Model.Milestones do if entry.level==event.newLevel then milestone=entry end end
 			self.bannerEvent=event
 			self:RenderBanner()
-			ctx.sound:Play(if milestone then "Milestone" else "LevelUp")
+			ctx.sound:PlayUpgrade(event,false)
 			self.bannerUntil=now+(if milestone then 1.6 else 0.7)
 			self.nextPresentation=self.bannerUntil+0.1
 			self.refs.Banner.Visible=true

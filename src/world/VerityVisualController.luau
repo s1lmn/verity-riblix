@@ -23,6 +23,9 @@ local ClientModules=if Client then Client:WaitForChild("PlayerScripts",10):WaitF
 local Cleanup=require(ClientModules.Cleanup)
 local Ledger=require(ClientModules.EventLedger)
 local Locale=if Client then require(ClientModules.Locale) else nil
+local SpawnProfile=require(Shared.VeritySpawnProfile)
+local SpawnVFX=require(script.Parent.VeritySpawnVFX)
+local visibility
 local Controller={}
 Controller.__index=Controller
 
@@ -35,8 +38,9 @@ function Controller.new(settings,options)
 	local editPreview=options and options.editPreview==true
 	assert(RunService:IsClient() or (editPreview and RunService:IsStudio() and not RunService:IsRunning()),"Visuals require a client; explicit Studio edit preview is the only exception")
 	local self=setmetatable({cleanup=Cleanup.new(),settings=settings,records={},byOwner={},pending={},houseBounds={},dead=false,effects=VFX.new(),
-		Started=Instance.new("BindableEvent"),Completed=Instance.new("BindableEvent"),elapsed=0,completed=0},Controller)
-	self.cleanup:Add(self.effects);self.cleanup:Add(self.Started);self.cleanup:Add(self.Completed)
+		Emotion=Instance.new("BindableEvent"),Started=Instance.new("BindableEvent"),Completed=Instance.new("BindableEvent"),elapsed=0,completed=0},Controller)
+	self.spawn=self.cleanup:Add(SpawnVFX.new(settings));self.SpawnStopped=self.spawn.Stopped
+	self.cleanup:Add(self.Emotion);self.cleanup:Add(self.effects);self.cleanup:Add(self.Started);self.cleanup:Add(self.Completed)
 	self.cleanup:Add(CollectionService:GetInstanceAddedSignal(Profile.Tag):Connect(function(model) self:Register(model) end))
 	self.cleanup:Add(CollectionService:GetInstanceRemovedSignal(Profile.Tag):Connect(function(model) self:Remove(model) end))
 	for _,model in CollectionService:GetTagged(Profile.Tag) do self:Register(model) end
@@ -110,6 +114,18 @@ function Controller:Register(model,attempt)
  end
  for slot in Catalog.Slots do record.cleanup:Add(model:GetAttributeChangedSignal("Cosmetic_"..slot):Connect(refreshCosmetics)) end
  refreshCosmetics()
+ -- Existing record owns this observer; initial/restored idle faces make no sound.
+ record.cleanup:Add(model:GetAttributeChangedSignal("EmotionUntil"):Connect(function()
+  if Client and record.owner==Client.UserId and not record.active
+   and (model:GetAttribute("EmotionUntil") or 0)>workspace:GetServerTimeNow() then
+   self.Emotion:Fire(model:GetAttribute("Emotion"))
+  end
+ end))
+ local reveal=self.spawn.active
+ if reveal and reveal.event.ownerUserId==record.owner and reveal.event.plotId==record.plot then
+  reveal.boundModel=model;record.spawnCover=reveal.pose and reveal.pose.cover or 1
+  visibility(record,0)
+ end
  return record
 end
 
@@ -131,6 +147,24 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	local label=model.PrimaryPart:FindFirstChild("LevelLabel")
 	if label then label.StudsOffsetWorldSpace=Vector3.new(0,2.05*scale+0.5,0) end
 	record.lastYaw,record.lastLift=yaw,lift
+end
+
+function Controller:BeginSpawn(event)
+ if not Client or event.ownerUserId~=Client.UserId or not integer(event.plotId,1,128)
+  or type(event.eventId)~="string" or #event.eventId>128 or event.kind~="VeritySpawned" then return false end
+ -- Player attribute survives UI recreation. Existing saves never emit a new spawn event.
+ if Client:GetAttribute("VerityBoxRevealSeen")==event.eventId then return false end
+ local plots=workspace:FindFirstChild("CorePlots")
+ local plot=plots and plots:FindFirstChild(string.format("Plot_%02d",event.plotId))
+ local box=plot and plot:FindFirstChild("CoreDeliveryBox")
+ if not box or not box:IsA("BasePart") then return false end
+ if not self.spawn:Begin(event,box,os.clock()) then return false end
+ Client:SetAttribute("VerityBoxRevealSeen",event.eventId)
+ local record=self.byOwner[key(event.ownerUserId,event.plotId)]
+ if record then
+  self.spawn.active.boundModel=record.model;record.spawnCover=1;visibility(record,record.visibility or 0)
+ end
+ return true
 end
 
 function Controller:HandleWorld(event)
@@ -162,9 +196,9 @@ function Controller:Finish(record,now)
 	self.Completed:Fire(event,record.model)
 end
 
-local function visibility(record,alpha)
+visibility=function(record,alpha)
  record.visibility=alpha
- alpha=math.max(alpha,record.growthCover or 0)
+ alpha=math.max(alpha,record.growthCover or 0,record.spawnCover or 0)
  local model=record.model
  local body=model:FindFirstChild("Body")
  local face=body and body:FindFirstChild("FaceGui")
@@ -285,16 +319,27 @@ function Controller:Follow(record,now,dt)
 end
 
 function Controller:Tick(now,dt)
+ local reveal=self.spawn.active
+ if reveal and reveal.boundModel and not reveal.boundModel:IsDescendantOf(workspace) then self.spawn:Stop(false) end
+ self.spawn:Tick(now)
+ reveal=self.spawn.active
 	local camera=workspace.CurrentCamera
 	local showingGrowth=false
 	if self.settings.values.ReducedEffects or self.settings.values.ReducedMotion then self.effects:SuppressBursts() end
 	for model,record in self.records do
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
-		if not self:Follow(record,now,dt) then continue end
+		local spawning=reveal and reveal.event.ownerUserId==record.owner and reveal.event.plotId==record.plot
+  record.spawnCover=if spawning then reveal.pose.cover else 0
+  if spawning then reveal.boundModel=model end
+  if not self:Follow(record,now,dt) then continue end
+  if spawning and not self.settings.values.ReducedMotion then
+   local start=CFrame.new(reveal.origin.Position+Vector3.new(0,1.15,0))*record.origin.Rotation
+   record.origin=start:Lerp(record.origin,reveal.pose.join)
+  end
 		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<Profile.IdleDistance
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
-			local event=record.ledger:Pop()
+			local event=if spawning then nil else record.ledger:Pop()
 			if event then
 				record.active={event=event,started=now,yaw=record.lastYaw,lift=record.lastLift,burst=false}
 				self.Started:Fire(event,model)
@@ -307,7 +352,7 @@ function Controller:Tick(now,dt)
 		record.growthCover=0
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
-		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil,record.teleported)
+		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil or spawning==true,record.teleported)
 		local body=model:FindFirstChild("Body")
 		local face=body and body:FindFirstChild("FaceGui")
 		if face then
@@ -344,7 +389,7 @@ function Controller:Tick(now,dt)
 			local hover=if stage>=2 then 0.05*scale else 0
 			local lift=if reduced or not near then 0 else hover+math.sin(phase*(if stage==5 then 1.4 else 2))*scale*(if stage==0 then 0.012 elseif stage==5 then 0.035 else 0.025)
 			local yaw=record.baseYaw+(if reduced or not near then 0 elseif stage>=4 then phase*(if stage==5 then 0.16 else 0.24) else math.sin(phase*1.5)*(if stage==1 then 0.12 else 0.08))
-			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale,lift,yaw,Factory.Color(record.level),record.level) end
+			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(record.level),record.level) end
 		end
 		visibility(record,record.visibility or 0)
 		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,near)
@@ -357,7 +402,7 @@ function Controller:Remove(model)
 	self.pending[model]=nil
 	local record=self.records[model]
 	if not record then return end
-	record.growthCover=0
+	record.growthCover=0;record.spawnCover=0
 	visibility(record,0)
 	record.cleanup:Destroy()
 	self.effects:Remove(model)

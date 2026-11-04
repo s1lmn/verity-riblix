@@ -141,11 +141,11 @@ function VFX:Growth(origin, scale, progress, peak, newColor, milestone,owner)
 	growth.source.Position = center
 	light.Enabled = true
 	light.Color = newColor
-	light.Brightness = energy * (1.2 + pulse * (if milestone then 6.2 else 4.8))
+	light.Brightness = energy * (.9 + pulse * (if milestone then 4.8 else 3.6))
 	light.Range = math.clamp(scale * (9 + pulse * 6), 12, 60)
 	local bloom = growth.bloom
 	bloom.Enabled = true
-	bloom.Intensity = energy * (.25 + pulse * (if milestone then 1.85 else 1.4))
+	bloom.Intensity = energy * (.15 + pulse * (if milestone then 1.25 else .85))
 
 	local spin = charge * 9.4 + release * 4.6
 	local radius = scale * (1.42 - .16 * charge + .65 * release)

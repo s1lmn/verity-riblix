@@ -18,6 +18,7 @@ function Phone.new(ctx)
 end
 
 function Phone:SetOpen(open)
+	if self.open~=open then self.ctx.sound:Play(if open then "PhoneOpen" else "PhoneClose") end
 	self.open=open
 	self.input:Cancel()
 	self:ReconcileSession()

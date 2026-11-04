@@ -136,6 +136,8 @@ function WorldIntegration.new(workspace, players, plots, world)
 			end
 			local box = Instance.new("Part")
 			box.Name = "CoreDeliveryBox"
+			box.Color = Color3.fromHex("FFD84B")
+			box.Material = Enum.Material.SmoothPlastic
 			box.Size = Vector3.new(3, 3, 3)
 			box.CFrame = self.anchors[id].DeliveryPoint.CFrame + Vector3.new(0, 1.5, 0)
 			box.Anchored = true

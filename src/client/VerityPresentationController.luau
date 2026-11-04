@@ -87,7 +87,7 @@ function Presentation:Start(event,model)
  local milestone=Model.NextMilestone(event.oldLevel)
  local special=milestone and milestone.level==event.newLevel
  self:RenderCopy()
- self.ctx.sound:Play(if special then "Milestone" else "LevelUp")
+ self.ctx.sound:PlayUpgrade(event,true)
  if not self.ctx.settings.values.ReducedEffects and not self.ctx.settings.values.ReducedMotion then
   local glow=Instance.new("Highlight")
   glow.Name="UpgradeGlow";glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
@@ -187,7 +187,7 @@ function Presentation:Tick(now)
  local glow=Profile.Glow(progress)
  local reduced=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
  self.wash.Visible=not reduced
- self.wash.BackgroundTransparency=1-glow*.46-(if a.look.special then pulse*.08 else 0)
+ self.wash.BackgroundTransparency=1-glow*.32-(if a.look.special then pulse*.06 else 0)
  self.washGradient.Rotation=24+smooth(progress)*34
  self.fill.Size=UDim2.fromScale(if a.completed then 1 else progress,1)
  self.fill.BackgroundColor3=a.oldColor:Lerp(a.newColor,hue)
@@ -237,7 +237,9 @@ end
 
 function Presentation:Stop()
  self:ReleaseCamera()
- local a=self.active;if a and a.glow then a.glow:Destroy()end
+ local a=self.active
+ if a then self.ctx.sound:StopUpgrade(a.event.eventId) end
+ if a and a.glow then a.glow:Destroy()end
  if a and a.color then a.color:Destroy()end
  self.active=nil;self.ctx.presenting=false;self.layer.Visible=false
  self.ctx.refs.Gui:SetAttribute("RevealActive",false)
