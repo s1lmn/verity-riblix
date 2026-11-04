@@ -54,7 +54,7 @@ function Model.Resolve(state,panel,selectedTaskId,now)
   end
   return {id="save",kind="Wait",title="Нужно немного больше денег",detail="Телефон и задания помогут накопить"}
  end
- if panel=="COSMETICS" or panel=="SETTINGS" then return nil end
+ if panel=="WORKSHOP" or panel=="COSMETICS" or panel=="SETTINGS" then return nil end
  local entries={};for _,entry in state.Tasks or {} do entries[entry.taskId]=entry end
  local active
  if selectedTaskId and entries[selectedTaskId] and entries[selectedTaskId].status=="Active" then active=selectedTaskId end

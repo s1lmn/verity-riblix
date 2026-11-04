@@ -100,7 +100,7 @@ function WorldIntegration.new(workspace, players, plots, world)
 		self.anchors[id] = {}
 		for name, position in points do
 			local source = if sourceMarkers then sourceMarkers:FindFirstChild(if name == "VerityPoint" then "VerityOrigin" else name) else nil
-			if name == "UpgradeStation" and sourcePlot then source = sourcePlot:FindFirstChild("UpgradeStation") end
+			if name == "UpgradeStation" and sourcePlot then source = sourcePlot:FindFirstChild("UpgradeStation", true) end
 			if sourcePlot then assert(source and source:IsA("BasePart"), "World integration marker missing: " .. name) end
 			if source and name ~= "SpawnPoint" then
 				self.anchors[id][name] = source
@@ -169,11 +169,18 @@ function WorldIntegration.new(workspace, players, plots, world)
 		prompt.Parent = anchors.ClaimPoint
 		anchors.ClaimPrompt = prompt
 		local workshop = anchors.UpgradeStation
+		local house = sourcePlot and sourcePlot:FindFirstChild("House")
+		if house then
+			-- Left of the entry, away from the dining furniture and doorway.
+			workshop.CFrame = house:GetPivot() * CFrame.new(-11, workshop.Size.Y / 2, 2)
+			workshop.Parent = house
+			anchors.WorkshopHouse = house
+		end
 		local buy = Instance.new("ProximityPrompt")
 		buy.Name = "UpgradeHouseIncome"
 		buy.HoldDuration = .45
-		buy.MaxActivationDistance = Config.MaxInteractionDistance
-		buy.RequiresLineOfSight = false
+		buy.MaxActivationDistance = 8
+		buy.RequiresLineOfSight = true
 		buy.Enabled = false
 		buy:SetAttribute("WorkshopPlotId", id)
 		buy:AddTag("VerityHouseWorkshop")
@@ -204,10 +211,12 @@ function WorldIntegration.new(workspace, players, plots, world)
 			crystal.Name = "IncomeCrystal"
 			crystal.Shape = Enum.PartType.Ball
 			crystal.Size = Vector3.one * .4
-			crystal.CFrame = workshop.CFrame * CFrame.new((index - 3) * .52, workshop.Size.Y / 2 + .32, 0)
+			local column = (index - 1) % 5 - 2
+			local row = math.floor((index - 1) / 5) - .5
+			crystal.CFrame = workshop.CFrame * CFrame.new(column * .48, workshop.Size.Y / 2 + .32, row * .58)
 			crystal.Anchored = true
 			crystal.CanCollide, crystal.CanQuery, crystal.CanTouch = false, false, false
-			crystal.Color = houseColors[index + 1]
+			crystal.Color = houseColors[(index - 1) % #houseColors + 1]
 			crystal.Transparency = .7
 			crystal.Parent = model
 			anchors.WorkshopLights[index] = crystal
@@ -259,6 +268,19 @@ function WorldIntegration:IsNear(userId, plotId, pointName)
 	local point = if anchors then anchors[pointName] else nil
 	return root ~= nil and point ~= nil and point:IsDescendantOf(self.workspace)
 		and (root.Position - point.Position).Magnitude <= Config.MaxInteractionDistance
+end
+function WorldIntegration:IsNearWorkshop(userId, plotId)
+	local anchors = self.anchors[plotId]
+	local root = self:GetCharacter(userId)
+	if not anchors or not root or not anchors.UpgradeStation:IsDescendantOf(self.workspace)
+		or (root.Position - anchors.UpgradeStation.Position).Magnitude > anchors.WorkshopPrompt.MaxActivationDistance then
+		return false
+	end
+	if not anchors.WorkshopHouse then return true end
+	local position = anchors.WorkshopHouse:GetPivot():PointToObjectSpace(root.Position)
+	-- Interior of the entry hall. Guests can still walk through freely.
+	return math.abs(position.X) < 16 and position.Z > -14 and position.Z < 14
+		and position.Y > 0 and position.Y < 12
 end
 function WorldIntegration:RegisterTaskTarget(taskId, part)
 	assert(Tasks[taskId] and typeof(part) == "Instance" and part:IsA("BasePart"), "Invalid task target")

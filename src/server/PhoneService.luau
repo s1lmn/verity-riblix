@@ -1,10 +1,11 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.EconomyConfig)
+local Drops = require(Shared.FeedDrops)
 local PhoneService = {}
 PhoneService.__index = PhoneService
-function PhoneService.new(data, state, economy, clock)
-	return setmetatable({data = data, state = state, economy = economy, clock = clock}, PhoneService)
+function PhoneService.new(data, state, economy, clock, randomInteger)
+	return setmetatable({data = data, state = state, economy = economy, clock = clock, randomInteger = randomInteger or math.random}, PhoneService)
 end
 function PhoneService:SetOpen(userId, open)
 	local profile, session = self.data:Get(userId), self.state.sessions[userId]
@@ -22,8 +23,9 @@ function PhoneService:Swipe(userId)
 	local now = self.clock()
 	if now - session.LastSwipeAt < Config.SwipeInterval then return "COOLDOWN", 0 end
 	session.LastSwipeAt = now
-	local _, actual = self.economy:AddCash(userId, self.economy:GetSwipeIncome(userId))
+	local cardId, multiplier = Drops.Roll(self.randomInteger)
+	local _, actual = self.economy:AddCash(userId, self.economy:GetSwipeIncome(userId) * multiplier)
 	self.state:AdvanceTutorial(profile, 6)
-	return "OK", actual
+	return "OK", actual, cardId
 end
 return PhoneService

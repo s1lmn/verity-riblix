@@ -9,8 +9,17 @@ Phone.__index=Phone
 
 function Phone.new(ctx)
 	local self=setmetatable({ctx=ctx,refs=ctx.refs.Panels.PHONE,cleanup=Cleanup.new(),open=false,lastSwipe=-math.huge,retryAt=0},Phone)
-	self.feed=self.cleanup:Add(Feed.new(self.refs.Viewport,ctx.animation,ctx.settings))
+	self.feed=self.cleanup:Add(Feed.new(self.refs.Viewport,ctx.animation,ctx.settings,function() self:Render() end))
 	self.input=self.cleanup:Add(Swipe.new(self.refs.Viewport,function() return self:Swipe() end,function() return self.open end))
+	self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
+		if result.action=="Swipe" and result.success then
+			self.feed:Reveal(result.cardId,result.reward,self.open,function(multiplier)
+				if result.reward and result.reward>0 then ctx.rewards:Add(result.reward) end
+				ctx.sound:Play(if multiplier==16 then "Milestone10" elseif multiplier==8 then "LevelUp" else "Reward")
+			end)
+			self:Render()
+		end
+	end))
 	self.cleanup:Add(self.refs.Next.Activated:Connect(function() self.input.Emit() end))
 	self.cleanup:Add(self.refs.Power.Activated:Connect(function() self:Upgrade("UpgradeSwipe") end))
 	self.cleanup:Add(self.refs.Grow.Activated:Connect(function() self:Upgrade("UpgradeVerity") end))
@@ -20,6 +29,7 @@ end
 function Phone:SetOpen(open)
 	if self.open~=open then self.ctx.sound:Play(if open then "PhoneOpen" else "PhoneClose") end
 	self.open=open
+	if not open then self.feed:FinishReveal() end
 	self.input:Cancel()
 	self:ReconcileSession()
 end
@@ -41,7 +51,6 @@ function Phone:Swipe()
 	local id=ctx.request("Swipe")
 	if not id then return false end
 	self.lastSwipe=os.clock()
-	self.feed:Next()
 	ctx.sound:Play("SwipeWhoosh")
 	self:Render()
 	return true
@@ -64,8 +73,8 @@ function Phone:Render()
 	local state=net.state
 	local ready=state and state.PhoneSessionOpen and self.open and not net:IsBusy("PhoneSession")
 	local busy=net:IsBusy("Swipe")
-	self.refs.Reward.Text=if state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за свайп") else Locale.Text("$— за свайп")
-	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else Locale.Text("Листай ленту и расти вместе с Verity")
+	self.refs.Reward.Text=if state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за обычную карту") else Locale.Text("$— за обычную карту")
+	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else Locale.Text("Редкие карты приносят больше")
 	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
 		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ VERITY",100,"VerityLevel","NextVerityUpgradeCost"}} do
 		local maxed=state and state[entry[5]] >= entry[4]
@@ -77,8 +86,9 @@ function Phone:Render()
 			elseif not affordable then Locale.Text("Нужно $")..Locale.Number(cost) else "$"..Locale.Number(cost)..Locale.Text("  •  улучшить"))
 		W.SetButton(entry[1],text,net.connected and state~=nil and state.VerityUnlocked and not maxed and affordable and not net:IsBusy(),pending)
 	end
-	self.refs.PowerHint.Text=if state then Locale.Text("Свайп $")..Locale.Number(state.SwipeIncome)..(if state.NextSwipeIncome then " → $"..Locale.Number(state.NextSwipeIncome) else Locale.Text(" • MAX")) else Locale.Text("Больше дохода за каждое движение")
-	W.SetButton(self.refs.Next,if busy then Locale.Text("ПОДОЖДИ…") else Locale.Text("ЛИСТАТЬ ↑"),ready and not busy,busy)
+	self.refs.PowerHint.Text=if state then Locale.Text("Базовая награда $")..Locale.Number(state.SwipeIncome)..(if state.NextSwipeIncome then " → $"..Locale.Number(state.NextSwipeIncome) else Locale.Text(" • MAX")) else Locale.Text("Больше дохода за каждое движение")
+	local revealing=self.feed.busy
+	W.SetButton(self.refs.Next,if busy or revealing then Locale.Text("ПОДОЖДИ…") else Locale.Text("ЛИСТАТЬ ↑"),ready and not busy and not revealing,busy or revealing)
 end
 
 function Phone:Destroy() self.cleanup:Destroy() end

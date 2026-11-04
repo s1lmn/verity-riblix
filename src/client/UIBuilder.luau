@@ -27,6 +27,9 @@ local function icon(button, kind)
  elseif kind=="TASKS" then
   box(4,3,18,21,3,true)
   for _,y in {8,13,18} do box(7,y,2,2,1);box(12,y,7,2,1) end
+ elseif kind=="WORKSHOP" then
+  line(3,12,13,4);line(13,4,23,12)
+  box(6,12,14,11,2,true);box(12,16,4,7,1)
  elseif kind=="COSMETICS" then
   local points={{4,4},{9,2},{10,6},{16,6},{17,2},{22,4},{25,10},{20,13},{19,9},{19,24},{7,24},{7,9},{6,13},{1,10},{4,4}}
   for i=2,#points do line(points[i-1][1],points[i-1][2],points[i][1],points[i][2]) end
@@ -38,7 +41,7 @@ local function icon(button, kind)
 
 end
 
-local function panel(parent, name, title, subtitle)
+local function panel(parent, name, title, subtitle, accent)
 	local root = W.Round(W.Frame(parent, name, UDim2.fromOffset(640, 500)))
 	root.AnchorPoint = Vector2.zero
 	root.Visible = false
@@ -47,7 +50,11 @@ local function panel(parent, name, title, subtitle)
 	for _, direction in { "Up", "Down", "Left", "Right" } do
 		root["SelectionBehavior" .. direction] = Enum.SelectionBehavior.Stop
 	end
-	W.Stroke(root, T.Purple, 2)
+	accent = accent or T.Purple
+	W.New("UIGradient", {Color=ColorSequence.new(T.White,accent:Lerp(T.Paper,.84)),Rotation=105}, root)
+	W.Stroke(root, accent:Lerp(T.Ink,.15), 2).Transparency = .48
+	local mark=W.Round(W.Frame(root,"Accent",UDim2.fromOffset(4,32),accent),3)
+	mark.Position=UDim2.fromOffset(7,12)
 	local heading = W.Text(root, "Heading", title, 23, true)
 	heading.Position, heading.Size = UDim2.fromOffset(18, 12), UDim2.new(1, -86, 0, 28)
 	local sub = W.Text(root, "Subtitle", subtitle, 12, false, T.Muted)
@@ -79,15 +86,24 @@ function Builder.Build(playerGui)
  refs.Cash.Position,refs.Cash.Size=UDim2.fromOffset(10,5),UDim2.new(1,-20,0,21)
  refs.Income.Position,refs.Income.Size=UDim2.fromOffset(10,28),UDim2.new(1,-20,0,15)
  refs.Level.Position,refs.Level.Size=UDim2.fromOffset(10,46),UDim2.new(1,-20,0,13)
+ W.New("UIGradient",{Color=ColorSequence.new(T.White,T.Purple:Lerp(T.Paper,.82)),Rotation=95},hud)
  refs.HUD=hud
+ local ability=W.Button(safe,"VerityAbility","",T.Mint:Lerp(T.Paper,.7))
+ ability.AnchorPoint=Vector2.new(1,0)
+ ability.Position=UDim2.new(1,-12,0,140)
+ ability.Size=UDim2.fromOffset(124,44)
+ ability.BackgroundTransparency=.18
+ ability.TextSize=11;ability.TextWrapped=true;ability.Visible=false
+ refs.AbilityButton=ability
  local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
   Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
   ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
- local names={"VERITY","PHONE","TASKS","COSMETICS"}
- local colors={T.Pink,T.Blue,T.Gold,T.Purple}
+ local names={"VERITY","PHONE","TASKS","WORKSHOP","COSMETICS"}
+ local colors={T.Pink,T.Blue,T.Gold,T.Mint,T.Purple}
  local buttons={}
  for i,name in names do
   local button=W.Button(nav,name,"",colors[i]);button.Size=UDim2.fromOffset(52,52)
+  W.New("UIGradient",{Color=ColorSequence.new(T.White,Color3.fromRGB(218,218,232)),Rotation=115},button)
   icon(button,name);refs.Nav[name]=button;table.insert(buttons,button)
  end
  refs.SettingsButton=W.Button(nav,"Settings","",T.Paper)
@@ -96,7 +112,7 @@ function Builder.Build(playerGui)
  refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
  refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
 
-	local verity = panel(safe, "Verity", "GROW YOUR VERITY", "Every level grows. Every stage feels different.")
+	local verity = panel(safe, "Verity", "GROW YOUR VERITY", "Every level grows. Every stage feels different.", T.Pink)
 	verity.Level = W.Line(verity.Body, "Level", "Waiting for your Verity…", 34, 22, true)
 	verity.Income = W.Line(verity.Body, "Income", "Current → next income: —", 30, 16, true, T.Purple)
 	verity.Scale = W.Line(verity.Body, "Scale", "Current → next scale: —", 28, 16, true)
@@ -108,9 +124,10 @@ function Builder.Build(playerGui)
 	verity.Note = W.Line(verity.Body, "Note", "All 100 levels and all five discoveries are available for free.", 38, 12, false, T.Muted)
 	verity.Boost = W.Line(verity.Body, "Boost", "", 48, 13, false, T.Muted)
 	verity.Boost.Visible = false
+	verity.Ability=W.Line(verity.Body,"Ability","",54,13,true,T.Purple)
 	refs.Panels.VERITY = verity
 
-	local phone = panel(safe, "Phone", "ТВОЙ ТЕЛЕФОН", "Листай. Зарабатывай. Расти.")
+	local phone = panel(safe, "Phone", "ТВОЙ ТЕЛЕФОН", "Листай. Зарабатывай. Расти.", T.Blue)
 	phone.Body:FindFirstChildOfClass("UIListLayout"):Destroy()
 	phone.Body.AutomaticCanvasSize = Enum.AutomaticSize.None
 	phone.Body.ScrollingEnabled = false
@@ -119,7 +136,6 @@ function Builder.Build(playerGui)
 	phone.Controls = W.Frame(phone.Body, "Controls", UDim2.new(1, 0, 0.38, -8))
 	phone.Controls.BackgroundTransparency = 1
 	phone.Controls.Position = UDim2.new(0, 0, 0.62, 8)
-	W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Blue:Lerp(T.Paper,.88)),Rotation=110},phone.Root)
 	phone.Caption = W.Text(phone.Controls, "Caption", "ТВОЙ ДОХОД", 10, true, T.Muted)
 	phone.Caption.Size = UDim2.new(1, 0, 0, 18)
 	phone.Reward = W.Text(phone.Controls, "Reward", "$— per swipe", 19, true)
@@ -140,7 +156,10 @@ function Builder.Build(playerGui)
 	refs.Panels.PHONE = phone
 
 
-	local tasks = panel(safe, "Tasks", "NEIGHBORHOOD TASKS", "Three little adventures. Your own cooldowns.")
+	local workshop=panel(safe,"Workshop","МАСТЕРСКАЯ VERITY","Мастерская внутри твоего дома, слева от входа.",T.Mint)
+	refs.Panels.WORKSHOP=workshop
+
+	local tasks = panel(safe, "Tasks", "NEIGHBORHOOD TASKS", "Three little adventures. Your own cooldowns.", T.Gold)
 	tasks.Rows = {}
 	for _, info in { {"PRESS_BUTTON", "PRESS THE BUTTON", "Use the button in the neighborhood."},
 		{"REACH_POINT", "TAKE A LITTLE WALK", "Reach the marked point."},

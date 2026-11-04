@@ -117,7 +117,7 @@ function Adapter:AcceptResult(raw)
 	self.sent[result.operationId]=nil
 	if result.success and (not self.state or result.stateRevision>self.state.stateRevision) then self.fences[result.action]=result.stateRevision end
 	if result.action=="Sync" then self.needSync=not result.success or not self.state
-	elseif not result.replayed then self.Result:Fire(result) end
+	elseif not result.replayed or result.action=="Swipe" then self.Result:Fire(result) end
 	if result.replayed then self.needSync=true end
 	self.PendingChanged:Fire()
 end
