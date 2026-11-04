@@ -180,3 +180,28 @@ PHONE нативным игрушечным гаджетом. Код/рефер�
 наградами и статусами. Прежние TaskStart/стрелки/Core сохранены. Детали и проверки:
 docs/TASK_TABLET.md, tools/check_task_tablet.py. Не добавлять фиктивный прогресс.
 На небольшом экране прокрутка, touch≥44px; Play по-прежнему не запускать.
+
+## Игрушечный каталог украшений
+
+COSMETICS продолжает утверждённый стиль: CosmeticShopSkin, витрина примерки,
+цветные карточки из общего CosmeticCatalog. Примерка и возврат к надетому локальны;
+Core/Robux-продукты/receipts не менять ради оформления. Существующие серверные
+ownership/available и реальные цены сохраняются. Документация/фактические проверки:
+docs/COSMETIC_SHOP_STYLE.md и tools/check_cosmetic_shop.py. Без Studio Play.
+
+## Игрушечный пульт настроек
+
+SettingsSkin оформляет SETTINGS в том же стиле. SettingsController сохраняет
+прежние values/Changed/атрибуты и Locale; ToggleKnobs и VolumeFill только отображение.
+Подробности/проверки: docs/TOY_SETTINGS.md и tools/check_settings_skin.py.
+Звук/эффекты действуют в сессии; язык использует прежний путь сохранения.
+Без Studio Play; не выдавать mock-проверки за визуальную приёмку.
+
+## Завершение первого прохода оформления меню
+
+GrowthPanelsSkin оформляет VERITY и WORKSHOP; все шесть основных окон теперь
+используют игрушечные skin modules. Сохранить контракты refs для Verity/Workshop,
+MoneyPass и tutorial, цены/статусы брать из Core/HouseConfig. Мастерская остаётся
+каталогом физических покупок дома. Детали: docs/GROWTH_PANELS_STYLE.md,
+tools/check_growth_panels.py. Первый проход оформления готов локально;
+Studio Play/визуальная приёмка не выполнялись, Play не запускать.

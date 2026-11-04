@@ -3,6 +3,9 @@ local W = require(script.Parent.UIWidgets)
 local T = require(script.Parent.UITheme)
 local PhoneSkin=require(script.Parent.PhoneSkin)
 local TaskTabletSkin=require(script.Parent.TaskTabletSkin)
+local CosmeticShopSkin=require(script.Parent.CosmeticShopSkin)
+local SettingsSkin=require(script.Parent.SettingsSkin)
+local GrowthPanelsSkin=require(script.Parent.GrowthPanelsSkin)
 local Builder = {}
 
 -- Small native vector icons; no uploaded images or external asset IDs.
@@ -41,35 +44,6 @@ local function icon(button, kind)
    tooth.AnchorPoint=Vector2.new(.5,.5);tooth.Rotation=math.deg(a) end
  end
 
-end
-
-local function panel(parent, name, title, subtitle, accent)
-	local root = W.Round(W.Frame(parent, name, UDim2.fromOffset(640, 500)))
-	root.AnchorPoint = Vector2.zero
-	root.Visible = false
-	root.Active = true
-	root.SelectionGroup = true
-	for _, direction in { "Up", "Down", "Left", "Right" } do
-		root["SelectionBehavior" .. direction] = Enum.SelectionBehavior.Stop
-	end
-	accent = accent or T.Purple
-	W.New("UIGradient", {Color=ColorSequence.new(T.White,accent:Lerp(T.Paper,.84)),Rotation=105}, root)
-	W.Stroke(root, accent:Lerp(T.Ink,.15), 2).Transparency = .48
-	local mark=W.Round(W.Frame(root,"Accent",UDim2.fromOffset(4,32),accent),3)
-	mark.Position=UDim2.fromOffset(7,12)
-	local heading = W.Text(root, "Heading", title, 23, true)
-	heading.Position, heading.Size = UDim2.fromOffset(18, 12), UDim2.new(1, -86, 0, 28)
-	local sub = W.Text(root, "Subtitle", subtitle, 12, false, T.Muted)
-	sub.Position, sub.Size = UDim2.fromOffset(18, 42), UDim2.new(1, -86, 0, 30)
-	local close = W.Button(root, "Close", "×", T.Soft)
-	close.Size, close.Position, close.AnchorPoint = UDim2.fromOffset(44, 44), UDim2.new(1, -12, 0, 12), Vector2.new(1, 0)
-	local body = W.New("ScrollingFrame", { Name = "Body", BackgroundTransparency = 1,
-		BorderSizePixel = 0, Position = UDim2.fromOffset(16, 80), Size = UDim2.new(1, -32, 1, -94),
-		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 3,
-		ScrollBarImageColor3 = T.Purple }, root)
-	W.List(body, 10)
-	return { Root = root, Close = close, Body = body, Title = heading, Subtitle = sub }
 end
 
 function Builder.Build(playerGui)
@@ -114,47 +88,21 @@ function Builder.Build(playerGui)
  refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
  refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
 
-	local verity = panel(safe, "Verity", "GROW YOUR VERITY", "Every level grows. Every stage feels different.", T.Pink)
-	verity.Level = W.Line(verity.Body, "Level", "Waiting for your Verity…", 34, 22, true)
-	verity.Income = W.Line(verity.Body, "Income", "Current → next income: —", 30, 16, true, T.Purple)
-	verity.Scale = W.Line(verity.Body, "Scale", "Current → next scale: —", 28, 16, true)
-	verity.House = W.Line(verity.Body, "House", "House stage — / 6", 24, 14)
-	verity.ProgressTrack = W.Round(W.Frame(verity.Body, "ProgressTrack", UDim2.new(1, -4, 0, 12), T.Soft), 6)
-	verity.Progress = W.Round(W.Frame(verity.ProgressTrack, "Fill", UDim2.fromScale(0, 1), T.Pink), 6)
-	verity.Milestone = W.Line(verity.Body, "Milestone", "Next discovery: —", 66, 15, true)
-	verity.Buy = W.Button(verity.Body, "UpgradeVerity", "WAITING FOR SERVER", T.Mint)
-	verity.Note = W.Line(verity.Body, "Note", "All 100 levels and all five discoveries are available for free.", 38, 12, false, T.Muted)
-	verity.Boost = W.Line(verity.Body, "Boost", "", 48, 13, false, T.Muted)
-	verity.Boost.Visible = false
-	verity.Ability=W.Line(verity.Body,"Ability","",54,13,true,T.Purple)
-	verity.MoneyPass=W.Button(verity.Body,"TripleMoney","×3 ДЕНЬГИ • СКОРО",T.Gold)
-	verity.MoneyPass.TextSize=13
-	verity.MoneyPassHint=W.Line(verity.Body,"TripleMoneyDetails","Навсегда • пассивный доход, карточки и задания",40,12,false,T.Purple)
+	local verity = GrowthPanelsSkin.BuildVerity(safe)
 	refs.Panels.VERITY = verity
 
 	local phone = PhoneSkin.Build(safe)
 	refs.Panels.PHONE = phone
 
 
-	local workshop=panel(safe,"Workshop","МАСТЕРСКАЯ VERITY","Мастерская внутри твоего дома, слева от входа.",T.Mint)
+	local workshop=GrowthPanelsSkin.BuildWorkshop(safe)
 	refs.Panels.WORKSHOP=workshop
 
 	local tasks = TaskTabletSkin.Build(safe)
 	refs.Panels.TASKS = tasks
 
-	refs.Panels.COSMETICS = panel(safe, "Cosmetics", "STYLE YOUR COMPANION", "Preview, collect and wear cosmetic accessories.")
-	local settings = panel(safe, "SettingsPanel", "MAKE IT YOURS", "Settings apply on this device for this play session.")
-	settings.Language = W.Button(settings.Body, "Language", "", T.Blue)
-	settings.Sound = W.Button(settings.Body, "UISounds", "UI SOUNDS: ON", T.Soft)
-	settings.Volume = W.Line(settings.Body, "VolumeLabel", "VOLUME 60%", 24, 14, true)
-	local volumeRow = W.Frame(settings.Body, "VolumeControls", UDim2.new(1, -4, 0, 44))
-	volumeRow.BackgroundTransparency = 1
-	settings.Minus = W.Button(volumeRow, "VolumeDown", "−", T.Soft)
-	settings.Plus = W.Button(volumeRow, "VolumeUp", "+", T.Soft)
-	settings.Minus.Size, settings.Plus.Size = UDim2.new(0.5, -5, 1, 0), UDim2.new(0.5, -5, 1, 0)
-	settings.Plus.Position = UDim2.fromScale(0.5, 0)
-	settings.Motion = W.Button(settings.Body, "ReducedMotion", "REDUCED MOTION: OFF", T.Soft)
-	settings.Effects = W.Button(settings.Body, "ReducedEffects", "REDUCED EFFECTS: OFF", T.Soft)
+	refs.Panels.COSMETICS = CosmeticShopSkin.Build(safe)
+	local settings = SettingsSkin.Build(safe)
 	refs.Panels.SETTINGS = settings
 
 
@@ -231,6 +179,10 @@ function Builder.Build(playerGui)
   end
   PhoneSkin.Layout(phone,size)
   TaskTabletSkin.Layout(tasks,size,panelX)
+  CosmeticShopSkin.Layout(refs.Panels.COSMETICS,size,panelX)
+  SettingsSkin.Layout(settings,size,panelX)
+  GrowthPanelsSkin.Layout(verity,size,panelX)
+  GrowthPanelsSkin.Layout(workshop,size,panelX)
   refs.Toasts.AnchorPoint=Vector2.new(1,0)
   refs.Toasts.Size,refs.Toasts.Position=UDim2.fromOffset(math.min(size.X-24,300),108),UDim2.new(1,-12,0,72)
   refs.Banner.AnchorPoint=Vector2.new(1,0)

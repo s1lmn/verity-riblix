@@ -5,37 +5,14 @@ local Model = require(script.Parent.UIModel)
 local W = require(script.Parent.UIWidgets)
 local T = require(script.Parent.UITheme)
 local Cleanup = require(script.Parent.Cleanup)
+local Skin = require(script.Parent.GrowthPanelsSkin)
 local Workshop = {}
 Workshop.__index = Workshop
 
 function Workshop.new(ctx)
-	local body = ctx.refs.Panels.WORKSHOP.Body
-	local self = setmetatable({ctx=ctx, rows={},cleanup=Cleanup.new(),features={}}, Workshop)
-	local summary = W.Block(body, "WorkshopSummary", 62, T.Mint:Lerp(T.Paper,.64))
-	summary.LayoutOrder = 0
-	self.summary = W.Text(summary,"Progress","",15,true)
-	local track = W.Round(W.Frame(summary,"Track",UDim2.new(1,0,0,8),T.Paper),4)
-	track.Position = UDim2.fromOffset(0,29)
-	self.fill = W.Round(W.Frame(track,"Fill",UDim2.fromScale(0,1),T.Mint),4)
-	for index, upgrade in Houses.IncomeUpgrades do
-		local row = W.Block(body,"Upgrade"..index,64,T.Paper)
-		row.LayoutOrder = index
-		local title = W.Text(row,"Title","",14,true)
-		title.Size = UDim2.new(1,0,0,20)
-		local detail = W.Text(row,"Detail","",11,false,T.Muted)
-		detail.Position,detail.Size = UDim2.fromOffset(0,22),UDim2.new(1,0,0,18)
-		self.rows[index]={root=row,title=title,detail=detail,upgrade=upgrade}
-	end
-	for index, featureId in {"Door","SecondFloor"} do
-		local row = W.Block(body,featureId,76,T.Purple:Lerp(T.Paper,.82))
-		row.LayoutOrder=index-3
-		local title=W.Text(row,"Name",Houses.Features[featureId].Name,15,true)
-		local detail=W.Text(row,"Details","",12,false,T.Muted)
-		detail.Position,detail.Size=UDim2.fromOffset(0,28),UDim2.new(1,0,0,34)
-		self.features[featureId]=detail
-	end
-	self.lock=W.Button(body,"HouseDoorLock","Закрыть для гостей",T.Mint)
-	self.lock.LayoutOrder=-1
+ local cards=Skin.WorkshopCards(ctx.refs.Panels.WORKSHOP,Houses)
+ local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),rows=cards.rows,features=cards.features,
+  summary=cards.summary,fill=cards.fill,lock=cards.lock},Workshop)
 	self.cleanup:Add(self.lock.Activated:Connect(function()
 		local state=ctx.net.state
 		if state and state.HouseDoorOwned and not ctx.net:IsBusy() then
@@ -64,7 +41,7 @@ function Workshop:Render()
 	for index,row in self.rows do
 		local unlocked=state and state.VerityUnlocked and state.VerityLevel>=row.upgrade.Level
 		local nextPurchase=index==count+1 and unlocked
-		row.title.Text=string.format("%02d  %s",index,Locale.Text(row.upgrade.Name))
+		row.title.Text=Locale.Text(row.upgrade.Name)
 		row.root.BackgroundColor3=if nextPurchase then T.Gold:Lerp(T.Paper,.58)
 			elseif index<=count then T.Mint:Lerp(T.Paper,.71) else T.Paper
 		local price=Locale.Number(row.upgrade.Cost)

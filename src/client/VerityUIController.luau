@@ -31,8 +31,8 @@ function Verity:Render()
 	end
 	local maxed=level==100
 	r.Level.Text=if maxed then Locale.Text("MAX LEVEL 100 • GIANT FINAL FORM") else string.format(Locale.Text("VERITY LEVEL %d / 100"),level)
-	r.Level.TextSize=if maxed then 18 else 22
-	r.Level.Size=UDim2.new(1,-4,0,if maxed then 48 else 34)
+	r.Level.TextSize=if maxed then 18 else 20
+	r.Level.Size=UDim2.new(1,-24,0,48)
 	r.Income.Text=Locale.Text("INCOME  $")..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec")..(if maxed then "" else " → $"..Locale.Number(state.NextIncomePerSecond))
 	r.Scale.Text=if maxed then Locale.Text("SCALE  15× • final evolution") else string.format(Locale.Text("SCALE  %.3f× → %.3f×"),Model.Scale(level),Model.Scale(level+1))
 	local nextHouseMilestone=Model.Milestones[state.HouseTier]
