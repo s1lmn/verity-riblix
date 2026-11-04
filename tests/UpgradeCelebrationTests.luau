@@ -17,14 +17,14 @@ return function(load,check)
  check(Event.Pulse(-.01)==0 and Event.Pulse(1)==0,"Glow persists outside its lifetime")
  local VFX=load("src/world/VerityVFXService")
  local a,b={},{}
- local function part()return {Transparency=0,Star={Enabled=true}}end
+ local function part()return {Transparency=0}end
  local pa,pb=part(),part()
  local fx=setmetatable({groups={},pulses={[a]={},[b]={}},active={{owner=a,part=pa},{owner=b,part=pb}},free={}},VFX)
  fx:CancelUpgrade(a)
  check(#fx.active==1 and fx.active[1].owner==b and #fx.free==1,"Cancelling one owner removed another's event")
- check(pa.Transparency==1 and not pa.Star.Enabled and fx.pulses[a]==nil)
+ check(pa.Transparency==1 and fx.pulses[a]==nil)
  fx:SuppressBursts()
- check(#fx.active==0 and #fx.free==2 and not pb.Star.Enabled,"Reduced effects retained active particles")
+ check(#fx.active==0 and #fx.free==2 and pb.Transparency==1,"Reduced effects retained active particles")
  fx:SuppressBursts()
  check(#fx.free==2,"Particle was returned to the pool twice")
 end

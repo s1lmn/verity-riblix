@@ -16,7 +16,7 @@ function HouseClaimPrompts.new()
 		local plotId = player:GetAttribute("HousePlotId")
 		local workshopPlot = prompt:GetAttribute("WorkshopPlotId")
 		local enabled = if workshopPlot then workshopPlot == plotId else player:GetAttribute("HouseSelectionReady") and not plotId
-		prompt.MaxActivationDistance = if enabled then Config.MaxInteractionDistance else 0
+		prompt.MaxActivationDistance = if enabled then (if workshopPlot then 8 else Config.MaxInteractionDistance) else 0
 	end
 
 	local function updateAll()

@@ -91,7 +91,10 @@ Tasks.onReward = function(id, reward)
 	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State, send, guid) end
+local Abilities = require(script.Parent.VerityAbilityService).new(Data, State)
 State.send = function(userId, snapshot)
+	local player = Players:GetPlayerByUserId(userId)
+	if player then Abilities:Refresh(player, player.Character, snapshot) end
 	World:UpdatePlot(userId, snapshot)
 	send(userId, "PlayerStateUpdated", snapshot)
 end
@@ -121,9 +124,9 @@ end)
 Remote:Register("RequestUpgradeSwipe", function(id) return Upgrade:UpgradeSwipe(id) end)
 Remote:Register("RequestPhoneSession", function(id, payload) return Phone:SetOpen(id, payload.open) end)
 Remote:Register("RequestSwipe", function(id)
-	local status,reward=Phone:Swipe(id)
+	local status,reward,cardId=Phone:Swipe(id)
 	if status=="OK" then World:React(id,"Love",2) end
-	return status,reward
+	return status,reward,cardId
 end)
 Remote:Register("RequestTaskStart", function(id, payload) return Tasks:Start(id, payload.taskId) end)
 Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Complete(id, payload.taskId) end)
@@ -146,7 +149,7 @@ end
 for plotId, anchors in World.anchors do
 	anchors.WorkshopPrompt.Triggered:Connect(function(player)
 		local id = player.UserId
-		if Plots.owners[id] ~= plotId or not World:IsNear(id, plotId, "UpgradeStation") then return end
+		if Plots.owners[id] ~= plotId or not World:IsNearWorkshop(id, plotId) then return end
 		local status = Upgrade:UpgradeHouse(id)
 		State:Publish(id, true)
 		send(id, "NotificationEvent", {protocolVersion = 1, code = status, source = "Workshop"})
@@ -209,8 +212,10 @@ local function onCharacter(player, character)
 	local plotId = Plots.owners[player.UserId]
 	if not root or not humanoid or player.Parent ~= Players or player.Character ~= character then return end
 	character:PivotTo(World.anchors[plotId or 1].SpawnPoint.CFrame)
+	Abilities:Refresh(player, character, State:Snapshot(player.UserId))
 	character:SetAttribute("SpawnReady", true)
 	local death = humanoid.Died:Connect(function()
+		Abilities:Stop(player)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -264,6 +269,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+	Abilities:Stop(player)
 	languages[player] = nil
 	local id = player.UserId
 	player:SetAttribute("HouseSelectionReady", nil)

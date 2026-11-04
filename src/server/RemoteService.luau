@@ -9,11 +9,11 @@ function RemoteService.new(data, state, clock, sendResult)
 		handlers = {}, buckets = {}}, RemoteService)
 end
 function RemoteService:Register(name, handler) self.handlers[name] = handler end
-function RemoteService:_result(userId, name, id, status, reward, replayed)
+function RemoteService:_result(userId, name, id, status, reward, cardId)
 	local profile = self.data:Get(userId)
 	local session = self.state.sessions[userId]
 	local result = {protocolVersion = 1, action = name, operationId = id, status = status,
-		reward = reward or 0, replayed = replayed or false,
+		reward = reward or 0, cardId = cardId, replayed = false,
 		stateRevision = if profile then profile.Revision else 0,
 		nextOperationSequence = if session then (session.LastOperationSequence or 0) + 1 else 1}
 	self.sendResult(userId, result)
@@ -60,9 +60,9 @@ function RemoteService:Handle(userId, name, payload)
 	end
 	session.LastOperationSequence = sequence
 	-- Synchronous handlers only: no yield between validation and commit.
-	local ok, status, reward = pcall(self.handlers[name], userId, payload)
+	local ok, status, reward, cardId = pcall(self.handlers[name], userId, payload)
 	if not ok then warn("Core action failed", name, status); status = "INTERNAL_ERROR"; reward = 0 end
-	local result = self:_result(userId, name, payload.operationId, status, reward)
+	local result = self:_result(userId, name, payload.operationId, status, reward, cardId)
 	local count, oldestId, oldestAt = 0, nil, math.huge
 	for id, operation in session.Operations do
 		count += 1

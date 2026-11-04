@@ -1,6 +1,9 @@
 --!nonstrict
 local Locale = require(script.Parent.Locale)
 local Players=game:GetService("Players")
+local ReplicatedStorage=game:GetService("ReplicatedStorage")
+local Abilities=require(ReplicatedStorage.Shared.VerityAbilities)
+local W=require(script.Parent.UIWidgets)
 local RunService=game:GetService("RunService")
 local GuiService=game:GetService("GuiService")
 local UserInputService=game:GetService("UserInputService")
@@ -18,6 +21,7 @@ local Rewards=require(script.Parent.FloatingRewardController)
 local Verity=require(script.Parent.VerityUIController)
 local HouseSelection=require(script.Parent.HouseSelectionController)
 local Phone=require(script.Parent.PhoneUIController)
+local Workshop=require(script.Parent.WorkshopUIController)
 local Tasks=require(script.Parent.TasksUIController)
 local Cosmetics=require(script.Parent.CosmeticsUIController)
 local Tutorial=require(script.Parent.TutorialController)
@@ -69,6 +73,7 @@ function Main.new()
 	end
 	self.verity=self.cleanup:Add(Verity.new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
+	self.workshop=Workshop.new(ctx)
 	self.houseSelection=self.cleanup:Add(HouseSelection.new())
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
  ctx.tasks=self.tasks
@@ -118,7 +123,7 @@ function Main.new()
 	end))
 	self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
 		if result.success then
-			if result.action=="Swipe" or result.action=="TaskStart" then
+			if result.action=="TaskStart" then
 				if result.reward and result.reward>0 then ctx.rewards:Add(result.reward);ctx.sound:Play("Reward") end
 			elseif result.action=="UpgradeVerity" then
 				-- Also close when the companion is temporarily not streamed in.
@@ -144,6 +149,22 @@ function Main.new()
 		local animated=self.visuals:HandleWorld(event)
 		if not animated and event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
+	local function activateAbility()
+		local button=refs.AbilityButton
+		if not button.Visible or not button.Interactable or ctx.active or ctx.presenting or GuiService.MenuIsOpen then return false end
+		local remote=ReplicatedStorage:FindFirstChild("UseVerityAbility")
+		if not remote then return false end
+		remote:FireServer()
+		return true
+	end
+	self.cleanup:Add(refs.AbilityButton.Activated:Connect(activateAbility))
+	ContextActionService:BindAction("VerityAbility",function(_,inputState)
+		if inputState==Enum.UserInputState.Begin and not UserInputService:GetFocusedTextBox() and activateAbility() then
+			return Enum.ContextActionResult.Sink
+		end
+		return Enum.ContextActionResult.Pass
+	end,false,Enum.KeyCode.F,Enum.KeyCode.ButtonL1)
+	self.cleanup:Add(function() ContextActionService:UnbindAction("VerityAbility") end)
 	local function back(_,state)
 		if ctx.presenting then return Enum.ContextActionResult.Pass end
 		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
@@ -212,7 +233,8 @@ function Main:Render()
  self.refs.Status.Visible=ctx.active==nil and (self.versions.issue~=nil or not ctx.net.connected or (state==nil and not Players.LocalPlayer:GetAttribute("HouseSelectionReady")))
 	self.refs.Income.Text=if state then "+$"..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec") else Locale.Text("+$— / sec")
 	self.refs.Level.Text=if state then string.format(Locale.Text("LVL %d / 100"),state.VerityLevel) else Locale.Text("LVL — / 100")
-	self.verity:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()
+	self:RenderAbility()
+	self.verity:Render();self.workshop:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()
 	local selected=GuiService.SelectedObject
 	if ctx.active and selected and selected:IsDescendantOf(self.refs.Panels[ctx.active].Root) and not selected.Selectable then self:SetFocus(ctx.active) end
 end
@@ -226,6 +248,23 @@ function Main:RenderBanner()
 		else string.format(Locale.Text("LEVEL UP!  %d → %d\n%.3f× → %.3f×"),event.oldLevel,event.newLevel,event.oldScale,event.newScale)
 end
 
+function Main:RenderAbility()
+	local ctx=self.ctx
+	local button=self.refs.AbilityButton
+	local state=ctx.net.state
+	local character=Players.LocalPlayer.Character
+	local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+	local form=state and state.VerityUnlocked and Abilities.Get(state.VerityLevel)
+	button.Visible=form and form.action~=nil and not ctx.active and not ctx.presenting and humanoid~=nil and humanoid.Health>0 or false
+	if not button.Visible then return end
+	local remaining=math.ceil((Players.LocalPlayer:GetAttribute("VerityAbilityReadyAt") or 0)-workspace:GetServerTimeNow())
+	local input=UserInputService.PreferredInput
+	local key=if input==Enum.PreferredInput.Touch then "" elseif input==Enum.PreferredInput.Gamepad then "L1  " else "F  "
+	local text=key..Locale.Text(form.name)
+	if remaining>0 then text..="\n"..string.format(Locale.Text("Готово через %d сек."),remaining) end
+	W.SetButton(button,text,remaining<=0 and ctx.net.connected,false)
+end
+
 function Main:Tick(dt)
 	local ctx=self.ctx
 	local state=ctx.net.state
@@ -237,6 +276,7 @@ function Main:Tick(dt)
 	end
 	local now=os.clock()
 	if self.versions.issue then self.refs.Status.Text=self.versions:IssueText() end
+	self:RenderAbility()
 	ctx.rewards:Tick(now)
 	self.tasks:Render();self.tutorial:Render()
 	self.phone:ReconcileSession()

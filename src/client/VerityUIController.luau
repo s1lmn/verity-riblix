@@ -3,6 +3,7 @@ local Locale = require(script.Parent.Locale)
 local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local Model=require(script.Parent.UIModel)
+local Abilities=require(game:GetService("ReplicatedStorage").Shared.VerityAbilities)
 local Verity={}
 Verity.__index=Verity
 
@@ -21,6 +22,13 @@ function Verity:Render()
 		return
 	end
 	local level=state.VerityLevel
+	if state.VerityUnlocked then
+		local ability=Abilities.Get(level)
+		r.Ability.Text=string.format(Locale.Text("Способность: %s\nСкорость %d • сила прыжка %d"),
+			Locale.Text(ability.name),ability.speed,ability.jump)
+	else
+		r.Ability.Text=Locale.Text("Распакуй Verity, чтобы получить способность.")
+	end
 	local maxed=level==100
 	r.Level.Text=if maxed then Locale.Text("MAX LEVEL 100 • GIANT FINAL FORM") else string.format(Locale.Text("VERITY LEVEL %d / 100"),level)
 	r.Level.TextSize=if maxed then 18 else 22

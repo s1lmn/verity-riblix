@@ -194,17 +194,14 @@ function VFX:Acquire()
     local p=table.remove(self.free)
     if not p then
         if self.created>=MAX_BURST_PARTS then return nil end
-        p=piece(self.folder,"UpgradeSpark");self.created+=1
-        local gui=Instance.new("BillboardGui");gui.Name="Star";gui.AlwaysOnTop=false
-        gui.LightInfluence=0;gui.MaxDistance=260;gui.Enabled=false;gui.Parent=p
-        local image=Instance.new("TextLabel");image.Name="Glyph";image.BackgroundTransparency=1
-        image.Size=UDim2.fromScale(1,1);image.TextScaled=true;image.Font=Enum.Font.GothamBold;image.Parent=gui
+        p=piece(self.folder,"UpgradeFirefly");self.created+=1
+
     end
     return p
 end
 
 function VFX:Recycle(p)
-    p.Transparency=1;p.Star.Enabled=false;table.insert(self.free,p)
+    p.Transparency=1;table.insert(self.free,p)
 end
 
 function VFX:Emit(model,origin,scale,level,now,charge,tint)
@@ -216,12 +213,9 @@ function VFX:Emit(model,origin,scale,level,now,charge,tint)
         local angle=i*math.pi*2/count
         local color=if tint then tint:Lerp(palette[4],(i%4)*.12) else palette[(i-1)%#palette+1]
         p.Color=color;p.Shape=Enum.PartType.Ball
-        local size=math.clamp(scale*.055,.09,.6)
+        local size=math.clamp(scale*(.075+(i%4)*.012),.12,.85)
         p.Size=Vector3.one*size
-        p.Star.Size=UDim2.fromScale(size*2.4,size*2.4)
-        p.Star.Glyph.Text=if i%2==0 then "★" else "✦"
-        p.Star.Glyph.TextColor3=color
-        table.insert(self.active,{part=p,owner=model,star=i%3~=0,charge=charge,scale=scale,angle=angle,index=i,
+        table.insert(self.active,{part=p,owner=model,charge=charge,scale=scale,angle=angle,index=i,
             offset=origin.Position-model:GetPivot().Position,
             position=origin.Position+Vector3.new(math.cos(angle)*scale*.96,scale*(.85+(i%5-2)*.08),math.sin(angle)*scale*.96),
             velocity=Vector3.new(math.cos(angle),.7+(i%4)*.23,math.sin(angle))*math.min(4.5,scale*.6+1.5),
@@ -262,10 +256,7 @@ function VFX:Tick(now)
                 position=center+Vector3.new(math.cos(angle)*radius,item.scale*(-.5+u*.95+.12*math.sin(item.index)),math.sin(angle)*radius)
             else position=item.position+item.velocity*t-Vector3.new(0,1.6*t*t,0) end
             item.part.CFrame=CFrame.new(position)*CFrame.Angles(t,0,t*2)
-            item.part.Transparency=if item.star then 1 else 1-(1-fade)*twinkle
-            item.part.Star.Enabled=item.star
-            item.part.Star.Glyph.TextTransparency=1-(1-fade)*twinkle
-            item.part.Star.Glyph.Rotation=item.index*17+t*110
+            item.part.Transparency=1-(1-fade)*twinkle*math.min(1,t/.09)
 		end
 	end
 end

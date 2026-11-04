@@ -74,6 +74,9 @@
         "UpgradeService": {
           "$path": "src/server/UpgradeService.luau"
         },
+        "VerityAbilityService": {
+          "$path": "src/server/VerityAbilityService.luau"
+        },
         "VerityService": {
           "$path": "src/server/VerityService.luau"
         },
