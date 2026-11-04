@@ -87,6 +87,7 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.GameplayFeedbackController).new(ctx))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
+ self.cleanup:Add(require(script.Parent.AdminPanelController).new(ctx,self.visuals))
 	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event,model)
 		if event.ownerUserId==Players.LocalPlayer.UserId then
 			self.ledger:Push(event);self.presentation:Start(event,model)
@@ -223,6 +224,7 @@ function Main:Open(name)
 	for key,panel in self.refs.Panels do panel.Root.Visible=key==name end
 	self.phone:SetOpen(name=="PHONE")
 	self.refs.Layout(name~=nil)
+ self.phone:AnimateOpen()
 	self:Render()
 	if name then self:SetFocus(name)
 	elseif GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(self.refs.Gui) then

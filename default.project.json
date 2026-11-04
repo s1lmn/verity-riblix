@@ -88,6 +88,9 @@
         },
         "MoneyPassService": {
           "$path": "src/server/MoneyPassService.luau"
+        },
+        "AdminAccess": {
+          "$path": "src/server/AdminAccess.luau"
         }
       }
     },

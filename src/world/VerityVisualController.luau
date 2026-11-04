@@ -149,6 +149,46 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	record.lastYaw,record.lastLift=yaw,lift
 end
 
+-- Local admin preview stays in the existing renderer; no server state or saved attributes change.
+function Controller:AdminRecord()
+ if not Client or not Client:GetAttribute("VerityAdmin") then return nil end
+ for _,record in self.records do if record.owner==Client.UserId then return record end end
+ return nil
+end
+function Controller:AdminLevel(level,animate)
+ local record=self:AdminRecord()
+ if not record or level~=nil and not integer(level,1,100) then return nil end
+ if record.active and not record.active.event.preview then return nil end
+ if record.active then self.effects:CancelUpgrade(record.model);record.active=nil end
+ record.adminLevel=level;record.adminEmotion=nil;record.growthCover=0
+ self.effects:HideGrowth()
+ if animate and level and level>1 then
+  local event={preview=true,eventId="admin_"..tostring(os.clock()),ownerUserId=record.owner,plotId=record.plot,
+   oldLevel=level-1,newLevel=level,oldScale=Levels.getVerityScale(level-1),newScale=Levels.getVerityScale(level),stateRevision=record.revision}
+  record.active={event=event,started=os.clock(),yaw=record.lastYaw,lift=record.lastLift,burst=false}
+  self.effects:BeginUpgrade(record.model,record.model:GetPivot(),event.newScale,level,os.clock(),Factory.Color(level))
+  return event
+ end
+ return true
+end
+function Controller:AdminClear()
+ if not Client then return end
+ for _,record in self.records do
+  if record.owner==Client.UserId then
+   record.adminLevel=nil;record.adminEmotion=nil;record.growthCover=0
+   if record.active and record.active.event.preview then record.active=nil;self.effects:CancelUpgrade(record.model) end
+  end
+ end
+ self.effects:HideGrowth()
+end
+function Controller:AdminEmotion(emotion)
+ local record=self:AdminRecord()
+ if not record or not Art.Textures[emotion] then return false end
+ record.adminEmotion=emotion;record.adminEmotionUntil=os.clock()+4
+ record.appliedVisibility=nil
+ return true
+end
+
 function Controller:BeginSpawn(event)
  if not Client or event.ownerUserId~=Client.UserId or not integer(event.plotId,1,128)
   or type(event.eventId)~="string" or #event.eventId>128 or event.kind~="VeritySpawned" then return false end
@@ -177,15 +217,22 @@ function Controller:HandleWorld(event)
 		or math.abs(event.newScale-Levels.getVerityScale(event.newLevel))>0.000001 then return false end
 	local record=self.byOwner[key(event.ownerUserId,event.plotId)]
 	if not record then return false end -- Streaming-in applies current attributes, without old celebrations.
-	record.ledger:Push(event)
-	return true
+	record.adminLevel=nil;record.adminEmotion=nil
+ if record.active and record.active.event.preview then record.active=nil;self.effects:CancelUpgrade(record.model) end
+ record.ledger:Push(event)
+ return true
 end
 
 function Controller:Finish(record,now)
 	local active=record.active
 	if not active then return end
 	local event=active.event
-	record.level,record.revision,record.idleStart=event.newLevel,event.stateRevision,now
+ if event.preview then
+  record.adminLevel=event.newLevel;record.active=nil;record.growthCover=0
+  self:Apply(record,event.newScale,0,record.baseYaw,Factory.Color(event.newLevel),event.newLevel)
+  return
+ end
+ record.level,record.revision,record.idleStart=event.newLevel,event.stateRevision,now
 	record.baseYaw=active.yaw+(if not self.settings.values.ReducedMotion and (event.newLevel==75 or event.newLevel==100) then 2*math.pi else 0)
 	local lift=if Profile.Stage(record.level)>=2 and not self.settings.values.ReducedMotion then 0.05*event.newScale else 0
 	self:Apply(record,event.newScale,lift,record.baseYaw,Factory.Color(record.level),record.level)
@@ -205,7 +252,7 @@ visibility=function(record,alpha)
  local image=face and FaceUI.Image(face)
  local textured=false
  if image then
-  local emotion=if workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0)
+  local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0)
    then model:GetAttribute("Emotion") else "Joy"
   local asset=Art.Textures[emotion] or Art.Textures.Joy
   if image.Image~=asset then image.Image=asset end
@@ -229,7 +276,7 @@ function Controller:Follow(record,now,dt)
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model);return false end
- local scale=Levels.getVerityScale(record.model:GetAttribute("VerityLevel"))
+ local scale=Levels.getVerityScale(record.adminLevel or record.model:GetAttribute("VerityLevel"))
  local x,y,z=Follow.Offset(scale,record.plot)
  local heading=root.CFrame.Rotation
  local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
@@ -339,7 +386,7 @@ function Controller:Tick(now,dt)
 		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<Profile.IdleDistance
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
-			local event=if spawning then nil else record.ledger:Pop()
+			local event=if spawning or record.adminLevel then nil else record.ledger:Pop()
 			if event then
 				record.active={event=event,started=now,yaw=record.lastYaw,lift=record.lastLift,burst=false}
 				self.Started:Fire(event,model)
@@ -357,11 +404,12 @@ function Controller:Tick(now,dt)
 		local face=body and body:FindFirstChild("FaceGui")
 		if face then
 			record.faceLife=record.faceLife or {}
-			local emotion=if workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
+			local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
 			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,self.settings.values.ReducedEffects or not near)
 		end
-		local scale=Levels.getVerityScale(record.level)
-		local stage=Profile.Stage(record.level)
+		local renderLevel=record.adminLevel or record.level
+  local scale=Levels.getVerityScale(renderLevel)
+		local stage=Profile.Stage(renderLevel)
 		if active then
 			local event=active.event
 			local alpha=math.min(1,(now-active.started)/Profile.Duration(event.newLevel))
@@ -389,11 +437,11 @@ function Controller:Tick(now,dt)
 			local hover=if stage>=2 then 0.05*scale else 0
 			local lift=if reduced or not near then 0 else hover+math.sin(phase*(if stage==5 then 1.4 else 2))*scale*(if stage==0 then 0.012 elseif stage==5 then 0.035 else 0.025)
 			local yaw=record.baseYaw+(if reduced or not near then 0 elseif stage>=4 then phase*(if stage==5 then 0.16 else 0.24) else math.sin(phase*1.5)*(if stage==1 then 0.12 else 0.08))
-			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(record.level),record.level) end
+			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(renderLevel),renderLevel) end
 		end
 		visibility(record,record.visibility or 0)
 		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,
-			near and not active and not spawning,record.level,reduced,record.teleported)
+			near and not active and not spawning,renderLevel,reduced,record.teleported)
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)
