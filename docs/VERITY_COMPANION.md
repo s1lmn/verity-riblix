@@ -63,3 +63,15 @@ The owner's existing VerityPresentationController adds milestone-only Highlight 
 Stop/skip, death, model removal and camera replacement restore camera ownership and remove the temporary post-processing/glow. Hidden owners cancel pooled bursts. ReducedMotion and ReducedEffects suppress temporary particles and screen shake/glow; growth still completes. The standalone level preview shares spiral/burst timing and budget, but has no cinematic camera takeover or screen shake. Its reset cancels the previous burst.
 
 Checks: 875 standalone assertions; full compilation; exact-source Rojo roundtrip (83 scripts/modules); complete and standalone builds. Added regression checks cover early-level celebration, milestone classification/timing, particle caps, bounded/disabled shake and owner-specific cancellation/pool recycling. No Play, visual camera verification, mobile FPS or multiplayer rendering test was run for this change.
+
+## Dense storm added to the approved teammate glow
+
+The user chose the teammate's light/color reveal from 7f33fb6 as the base. Its new-level tint, Profile.Glow curve, color transition, 1.8/2.45-second timing, point light, bloom, screen wash and milestone camera behavior are preserved. The previously stashed opaque rainbow cocoon is not applied.
+
+The existing Growth pool now contains 120 wide helical segments (6 strands x20), 40 rotating Neon mist puffs, 48 release-wave segments and 64 release sparks: 272 reusable geometry parts plus the existing light source. There is still only one owner-growth pool per client. The tornado expands upward and outward, with all colors derived from the same next-level tint and white highlights. Normal release shows 48 larger sparks; special release can show all64. This adds visible volume and density instead of another material sphere or another model/controller. Existing shared 128-star pool remains separate and capped.
+
+Profile.Conceal fades in at10–22%, holds fully concealed at22–69%, then fades out by88%. During the dense phase LocalTransparencyModifier hides the old model and accessories; its face and level label are hidden too. Camera-distance visibility is kept separate from this mask, so concealment does not stop growth or suppress its burst. Completion/removal/reduced settings restore local visibility. The owning cinematic frames the larger storm before moving closer to the newly visible Verity.
+
+The standalone level preview now calls the same Growth path with its 2.8/1.7 size conversion and next-level tint. It has the same dense mist and local model concealment, with no camera takeover. Reset, hidden owner, reduced settings and teardown disable the reused light/Bloom and hide the pool. Growth's owner reference is cleared on hide.
+
+990 standalone assertions, 4 animation-profile groups, complete compilation, 83-source Rojo roundtrip and both game/preview builds passed. New regressions cover fully concealed middle phases and restored visibility after reveal. No Play or device rendering/performance test was run.

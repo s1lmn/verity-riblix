@@ -104,7 +104,7 @@ function Controller:Register(model,attempt)
   model:ScaleTo(1);model:PivotTo(CFrame.identity)
   local equipped={};for slot in Catalog.Slots do local id=model:GetAttribute("Cosmetic_"..slot);if Catalog.Items[id] then equipped[slot]=id end end
   Cosmetics.Apply(model,equipped)
-  record.visibility=nil
+  record.visibility,record.appliedVisibility=nil,nil
   Factory.SetStage(model,record.stageLevel or record.level)
   model:ScaleTo(savedScale);model:PivotTo(pivot)
  end
@@ -163,6 +163,8 @@ function Controller:Finish(record,now)
 end
 
 local function visibility(record,alpha)
+ record.visibility=alpha
+ alpha=math.max(alpha,record.growthCover or 0)
  local model=record.model
  local body=model:FindFirstChild("Body")
  local face=body and body:FindFirstChild("FaceGui")
@@ -176,9 +178,9 @@ local function visibility(record,alpha)
   textured=image.IsLoaded
   FaceUI.Refresh(face,alpha)
  end
- if record.textured~=textured then record.textured=textured;record.visibility=nil end
- if record.visibility==alpha then return end
- record.visibility=alpha
+ if record.textured~=textured then record.textured=textured;record.appliedVisibility=nil end
+ if record.appliedVisibility==alpha then return end
+ record.appliedVisibility=alpha
  for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then
   p.LocalTransparencyModifier=if face and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
  end end
@@ -302,6 +304,7 @@ function Controller:Tick(now,dt)
 			end
 		end
 		local active=record.active
+		record.growthCover=0
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
 		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil,record.teleported)
@@ -323,8 +326,9 @@ function Controller:Tick(now,dt)
 				and not reduced and not self.settings.values.ReducedEffects and near
 			if ownGrowth then
 				showingGrowth=true
+				record.growthCover=Profile.Conceal(alpha)
 				self.effects:Growth(model:GetPivot(),model:GetScale(),alpha,Profile.Bloom,
-					newColor,Profile.IsMilestone(event.newLevel))
+					newColor,Profile.IsMilestone(event.newLevel),model)
 			end
 			local targetLift=if pose.stage>=2 and not reduced then event.newScale*0.05 else 0
 			local lift=active.lift+(targetLift-active.lift)*pose.blend+pose.lift
@@ -342,6 +346,7 @@ function Controller:Tick(now,dt)
 			local yaw=record.baseYaw+(if reduced or not near then 0 elseif stage>=4 then phase*(if stage==5 then 0.16 else 0.24) else math.sin(phase*1.5)*(if stage==1 then 0.12 else 0.08))
 			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale,lift,yaw,Factory.Color(record.level),record.level) end
 		end
+		visibility(record,record.visibility or 0)
 		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,near)
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
@@ -352,6 +357,7 @@ function Controller:Remove(model)
 	self.pending[model]=nil
 	local record=self.records[model]
 	if not record then return end
+	record.growthCover=0
 	visibility(record,0)
 	record.cleanup:Destroy()
 	self.effects:Remove(model)

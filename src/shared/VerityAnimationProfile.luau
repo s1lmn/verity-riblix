@@ -33,6 +33,12 @@ function Profile.Glow(progress: number): number
 	return smooth((progress - 0.06) / 0.45) * (1 - smooth((progress - Profile.Bloom) / 0.47))
 end
 
+-- Keep the friend's glow/color choreography; conceal only while the storm is dense.
+function Profile.Conceal(progress: number): number
+	local function rise(t: number): number return smooth(t) end
+	return rise((progress-.10)/.12)*(1-rise((progress-.69)/.19))
+end
+
 function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reducedMotion: boolean)
 	assert(newLevel == oldLevel + 1, "One animation must represent one purchased level")
 	local old, target = Levels.getVerityScale(oldLevel), Levels.getVerityScale(newLevel)
