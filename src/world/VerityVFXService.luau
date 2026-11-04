@@ -84,16 +84,18 @@ function VFX:Update(model, origin, scale, stage, now, reducedEffects, near)
 end
 
 local TAU = 2 * math.pi
-local RIBBONS = 30
+local STRANDS,STRAND_SEGMENTS = 6,20
+local RIBBONS = STRANDS*STRAND_SEGMENTS
 local WAVES = 48
-local SPARKS = 40
+local SPARKS = 64
+local MIST = 40
 
 local function makeGrowth(parent)
 	local parts = {}
-	for i = 1, RIBBONS + WAVES + SPARKS do
-		local name = if i <= RIBBONS then "GrowthRibbon" elseif i <= RIBBONS + WAVES then "GrowthWave" else "GrowthSpark"
+	for i = 1, RIBBONS + WAVES + SPARKS + MIST do
+		local name = if i <= RIBBONS then "GrowthRibbon" elseif i <= RIBBONS + WAVES then "GrowthWave" elseif i<=RIBBONS+WAVES+SPARKS then "GrowthSpark" else "GrowthMist"
 		parts[i] = piece(parent, name)
-		if name == "GrowthSpark" and i % 3 == 0 then parts[i].Shape = Enum.PartType.Ball end
+		if name=="GrowthMist" or name == "GrowthSpark" and i % 3 == 0 then parts[i].Shape = Enum.PartType.Ball end
 	end
 	local source = piece(parent, "GrowthLight")
 	local light = Instance.new("PointLight")
@@ -116,22 +118,25 @@ function VFX:HideGrowth()
 	local growth = self.growth
 	if not growth or not growth.visible then return end
 	growth.visible = false
+	growth.owner=nil
 	growth.light.Enabled = false
 	growth.bloom.Enabled = false
 	for _, part in growth.parts do part.Transparency = 1 end
 end
 
 -- One reusable pool for the local owner's purchase, with no replicated geometry.
-function VFX:Growth(origin, scale, progress, peak, newColor, milestone)
+function VFX:Growth(origin, scale, progress, peak, newColor, milestone,owner)
 	if not self.growth then self.growth = makeGrowth(self.folder) end
 	local growth = self.growth
 	growth.visible = true
+	growth.owner=owner
 	local white = growth.white
 	local center = origin.Position + Vector3.new(0, .85 * scale, 0)
 	local charge = math.clamp(progress / peak, 0, 1)
 	local release = math.clamp((progress - peak) / (1 - peak), 0, 1)
 	local energy = math.sin(math.pi * progress) ^ .7
 	local pulse = Profile.Glow(progress)
+	local conceal=Profile.Conceal(progress)
 	local light = growth.light
 	growth.source.Position = center
 	light.Enabled = true
@@ -142,23 +147,23 @@ function VFX:Growth(origin, scale, progress, peak, newColor, milestone)
 	bloom.Enabled = true
 	bloom.Intensity = energy * (.25 + pulse * (if milestone then 1.85 else 1.4))
 
-	local spin = charge * 4.3 + release * 1.45
-	local radius = scale * (1.36 - .23 * charge + .48 * release)
+	local spin = charge * 9.4 + release * 4.6
+	local radius = scale * (1.42 - .16 * charge + .65 * release)
 	for i, part in growth.parts do
 		if i <= RIBBONS then
-			local strand = math.floor((i - 1) / 10)
-			local direction = if strand == 1 then -1 else 1
-			local trail = ((i - 1) % 10) / 9
-			local angle = direction * (spin - trail * 1.98) + strand * TAU / 3
-			local tilt = (strand - 1) * .4
-			local y = scale * (tilt + math.sin(angle) * .35)
-			local position = center + Vector3.new(math.cos(angle) * radius, y, math.sin(angle) * radius)
-			local tangent = Vector3.new(-math.sin(angle), .25 * math.cos(angle), math.cos(angle))
-			local width = scale * (.032 + (1 - trail) * .043)
-			part.Size = Vector3.new(width, width, radius * .23)
-			part.CFrame = CFrame.lookAt(position, position + tangent)
-			part.Color = newColor:Lerp(white, (.12 + strand * .16) * (1 - trail))
-			part.Transparency = 1 - energy * (1 - .52 * trail) * (1 - .74 * release)
+			local strand = math.floor((i - 1) / STRAND_SEGMENTS)
+			local segment = (i - 1) % STRAND_SEGMENTS
+			local direction = if strand%3==1 then -1 else 1
+			local function point(t)
+				local angle=direction*spin+strand*TAU/STRANDS+t*TAU*1.3
+				local r=radius*(.72+.38*t)
+				return center+Vector3.new(math.cos(angle)*r,scale*(-.95+2.5*t),math.sin(angle)*r)
+			end
+			local a,b=point(segment/STRAND_SEGMENTS),point((segment+1)/STRAND_SEGMENTS)
+			part.Size=Vector3.new(scale*.13,scale*.22,(b-a).Magnitude*1.12)
+			part.CFrame=CFrame.lookAt((a+b)/2,b)
+			part.Color=newColor:Lerp(white,.12+strand*.07)
+			part.Transparency=1-math.clamp(energy*(.65+.35*conceal)*(1-.55*release),0,1)
 		elseif i <= RIBBONS + WAVES then
 			local index = i - RIBBONS - 1
 			local wave = math.floor(index / 16)
@@ -172,19 +177,30 @@ function VFX:Growth(origin, scale, progress, peak, newColor, milestone)
 			part.Size = Vector3.new(scale * .033, scale * .033, ringRadius * .36)
 			part.Color = newColor:Lerp(white, wave * .14)
 			part.Transparency = 1 - .9 * math.sin(math.pi * t) ^ .72
-		else
+		elseif i<=RIBBONS+WAVES+SPARKS then
 			local index = i - RIBBONS - WAVES - 1
-			if release <= 0 or (not milestone and index >= 28) then part.Transparency = 1; continue end
+			if release <= 0 or (not milestone and index >= 48) then part.Transparency = 1; continue end
 			local angle = index * 2.399963
 			local spread = 1 - (1 - release)^2
 			local distance = scale * (1 + spread * (1 + (index % 5) * .18))
 			local y = scale * ((index % 9 - 4) * .13 + math.sin(release * math.pi) * (.35 + index % 3 * .26))
 			local position = center + Vector3.new(math.cos(angle) * distance, y, math.sin(angle) * distance)
-			local size = scale * (.051 + (index % 4) * .018) * (1 - release * .65)
+			local size = scale * (.10 + (index % 4) * .025) * (1 - release * .65)
 			part.CFrame = CFrame.lookAt(position, center)
 			part.Size = Vector3.new(size, size, size * (if index % 3 == 0 then 1 else 2.8))
 			part.Color = newColor:Lerp(white, (index % 5) * .11)
 			part.Transparency = 1 - .94 * math.sin(math.pi * release) ^ .68
+		else
+			local index=i-RIBBONS-WAVES-SPARKS-1
+			local layer=math.floor(index/8)
+			local angle=index%8*TAU/8+spin*(if layer%2==0 then 1 else -1)+layer*.3
+			local r=scale*(.82+.08*layer)*(1+release*.6)
+			local y=scale*(-.7+layer*.53+.09*math.sin(spin+index))
+			local size=scale*(.68+.12*math.sin(index*2.3+spin))
+			part.Size=Vector3.one*size
+			part.CFrame=CFrame.new(center+Vector3.new(math.cos(angle)*r,y,math.sin(angle)*r))
+			part.Color=newColor:Lerp(white,.12+(index%4)*.10)
+			part.Transparency=1-conceal*.92
 		end
 	end
 end
@@ -233,6 +249,7 @@ function VFX:Burst(model, origin, scale, level, now, tint)
 end
 
 function VFX:SuppressBursts()
+	self:HideGrowth()
 	for _,item in self.active do self:Recycle(item.part) end
 	table.clear(self.active);table.clear(self.pulses)
 end
@@ -268,6 +285,7 @@ function VFX:Remove(model)
 end
 
 function VFX:CancelUpgrade(model)
+	if self.growth and self.growth.owner==model then self:HideGrowth() end
 	self.pulses[model]=nil
 	for i=#self.active,1,-1 do
 		local item=self.active[i]

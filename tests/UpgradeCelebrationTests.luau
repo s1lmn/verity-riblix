@@ -15,6 +15,12 @@ return function(load,check)
   if not look.special then check(x==0 and y==0 and r==0,"Ordinary upgrades shake the screen") end
  end
  check(Event.Pulse(-.01)==0 and Event.Pulse(1)==0,"Glow persists outside its lifetime")
+ for _,p in {.22,.4,.53,.69} do check(math.abs(Profile.Conceal(p)-1)<1e-9,"Old model is visible in the dense light storm") end
+ check(Profile.Conceal(0)==0 and Profile.Conceal(1)==0 and Profile.Conceal(.9)==0,"Storm leaves Verity hidden after reveal")
+ for i=0,100 do
+  local conceal=Profile.Conceal(i/100)
+  check(conceal>=0 and conceal<=1,"Invalid local visibility multiplier")
+ end
  local VFX=load("src/world/VerityVFXService")
  local a,b={},{}
  local function part()return {Transparency=0}end

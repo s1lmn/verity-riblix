@@ -13,6 +13,7 @@ local Levels = require(shared:WaitForChild("VerityCompanionLevels",15))
 local FaceUI = require(ReplicatedStorage:WaitForChild("World"):WaitForChild("VerityFaceUI"))
 local Personality = require(shared.VerityPersonality)
 local Celebration = require(shared.VerityUpgradeCelebration)
+local Profile = require(shared.VerityAnimationProfile)
 local UpgradeVFX = require(ReplicatedStorage.World.VerityVFXService)
 local templates = ReplicatedStorage:WaitForChild("VerityCompanionAssets",15)
 if not templates or not templates:FindFirstChild("Joy") then
@@ -138,6 +139,7 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
     local reduced = (settings and settings:GetAttribute("ReducedMotion")==true) or workspace:GetAttribute("VerityReducedMotion")==true
     local reducedEffects = (settings and settings:GetAttribute("ReducedEffects")==true) or workspace:GetAttribute("VerityReducedEffects")==true
     if reduced or reducedEffects then effects:SuppressBursts() end
+    local showingGrowth=false
     for _, entry in entries do
         local owner = Players:GetPlayerByUserId(entry.ownerId)
         local character = owner and owner.Character
@@ -199,12 +201,23 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
         end
         if not visible then effects:CancelUpgrade(entry.body) end
         if visible then
-            FaceUI.Refresh(entry.appearance,0)
+            local cover=0
+            if entry.ownerId==localPlayer.UserId and entry.transition and not reduced and not reducedEffects then
+                local transition=entry.transition
+                local t=math.min(1,transition.elapsed/transition.duration)
+                local scale=entry.scale*Config.BaseDiameter/1.7
+                effects:Growth(CFrame.new(entry.body.Position-Vector3.new(0,.85*scale,0)),scale,t,Profile.Bloom,
+                    Color3.fromHex(transition.look.Hex),Profile.IsMilestone(transition.look.Level),entry.body)
+                cover=Profile.Conceal(t);showingGrowth=true
+            end
+            entry.body.LocalTransparencyModifier=cover
+            FaceUI.Refresh(entry.appearance,cover)
             entry.faceLife=entry.faceLife or {}
             local name=entry.descriptor:GetAttribute("Emotion") or "Joy"
             FaceUI.Animate(entry.appearance,os.clock(),entry.ownerId,name,entry.descriptor:GetAttribute("ReactionRevision"),entry.faceLife,reduced,reducedEffects)
         end
     end
+    if not showingGrowth then effects:HideGrowth() end
     effects:Tick(os.clock())
 end)
 task.spawn(function()

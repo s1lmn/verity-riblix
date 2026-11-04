@@ -115,7 +115,7 @@ function Presentation:CameraPose(camera,model,scale,angle,progress)
  local aspect=math.max(.3,camera.ViewportSize.X/math.max(1,camera.ViewportSize.Y))
  local fov=50
  local half=math.min(math.rad(fov/2),math.atan(math.tan(math.rad(fov/2))*aspect))
- local radius=scale*1.25
+ local radius=scale*(1.95-.7*smooth((progress-.69)/.31))
  local distance=math.max(5,radius/math.sin(half))*1.18
  local height=math.max(1,camera.ViewportSize.Y)
  distance*=1+.25*math.clamp((500-height)/250,0,1)
@@ -194,7 +194,7 @@ function Presentation:Tick(now)
  if self.camera then
   local saved=self.camera;local camera=saved.instance
   if camera.CameraType~=Enum.CameraType.Scriptable then self.camera=nil;self:Stop();return end
-  local pose,_,fov=self:CameraPose(camera,a.model,a.event.newScale,a.angle or 0,age/2.5)
+  local pose,_,fov=self:CameraPose(camera,a.model,a.event.newScale,a.angle or 0,progress)
   local x,y,roll=Celebration.Shake(impactAge,a.event.newLevel,subtle)
   camera.FieldOfView=fov-(if a.look.special then pulse*2 else 0)
   -- Apply to a fresh pose: never accumulate shake or fight another camera owner.
