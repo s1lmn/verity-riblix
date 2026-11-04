@@ -38,3 +38,15 @@ outputs/Verity_Game_Gameplay_Feedback_v1.rbxlx в рабочей папке ча
 за просмотром пользователем сборки.
 
 Баланс интенсивности/частоты обновлён: docs/FEEDBACK_BALANCE.md.
+
+## Исправление запуска интерфейса
+
+В журнале пользовательского запуска от4ноября выявлено `Module code did not return
+exactly one value` на MainUIController:85. Причина — GameplayFeedbackController
+не завершался `return Feedback`. Исключение прерывало Main.new до подключения меню,
+GameplayAudioController, распаковки и запуска CoreNetworkAdapter.
+Добавлен возврат модуля. tools/check_feedback_startup.py исполняет настоящий исходник
+и конструктор с подставными сервисами: проверяет один экспорт, пул64частей,
+подписки, Reset/Destroy. До исправления проверка одного экспорта не проходит.
+Проверки аудио/распаковки/переходов и компиляция98исходников проходят;
+пересобран outputs/Verity_Game_Startup_Fixed_v1.rbxlx. Это не новый запуск Play.

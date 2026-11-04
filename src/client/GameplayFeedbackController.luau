@@ -197,3 +197,5 @@ function Feedback:Reset()
  for _,glow in self.highlights do glow.Enabled=false end
 end
 function Feedback:Destroy() self:Reset();self.cleanup:Destroy() end
+
+return Feedback
