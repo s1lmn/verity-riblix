@@ -1,6 +1,11 @@
 --!nonstrict
 local W = require(script.Parent.UIWidgets)
 local T = require(script.Parent.UITheme)
+local PhoneSkin=require(script.Parent.PhoneSkin)
+local TaskTabletSkin=require(script.Parent.TaskTabletSkin)
+local CosmeticShopSkin=require(script.Parent.CosmeticShopSkin)
+local SettingsSkin=require(script.Parent.SettingsSkin)
+local GrowthPanelsSkin=require(script.Parent.GrowthPanelsSkin)
 local Builder = {}
 
 -- Small native vector icons; no uploaded images or external asset IDs.
@@ -41,35 +46,6 @@ local function icon(button, kind)
    tooth.AnchorPoint=Vector2.new(.5,.5);tooth.Rotation=math.deg(a) end
  end
 
-end
-
-local function panel(parent, name, title, subtitle, accent)
-	local root = W.Round(W.Frame(parent, name, UDim2.fromOffset(640, 500)))
-	root.AnchorPoint = Vector2.zero
-	root.Visible = false
-	root.Active = true
-	root.SelectionGroup = true
-	for _, direction in { "Up", "Down", "Left", "Right" } do
-		root["SelectionBehavior" .. direction] = Enum.SelectionBehavior.Stop
-	end
-	accent = accent or T.Purple
-	W.New("UIGradient", {Color=ColorSequence.new(T.White,accent:Lerp(T.Paper,.84)),Rotation=105}, root)
-	W.Stroke(root, accent:Lerp(T.Ink,.15), 2).Transparency = .48
-	local mark=W.Round(W.Frame(root,"Accent",UDim2.fromOffset(4,32),accent),3)
-	mark.Position=UDim2.fromOffset(7,12)
-	local heading = W.Text(root, "Heading", title, 23, true)
-	heading.Position, heading.Size = UDim2.fromOffset(18, 12), UDim2.new(1, -86, 0, 28)
-	local sub = W.Text(root, "Subtitle", subtitle, 12, false, T.Muted)
-	sub.Position, sub.Size = UDim2.fromOffset(18, 42), UDim2.new(1, -86, 0, 30)
-	local close = W.Button(root, "Close", "×", T.Soft)
-	close.Size, close.Position, close.AnchorPoint = UDim2.fromOffset(44, 44), UDim2.new(1, -12, 0, 12), Vector2.new(1, 0)
-	local body = W.New("ScrollingFrame", { Name = "Body", BackgroundTransparency = 1,
-		BorderSizePixel = 0, Position = UDim2.fromOffset(16, 80), Size = UDim2.new(1, -32, 1, -94),
-		CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollingDirection = Enum.ScrollingDirection.Y, ScrollBarThickness = 3,
-		ScrollBarImageColor3 = T.Purple }, root)
-	W.List(body, 10)
-	return { Root = root, Close = close, Body = body, Title = heading, Subtitle = sub }
 end
 
 function Builder.Build(playerGui)
@@ -117,88 +93,22 @@ function Builder.Build(playerGui)
  refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
  refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
 
-	local verity = panel(safe, "Verity", "GROW YOUR VERITY", "Every level grows. Every stage feels different.", T.Pink)
-	verity.Level = W.Line(verity.Body, "Level", "Waiting for your Verity…", 34, 22, true)
-	verity.Income = W.Line(verity.Body, "Income", "Current → next income: —", 30, 16, true, T.Purple)
-	verity.Scale = W.Line(verity.Body, "Scale", "Current → next scale: —", 28, 16, true)
-	verity.House = W.Line(verity.Body, "House", "House stage — / 6", 24, 14)
-	verity.ProgressTrack = W.Round(W.Frame(verity.Body, "ProgressTrack", UDim2.new(1, -4, 0, 12), T.Soft), 6)
-	verity.Progress = W.Round(W.Frame(verity.ProgressTrack, "Fill", UDim2.fromScale(0, 1), T.Pink), 6)
-	verity.Milestone = W.Line(verity.Body, "Milestone", "Next discovery: —", 66, 15, true)
-	verity.Buy = W.Button(verity.Body, "UpgradeVerity", "WAITING FOR SERVER", T.Mint)
-	verity.Note = W.Line(verity.Body, "Note", "All 100 levels and all five discoveries are available for free.", 38, 12, false, T.Muted)
-	verity.Boost = W.Line(verity.Body, "Boost", "", 48, 13, false, T.Muted)
-	verity.Boost.Visible = false
-	verity.Ability=W.Line(verity.Body,"Ability","",100,13,true,T.Purple)
-	verity.MoneyPass=W.Button(verity.Body,"TripleMoney","×3 ДЕНЬГИ • СКОРО",T.Gold)
-	verity.MoneyPass.TextSize=13
-	verity.MoneyPassHint=W.Line(verity.Body,"TripleMoneyDetails","Навсегда • пассивный доход, карточки и задания",40,12,false,T.Purple)
+	local verity = GrowthPanelsSkin.BuildVerity(safe)
 	refs.Panels.VERITY = verity
 
-	local phone = panel(safe, "Phone", "ТВОЙ ТЕЛЕФОН", "Листай. Зарабатывай. Расти.", T.Blue)
-	phone.Body:FindFirstChildOfClass("UIListLayout"):Destroy()
-	phone.Body.AutomaticCanvasSize = Enum.AutomaticSize.None
-	phone.Body.ScrollingEnabled = false
-	phone.Viewport = W.Round(W.Frame(phone.Body, "FeedViewport", UDim2.new(1, 0, 0.62, 0), T.Soft), 14)
-	phone.Viewport.ClipsDescendants, phone.Viewport.Active = true, true
-	phone.Controls = W.Frame(phone.Body, "Controls", UDim2.new(1, 0, 0.38, -8))
-	phone.Controls.BackgroundTransparency = 1
-	phone.Controls.Position = UDim2.new(0, 0, 0.62, 8)
-	phone.Caption = W.Text(phone.Controls, "Caption", "ТВОЙ ДОХОД", 10, true, T.Muted)
-	phone.Caption.Size = UDim2.new(1, 0, 0, 18)
-	phone.Reward = W.Text(phone.Controls, "Reward", "$— per swipe", 19, true)
-	phone.Reward.Position, phone.Reward.Size = UDim2.fromOffset(0, 19), UDim2.new(1, 0, 0, 26)
-	phone.Next = W.Button(phone.Controls, "NextPost", "ЛИСТАТЬ ↑", T.Blue)
-	phone.Next:SetAttribute("FixedFeedbackSize", true)
-	phone.Next.Position, phone.Next.Size = UDim2.fromOffset(4, 50), UDim2.new(1, -8, 0, 48)
-	phone.Power = W.Button(phone.Controls, "SwipePower", "SWIPE POWER ↗", T.Mint)
-	phone.Power.Position, phone.Power.Size = UDim2.fromOffset(0, 108), UDim2.new(1, 0, 0, 56)
-	phone.Power.TextSize=12;phone.Power.TextWrapped=true
-	phone.PowerHint=W.Text(phone.Controls,"PowerHint","Больше дохода за каждое движение",11,false,T.Muted)
-	phone.PowerHint.Position,phone.PowerHint.Size=UDim2.fromOffset(2,168),UDim2.new(1,-4,0,18)
-	phone.Grow=W.Button(phone.Controls,"GrowVerity","ВЫРАСТИТЬ VERITY",T.Pink:Lerp(T.Paper,.28))
-	phone.Grow.Position,phone.Grow.Size=UDim2.fromOffset(0,194),UDim2.new(1,0,0,56)
-	phone.Grow.TextSize=12;phone.Grow.TextWrapped=true
-	phone.Session = W.Text(phone.Controls, "Session", "Waiting for server session…", 11, false, T.Muted)
-	phone.Session.Position, phone.Session.Size = UDim2.fromOffset(0, 258), UDim2.new(1, 0, 0, 30)
-	phone.CollectionButton=W.Button(phone.Controls,"CollectionButton","Коллекция",T.Purple:Lerp(T.Paper,.38))
-	phone.CollectionButton.Position,phone.CollectionButton.Size=UDim2.fromOffset(0,294),UDim2.new(1,0,0,44)
+	local phone = PhoneSkin.Build(safe)
 	refs.Panels.PHONE = phone
 
 
-	local workshop=panel(safe,"Workshop","МАСТЕРСКАЯ VERITY","Мастерская внутри твоего дома, слева от входа.",T.Mint)
+	local workshop=GrowthPanelsSkin.BuildWorkshop(safe)
 	refs.Panels.WORKSHOP=workshop
 
-	local tasks = panel(safe, "Tasks", "NEIGHBORHOOD TASKS", "Three little adventures. Your own cooldowns.", T.Gold)
-	tasks.Rows = {}
-	for _, info in { {"PRESS_BUTTON", "PRESS THE BUTTON", "Use the button in the neighborhood."},
-		{"REACH_POINT", "TAKE A LITTLE WALK", "Reach the marked point."},
-		{"STAND_ON_PLATFORM", "STAY A MOMENT", "Stand on the platform for one second."} } do
-		local row = W.Block(tasks.Body, info[1], 136)
-		local title = W.Text(row, "Title", info[2], 14, true)
-		title.Size = UDim2.new(1, 0, 0, 23)
-		local description = W.Text(row, "Description", info[3], 12, false, T.Muted)
-		description.Position, description.Size = UDim2.fromOffset(0, 26), UDim2.new(1, 0, 0, 30)
-		local button = W.Button(row, "Start", "WAITING FOR SERVER", T.Gold)
-		button.Position, button.Size = UDim2.fromOffset(0, 64), UDim2.new(1, 0, 0, 44)
-		tasks.Rows[info[1]] = { Root = row, Title = title, Description = description, Button = button }
-	end
+	local tasks = TaskTabletSkin.Build(safe)
 	refs.Panels.TASKS = tasks
 
-	refs.Panels.ABILITIES = panel(safe,"Abilities","СУПЕРСПОСОБНОСТИ","Покупай силы. Выбирай свой стиль боя.",T.Purple)
-	refs.Panels.COSMETICS = panel(safe, "Cosmetics", "STYLE YOUR COMPANION", "Preview, collect and wear cosmetic accessories.")
-	local settings = panel(safe, "SettingsPanel", "MAKE IT YOURS", "Settings apply on this device for this play session.")
-	settings.Language = W.Button(settings.Body, "Language", "", T.Blue)
-	settings.Sound = W.Button(settings.Body, "UISounds", "UI SOUNDS: ON", T.Soft)
-	settings.Volume = W.Line(settings.Body, "VolumeLabel", "VOLUME 60%", 24, 14, true)
-	local volumeRow = W.Frame(settings.Body, "VolumeControls", UDim2.new(1, -4, 0, 44))
-	volumeRow.BackgroundTransparency = 1
-	settings.Minus = W.Button(volumeRow, "VolumeDown", "−", T.Soft)
-	settings.Plus = W.Button(volumeRow, "VolumeUp", "+", T.Soft)
-	settings.Minus.Size, settings.Plus.Size = UDim2.new(0.5, -5, 1, 0), UDim2.new(0.5, -5, 1, 0)
-	settings.Plus.Position = UDim2.fromScale(0.5, 0)
-	settings.Motion = W.Button(settings.Body, "ReducedMotion", "REDUCED MOTION: OFF", T.Soft)
-	settings.Effects = W.Button(settings.Body, "ReducedEffects", "REDUCED EFFECTS: OFF", T.Soft)
+	refs.Panels.ABILITIES = GrowthPanelsSkin.BuildAbilities(safe)
+	refs.Panels.COSMETICS = CosmeticShopSkin.Build(safe)
+	local settings = SettingsSkin.Build(safe)
 	refs.Panels.SETTINGS = settings
 
 
@@ -273,38 +183,13 @@ function Builder.Build(playerGui)
    item.Root.Size=UDim2.fromOffset(width,height)
    item.Title.TextSize=if width<360 then 18 else 21
   end
-  local landscape=size.X>size.Y and size.Y<600
-  local compactPhone=landscape and height<380
-  phone.Caption.Visible=not compactPhone;phone.PowerHint.Visible=not compactPhone;phone.Session.Visible=not compactPhone
-  phone.Subtitle.Visible=not (compactPhone and height<300)
-  phone.Reward.Position,phone.Reward.Size=UDim2.fromOffset(0,if compactPhone then 0 else 19),UDim2.new(1,0,0,if compactPhone then 20 else 26)
-  phone.Reward.TextSize=if compactPhone then 16 else 19
-  phone.CollectionButton.Position=UDim2.fromOffset(0,if compactPhone then 172 else 294)
-  phone.Next.Position,phone.Next.Size=UDim2.fromOffset(4,if compactPhone then 24 else 50),UDim2.new(1,-8,0,if compactPhone then 44 else 48)
-  phone.Power.Position,phone.Power.Size=UDim2.fromOffset(0,if compactPhone then 72 else 108),UDim2.new(1,0,0,if compactPhone then 44 else 56)
-  phone.Grow.Position,phone.Grow.Size=UDim2.fromOffset(0,if compactPhone then 120 else 194),UDim2.new(1,0,0,if compactPhone then 44 else 56)
-  phone.Power.TextSize,phone.Grow.TextSize=if compactPhone then 11 else 12,if compactPhone then 11 else 12
-  if landscape then
-   phone.Subtitle.Position,phone.Subtitle.Size=UDim2.fromOffset(18,40),UDim2.new(1,-86,0,20)
-   phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,66),UDim2.new(1,-32,1,-78)
-   phone.Viewport.Size,phone.Viewport.Position=UDim2.new(.5,-6,1,0),UDim2.new()
-   phone.Controls.Position,phone.Controls.Size=UDim2.new(.5,6,0,0),UDim2.new(.5,-6,1,0)
-   local header=if compactPhone and height<300 then 66 else 78
-   phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,header-12),UDim2.new(1,-32,1,-header)
-   local controlsHeight=if compactPhone then 224 else 348
-   phone.Body.ScrollingEnabled=height-header<controlsHeight
-   phone.Body.CanvasSize=UDim2.fromOffset(0,math.max(controlsHeight,height-header))
-   phone.Viewport.Size=UDim2.new(.5,-6,0,math.max(controlsHeight,height-header))
-   phone.Controls.Size=UDim2.new(.5,-6,0,controlsHeight)
-  else
-   phone.Subtitle.Position,phone.Subtitle.Size=UDim2.fromOffset(18,42),UDim2.new(1,-86,0,30)
-   phone.Body.Position,phone.Body.Size=UDim2.fromOffset(16,80),UDim2.new(1,-32,1,-94)
-   local artHeight=math.max(100,height-450)
-   phone.Body.ScrollingEnabled=artHeight+8+348>height-94
-   phone.Body.CanvasSize=UDim2.fromOffset(0,artHeight+8+348)
-   phone.Viewport.Position,phone.Viewport.Size=UDim2.new(),UDim2.new(1,-4,0,artHeight)
-   phone.Controls.Position,phone.Controls.Size=UDim2.fromOffset(0,artHeight+8),UDim2.new(1,-4,0,348)
-  end
+  PhoneSkin.Layout(phone,size)
+  TaskTabletSkin.Layout(tasks,size,panelX)
+  CosmeticShopSkin.Layout(refs.Panels.COSMETICS,size,panelX)
+  SettingsSkin.Layout(settings,size,panelX)
+  GrowthPanelsSkin.Layout(verity,size,panelX)
+  GrowthPanelsSkin.Layout(workshop,size,panelX)
+  GrowthPanelsSkin.Layout(refs.Panels.ABILITIES,size,panelX)
   refs.Toasts.AnchorPoint=Vector2.new(1,0)
   refs.Toasts.Size,refs.Toasts.Position=UDim2.fromOffset(math.min(size.X-24,300),108),UDim2.new(1,-12,0,72)
   refs.Banner.AnchorPoint=Vector2.new(1,0)

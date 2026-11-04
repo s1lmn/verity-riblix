@@ -289,6 +289,7 @@ local function onCharacter(player, character)
 	else death:Disconnect() end
 end
 local function onPlayer(player)
+ require(script.Parent.AdminAccess).Apply(player)
 	if closing then return end
 	local profile, reason = Data:LoadAsync(player.UserId)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end

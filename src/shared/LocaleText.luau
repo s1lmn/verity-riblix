@@ -2,6 +2,25 @@
 local Text = {}
 Text.WorldTag = "VerityLocalizedText"
 local ru = {
+	["MY VERITY"] = "МОЯ VERITY",
+	["A little friend with a big future."] = "Маленький друг с большим будущим.",
+	["NEXT DISCOVERY"] = "СЛЕДУЮЩЕЕ ОТКРЫТИЕ",
+	["YOUR ABILITY"] = "ТВОЯ СПОСОБНОСТЬ",
+	["HOME WORKSHOP"] = "МАСТЕРСКАЯ ДОМА",
+	["Visit the workshop inside your house to buy upgrades."] = "Покупай улучшения в мастерской внутри своего дома.",
+	["YOUR HOUSE COLLECTION"] = "УЛУЧШЕНИЯ ТВОЕГО ДОМА",
+
+	["YOUR CONTROL PANEL"] = "ТВОЙ ПУЛЬТ",
+	["Make yourself comfortable"] = "Настрой игру под себя",
+	["LANGUAGE"] = "ЯЗЫК",
+	["GAME SOUNDS"] = "ЗВУКИ ИГРЫ",
+	["Hear your companion, rewards and the world."] = "Звуки спутника, наград и окружающего мира.",
+	["CALMER MOTION"] = "СПОКОЙНЫЕ АНИМАЦИИ",
+	["Reduce camera shake and menu movement."] = "Меньше тряски камеры и движения меню.",
+	["LIGHTER EFFECTS"] = "ОБЛЕГЧЁННЫЕ ЭФФЕКТЫ",
+	["Use fewer sparkles and softer visual effects."] = "Меньше блёсток и визуальных эффектов.",
+	["Sound and effects apply during this play session"] = "Звук и эффекты — до выхода из игры",
+
 	["Music in Space"] = "Музыка в космосе",
 	["The moon can hear this little concert."] = "Этот концерт слышно даже на Луне.",
 	["Paper Boat Race"] = "Гонки корабликов",
@@ -230,6 +249,17 @@ local ru = {
 	[" m"] = " м",
 }
 local en = {
+	["СТИЛЬ VERITY"] = "VERITY STYLE",
+	["Примерь новый образ для своего шарика"] = "Try a fresh look for your companion",
+	["ТВОЯ ПРИМЕРОЧНАЯ"] = "YOUR DRESSING ROOM",
+	["ВЕРНУТЬ НАДЕТОЕ"] = "RESTORE EQUIPPED",
+	["Украшения меняют только внешний вид. Примерка бесплатная."] = "Cosmetics change your look only. Try them on for free.",
+	["Твой Verity — твой стиль"] = "Your Verity. Your style.",
+	["ТВОЙ ТЕКУЩИЙ ОБРАЗ"] = "YOUR CURRENT LOOK",
+	["ПРИМЕРЯЕТСЯ"] = "TRYING ON",
+	["ПРИМЕРИТЬ"] = "TRY ON",
+	["ЗАГРУЗКА…"] = "LOADING…",
+
 	["Уровень Verity %d • $%s"] = "Verity level %d • $%s",
 	["Следующее • $%s • +%d%%"] = "Up next • $%s • +%d%%",
 	["Куплено • +%d%% к доходу"] = "Purchased • +%d%% income",

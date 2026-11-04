@@ -1,6 +1,5 @@
 --!nonstrict
 local Locale = require(script.Parent.Locale)
-local Players=game:GetService("Players")
 local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local Tasks={}
@@ -23,7 +22,7 @@ function Tasks.new(ctx)
 		end))
 	end
  self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
-  if result.action=="TaskStart" and result.success and ctx.active==Locale.Text("TASKS") then ctx.close() end
+  if result.action=="TaskStart" and result.success and ctx.active=="TASKS" then ctx.close() end
  end))
  return self
 end
@@ -36,12 +35,16 @@ function Tasks:Render()
 	if state then for _,entry in state.Tasks do entries[entry.taskId]=entry end end
 	for taskId,row in self.ctx.refs.Panels.TASKS.Rows do
 		local entry=entries[taskId]
-		if not entry then W.SetButton(row.Button,Locale.Text("WAITING FOR SERVER"),false,false);continue end
-		row.Title.Text=Locale.Text(Titles[taskId]).." • $"..Locale.Number(entry.reward)
+		if not entry then
+   row.Reward.Text="$—";row.Status.Text=Locale.Text("Загрузка…")
+   W.SetButton(row.Button,Locale.Text("WAITING FOR SERVER"),false,false);continue
+  end
+		row.Reward.Text="$"..Locale.Number(entry.reward)
 		local remaining=math.max(0,math.ceil(entry.cooldownEndsAt-workspace:GetServerTimeNow()))
 		local busy=net:IsBusy("TaskStart")
 		local cooldown=entry.status=="Cooldown" and remaining>0
-		W.SetButton(row.Button,if cooldown then string.format(Locale.Text("COOLDOWN • %ds"),remaining) elseif busy then Locale.Text("WAITING…")
+  row.Status.Text=if cooldown then string.format(Locale.Text("Снова через %dс"),remaining) elseif entry.status=="Active" then Locale.Text("Выполняется") else Locale.Text("Можно начать")
+		W.SetButton(row.Button,if cooldown then Locale.Text("СКОРО СНОВА") elseif busy then Locale.Text("WAITING…")
 			elseif entry.status=="Active" then Locale.Text("ПОКАЗАТЬ ПУТЬ →") else Locale.Text("НАЧАТЬ ЗАДАНИЕ →"),net.connected and not cooldown and not busy,busy)
 		if entry.status=="Active" and typeof(entry.targetPosition)=="Vector3" and (not self.target or taskId==self.selectedTaskId) then
 			self.target,self.targetName=entry.targetPosition,Titles[taskId]

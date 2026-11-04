@@ -2,7 +2,7 @@
 
 ## Latest local expansion — powers and construction
 
-The current local sources supersede the release below with cash-purchased, saved/equipped superhero powers, PvP/PvE, physical ability stands and staged house construction with increasing income. Homelander is a separate planned 99-Robux pass; the user explicitly deferred the real pass ID. See [POWERS_AND_CONSTRUCTION.md](POWERS_AND_CONSTRUCTION.md) for exact ownership, pricing, controls and unverified portions. These new sources have not been Play-tested or run through automated tests, according to the user's current restriction. This expansion has not been pushed or published.
+The current local sources supersede the release below with cash-purchased, saved/equipped superhero powers, PvP/PvE, physical ability stands and staged house construction with increasing income. Homelander is a separate planned 99-Robux pass; the user explicitly deferred the real pass ID. See [POWERS_AND_CONSTRUCTION.md](POWERS_AND_CONSTRUCTION.md) for exact ownership, pricing, controls and unverified portions. These new sources have not been Play-tested or run through automated tests, according to the user's current restriction. The user requested a Git push on 5 November. The integration merges the team toy UI/admin preview commits 9b83404 and 81213b1 with the powers, construction, level-100 face correction and neon purchase pads. Roblox publishing remains deferred.
 
 The validation section below describes the previous committed release, not this expansion.
 
@@ -46,4 +46,8 @@ Bounded idle yaw, centre-based vertical camera facing and size-aware GUI distanc
 
 ## Circular purchase pads and ability polish — 5 November
 
-House/ability purchases now have local neon circles and compact custom prompt labels with affordability colours. Power effects have distinct rings, beams, particles and smooth tails. See [NEON_PURCHASE_PADS.md](NEON_PURCHASE_PADS.md). Packaged without Play, compilation or automated tests; not pushed/published.
+House/ability purchases now have local neon circles and compact custom prompt labels with affordability colours. Power effects have distinct rings, beams, particles and smooth tails. See [NEON_PURCHASE_PADS.md](NEON_PURCHASE_PADS.md). Packaged without Play, compilation or automated tests; included in the requested Git integration; no Roblox publishing.
+
+## Team UI integration — 5 November
+
+Preserved the team phone, task tablet, cosmetics, settings and growth/workshop toy skins and local admin preview. Added the ability shop to the same toy shell, retained workshop construction purchase buttons and income details, and combined admin preview with attack facing and the level-100 face fix. No tests, compilation or Studio Play were run for this merge under the user restriction. Unrelated user main.py remains outside the game commits.

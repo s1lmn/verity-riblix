@@ -22,6 +22,13 @@ function Settings.new(refs)
 		refs.Sound.Text = Locale.Text("UI SOUNDS: ") .. (if self.values.UISounds then Locale.Text("ON") else Locale.Text("OFF"))
 		refs.Motion.Text = Locale.Text("REDUCED MOTION: ") .. (if self.values.ReducedMotion then Locale.Text("ON") else Locale.Text("OFF"))
 		refs.Effects.Text = Locale.Text("REDUCED EFFECTS: ") .. (if self.values.ReducedEffects then Locale.Text("ON") else Locale.Text("OFF"))
+  if refs.ToggleKnobs then
+   for key,value in {Sound=self.values.UISounds,Motion=self.values.ReducedMotion,Effects=self.values.ReducedEffects} do
+    refs[key].Text=Locale.Text(if value then "ON" else "OFF")
+    refs.ToggleKnobs[key].Position=UDim2.fromOffset(if value then 27 else 3,3)
+   end
+   refs.VolumeFill.Size=UDim2.fromScale(self.values.Volume,1)
+  end
 		refs.Volume.Text = string.format(Locale.Text("VOLUME %d%%"), math.round(self.values.Volume * 100))
 		if not languageOnly then self.Changed:Fire(self.values) end
 	end

@@ -19,7 +19,7 @@ function Phone.new(ctx)
 		if result.action=="Swipe" and result.success then
 			self.feed:Reveal(result.cardId,result.reward,self.open,function(multiplier)
 				ctx.sound:Stop("BoxAnticipation")
-				if result.reward and result.reward>0 then ctx.rewards:Add(result.reward) end
+				if result.reward and result.reward>0 then self.lastReward=result.reward;ctx.rewards:Add(result.reward) end
 				ctx.sound:Play(if multiplier==16 then "Milestone100" elseif multiplier==8 then "Milestone25" elseif multiplier==4 then "Milestone10" else "Reward")
 				if result.isNewCard and self.open then ctx.notifications:Show("Новая карта в коллекции!") end
 			end,result.isNewCard)
@@ -32,6 +32,7 @@ function Phone.new(ctx)
 			self.collection:SetOpen(true)
 		end
 	end))
+	self.cleanup:Add(self.refs.Home.Activated:Connect(function() ctx.close() end))
 	self.cleanup:Add(self.refs.Next.Activated:Connect(function() self.input.Emit() end))
 	self.cleanup:Add(self.refs.Power.Activated:Connect(function() self:Upgrade("UpgradeSwipe") end))
 	self.cleanup:Add(self.refs.Grow.Activated:Connect(function() self:Upgrade("UpgradeVerity") end))
@@ -40,10 +41,23 @@ end
 
 function Phone:SetOpen(open)
 	if self.open~=open then self.ctx.sound:Play(if open then "PhoneOpen" else "PhoneClose") end
-	self.open=open
+	local changed=self.open~=open
+ self.open=open
+ self.animateOpen=open and changed
+
 	if not open then self.feed:FinishReveal();self.collection:SetOpen(false) end
 	self.input:Cancel()
 	self:ReconcileSession()
+end
+
+function Phone:AnimateOpen()
+ if not self.animateOpen then return end
+ self.animateOpen=false
+ local root=self.refs.Root
+ local position=root.Position
+ root.Position=position+UDim2.fromOffset(0,22)
+ root.Rotation=if self.ctx.settings.values.ReducedMotion then 0 else 2
+ self.ctx.animation:Tween(root,.22,{Position=position,Rotation=0})
 end
 
 function Phone:ReconcileSession()
@@ -90,17 +104,18 @@ function Phone:Render()
 	local found=Collection.Count(state)
 	W.SetButton(self.refs.CollectionButton,string.format(Locale.Text("Коллекция • %d / 40"),found),
 		state~=nil and not self.feed.busy and not net:IsBusy(),false)
-	self.refs.Reward.Text=if state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за обычную карту") else Locale.Text("$— за обычную карту")
+	self.refs.Cash.Text=if state then "$ "..Locale.Number(state.Cash) else "$ —"
+ self.refs.Reward.Text=if self.lastReward then "+$"..Locale.Number(self.lastReward) elseif state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за обычную карту") else "$ —"
 	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else (if found==40 then Locale.Text("Коллекция собрана!") else string.format(Locale.Text("Найди все карты • осталось %d"),40-found))
 	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
-		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ VERITY",100,"VerityLevel","NextVerityUpgradeCost"}} do
+		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ",100,"VerityLevel","NextVerityUpgradeCost"}} do
 		local maxed=state and state[entry[5]] >= entry[4]
 		local cost=state and state[entry[6]]
 		local pending=net:IsBusy(entry[2])
 		local affordable=cost and state.Cash>=cost
 		local text=Locale.Text(entry[3]).."\n"..(if not state then Locale.Text("Загрузка…") elseif not state.VerityUnlocked then Locale.Text("Сначала открой коробку")
 			elseif maxed then Locale.Text("Максимальный уровень") elseif pending then Locale.Text("Улучшаем…")
-			elseif not affordable then Locale.Text("Нужно $")..Locale.Number(cost) else "$"..Locale.Number(cost)..Locale.Text("  •  улучшить"))
+			elseif not affordable then Locale.Text("Нужно $")..Locale.Number(cost) else "$"..Locale.Number(cost).."")
 		W.SetButton(entry[1],text,net.connected and state~=nil and state.VerityUnlocked and not maxed and affordable and not net:IsBusy(),pending)
 	end
 	self.refs.PowerHint.Text=if state then Locale.Text("Базовая награда $")..Locale.Number(state.SwipeIncome)..(if state.NextSwipeIncome then " → $"..Locale.Number(state.NextSwipeIncome) else Locale.Text(" • MAX")) else Locale.Text("Больше дохода за каждое движение")

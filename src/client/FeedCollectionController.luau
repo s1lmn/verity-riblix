@@ -31,7 +31,7 @@ function Collection.new(refs)
 	self.title=W.Text(self.root,"CollectionTitle","",15,true)
 	self.title.Position,self.title.Size=UDim2.fromOffset(10,2),UDim2.new(1,-74,0,38)
 	local back=W.Button(self.root,"Back","←",T.Purple:Lerp(T.White,.75))
-	back.AnchorPoint,back.Position,back.Size=Vector2.new(1,0),UDim2.new(1,-4,0,2),UDim2.fromOffset(48,38)
+	back.AnchorPoint,back.Position,back.Size=Vector2.new(1,0),UDim2.new(1,-4,0,2),UDim2.fromOffset(48,44)
 	self.cleanup:Add(back.Activated:Connect(function()
 		if self.preview then self.preview:Destroy();self.preview=nil;self.list.Visible=true
 		else self:SetOpen(false) end
