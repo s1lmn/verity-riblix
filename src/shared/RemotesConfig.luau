@@ -1,7 +1,7 @@
 --!strict
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
-	"RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
+	"RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
 	"RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
@@ -22,7 +22,7 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 	elseif name == "RequestPhoneSession" then
 		allowed.open = true
 		if type(payload.open) ~= "boolean" then return false, "INVALID_OPEN" end
-	elseif name == "RequestEquipCosmetic" or name == "RequestCosmeticPurchase" then
+	elseif name == "RequestEquipCosmetic" or name == "RequestCosmeticPurchase" or name == "RequestBuyAbility" or name == "RequestEquipAbility" then
   allowed.itemId = true
   if type(payload.itemId)~="string" or #payload.itemId<1 or #payload.itemId>64 or not string.match(payload.itemId,"^[%w_%-]+$") then return false,"INVALID_ITEM" end
   if name == "RequestEquipCosmetic" then

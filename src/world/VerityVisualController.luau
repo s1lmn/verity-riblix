@@ -133,7 +133,27 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	local model=record.model
 	if not model:IsDescendantOf(workspace) then return end
 	if math.abs(model:GetScale()-scale)>0.000001 then model:ScaleTo(scale) end
-	model:PivotTo(record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0))
+	local lifted=record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)
+ local pose=lifted*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0)
+ local camera=workspace.CurrentCamera
+ if model:GetAttribute("FollowOwner") and camera then
+  -- Rotate around the ball's centre, not its bottom pivot. Giant forms can
+  -- look down toward a ground-level camera without shifting into that camera.
+  local center=lifted.Position+Vector3.new(0,.85*scale,0)
+  local aiming=not record.active and record.abilityAim and (record.abilityAimUntil or 0)>os.clock()
+  local target=if aiming then record.abilityAim else camera.CFrame.Position
+  if (target-center).Magnitude>.01 then
+   local direction=(target-center).Unit
+   local up=if math.abs(direction:Dot(Vector3.yAxis))>.98 then record.origin.LookVector else Vector3.yAxis
+   local now=os.clock()
+   local facing=CFrame.lookAt(center,target,up).Rotation
+   local blend=1-math.exp(-Art.FacingSpeed*math.clamp(now-(record.faceFacingAt or now-1/30),0,.1))
+   record.faceFacing=if not record.faceFacing or record.teleported then facing else record.faceFacing:Lerp(facing,blend)
+   record.faceFacingAt=now
+   pose=CFrame.new(center)*record.faceFacing*CFrame.Angles(record.lifePitch or 0,yaw,record.lifeRoll or 0)*CFrame.new(0,-.85*scale,0)
+  end
+ end
+ model:PivotTo(pose)
 	for _,p in record.tints do if p.Parent then p.Color=color end end
 	if record.stageLevel~=level then
 		Factory.SetStage(model,level)
@@ -147,6 +167,15 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	local label=model.PrimaryPart:FindFirstChild("LevelLabel")
 	if label then label.StudsOffsetWorldSpace=Vector3.new(0,2.05*scale+0.5,0) end
 	record.lastYaw,record.lastLift=yaw,lift
+end
+
+-- The existing model controller owns attack facing as well as following.
+function Controller:AimAbility(owner,target,duration)
+ for _,record in self.records do
+  if record.owner==owner and not record.active then
+   record.abilityAim=target;record.abilityAimUntil=os.clock()+math.min(duration,1.5)
+  end
+ end
 end
 
 function Controller:BeginSpawn(event)
@@ -186,7 +215,9 @@ function Controller:Finish(record,now)
 	if not active then return end
 	local event=active.event
 	record.level,record.revision,record.idleStart=event.newLevel,event.stateRevision,now
-	record.baseYaw=active.yaw+(if not self.settings.values.ReducedMotion and (event.newLevel==75 or event.newLevel==100) then 2*math.pi else 0)
+	-- Full turns belong to Profile.Sample during the upgrade only. Carrying
+ -- the idle heading forward could leave the face turned away after level 100.
+ record.baseYaw=0
 	local lift=if Profile.Stage(record.level)>=2 and not self.settings.values.ReducedMotion then 0.05*event.newScale else 0
 	self:Apply(record,event.newScale,lift,record.baseYaw,Factory.Color(record.level),record.level)
 	record.model:SetAttribute("PresentedLevel",record.level)
@@ -209,14 +240,16 @@ visibility=function(record,alpha)
    then model:GetAttribute("Emotion") else "Joy"
   local asset=Art.Textures[emotion] or Art.Textures.Joy
   if image.Image~=asset then image.Image=asset end
-  textured=image.IsLoaded
-  FaceUI.Refresh(face,alpha)
+  textured=FaceUI.Refresh(face,alpha)
  end
- if record.textured~=textured then record.textured=textured;record.appliedVisibility=nil end
+ local faceEnabled=face and face.Enabled or false
+ if record.textured~=textured or record.faceEnabled~=faceEnabled then
+  record.textured=textured;record.faceEnabled=faceEnabled;record.appliedVisibility=nil
+ end
  if record.appliedVisibility==alpha then return end
  record.appliedVisibility=alpha
  for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then
-  p.LocalTransparencyModifier=if face and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
+  p.LocalTransparencyModifier=if faceEnabled and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
  end end
  local primary=record.model.PrimaryPart
  local label=primary and primary:FindFirstChild("LevelLabel");if label then label.Enabled=alpha<.7 end
@@ -296,7 +329,9 @@ function Controller:Follow(record,now,dt)
  end
  -- Offsets follow owner heading; the expression faces the viewing camera.
  local camera=workspace.CurrentCamera
- local gaze=camera and Vector3.new(camera.CFrame.Position.X-target.X,0,camera.CFrame.Position.Z-target.Z)
+ local aiming=record.abilityAim and (record.abilityAimUntil or 0)>now and not record.active
+ local gaze=if aiming then Vector3.new(record.abilityAim.X-target.X,0,record.abilityAim.Z-target.Z)
+  else camera and Vector3.new(camera.CFrame.Position.X-target.X,0,camera.CFrame.Position.Z-target.Z)
  local facing=if gaze and gaze.Magnitude>.01 then CFrame.lookAt(Vector3.zero,gaze).Rotation else heading
  local cf=CFrame.new(target)*facing
  local distance=(record.origin.Position-target).Magnitude
@@ -352,7 +387,7 @@ function Controller:Tick(now,dt)
 		record.growthCover=0
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
-		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil or spawning==true,record.teleported)
+		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil or spawning==true or (record.abilityAimUntil or 0)>now,record.teleported)
 		local body=model:FindFirstChild("Body")
 		local face=body and body:FindFirstChild("FaceGui")
 		if face then
@@ -388,7 +423,7 @@ function Controller:Tick(now,dt)
 			local phase=now-record.idleStart
 			local hover=if stage>=2 then 0.05*scale else 0
 			local lift=if reduced or not near then 0 else hover+math.sin(phase*(if stage==5 then 1.4 else 2))*scale*(if stage==0 then 0.012 elseif stage==5 then 0.035 else 0.025)
-			local yaw=record.baseYaw+(if reduced or not near then 0 elseif stage>=4 then phase*(if stage==5 then 0.16 else 0.24) else math.sin(phase*1.5)*(if stage==1 then 0.12 else 0.08))
+			local yaw=(if (record.abilityAimUntil or 0)>now then 0 else record.baseYaw)+(if reduced or not near or (record.abilityAimUntil or 0)>now then 0 else math.sin(phase*(if stage==5 then .85 else 1.5))*(if stage==1 then .12 elseif stage>=4 then .06 else .08))
 			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(record.level),record.level) end
 		end
 		visibility(record,record.visibility or 0)

@@ -18,7 +18,7 @@ function IncomeService:Settle(userId)
 	local elapsed = now - before
 	local boosted = math.max(0, math.min(now, profile.Data.BoostExpiresAt) - before)
 	self.economy:AddCash(userId, Economy.getIncome(profile.Data.VerityLevel)
-		* Houses.getIncomeMultiplier(profile.Data.HouseIncomeLevel) * self.economy:GetPermanentMultiplier(profile)
+		* Houses.getIncomeMultiplier(profile.Data.HouseIncomeLevel,profile.Data.HouseDoorOwned,profile.Data.HouseSecondFloorOwned) * self.economy:GetPermanentMultiplier(profile)
 		* (elapsed + boosted * (Economy.Boost.Multiplier - 1)))
 end
 function IncomeService:Tick()

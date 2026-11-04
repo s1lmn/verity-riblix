@@ -4,6 +4,8 @@ local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local Model=require(script.Parent.UIModel)
 local Abilities=require(game:GetService("ReplicatedStorage").Shared.VerityAbilities)
+local Catalog=require(game:GetService("ReplicatedStorage").Shared.AbilityCatalog)
+local Houses=require(game:GetService("ReplicatedStorage").Shared.HouseConfig)
 local Verity={}
 Verity.__index=Verity
 
@@ -26,6 +28,9 @@ function Verity:Render()
 		local ability=Abilities.Get(level)
 		r.Ability.Text=string.format(Locale.Text("Способность: %s\nСкорость %d • сила прыжка %d"),
 			Locale.Text(ability.name),ability.speed,ability.jump)
+		local movement=Catalog.Equipped(state,"Mobility",state.HeroPassOwned)
+		local attack=Catalog.Equipped(state,"Attack",state.HeroPassOwned)
+		r.Ability.Text..="\nF: "..Locale.Text(if movement then movement.Name else "Не выбрано").."\nG: "..Locale.Text(if attack then attack.Name else "Не выбрано")
 	else
 		r.Ability.Text=Locale.Text("Распакуй Verity, чтобы получить способность.")
 	end
@@ -35,10 +40,9 @@ function Verity:Render()
 	r.Level.Size=UDim2.new(1,-4,0,if maxed then 48 else 34)
 	r.Income.Text=Locale.Text("INCOME  $")..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec")..(if maxed then "" else " → $"..Locale.Number(state.NextIncomePerSecond))
 	r.Scale.Text=if maxed then Locale.Text("SCALE  15× • final evolution") else string.format(Locale.Text("SCALE  %.3f× → %.3f×"),Model.Scale(level),Model.Scale(level+1))
-	local nextHouseMilestone=Model.Milestones[state.HouseTier]
-	local nextHouseLevel=nextHouseMilestone and nextHouseMilestone.level
-	r.House.Text=if nextHouseLevel then string.format(Locale.Text("Дом %d / 6  •  Следующий этап на уровне Verity %d"),state.HouseTier,nextHouseLevel)
-		else Locale.Text("Дом 6 / 6  •  Максимальный этап")
+ local count=state.HouseIncomeLevel or 0
+ local nextBuild=Houses.IncomeUpgrades[count+1]
+ r.House.Text=string.format(Locale.Text("Стройка дома %d / 10 • открой мастерскую"),count)
 	r.Progress.Size=UDim2.fromScale((level-1)/99,1)
 	local nextStage=Model.NextMilestone(level)
 	r.Milestone.Text=if nextStage then string.format(Locale.Text("NEXT • LEVEL %d  /  %s\n%s"),nextStage.level,Locale.Text(nextStage.name),Locale.Text(nextStage.reward))

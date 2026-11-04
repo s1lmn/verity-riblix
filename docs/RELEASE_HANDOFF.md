@@ -1,5 +1,11 @@
 # VERITY release handoff
 
+## Latest local expansion — powers and construction
+
+The current local sources supersede the release below with cash-purchased, saved/equipped superhero powers, PvP/PvE, physical ability stands and staged house construction with increasing income. Homelander is a separate planned 99-Robux pass; the user explicitly deferred the real pass ID. See [POWERS_AND_CONSTRUCTION.md](POWERS_AND_CONSTRUCTION.md) for exact ownership, pricing, controls and unverified portions. These new sources have not been Play-tested or run through automated tests, according to the user's current restriction. This expansion has not been pushed or published.
+
+The validation section below describes the previous committed release, not this expansion.
+
 The local game includes saved card discoveries, rarity rewards and reveals, house income upgrades, a lockable door, a furnished second floor, per-Verity abilities and level-based glow/flames/neon trails. Default language is Russian with English in settings.
 
 ## Map corrections
@@ -33,3 +39,11 @@ Play was stopped at the user's request. Subsequent work was limited to source ch
 ## Build
 
 Open build/VERITY-Latest.rbxlx in Roblox Studio. builds/VerityGrowingSimulator.rbxlx is the canonical generated full-game output. Build fingerprints distinguish the current sources from previously opened files.
+
+## Face visibility follow-up — 5 November
+
+Bounded idle yaw, centre-based vertical camera facing and size-aware GUI distance/fallback now address the reported level-100 face issue. See [FACE_LEVEL_100.md](FACE_LEVEL_100.md). Packaged without Play or automated tests.
+
+## Circular purchase pads and ability polish — 5 November
+
+House/ability purchases now have local neon circles and compact custom prompt labels with affordability colours. Power effects have distinct rings, beams, particles and smooth tails. See [NEON_PURCHASE_PADS.md](NEON_PURCHASE_PADS.md). Packaged without Play, compilation or automated tests; not pushed/published.

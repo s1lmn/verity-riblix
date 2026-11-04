@@ -105,7 +105,27 @@ Tasks.onReward = function(id, reward)
 	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State, send, guid) end
-local Abilities = require(script.Parent.VerityAbilityService).new(Data, State)
+local AbilityShop = require(script.Parent.AbilityShopService).new(Data,State,Economy,MarketplaceService)
+local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Economy,function(id,reward)
+ send(id,"NotificationEvent",{protocolVersion=1,code="COMBAT_REWARD",reward=reward,eventId=guid(),source="Combat"})
+end)
+local Abilities = require(script.Parent.VerityAbilityService).new(Data, State, World, CombatTargets)
+local abilityShopRemote=Instance.new("RemoteEvent")
+abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
+require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
+local function refreshHeroPass(player)
+ task.spawn(function()
+  for attempt=1,3 do
+   if player.Parent~=Players then return end
+   local status=AbilityShop:RefreshPassAsync(player.UserId)
+   if status~="UNAVAILABLE" then return end
+   task.wait(attempt*2)
+  end
+ end)
+end
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player,id,purchased)
+ if purchased and id==AbilityShop.passId then refreshHeroPass(player) end
+end)
 State.send = function(userId, snapshot)
 	local player = Players:GetPlayerByUserId(userId)
 	if player then Abilities:Refresh(player, player.Character, snapshot) end
@@ -114,6 +134,14 @@ State.send = function(userId, snapshot)
 end
 local Remote = require(script.Parent.RemoteService).new(Data, State, clock,
 	function(userId, result) send(userId, "ActionResult", result) end)
+Remote:Register("RequestBuyAbility",function(id,payload) return AbilityShop:Buy(id,payload.itemId) end)
+Remote:Register("RequestEquipAbility",function(id,payload) return AbilityShop:Equip(id,payload.itemId) end)
+Remote:Register("RequestUpgradeHouse",function(id)
+ local plotId=Plots.owners[id]
+ if not plotId or not World:IsNearWorkshop(id,plotId) then return "TOO_FAR" end
+ local status=Upgrade:UpgradeHouse(id)
+ return if status=="HOUSE_UPGRADED" then "OK" else status
+end)
 Remote:Register("RequestEquipCosmetic", function(id,payload) return Cosmetics:Equip(id,payload.itemId,payload.equipped) end)
 Remote:Register("RequestCosmeticPurchase", function(id,payload)
  local status,product=Cosmetics:PreparePurchase(id,payload.itemId)
@@ -198,7 +226,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -245,6 +273,7 @@ local function onCharacter(player, character)
 	character:PivotTo(World.anchors[plotId or 1].SpawnPoint.CFrame)
 	Abilities:Refresh(player, character, State:Snapshot(player.UserId))
 	character:SetAttribute("SpawnReady", true)
+	player:SetAttribute("VerityProtectedUntil", clock()+8)
 	local death = humanoid.Died:Connect(function()
 		Abilities:Stop(player)
 		Tasks:OnDeath(player.UserId)
@@ -265,6 +294,7 @@ local function onPlayer(player)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
 	refreshMoneyPass(player)
+	refreshHeroPass(player)
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
 	player:SetAttribute("HouseSelectionReady", true)
 	if player.Character then task.spawn(onCharacter, player, player.Character)
@@ -301,7 +331,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
-	Abilities:Stop(player)
+	Abilities:Remove(player)
 	languages[player] = nil
 	local id = player.UserId
 	player:SetAttribute("HouseSelectionReady", nil)

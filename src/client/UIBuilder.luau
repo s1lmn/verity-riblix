@@ -22,6 +22,8 @@ local function icon(button, kind)
  if kind=="VERITY" then
   box(3,3,20,20,10,true);box(8,9,3,4,2);box(16,9,3,4,2)
   line(9,17,11,19);line(11,19,16,19);line(16,19,18,17)
+ elseif kind=="ABILITIES" then
+  line(16,2,7,14);line(7,14,14,14);line(14,14,10,24);line(10,24,22,10);line(22,10,14,10);line(14,10,16,2)
  elseif kind=="PHONE" then
   box(6,1,14,24,4,true);box(10,5,6,1,1);box(12,20,2,2,1)
  elseif kind=="TASKS" then
@@ -95,11 +97,14 @@ function Builder.Build(playerGui)
  ability.BackgroundTransparency=.18
  ability.TextSize=11;ability.TextWrapped=true;ability.Visible=false
  refs.AbilityButton=ability
+ refs.AttackButton=W.Button(safe,"VerityAttack","",T.Pink:Lerp(T.Paper,.55))
+ refs.AttackButton.AnchorPoint=Vector2.new(1,0);refs.AttackButton.Position=UDim2.new(1,-12,0,192)
+ refs.AttackButton.Size=UDim2.fromOffset(124,44);refs.AttackButton.TextSize=11;refs.AttackButton.Visible=false
  local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
   Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
   ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
- local names={"VERITY","PHONE","TASKS","WORKSHOP","COSMETICS"}
- local colors={T.Pink,T.Blue,T.Gold,T.Mint,T.Purple}
+ local names={"VERITY","PHONE","ABILITIES","TASKS","WORKSHOP","COSMETICS"}
+ local colors={T.Pink,T.Blue,T.Purple,T.Gold,T.Mint,T.Purple}
  local buttons={}
  for i,name in names do
   local button=W.Button(nav,name,"",colors[i]);button.Size=UDim2.fromOffset(52,52)
@@ -124,7 +129,7 @@ function Builder.Build(playerGui)
 	verity.Note = W.Line(verity.Body, "Note", "All 100 levels and all five discoveries are available for free.", 38, 12, false, T.Muted)
 	verity.Boost = W.Line(verity.Body, "Boost", "", 48, 13, false, T.Muted)
 	verity.Boost.Visible = false
-	verity.Ability=W.Line(verity.Body,"Ability","",54,13,true,T.Purple)
+	verity.Ability=W.Line(verity.Body,"Ability","",100,13,true,T.Purple)
 	verity.MoneyPass=W.Button(verity.Body,"TripleMoney","×3 ДЕНЬГИ • СКОРО",T.Gold)
 	verity.MoneyPass.TextSize=13
 	verity.MoneyPassHint=W.Line(verity.Body,"TripleMoneyDetails","Навсегда • пассивный доход, карточки и задания",40,12,false,T.Purple)
@@ -180,6 +185,7 @@ function Builder.Build(playerGui)
 	end
 	refs.Panels.TASKS = tasks
 
+	refs.Panels.ABILITIES = panel(safe,"Abilities","СУПЕРСПОСОБНОСТИ","Покупай силы. Выбирай свой стиль боя.",T.Purple)
 	refs.Panels.COSMETICS = panel(safe, "Cosmetics", "STYLE YOUR COMPANION", "Preview, collect and wear cosmetic accessories.")
 	local settings = panel(safe, "SettingsPanel", "MAKE IT YOURS", "Settings apply on this device for this play session.")
 	settings.Language = W.Button(settings.Body, "Language", "", T.Blue)

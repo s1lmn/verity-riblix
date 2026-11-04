@@ -76,7 +76,13 @@ function Face.Refresh(gui,alpha)
         loaded=loaded and eyes.IsLoaded
         eyes.ImageTransparency=alpha
     end
-    gui.Enabled=alpha<.7
+    local body=gui.Adornee
+    local distance=math.max(240,math.min(600,if body and body:IsA("BasePart") then body.Size.Magnitude*12 else 240))
+    if gui.MaxDistance~=distance then gui.MaxDistance=distance end
+    local camera=workspace.CurrentCamera
+    local inRange=not camera or not body or (camera.CFrame.Position-body.Position).Magnitude<distance-2
+    -- The native Eye/Smile parts remain a fallback when the GUI is culled.
+    gui.Enabled=alpha<.7 and inRange
     if image then image.ImageTransparency=alpha end
     local fallback=gui:FindFirstChild("LoadingFace")
     if fallback then

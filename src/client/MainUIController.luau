@@ -31,6 +31,7 @@ local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualCon
 local Main={}
 Main.__index=Main
 local Errors={
+ ABILITY_LEVEL_REQUIRED="Сначала повысь уровень Verity.",ABILITY_NOT_OWNED="Сначала купи эту способность.",TOO_FAR="Подойди к станции строительства внутри своего дома.",
  NOT_OWNED="You do not own this accessory.",PRODUCT_UNAVAILABLE="This item is not on sale yet.",
  ALREADY_OWNED="You already own this item.",BUSY="Finish the previous purchase first.",
 	INSUFFICIENT_CASH="You need a little more Cash for that upgrade.",
@@ -77,6 +78,7 @@ function Main.new()
 	self.phone=self.cleanup:Add(Phone.new(ctx))
 	self.workshop=self.cleanup:Add(Workshop.new(ctx))
 	self.houseSelection=self.cleanup:Add(HouseSelection.new())
+ self.cleanup:Add(require(script.Parent.PurchasePadController).new(ctx))
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
  ctx.tasks=self.tasks
  self.cosmetics=self.cleanup:Add(Cosmetics.new(ctx))
@@ -84,6 +86,11 @@ function Main.new()
 	self.ledger=Ledger.new()
 	self.versions=self.cleanup:Add(Versions.new(ctx))
 	self.visuals=self.cleanup:Add(Visuals.new(ctx.settings))
+ ctx.visuals=self.visuals
+ self.abilityUI=self.cleanup:Add(require(script.Parent.AbilitiesUIController).new(ctx))
+ self.abilities=self.cleanup:Add(require(script.Parent.AbilityController).new(ctx))
+ self.cleanup:Add(require(script.Parent.AbilityEffectsController).new(ctx))
+ self.cleanup:Add(require(script.Parent.HouseConstructionController).new(ctx))
  self.cleanup:Add(require(script.Parent.GameplayFeedbackController).new(ctx))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
@@ -153,22 +160,6 @@ function Main.new()
 		local animated=self.visuals:HandleWorld(event)
 		if not animated and event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
-	local function activateAbility()
-		local button=refs.AbilityButton
-		if not button.Visible or not button.Interactable or ctx.active or ctx.presenting or GuiService.MenuIsOpen then return false end
-		local remote=ReplicatedStorage:FindFirstChild("UseVerityAbility")
-		if not remote then return false end
-		remote:FireServer()
-		return true
-	end
-	self.cleanup:Add(refs.AbilityButton.Activated:Connect(activateAbility))
-	ContextActionService:BindAction("VerityAbility",function(_,inputState)
-		if inputState==Enum.UserInputState.Begin and not UserInputService:GetFocusedTextBox() and activateAbility() then
-			return Enum.ContextActionResult.Sink
-		end
-		return Enum.ContextActionResult.Pass
-	end,false,Enum.KeyCode.F,Enum.KeyCode.ButtonL1)
-	self.cleanup:Add(function() ContextActionService:UnbindAction("VerityAbility") end)
 	local function back(_,state)
 		if ctx.presenting then return Enum.ContextActionResult.Pass end
 		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
@@ -215,7 +206,7 @@ end
 
 function Main:Open(name)
 	local ctx=self.ctx
-	if name and name~="SETTINGS" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
+	if name and name~="SETTINGS" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and ctx.presenting then return end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
@@ -253,20 +244,7 @@ function Main:RenderBanner()
 end
 
 function Main:RenderAbility()
-	local ctx=self.ctx
-	local button=self.refs.AbilityButton
-	local state=ctx.net.state
-	local character=Players.LocalPlayer.Character
-	local humanoid=character and character:FindFirstChildOfClass("Humanoid")
-	local form=state and state.VerityUnlocked and Abilities.Get(state.VerityLevel)
-	button.Visible=form and form.action~=nil and not ctx.active and not ctx.presenting and humanoid~=nil and humanoid.Health>0 or false
-	if not button.Visible then return end
-	local remaining=math.ceil((Players.LocalPlayer:GetAttribute("VerityAbilityReadyAt") or 0)-workspace:GetServerTimeNow())
-	local input=UserInputService.PreferredInput
-	local key=if input==Enum.PreferredInput.Touch then "" elseif input==Enum.PreferredInput.Gamepad then "L1  " else "F  "
-	local text=key..Locale.Text(form.name)
-	if remaining>0 then text..="\n"..string.format(Locale.Text("Готово через %d сек."),remaining) end
-	W.SetButton(button,text,remaining<=0 and ctx.net.connected,false)
+	if self.abilities then self.abilities:Render() end
 end
 
 function Main:Tick(dt)
