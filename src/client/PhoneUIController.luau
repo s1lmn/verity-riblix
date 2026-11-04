@@ -4,20 +4,32 @@ local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local Feed=require(script.Parent.FeedController)
 local Swipe=require(script.Parent.SwipeInputController)
+local Collection=require(script.Parent.FeedCollectionController)
 local Phone={}
 Phone.__index=Phone
 
 function Phone.new(ctx)
 	local self=setmetatable({ctx=ctx,refs=ctx.refs.Panels.PHONE,cleanup=Cleanup.new(),open=false,lastSwipe=-math.huge,retryAt=0},Phone)
-	self.feed=self.cleanup:Add(Feed.new(self.refs.Viewport,ctx.animation,ctx.settings,function() self:Render() end))
-	self.input=self.cleanup:Add(Swipe.new(self.refs.Viewport,function() return self:Swipe() end,function() return self.open end))
+	self.collection=self.cleanup:Add(Collection.new(self.refs))
+	self.feed=self.cleanup:Add(Feed.new(self.refs.Viewport,ctx.animation,ctx.settings,function() self:Render() end,function() ctx.sound:Play("BoxAnticipation") end))
+	self.input=self.cleanup:Add(Swipe.new(self.refs.Viewport,function() return self:Swipe() end,function()
+		return self.open and not self.collection.open and not self.feed.busy and not self.feed.waiting and not ctx.net:IsBusy()
+	end,function(offset,release) self.feed:Drag(offset,release) end))
 	self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
 		if result.action=="Swipe" and result.success then
 			self.feed:Reveal(result.cardId,result.reward,self.open,function(multiplier)
+				ctx.sound:Stop("BoxAnticipation")
 				if result.reward and result.reward>0 then ctx.rewards:Add(result.reward) end
-				ctx.sound:Play(if multiplier==16 then "Milestone10" elseif multiplier==8 then "LevelUp" else "Reward")
-			end)
+				ctx.sound:Play(if multiplier==16 then "Milestone100" elseif multiplier==8 then "Milestone25" elseif multiplier==4 then "Milestone10" else "Reward")
+				if result.isNewCard and self.open then ctx.notifications:Show("Новая карта в коллекции!") end
+			end,result.isNewCard)
 			self:Render()
+		elseif result.action=="Swipe" then self.feed:RejectSwipe() end
+	end))
+	self.cleanup:Add(self.refs.CollectionButton.Activated:Connect(function()
+		if not self.feed.busy and not ctx.net:IsBusy() then
+			self.input:Cancel()
+			self.collection:SetOpen(true)
 		end
 	end))
 	self.cleanup:Add(self.refs.Next.Activated:Connect(function() self.input.Emit() end))
@@ -29,7 +41,7 @@ end
 function Phone:SetOpen(open)
 	if self.open~=open then self.ctx.sound:Play(if open then "PhoneOpen" else "PhoneClose") end
 	self.open=open
-	if not open then self.feed:FinishReveal() end
+	if not open then self.feed:FinishReveal();self.collection:SetOpen(false) end
 	self.input:Cancel()
 	self:ReconcileSession()
 end
@@ -46,11 +58,12 @@ end
 function Phone:Swipe()
 	local ctx=self.ctx
 	local state=ctx.net.state
-	if not self.open or self.feed.busy or not state or not state.PhoneSessionOpen
+	if not self.open or self.collection.open or self.feed.busy or not state or not state.PhoneSessionOpen
 		or ctx.net:IsBusy("PhoneSession") or ctx.net:IsBusy("Swipe") or os.clock()-self.lastSwipe<0.75 then return false end
 	local id=ctx.request("Swipe")
 	if not id then return false end
 	self.lastSwipe=os.clock()
+	self.feed:CommitSwipe()
 	ctx.sound:Play("SwipeWhoosh")
 	self:Render()
 	return true
@@ -73,8 +86,12 @@ function Phone:Render()
 	local state=net.state
 	local ready=state and state.PhoneSessionOpen and self.open and not net:IsBusy("PhoneSession")
 	local busy=net:IsBusy("Swipe")
+	self.collection:Render(state)
+	local found=Collection.Count(state)
+	W.SetButton(self.refs.CollectionButton,string.format(Locale.Text("Коллекция • %d / 40"),found),
+		state~=nil and not self.feed.busy and not net:IsBusy(),false)
 	self.refs.Reward.Text=if state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за обычную карту") else Locale.Text("$— за обычную карту")
-	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else Locale.Text("Редкие карты приносят больше")
+	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else (if found==40 then Locale.Text("Коллекция собрана!") else string.format(Locale.Text("Найди все карты • осталось %d"),40-found))
 	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
 		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ VERITY",100,"VerityLevel","NextVerityUpgradeCost"}} do
 		local maxed=state and state[entry[5]] >= entry[4]
@@ -91,5 +108,5 @@ function Phone:Render()
 	W.SetButton(self.refs.Next,if busy or revealing then Locale.Text("ПОДОЖДИ…") else Locale.Text("ЛИСТАТЬ ↑"),ready and not busy and not revealing,busy or revealing)
 end
 
-function Phone:Destroy() self.cleanup:Destroy() end
+function Phone:Destroy() self.ctx.sound:Stop("BoxAnticipation");self.cleanup:Destroy() end
 return Phone

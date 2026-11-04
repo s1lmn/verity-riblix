@@ -57,6 +57,20 @@ local Data = require(script.Parent.DataService).new(store, clock, task.wait, gam
 local State = require(script.Parent.PlayerStateService).new(Data, clock)
 local Economy = require(script.Parent.EconomyService).new(Data, clock)
 local Income = require(script.Parent.IncomeService).new(Data, State, Economy, clock)
+local MoneyPass = require(script.Parent.MoneyPassService).new(Data, State, Income, MarketplaceService)
+local function refreshMoneyPass(player)
+	task.spawn(function()
+		for attempt=1,3 do
+			if player.Parent~=Players then return end
+			local status=MoneyPass:RefreshAsync(player.UserId)
+			if status~="UNAVAILABLE" then return end
+			task.wait(attempt*2)
+		end
+	end)
+end
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player,passId,purchased)
+	if purchased and passId==MoneyPass.passId then refreshMoneyPass(player) end
+end)
 local WorldModule = require(script.Parent.WorldIntegration)
 local generatedWorld
 local worldModules = ReplicatedStorage:FindFirstChild("World")
@@ -115,6 +129,23 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(id,product,_pu
  -- Closes prompt only. Never grants an entitlement from this event.
  Cosmetics:ClosePrompt(id,product)
 end)
+World.houseProgression = require(script.Parent.HouseProgression).new(World, Players, function(player, feature)
+	local id = player.UserId
+	local plotId = Plots.owners[id]
+	if not plotId then return end
+	local status
+	if feature == "Door" and Data:Get(id) and Data:Get(id).Data.HouseDoorOwned then
+		status = Upgrade:SetHouseDoor(id, not State.sessions[id].HouseDoorLocked)
+	else
+		status = Upgrade:BuyHouseFeature(id, feature)
+	end
+	State:Publish(id, true)
+	send(id, "NotificationEvent", {protocolVersion=1,code=status,source="HouseFeature"})
+end)
+Remote:Register("RequestHouseDoor", function(id, payload)
+	if not Plots.owners[id] then return "NOT_READY" end
+	return Upgrade:SetHouseDoor(id,payload.locked)
+end)
 Remote:Register("RequestOpenBox", function(id) return Delivery:Open(id) end)
 Remote:Register("RequestUpgradeVerity", function(id)
 	local status=Upgrade:UpgradeVerity(id)
@@ -124,9 +155,9 @@ end)
 Remote:Register("RequestUpgradeSwipe", function(id) return Upgrade:UpgradeSwipe(id) end)
 Remote:Register("RequestPhoneSession", function(id, payload) return Phone:SetOpen(id, payload.open) end)
 Remote:Register("RequestSwipe", function(id)
-	local status,reward,cardId=Phone:Swipe(id)
+	local status,reward,cardId,isNewCard=Phone:Swipe(id)
 	if status=="OK" then World:React(id,"Love",2) end
-	return status,reward,cardId
+	return status,reward,cardId,isNewCard
 end)
 Remote:Register("RequestTaskStart", function(id, payload) return Tasks:Start(id, payload.taskId) end)
 Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Complete(id, payload.taskId) end)
@@ -167,7 +198,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -233,6 +264,7 @@ local function onPlayer(player)
 	local profile, reason = Data:LoadAsync(player.UserId)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
+	refreshMoneyPass(player)
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
 	player:SetAttribute("HouseSelectionReady", true)
 	if player.Character then task.spawn(onCharacter, player, player.Character)
@@ -293,10 +325,11 @@ Runtime.Services.PlayerLifecycle = {Attach = onPlayer, Detach = removePlayer, Cl
 Players.PlayerAdded:Connect(onPlayer)
 Players.PlayerRemoving:Connect(removePlayer)
 for _, player in Players:GetPlayers() do task.spawn(onPlayer, player) end
-local incomeElapsed, stateElapsed, taskElapsed = 0, 0, 0
+local incomeElapsed, stateElapsed, taskElapsed, houseElapsed = 0, 0, 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
-	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt
+	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
+	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then

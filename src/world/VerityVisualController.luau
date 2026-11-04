@@ -392,7 +392,8 @@ function Controller:Tick(now,dt)
 			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(record.level),record.level) end
 		end
 		visibility(record,record.visibility or 0)
-		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,near)
+		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,
+			near and not active and not spawning,record.level,reduced,record.teleported)
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)

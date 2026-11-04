@@ -199,7 +199,7 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
             entry.body.Transparency=if visible then 0 else 1
             entry.appearance.Enabled=visible
         end
-        if not visible then effects:CancelUpgrade(entry.body) end
+        if not visible then effects:Hide(entry.body);effects:CancelUpgrade(entry.body) end
         if visible then
             local cover=0
             if entry.ownerId==localPlayer.UserId and entry.transition and not reduced and not reducedEffects then
@@ -211,6 +211,10 @@ connections[#connections+1] = RunService.RenderStepped:Connect(function(dt)
                 cover=Profile.Conceal(t);showingGrowth=true
             end
             entry.body.LocalTransparencyModifier=cover
+            local auraScale=entry.scale*Config.BaseDiameter/1.7
+            effects:Update(entry.body,CFrame.new(entry.body.Position-Vector3.new(0,.85*auraScale,0))*entry.body.CFrame.Rotation,
+                auraScale,Profile.Stage(entry.look.Level),os.clock(),reducedEffects,not entry.transition,
+                entry.look.Level,reduced)
             FaceUI.Refresh(entry.appearance,cover)
             entry.faceLife=entry.faceLife or {}
             local name=entry.descriptor:GetAttribute("Emotion") or "Joy"

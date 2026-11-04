@@ -4,6 +4,7 @@ local Levels = require(Shared.LevelConfig)
 local Houses = require(Shared.HouseConfig)
 local Economy = require(Shared.EconomyConfig)
 local TaskConfig = require(Shared.TaskConfig)
+local Config = require(Shared.GameConfig)
 local PlayerStateService = {}
 PlayerStateService.__index = PlayerStateService
 function PlayerStateService.new(data, clock)
@@ -27,7 +28,8 @@ function PlayerStateService:Snapshot(userId)
 	if not profile or not session then return nil end
 	local data, level = profile.Data, profile.Data.VerityLevel
 	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel)
-	local multiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
+	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
+	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
 	local tasks = {}
 	for id, config in TaskConfig do
 		local state = session.Tasks[id] or {Active = false, CooldownUntil = data.TaskCooldowns[id] or 0}
@@ -46,6 +48,8 @@ function PlayerStateService:Snapshot(userId)
 		NextVerityScale = if level < 100 then Levels.getVerityScale(level + 1) else nil,
 		NextMilestoneLevel = Levels.getNextMilestone(level),
 		HouseIncomeLevel = data.HouseIncomeLevel,
+		HouseDoorOwned = data.HouseDoorOwned, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
+		HouseDoorLocked = session.HouseDoorLocked == true,
 		IncomePerSecond = if data.VerityUnlocked then Economy.getIncome(level) * houseMultiplier * multiplier else 0,
 		NextIncomePerSecond = if level < 100 then Economy.getIncome(level + 1) * houseMultiplier * multiplier else nil,
 		SwipeIncome = Economy.getSwipeIncome(data.SwipeUpgradeLevel) * multiplier,
@@ -53,11 +57,13 @@ function PlayerStateService:Snapshot(userId)
 			Economy.getSwipeIncome(data.SwipeUpgradeLevel + 1) * multiplier else nil,
 		NextVerityUpgradeCost = Economy.LevelCost[level],
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
-		BoostMultiplier = multiplier, BoostExpiresAt = data.BoostExpiresAt,
+		MoneyPassOwned = profile.MoneyPassOwned==true, MoneyPassId = Config.MoneyPassId,
+		BoostMultiplier = boostMultiplier, BoostExpiresAt = data.BoostExpiresAt,
 		PhoneOpen = session.PhoneOpen, Tasks = tasks,
   DeliveryPosition = if self.DeliveryPosition then self.DeliveryPosition(userId) else nil,
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
   CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
+  FeedCollection = table.clone(data.FeedCollection),
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end

@@ -13,8 +13,11 @@ function EconomyService:GetCash(userId)
 	local profile = self.data:Get(userId)
 	return if profile then profile.Data.Cash else nil
 end
+function EconomyService:GetPermanentMultiplier(profile)
+	return if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1
+end
 function EconomyService:GetMultiplier(profile, at)
-	return if profile.Data.BoostExpiresAt > (at or self.clock()) then Economy.Boost.Multiplier else 1
+	return self:GetPermanentMultiplier(profile) * (if profile.Data.BoostExpiresAt > (at or self.clock()) then Economy.Boost.Multiplier else 1)
 end
 function EconomyService:GetIncomePerSecond(userId)
 	local profile = self.data:Get(userId)

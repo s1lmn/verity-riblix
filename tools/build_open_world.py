@@ -28,11 +28,11 @@ env='GeneratedWorld/Environment'
 part(env+'/Ground',(0,-2,0),(340,4,740),'grass',studs=True)
 part(env+'/Road',(0,.08,0),(26,.16,620),'road',studs=True)
 for side in (-1,1):
-    part(env+f'/Sidewalk{side}',(side*18,.25,0),(10,.5,620),'paving',studs=True)
+    part(env+f'/Sidewalk{side}',(side*18.4,.25,0),(9.2,.5,620),'paving',studs=True)
     part(env+f'/Curb{side}',(side*13.4,.35,0),(.8,.7,620),'white')
-for i,z in enumerate(range(-280,281,24)):part(env+f'/RoadDash{i}',(0,.18,z),(.45,.04,9),'cream',False)
+for i,z in enumerate(range(-280,281,24)):part(env+f'/RoadDash{i}',(0,.39,z),(.45,.08,9),'cream',False)
 for end in (-1,1):
-    for i,x in enumerate(range(-10,11,4)):part(env+f'/Crosswalk{end}_{i}',(x,.2,end*300),(2,.05,7),'white',False)
+    for i,x in enumerate(range(-10,11,4)):part(env+f'/Crosswalk{end}_{i}',(x,.39,end*300),(2,.08,7),'white',False)
     part(env+f'/EndPath{end}',(0,.12,end*326),(280,.24,26),'paving',studs=True)
     for x in (-140,-100,100,140):tree(env+f'/ParkTree{end}_{x}',x,end*351,1.2)
     for x in (-65,65):bench(env+f'/ParkBench{end}_{x}',x,end*326)

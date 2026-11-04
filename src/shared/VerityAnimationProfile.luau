@@ -20,6 +20,20 @@ function Profile.Stage(level: number): number
 	return stage
 end
 
+-- Persistent appearance, separate from the paid upgrade celebration.
+function Profile.Aura(level: number)
+	local progress = (math.clamp(level,1,100)-1)/99
+	return {
+		brightness = .18+1.32*progress,
+		outline = .88-.55*progress,
+		fire = level>=10,
+		fireStrength = .65+1.35*progress,
+		trails = if level>=100 then 3 elseif level>=75 then 2 elseif level>=50 then 1 else 0,
+		lifetime = .35+.6*progress,
+		width = .10+.16*progress,
+	}
+end
+
 function Profile.IsMilestone(level: number): boolean
 	for _, item in Levels.Milestones do if level == item.level then return true end end
 	return false

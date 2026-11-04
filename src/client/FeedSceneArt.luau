@@ -1,7 +1,7 @@
 --!nonstrict
 -- Authored layers on a square canvas. Coordinates are normalized.
 return {
-	{title = "Aurora Camp", caption = "A little camp under a giant sky.", top = "101935", bottom = "323B74", layers = {
+	{title = "Aurora Camp", caption = "A little camp under a giant sky.", top = "281B7E", bottom = "00CDB6", layers = {
 		{"O", .5, 1.11, 1.3, .63, "1C5364"},
 		{"R", .43, .27, .88, .05, "57F0BE", -22},
 		{"R", .58, .38, .72, .045, "9D91FC", -22},
@@ -10,7 +10,7 @@ return {
 		{"V", .77, .79, .19, "F8D269"},
 		{"D", .23, .29, .04, "D7FFFB"},
 	}},
-	{title = "Candy Arcade", caption = "One more round before closing.", top = "5B2C92", bottom = "E267B7", layers = {
+	{title = "Candy Arcade", caption = "One more round before closing.", top = "7220DC", bottom = "FF42BB", layers = {
 		{"R", .5, .56, .52, .75, "FFCB61"},
 		{"R", .5, .42, .42, .39, "41215E"},
 		{"R", .5, .42, .33, .28, "835BF5"},
@@ -20,7 +20,7 @@ return {
 		{"O", .61, .68, .06, .06, "80E9FF"},
 		{"D", .81, .28, .04, "FFFFFF"},
 	}},
-	{title = "Ice Cave", caption = "The crystals light the way home.", top = "193E75", bottom = "37A5CC", layers = {
+	{title = "Ice Cave", caption = "The crystals light the way home.", top = "1634A9", bottom = "00CEFF", layers = {
 		{"O", .50, .66, .90, .88, "215187"},
 		{"O", .5, .68, .63, .65, "17345C"},
 		{"R", .22, .53, .1, .44, "92F2FF", 18},
@@ -29,7 +29,7 @@ return {
 		{"V", .49, .67, .24, "F9C966"},
 		{"D", .75, .40, .05, "E8FFFF"},
 	}},
-	{title = "Moon Garden", caption = "Verity planted the first seed on the Moon.", top = "191D4D", bottom = "50598C", layers = {
+	{title = "Moon Garden", caption = "Verity planted the first seed on the Moon.", top = "34219E", bottom = "D159FF", layers = {
 		{"O", .72, .23, .24, .24, "80CEE8"},
 		{"R", .72, .24, .32, .024, "ECC0F9", -24},
 		{"O", .49, 1.04, 1.3, .49, "B4B9DE"},
@@ -40,7 +40,7 @@ return {
 		{"V", .41, .75, .23, "FEC99A"},
 		{"D", .24, .26, .025, "FFFFFF"},
 	}},
-	{title = "Pocket Aquarium", caption = "A whole ocean fits on a shelf.", top = "F3CFEB", bottom = "A0D8EC", layers = {
+	{title = "Pocket Aquarium", caption = "A whole ocean fits on a shelf.", top = "FF64AF", bottom = "20D6FF", layers = {
 		{"R", .5, .55, .72, .66, "E6F9FF"},
 		{"R", .5, .59, .64, .48, "78CAE9"},
 		{"O", .5, .79, .60, .1, "E6C999"},
@@ -52,7 +52,7 @@ return {
 		{"D", .63, .35, .024, "F0FFFF"},
 		{"R", .5, .92, .92, .08, "AB79A0"},
 	}},
-	{title = "Autumn Mail", caption = "A letter arrives with the falling leaves.", top = "F8C374", bottom = "D9635F", layers = {
+	{title = "Autumn Mail", caption = "A letter arrives with the falling leaves.", top = "FFBE38", bottom = "FF535D", layers = {
 		{"O", .17, .34, .33, .42, "E8894F"},
 		{"R", .17, .62, .058, .42, "8C5163"},
 		{"O", .81, .39, .38, .37, "F4A257"},
@@ -63,7 +63,7 @@ return {
 		{"V", .29, .78, .21, "F4D765"},
 		{"R", .32, .31, .07, .035, "FCF0A6", 38},
 	}},
-	{title = "Bakery Morning", caption = "The first batch is ready to share.", top = "FFDAA3", bottom = "DB91A3", layers = {
+	{title = "Bakery Morning", caption = "The first batch is ready to share.", top = "FFD24D", bottom = "FF69B8", layers = {
 		{"R", .5, .57, .81, .60, "FCF0CC"},
 		{"R", .5, .30, .87, .14, "C96D8B"},
 		{"R", .5, .55, .61, .3, "75465B"},
@@ -74,7 +74,7 @@ return {
 		{"V", .46, .81, .22, "FF9DBE"},
 		{"D", .72, .33, .03, "FFFFFF"},
 	}},
-	{title = "Crystal Train", caption = "A glowing train crosses the mountain.", top = "6175BF", bottom = "CD98D8", layers = {
+	{title = "Crystal Train", caption = "A glowing train crosses the mountain.", top = "5068E9", bottom = "DF60FD", layers = {
 		{"R", .27, .57, .43, .43, "7F68AE", 45},
 		{"R", .73, .57, .43, .43, "6A72AB", 45},
 		{"R", .49, .86, 1, .047, "282448"},
@@ -85,7 +85,7 @@ return {
 		{"O", .70, .8, .08, .08, "32265B"},
 		{"D", .81, .51, .039, "FBF6FF"},
 	}},
-	{title = "Library Portal", caption = "A story opens a door to another world.", top = "352544", bottom = "87609E", layers = {
+	{title = "Library Portal", caption = "A story opens a door to another world.", top = "391488", bottom = "00DFC2", layers = {
 		{"R", .17, .52, .23, .83, "7A4F63"},
 		{"R", .83, .52, .23, .83, "7A4F63"},
 		{"R", .16, .33, .22, .026, "D9A577"},
@@ -96,7 +96,7 @@ return {
 		{"V", .5, .54, .23, "F8C877"},
 		{"D", .62, .25, .043, "FFF1C7"},
 	}},
-	{title = "Sky Lanterns", caption = "The whole town sends a wish upward.", top = "351944", bottom = "B86185", layers = {
+	{title = "Sky Lanterns", caption = "The whole town sends a wish upward.", top = "4D137F", bottom = "FF916B", layers = {
 		{"O", .5, 1.05, 1.35, .4, "402853"},
 		{"R", .25, .39, .14, .21, "FF9B61"},
 		{"R", .66, .26, .13, .19, "FFD47C"},
@@ -107,7 +107,7 @@ return {
 		{"D", .81, .56, .031, "FFF6BB"},
 		{"V", .49, .77, .25, "F58FBE"},
 	}},
-	{title = "Deep Sea Sub", caption = "A bright porthole in the midnight sea.", top = "194767", bottom = "111E4B", layers = {
+	{title = "Deep Sea Sub", caption = "A bright porthole in the midnight sea.", top = "08458F", bottom = "713EFF", layers = {
 		{"O", .49, .56, .72, .38, "EAA34E"},
 		{"R", .42, .35, .24, .11, "EDBB6B"},
 		{"R", .42, .26, .038, .13, "FFCF8D"},
@@ -118,7 +118,7 @@ return {
 		{"D", .84, .30, .04, "79D5E2"},
 		{"D", .18, .73, .025, "7DF4EF"},
 	}},
-	{title = "Windmill Hill", caption = "The wind carries Verity across the fields.", top = "91C8E0", bottom = "F9E1AE", layers = {
+	{title = "Windmill Hill", caption = "The wind carries Verity across the fields.", top = "30BEEA", bottom = "FFDA64", layers = {
 		{"C", .21, .23, .34, "FFFFF3"},
 		{"O", .28, .96, 1.22, .48, "65AB87"},
 		{"O", .76, 1.02, 1.18, .48, "8AC081"},
@@ -128,7 +128,7 @@ return {
 		{"O", .63, .45, .06, .06, "AB7566"},
 		{"V", .28, .69, .23, "F8B363"},
 	}},
-	{title = "Rooftop Cinema", caption = "Tonight the clouds get front-row seats.", top = "292149", bottom = "755399", layers = {
+	{title = "Rooftop Cinema", caption = "Tonight the clouds get front-row seats.", top = "3421A6", bottom = "F965C0", layers = {
 		{"D", .12, .22, .03, "E3E8FF"},
 		{"D", .87, .24, .03, "E3E8FF"},
 		{"R", .5, .46, .71, .48, "242043"},
@@ -140,7 +140,7 @@ return {
 		{"O", .74, .77, .12, .12, "A184C9"},
 		{"V", .49, .76, .20, "F9C778"},
 	}},
-	{title = "Garden Robot", caption = "A tiny robot waters a giant flower.", top = "B0DFB0", bottom = "7FBFA5", layers = {
+	{title = "Garden Robot", caption = "A tiny robot waters a giant flower.", top = "52E4A2", bottom = "14A9A5", layers = {
 		{"O", .5, 1.04, 1.3, .43, "43977C"},
 		{"R", .7, .59, .035, .47, "387E6A"},
 		{"O", .64, .32, .16, .16, "F5A0AE"},
@@ -153,7 +153,7 @@ return {
 		{"D", .34, .58, .03, "A4FFFF"},
 		{"D", .47, .62, .026, "D5FFFF"},
 	}},
-	{title = "Peach Waterfall", caption = "The water turns pink at sunset.", top = "F8BC9E", bottom = "C78BBF", layers = {
+	{title = "Peach Waterfall", caption = "The water turns pink at sunset.", top = "FFA255", bottom = "FF53BC", layers = {
 		{"O", .72, .25, .23, .23, "FFD18B"},
 		{"R", .33, .59, .45, .50, "936788"},
 		{"R", .67, .49, .46, .45, "735982"},
@@ -164,7 +164,7 @@ return {
 		{"V", .27, .69, .2, "F7CE91"},
 		{"D", .75, .74, .026, "FFF4EE"},
 	}},
-	{title = "Snow Globe", caption = "A tiny winter waits inside the glass.", top = "8E9FCE", bottom = "B4D6E6", layers = {
+	{title = "Snow Globe", caption = "A tiny winter waits inside the glass.", top = "656FDE", bottom = "7CE5F3", layers = {
 		{"O", .5, .45, .69, .69, "E6F4F8"},
 		{"O", .5, .64, .52, .25, "FFFFFA"},
 		{"R", .5, .84, .62, .14, "7F659F"},
@@ -175,7 +175,7 @@ return {
 		{"D", .63, .24, .025, "FFFFFF"},
 		{"R", .29, .37, .15, .028, "FFFFFF", -49},
 	}},
-	{title = "Volcano Picnic", caption = "A warm spot for marshmallows.", top = "78477C", bottom = "EB826C", layers = {
+	{title = "Volcano Picnic", caption = "A warm spot for marshmallows.", top = "7D22BD", bottom = "FF773A", layers = {
 		{"R", .65, .66, .52, .52, "A75B69", 45},
 		{"R", .64, .60, .28, .30, "704965", 45},
 		{"R", .65, .55, .06, .25, "FFB767", -14},
@@ -185,7 +185,7 @@ return {
 		{"V", .29, .73, .24, "FFCB8F"},
 		{"D", .67, .34, .035, "FFD182"},
 	}},
-	{title = "Jellyfish Parade", caption = "Even the jellyfish dressed up tonight.", top = "232A68", bottom = "614496", layers = {
+	{title = "Jellyfish Parade", caption = "Even the jellyfish dressed up tonight.", top = "2533AD", bottom = "D13EFF", layers = {
 		{"O", .31, .37, .36, .26, "F2A1DC"},
 		{"O", .68, .51, .37, .27, "9DCEF4"},
 		{"R", .23, .51, .028, .19, "F2A1DC", 12},
@@ -197,7 +197,7 @@ return {
 		{"D", .18, .74, .029, "83D9EE"},
 		{"D", .85, .22, .025, "F4C7EF"},
 	}},
-	{title = "Paper Boat Race", caption = "One little boat is way ahead.", top = "A5CEE4", bottom = "62A2CE", layers = {
+	{title = "Paper Boat Race", caption = "One little boat is way ahead.", top = "61CFFF", bottom = "1775EB", layers = {
 		{"C", .2, .26, .37, "F1F7F4"},
 		{"C", .79, .24, .33, "FFF5EC"},
 		{"R", .50, .75, 1, .39, "497BB4"},
@@ -208,7 +208,7 @@ return {
 		{"R", .29, .77, .24, .067, "C4C7F0", -8},
 		{"D", .83, .49, .04, "FFF2BC"},
 	}},
-	{title = "Music in Space", caption = "The moon can hear this little concert.", top = "1E2455", bottom = "653E87", layers = {
+	{title = "Music in Space", caption = "The moon can hear this little concert.", top = "2A158E", bottom = "F446CB", layers = {
 		{"D", .20, .26, .03, "FAF0FF"},
 		{"D", .83, .22, .045, "FFD88D"},
 		{"D", .79, .72, .031, "C4F6F1"},

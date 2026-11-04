@@ -1,5 +1,36 @@
 --!nonstrict
 return function(load, check)
+	local qa=load("tests/Fixture")(load)
+	local owner=qa.join(42)
+	owner.Data.VerityUnlocked=true;owner.Data.DeliveryState="Opened"
+	local market={owned=false,fail=false}
+	function market:UserOwnsGamePassAsync()
+		if self.fail then error("Marketplace unavailable") end
+		return self.owned
+	end
+	local pass=load("src/server/MoneyPassService").new(qa.Data,qa.State,qa.Income,market,999)
+	check(pass:RefreshAsync(42)=="UNOWNED" and qa.Economy:GetMultiplier(owner)==1)
+	qa.advance(1)
+	market.owned=true
+	check(pass:RefreshAsync(42)=="OWNED")
+	check(owner.Data.Cash==5,"Time before ownership must settle at the old rate")
+	check(qa.Economy:GetMultiplier(owner)==3 and qa.Economy:GetIncomePerSecond(42)==15)
+	qa.advance(1);qa.Income:Settle(42)
+	check(owner.Data.Cash==20,"Passive income must receive exactly three times the normal amount")
+	check(pass:RefreshAsync(42)=="OWNED" and qa.Economy:GetMultiplier(owner)==3,"Repeated checks must not stack the permanent multiplier")
+	qa.Phone:SetOpen(42,true)
+	local status,reward=qa.Phone:Swipe(42)
+	check(status=="OK" and reward==6,"Cards must receive the permanent multiplier")
+	qa.Tasks:Start(42,"PRESS_BUTTON")
+	local taskStatus,taskReward=qa.Tasks:Complete(42,"PRESS_BUTTON")
+	check(taskStatus=="OK" and taskReward==60,"Task rewards must receive the permanent multiplier")
+	local snapshot=qa.State:Snapshot(42)
+	check(snapshot.MoneyPassOwned and snapshot.SwipeIncome==6 and snapshot.Tasks.PRESS_BUTTON.reward==60)
+	market.fail=true
+	check(pass:RefreshAsync(42)=="UNAVAILABLE" and qa.Economy:GetMultiplier(owner)==3,"A transient query failure must preserve a verified entitlement")
+	qa.Data:ReleaseAsync(42);local rejoined=qa.Data:LoadAsync(42)
+	check(not rejoined.MoneyPassOwned,"Runtime entitlement must be verified again after a new session")
+	check(pass:RefreshAsync(42)=="UNAVAILABLE" and qa.Economy:GetMultiplier(rejoined)==1,"Failed ownership query cannot grant paid benefits")
 	local f = load("tests/Fixture")(load)
 	local p = f.join(1)
 	local Boost = load("src/server/BoostService").new(f.Data, f.State, f.Income, f.clock, {[1234] = true})

@@ -9,11 +9,11 @@ function RemoteService.new(data, state, clock, sendResult)
 		handlers = {}, buckets = {}}, RemoteService)
 end
 function RemoteService:Register(name, handler) self.handlers[name] = handler end
-function RemoteService:_result(userId, name, id, status, reward, cardId)
+function RemoteService:_result(userId, name, id, status, reward, cardId, isNewCard)
 	local profile = self.data:Get(userId)
 	local session = self.state.sessions[userId]
 	local result = {protocolVersion = 1, action = name, operationId = id, status = status,
-		reward = reward or 0, cardId = cardId, replayed = false,
+		reward = reward or 0, cardId = cardId, isNewCard = isNewCard, replayed = false,
 		stateRevision = if profile then profile.Revision else 0,
 		nextOperationSequence = if session then (session.LastOperationSequence or 0) + 1 else 1}
 	self.sendResult(userId, result)
@@ -41,7 +41,7 @@ function RemoteService:Handle(userId, name, payload)
 	if not sequence or sequence % 1 ~= 0 or sequence < 1 or sequence > 1e15 then
 		return self:_result(userId, name, payload.operationId, "INVALID_OPERATION_ID")
 	end
-	local fingerprint = name .. ":" .. tostring(payload.open) .. ":" .. tostring(payload.taskId) .. ":" .. tostring(payload.itemId) .. ":" .. tostring(payload.equipped)
+	local fingerprint = name .. ":" .. tostring(payload.locked) .. ":" .. tostring(payload.open) .. ":" .. tostring(payload.taskId) .. ":" .. tostring(payload.itemId) .. ":" .. tostring(payload.equipped)
 	for id, operation in session.Operations do
 		if now - operation.at > Config.OperationTTL then session.Operations[id] = nil end
 	end
@@ -60,9 +60,9 @@ function RemoteService:Handle(userId, name, payload)
 	end
 	session.LastOperationSequence = sequence
 	-- Synchronous handlers only: no yield between validation and commit.
-	local ok, status, reward, cardId = pcall(self.handlers[name], userId, payload)
+	local ok, status, reward, cardId, isNewCard = pcall(self.handlers[name], userId, payload)
 	if not ok then warn("Core action failed", name, status); status = "INTERNAL_ERROR"; reward = 0 end
-	local result = self:_result(userId, name, payload.operationId, status, reward, cardId)
+	local result = self:_result(userId, name, payload.operationId, status, reward, cardId, isNewCard)
 	local count, oldestId, oldestAt = 0, nil, math.huge
 	for id, operation in session.Operations do
 		count += 1

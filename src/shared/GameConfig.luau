@@ -2,6 +2,10 @@
 -- Spatial values in studs; World must use these reservations, not smaller plots.
 return table.freeze({
 	ProtocolVersion = 1,
+	MoneyPassMultiplier = 3,
+	MoneyPassPrice = 99,
+	-- Set MoneyPassId to the real pass ID from this experience before enabling sales.
+	MoneyPassId = nil,
 	PlotCount = 16,
 	ServerCapacity = 16, -- Also set MaxPlayers in Creator Dashboard.
 	BaseWidth = 2,

@@ -30,7 +30,42 @@ function VFX:Group(model)
 	if self.groups[model] then return self.groups[model] end
 	local root=Instance.new("Folder")
 	root.Name,root.Parent="StageEffects",self.folder
-	local group={root=root,rings={},stars={}}
+	local source=piece(root,"AuraLightSource")
+	local light=Instance.new("PointLight")
+	light.Enabled,light.Shadows=false,false
+	light.Parent=source
+	local highlight=Instance.new("Highlight")
+	highlight.Adornee,highlight.Enabled=model,false
+	highlight.DepthMode=Enum.HighlightDepthMode.Occluded
+	highlight.FillTransparency=1
+	highlight.Parent=root
+	local fire=Instance.new("Fire")
+	fire.Name,fire.Enabled="VerityFlame",false
+	fire.Parent=root
+	local group={root=root,rings={},stars={},source=source,light=light,highlight=highlight,fire=fire,trails={}}
+	for index=1,3 do
+		local first,second=Instance.new("Attachment"),Instance.new("Attachment")
+		first.Name,second.Name="TrailLeft"..index,"TrailRight"..index
+		first.Parent,second.Parent=source,source
+		local trail=Instance.new("Trail")
+		trail.Name="NeonTrail"..index
+		trail.Attachment0,trail.Attachment1=first,second
+		trail.Enabled,trail.FaceCamera=false,true
+		trail.LightEmission,trail.LightInfluence=1,0
+		trail.MinLength=.05
+		trail.Transparency=NumberSequence.new({
+			NumberSequenceKeypoint.new(0,.12),
+			NumberSequenceKeypoint.new(.55,.4),
+			NumberSequenceKeypoint.new(1,1),
+		})
+		trail.WidthScale=NumberSequence.new({
+			NumberSequenceKeypoint.new(0,1),
+			NumberSequenceKeypoint.new(.65,.68),
+			NumberSequenceKeypoint.new(1,0),
+		})
+		trail.Parent=source
+		group.trails[index]=trail
+	end
 	for ring=1,2 do
 		group.rings[ring]={}
 		for i=1,SEGMENTS do table.insert(group.rings[ring],piece(root,"AuraSegment")) end
@@ -40,18 +75,73 @@ function VFX:Group(model)
 	return group
 end
 
-function VFX:Hide(model)
-	local group=self.groups[model]
-	if not group then return end
+local function hideGeometry(group)
 	for _,list in {group.rings[1],group.rings[2],group.stars} do
 		for _,p in list do p.Transparency=1 end
 	end
 end
 
-function VFX:Update(model, origin, scale, stage, now, reducedEffects, near)
-	if reducedEffects or not near or stage<2 then self:Hide(model);return end
+function VFX:Hide(model)
+	local group=self.groups[model]
+	if not group then return end
+	hideGeometry(group)
+	group.light.Enabled,group.highlight.Enabled=false,false
+	group.fire.Enabled=false
+	group.fire.Parent=group.root
+	for _,trail in group.trails do trail.Enabled=false;trail:Clear() end
+	group.lastPosition,group.lastTime=nil,nil
+end
+
+function VFX:UpdateAura(group,origin,scale,level,now,color,reducedMotion,reset)
+	local look=Profile.Aura(level)
+	local position=origin.Position
+	local elapsed=if group.lastTime then now-group.lastTime else 0
+	local distance=if group.lastPosition then (position-group.lastPosition).Magnitude else 0
+	local discontinuity=reset or elapsed<=0 or elapsed>.25 or distance>math.max(20,scale*4)
+	local moving=not discontinuity and distance/elapsed>2
+	if discontinuity then
+		for _,trail in group.trails do trail:Clear() end
+		group.fire.Parent=group.root
+	end
+	group.source.CFrame=origin*CFrame.new(0,.85*scale,.35*scale)
+	group.light.Enabled,group.highlight.Enabled=true,true
+	group.light.Color,group.light.Brightness=color,look.brightness
+	group.light.Range=math.clamp(scale*3+3,5,40)
+	group.highlight.OutlineColor=color
+	group.highlight.OutlineTransparency=look.outline
+
+	if group.level~=level or group.color~=color or group.scale~=scale then
+		group.fire.Color,group.fire.SecondaryColor=color,color:Lerp(Color3.new(1,1,1),.35)
+		group.fire.Size=math.clamp(scale*look.fireStrength,2,30)
+		group.fire.Heat=2+5*(level/100)
+		for index,trail in group.trails do
+			local y=(index-2)*scale*.3
+			local halfWidth=math.min(3,scale*look.width)
+			trail.Attachment0.Position=Vector3.new(-halfWidth,y,0)
+			trail.Attachment1.Position=Vector3.new(halfWidth,y,0)
+			trail.Color=ColorSequence.new(color:Lerp(Color3.new(1,1,1),.35),color)
+			trail.Lifetime=look.lifetime
+			trail.MaxLength=math.min(65,scale*(2+2*level/100))
+			trail.Brightness=1+level/100
+		end
+		group.level,group.color,group.scale=level,color,scale
+	end
+	group.fire.Enabled=look.fire and not reducedMotion
+	group.fire.Parent=if group.fire.Enabled then group.source else group.root
+	for index,trail in group.trails do
+		trail.Enabled=not reducedMotion and index<=look.trails and moving
+		if reducedMotion or index>look.trails then trail:Clear() end
+	end
+	group.lastPosition,group.lastTime=position,now
+end
+
+function VFX:Update(model, origin, scale, stage, now, reducedEffects, near, level, reducedMotion, reset)
+	if reducedEffects or not near then self:Hide(model);return end
 	local group=self:Group(model)
-	local color=if stage==5 then Color3.fromHex("FFD85A") elseif stage>=3 then Color3.fromHex("9865FF") else Color3.fromHex("59C9FF")
+	local body=if model:IsA("BasePart") then model else model:FindFirstChild("Body")
+	local color=if body then body.Color else Color3.fromHex("59C9FF")
+	self:UpdateAura(group,origin,scale,level or model:GetAttribute("VerityLevel") or 1,now,color,reducedMotion,reset)
+	if stage<2 or reducedMotion then hideGeometry(group);return end
 	local center=origin.Position+Vector3.new(0,scale*.85,0)
 	for index,ring in group.rings do
 		local visible=stage>=2 and (index==1 or stage>=4)

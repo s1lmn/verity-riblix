@@ -33,7 +33,7 @@ for y in (4,8):
 p('Furniture/Decor/RugBorder',(4,.09,1),(17,.18,14),'purple',collide=False)
 p('Furniture/Decor/Rug',(4,.2,1),(16,.04,13),'pink',collide=False)
 for z in (-4.5,6.5):p('Furniture/Decor/RugStripe'+str(z),(4,.235,z),(14,.03,.35),'yellow',collide=False)
-p('Furniture/Sofa/Plinth',(10,1,1),(5,1.6,10.5),'navy')
+p('Furniture/Sofa/Plinth',(10,1,1),(4.9,1.6,10.4),'navy')
 p('Furniture/Sofa/Back',(12.125,3,1),(1.25,4.5,10.5),'mint')
 for z in (-4,6):p('Furniture/Sofa/Arm'+str(z),(10,2.75,z),(5,3,1),'mint')
 for j,z in enumerate((-2,1,4)):
@@ -161,7 +161,7 @@ for side in (-1,1):
     p(f'Geometry/PassageWall{side}',(side*15.25,7.5,-14.5),(19.5,15,1),'wall')
     p(f'Geometry/PassageFrame{side}',(side*5.625,4.5,-14.25),(.4,9,1.7),'navy',collide=False)
 p('Geometry/PassageLintel',(0,12,-14.5),(11,6,1),'wall')
-p('Geometry/PassageFrameTop',(0,9.125,-14.25),(11.5,.25,1.7),'navy',collide=False)
+p('Geometry/PassageFrameTop',(0,9.085,-14.25),(11.5,.25,1.7),'navy',collide=False)
 p('Geometry/UpperFront',(0,23,-14.5),(50,14,1),'upperwall')
 p('Geometry/UpperBackLining',(0,23,-53.9),(48,14,.2),'upperwall',collide=False)
 p('Geometry/UpperLeftLining',(-23.9,23,-34),(.2,14,40),'upperwall',collide=False)

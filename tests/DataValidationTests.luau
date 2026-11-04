@@ -3,6 +3,14 @@ return function(load, check)
 	local Schema = load("src/server/ProfileSchema")
 	local make = load("tests/Fixture")
 	check(Schema.validate(nil) ~= nil)
+	local legacy=Schema.new()
+	legacy.FeedCollection=nil
+	check(next(Schema.validate(legacy).FeedCollection)==nil)
+	for _,invalid in { {["41"]=1}, {["01"]=1}, {["1"]=-1}, {["1"]=0}, {["1"]=1.5}, {["1"]=math.huge}, {[1]=1} } do
+		local raw=Schema.new()
+		raw.FeedCollection=invalid
+		check(Schema.validate(raw)==nil,"Invalid collection must not reset a profile")
+	end
 	for _, value in {0/0, math.huge, -1, "100"} do
 		local raw = Schema.new(); raw.Cash = value
 		check(Schema.validate(raw) == nil, "Invalid cash must not reset profile")

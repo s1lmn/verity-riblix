@@ -47,4 +47,29 @@ function UpgradeService:UpgradeHouse(userId)
 	self.data:Touch(profile)
 	return "HOUSE_UPGRADED"
 end
+function UpgradeService:BuyHouseFeature(userId, featureId)
+	local profile, session = self.data:Get(userId), self.state.sessions[userId]
+	if not profile or not session then return "NOT_READY" end
+	if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
+	local feature = Houses.Features[featureId]
+	if not feature then return "INVALID_ITEM" end
+	if profile.Data[feature.Field] then return "ALREADY_OWNED" end
+	self.income:Settle(userId)
+	if not self.economy:TrySpendCash(userId, feature.Cost) then return "INSUFFICIENT_CASH" end
+	profile.Data[feature.Field] = true
+	self.data:Touch(profile)
+	return "OK"
+end
+
+function UpgradeService:SetHouseDoor(userId, locked)
+	local profile, session = self.data:Get(userId), self.state.sessions[userId]
+	if not profile or not session then return "NOT_READY" end
+	if not profile.Data.HouseDoorOwned then return "NOT_OWNED" end
+	if type(locked) ~= "boolean" then return "INVALID_OPEN" end
+	if session.HouseDoorLocked ~= locked then
+		session.HouseDoorLocked = locked
+		self.data:Touch(profile)
+	end
+	return "OK"
+end
 return UpgradeService

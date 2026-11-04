@@ -1,7 +1,7 @@
 --!nonstrict
 -- A single boundary between the authoritative Core wire format and UI presentation types.
 local Protocol = {}
-Protocol.RequestNames = {Sync="RequestSync",OpenBox="RequestOpenBox",UpgradeVerity="RequestUpgradeVerity",
+Protocol.RequestNames = {HouseDoor="RequestHouseDoor",Sync="RequestSync",OpenBox="RequestOpenBox",UpgradeVerity="RequestUpgradeVerity",
 	UpgradeSwipe="RequestUpgradeSwipe",PhoneSession="RequestPhoneSession",Swipe="RequestSwipe",
 	EquipCosmetic="RequestEquipCosmetic",CosmeticPurchase="RequestCosmeticPurchase",TaskStart="RequestTaskStart",TaskComplete="RequestTaskComplete"}
 function Protocol.State(raw)

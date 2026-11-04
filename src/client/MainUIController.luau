@@ -60,6 +60,7 @@ function Main.new()
 	self.ctx=ctx
 	ctx.net=self.cleanup:Add(Network.new())
 	ctx.settings=self.cleanup:Add(Settings.new(refs.Panels.SETTINGS))
+	self.cleanup:Add(require(script.Parent.WorldSurfaceController).new())
 	ctx.animation=self.cleanup:Add(Animation.new(ctx.settings))
 	ctx.sound=self.cleanup:Add(Sound.new(ctx.settings))
 	ctx.notifications=self.cleanup:Add(Notifications.new(refs.Toasts))
@@ -72,8 +73,9 @@ function Main.new()
 		return id
 	end
 	self.verity=self.cleanup:Add(Verity.new(ctx))
+	self.cleanup:Add(require(script.Parent.MoneyPassController).new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
-	self.workshop=Workshop.new(ctx)
+	self.workshop=self.cleanup:Add(Workshop.new(ctx))
 	self.houseSelection=self.cleanup:Add(HouseSelection.new())
 	self.tasks=self.cleanup:Add(Tasks.new(ctx))
  ctx.tasks=self.tasks

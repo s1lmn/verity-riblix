@@ -50,7 +50,10 @@ local function face(parent, x, y, width, height, color, ears)
 		shape(parent, "LeftEar", x-width*0.31, y-height*0.49, width*0.23, height*0.5, color, 100, -16)
 		shape(parent, "RightEar", x+width*0.31, y-height*0.49, width*0.23, height*0.5, color, 100, 16)
 	end
-	shape(parent, "Body", x, y, width, height, color, 100)
+	shape(parent, "Shadow", x, y+height*.08, width*1.06, height*1.04, T.Ink, 100).BackgroundTransparency=.68
+	local body=shape(parent, "Body", x, y, width, height, color, 100)
+	W.New("UIGradient",{Color=ColorSequence.new(color:Lerp(T.White,.25),color),Rotation=70},body)
+	shape(parent,"Highlight",x-width*.23,y-height*.28,width*.22,height*.07,T.White,100,-32).BackgroundTransparency=.25
 	shape(parent, "LeftEye", x-width*0.19, y-height*0.05, width*0.055, height*0.12, T.Ink, 100)
 	shape(parent, "RightEye", x+width*0.19, y-height*0.05, width*0.055, height*0.12, T.Ink, 100)
 	shape(parent, "BlushLeft", x-width*0.30, y+height*0.10, width*0.13, height*0.06, T.Pink, 100)
@@ -70,7 +73,7 @@ end
 
 local function vivid(color)
 	local hue, saturation, value = color:ToHSV()
-	return Color3.fromHSV(hue, math.min(1, saturation * 1.18), math.min(1, value * 1.12))
+	return Color3.fromHSV(hue, math.min(1, saturation * 1.42), math.min(1, value * 1.2))
 end
 
 local function scene(canvas, top, bottom)
@@ -84,7 +87,9 @@ end
 
 local function spark(canvas, x, y, size, color)
 	shape(canvas, "SparkHalo", x, y, size*2.6, size*2.6, color, 100).BackgroundTransparency = .74
-	shape(canvas, "Spark", x, y, size, size, color, 100)
+	shape(canvas, "Spark", x, y, size, size, color, 2, 45)
+	shape(canvas,"StarRay",x,y,size*.20,size*2.1,color,2)
+	shape(canvas,"StarRay",x,y,size*2.1,size*.20,color,2)
 end
 
 local function skyDots(canvas, count, color)
@@ -211,7 +216,7 @@ local function drawScene(canvas, kind)
 	return true
 end
 
-function Feed.Draw(parent, index, reward)
+function Feed.Draw(parent, index, reward, isNew)
 	local post = Feed.Posts[index]
 	local rarity, chance = Drops.Get(index)
 	local accent = Color3.fromHex(rarity.color)
@@ -220,7 +225,7 @@ function Feed.Draw(parent, index, reward)
 	card.ClipsDescendants = true
 	local dark = Color3.fromHex("161435")
 	W.New("UIGradient", {
-		Color = ColorSequence.new(vivid(post[4]):Lerp(dark,.59), vivid(post[5]):Lerp(dark,.78)),
+		Color = ColorSequence.new(vivid(post[4]):Lerp(dark,.15), vivid(post[5]):Lerp(dark,.38)),
 		Rotation = 55,
 	}, card)
 	local rim = W.Stroke(card,accent,if rarity.multiplier >= 8 then 3 else 2)
@@ -240,11 +245,18 @@ function Feed.Draw(parent, index, reward)
 		local odds = string.format("%.2f", chance):gsub("0+$", ""):gsub("%.$", "")
 		if Locale.GetLanguage() == "ru" then odds = odds:gsub("%.", ",") end
 		tag.Text = Locale.Text(rarity.label) .. " • " .. odds .. "%"
-		payout.Text = "+$" .. Locale.Number(reward)
+		payout.Text = if reward then "+$" .. Locale.Number(reward) else string.format("#%02d",index)
 	end
 	renderNumbers()
 	local localeConnection = Locale.Changed.Event:Connect(renderNumbers)
 	card.Destroying:Once(function() localeConnection:Disconnect() end)
+	if isNew then
+		local badge=W.Round(W.Text(card,"NewDiscovery","ВПЕРВЫЕ!",12,true,T.Ink),8)
+		badge.Position,badge.Size=UDim2.fromScale(.59,.66),UDim2.fromScale(.36,.08)
+		badge.BackgroundColor3,badge.BackgroundTransparency,badge.ZIndex=T.Gold,0,3
+		badge.TextXAlignment,badge.TextScaled=Enum.TextXAlignment.Center,true
+		W.New("UITextSizeConstraint",{MinTextSize=7,MaxTextSize=12},badge)
+	end
 	local art = W.Frame(card, "Illustration", UDim2.fromScale(0.9,0.61))
 	art.Position, art.BackgroundTransparency = UDim2.fromScale(0.05,0.13), 1
 	for i = 1, 10 do
@@ -350,8 +362,8 @@ function Feed.Draw(parent, index, reward)
 	return card, rarity, payout
 end
 
-function Feed.new(viewport, animation, settings, onReady)
-	local self = setmetatable({ viewport=viewport, animation=animation, settings=settings, onReady=onReady, busy=false, dead=false },Feed)
+function Feed.new(viewport, animation, settings, onReady, onCharge)
+	local self = setmetatable({ viewport=viewport, animation=animation, settings=settings, onReady=onReady, onCharge=onCharge, busy=false, dead=false },Feed)
 	local cover = W.Round(W.Frame(viewport,"DeckCover",nil,Color3.fromHex("34227A")),14)
 	W.New("UIGradient", {Color=ColorSequence.new(T.Purple,Color3.fromHex("251E66")),Rotation=45},cover)
 	local symbol = shape(cover,"DeckGem",.5,.32,.23,.23,T.Gold,12,45)
@@ -402,6 +414,7 @@ function Feed:Celebrate(card, rarity, payout, profile, onImpact)
 	local reveal = {effects=effects,onImpact=onImpact}
 	self.reveal = reveal
 	self.busy, card.Visible = true, false
+	self.onCharge()
 
 	local back = W.Round(W.Frame(effects,"CardBack",UDim2.fromScale(1,1),T.White),14)
 	W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex("1A103C"),accent),Rotation=55},back)
@@ -486,11 +499,34 @@ function Feed:Celebrate(card, rarity, payout, profile, onImpact)
 	end)
 end
 
-function Feed:Reveal(index, reward, animate, onImpact)
+function Feed:Drag(offset, release)
+	if self.dead or self.busy or self.waiting then return end
+	if release then
+		self.animation:Tween(self.card,.22,{Position=UDim2.new()})
+	elseif not self.settings.values.ReducedMotion then
+		self.animation:Tween(self.card,.045,{
+			Position=UDim2.fromScale(0,if offset>0 then offset*.19 else math.max(-.72,offset*.82)),
+		})
+	end
+end
+
+function Feed:CommitSwipe()
 	if self.dead then return end
+	self.waiting=true
+	self.animation:Tween(self.card,.22,{Position=UDim2.fromScale(0,-1)})
+end
+
+function Feed:RejectSwipe()
+	self.waiting=false
+	if not self.dead then self.animation:Tween(self.card,.22,{Position=UDim2.new()}) end
+end
+
+function Feed:Reveal(index, reward, animate, onImpact, isNew)
+	if self.dead then return end
+	self.waiting=false
 	if not Feed.Posts[index] or type(reward) ~= "number" then onImpact(nil);return end
 	local old=self.card
-	local card,rarity,payout=Feed.Draw(self.viewport,index,reward)
+	local card,rarity,payout=Feed.Draw(self.viewport,index,reward,isNew)
 	self.card=card
 	if not animate or self.settings.values.ReducedMotion then old:Destroy();onImpact(nil);return end
 	local profile=reveals[rarity.multiplier]

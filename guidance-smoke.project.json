@@ -79,6 +79,12 @@
         },
         "WorldIntegration": {
           "$path": "src/server/WorldIntegration.luau"
+        },
+        "HouseProgression": {
+          "$path": "src/server/HouseProgression.luau"
+        },
+        "MoneyPassService": {
+          "$path": "src/server/MoneyPassService.luau"
         }
       },
       "GuidanceSmoke": {

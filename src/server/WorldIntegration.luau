@@ -310,6 +310,7 @@ function WorldIntegration:UpdatePlot(userId, state)
 	end
 	model:SetAttribute("OwnerUserId", userId)
 	updateWorkshop(self.anchors[plotId], state)
+	if self.houseProgression then self.houseProgression:Update(plotId, state) end
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
 		model:SetAttribute(key, state[key])
 	end
@@ -360,6 +361,7 @@ function WorldIntegration:ClearPlot(plotId)
 	updateHouseSign(self.anchors[plotId], nil)
 	self.anchors[plotId].ClaimPrompt.Enabled = true
 	updateWorkshop(self.anchors[plotId], nil)
+	if self.houseProgression then self.houseProgression:Update(plotId, nil) end
 	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 		model:SetAttribute(key, nil)
 	end

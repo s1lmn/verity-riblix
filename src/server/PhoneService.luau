@@ -25,7 +25,11 @@ function PhoneService:Swipe(userId)
 	session.LastSwipeAt = now
 	local cardId, multiplier = Drops.Roll(self.randomInteger)
 	local _, actual = self.economy:AddCash(userId, self.economy:GetSwipeIncome(userId) * multiplier)
+	local key = tostring(cardId)
+	local count = profile.Data.FeedCollection[key] or 0
+	profile.Data.FeedCollection[key] = math.min(1000000,count+1)
+	self.data:Touch(profile)
 	self.state:AdvanceTutorial(profile, 6)
-	return "OK", actual, cardId
+	return "OK", actual, cardId, count==0
 end
 return PhoneService

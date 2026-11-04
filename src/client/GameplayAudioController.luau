@@ -10,6 +10,7 @@ function Gameplay.new(ctx,visuals)
  self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
   if result.success then
    if result.action=="TaskStart" then ctx.sound:Play("TaskAccepted")
+   elseif result.action=="HouseDoor" then ctx.sound:Play("Success")
    elseif result.action=="EquipCosmetic" then ctx.sound:Play("Success") end
   elseif result.errorCode=="INSUFFICIENT_CASH" then ctx.sound:Play("NotEnoughCash") end
  end))
@@ -17,6 +18,7 @@ function Gameplay.new(ctx,visuals)
   if not self:Accept("note",payload.eventId) then return end
   if payload.code=="TASK_REWARD" then ctx.sound:Play("TaskCompleted")
   elseif payload.code=="INSUFFICIENT_CASH" then ctx.sound:Play("NotEnoughCash")
+  elseif payload.code=="OK" and payload.source=="HouseFeature" then ctx.sound:Play("DecorPurchased")
   elseif payload.code=="HOUSE_UPGRADED" then ctx.sound:Play("Success") end
  end))
  self.cleanup:Add(ctx.net.World.Event:Connect(function(event)
@@ -45,12 +47,13 @@ function Gameplay:State(state)
   if state.DeliveryState=="Delivered" and self.previous.delivery~="Delivered" and self.previous.delivery~="Opened" then
    self.ctx.sound:Play("DeliveryArrived")
   end
+  if state.MoneyPassOwned and not self.previous.moneyPass then self.ctx.sound:Play("DecorPurchased") end
   -- Ownership comes from the server snapshot, never the payment prompt closing.
   for id,owned in state.CosmeticsOwned or {} do
    if owned and not self.previous.owned[id] then self.ctx.sound:Play("DecorPurchased");break end
   end
  end
- self.previous={delivery=state.DeliveryState,owned=table.clone(state.CosmeticsOwned or {})}
+ self.previous={delivery=state.DeliveryState,moneyPass=state.MoneyPassOwned,owned=table.clone(state.CosmeticsOwned or {})}
 end
 function Gameplay:Destroy() self.cleanup:Destroy() end
 return Gameplay

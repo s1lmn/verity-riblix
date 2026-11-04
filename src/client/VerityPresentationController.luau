@@ -20,7 +20,14 @@ function Presentation.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),seen={},order={},count=0},Presentation)
  local layer=W.Frame(ctx.refs.Safe,"VerityReveal");layer.BackgroundTransparency=1;layer.ZIndex=50;layer.Visible=false
  self.layer=layer;self.cleanup:Add(layer)
- local wash=W.Frame(layer,"ColorWash",UDim2.fromScale(1,1),Color3.new(1,1,1))
+ local backdrop=W.New("ScreenGui",{
+  Name="VerityRevealBackdrop",ResetOnSpawn=false,Enabled=false,
+  DisplayOrder=ctx.refs.Gui.DisplayOrder-1,
+  ZIndexBehavior=Enum.ZIndexBehavior.Sibling,
+  ScreenInsets=Enum.ScreenInsets.None,ClipToDeviceSafeArea=false,
+ },ctx.refs.Gui.Parent)
+ self.backdrop=backdrop;self.cleanup:Add(backdrop)
+ local wash=W.Frame(backdrop,"ColorWash",UDim2.fromScale(1,1),Color3.new(1,1,1))
  wash.ZIndex=50;wash.BackgroundTransparency=1
  self.wash=wash
  self.washGradient=W.New("UIGradient",{
@@ -80,7 +87,7 @@ function Presentation:Start(event,model)
  end
  self.active.look=Celebration.Get(event.newLevel)
  self.ctx.presenting=true;self.ctx.close();self.ctx.refs.Banner.Visible=false
- self.layer.Visible=true;self.count+=1
+ self.layer.Visible=true;self.backdrop.Enabled=true;self.count+=1
  self.ctx.refs.Gui:SetAttribute("RevealCount",self.count)
  self.ctx.refs.Gui:SetAttribute("RevealEventId",event.eventId)
  self.ctx.refs.Gui:SetAttribute("RevealActive",true)
@@ -241,7 +248,7 @@ function Presentation:Stop()
  if a then self.ctx.sound:StopUpgrade(a.event.eventId) end
  if a and a.glow then a.glow:Destroy()end
  if a and a.color then a.color:Destroy()end
- self.active=nil;self.ctx.presenting=false;self.layer.Visible=false
+ self.active=nil;self.ctx.presenting=false;self.layer.Visible=false;self.backdrop.Enabled=false
  self.ctx.refs.Gui:SetAttribute("RevealActive",false)
 end
 function Presentation:Destroy()self:Stop();self.cleanup:Destroy()end

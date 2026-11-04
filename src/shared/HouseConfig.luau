@@ -14,6 +14,10 @@ HouseConfig.IncomeUpgrades = table.freeze({
 	table.freeze({Level = 100, Cost = 300000000, Name = "Реактор радуги"}),
 })
 HouseConfig.IncomeStep = 0.25
+HouseConfig.Features = table.freeze({
+	Door = table.freeze({Name="Дверь с замком", Cost=150, Field="HouseDoorOwned"}),
+	SecondFloor = table.freeze({Name="Второй этаж", Cost=1500, Field="HouseSecondFloorOwned"}),
+})
 
 function HouseConfig.getIncomeMultiplier(upgrades: number): number
 	return 1 + upgrades * HouseConfig.IncomeStep
