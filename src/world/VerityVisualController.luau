@@ -449,10 +449,22 @@ function Controller:Tick(now,dt)
 	if self.settings.values.ReducedEffects or self.settings.values.ReducedMotion then self.effects:SuppressBursts() end
 	for model,record in self.records do
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
+  -- Keep the owner's companion smooth; remote, distant companions use a bounded lower cadence.
+  local distance=camera and (camera.CFrame.Position-record.origin.Position).Magnitude or math.huge
+  local own=Client and record.owner==Client.UserId
+  local racingOwner=Players:GetPlayerByUserId(record.owner)
+  local race=racingOwner and racingOwner:GetAttribute("VerityRaceSlot")
+  local root=racingOwner and racingOwner.Character and racingOwner.Character:FindFirstChild("HumanoidRootPart")
+  if root and camera then distance=math.min(distance,(camera.CFrame.Position-root.Position).Magnitude)end
+  local cadence=if own or record.active or race or reveal and reveal.event.ownerUserId==record.owner then 0
+   elseif distance>240 then .2 elseif distance>120 then .05 else 0
+  record.pendingDt=(record.pendingDt or 0)+(dt or 1/60)
+  if cadence>0 and now<(record.nextRenderAt or 0)then self.effects:Hide(model);continue end
+  local recordDt=record.pendingDt;record.pendingDt=0;record.nextRenderAt=now+cadence
 		local spawning=reveal and reveal.event.ownerUserId==record.owner and reveal.event.plotId==record.plot
   record.spawnCover=if spawning then reveal.pose.cover else 0
   if spawning then reveal.boundModel=model end
-  if not self:Follow(record,now,dt) then continue end
+  if not self:Follow(record,now,recordDt) then continue end
   if record.racing and record.active then
    self.effects:CancelUpgrade(model);self:Finish(record,now)
   end
@@ -460,7 +472,7 @@ function Controller:Tick(now,dt)
    local start=CFrame.new(reveal.origin.Position+Vector3.new(0,1.15,0))*record.origin.Rotation
    record.origin=start:Lerp(record.origin,reveal.pose.join)
   end
-		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<Profile.IdleDistance
+		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<(if own then Profile.IdleDistance else 90)
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
 			local event=if spawning or record.adminLevel or record.racing then nil else record.ledger:Pop()
@@ -476,7 +488,7 @@ function Controller:Tick(now,dt)
 		record.growthCover=0
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
-		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil or spawning==true or (record.abilityAimUntil or 0)>now,record.teleported)
+		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,recordDt,now,reduced or not near or active~=nil or spawning==true or (record.abilityAimUntil or 0)>now,record.teleported)
 		local body=model:FindFirstChild("Body")
 		local face=body and body:FindFirstChild("FaceGui")
 		if face then

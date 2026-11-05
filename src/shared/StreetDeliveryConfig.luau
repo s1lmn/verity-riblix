@@ -1,6 +1,7 @@
 --!strict
+local Layout=require(script.Parent.WorldLayout)
 local Config={FirstDelay=45,Interval=240,DriveSeconds=24,ThrowSeconds=.8,PickupSeconds=35,RewardSeconds=15,Reach=8,
- RoadX=6,StartZ=-302,EndZ=302,SidewalkX=20,ParcelY=1.65,DropZ={-144,0,144},Colors={"FFB72D","55DCC9","AE7AF5"}}
+ RoadX=6,StartZ=-302-Layout.EndShift,EndZ=302+Layout.EndShift,SidewalkX=20,ParcelY=1.65,DropZ={-144,0,144},Colors={"FFB72D","55DCC9","AE7AF5"}}
 function Config.Round(cycle:number,started:number)
  local z=Config.DropZ[(cycle-1)%#Config.DropZ+1]
  local side=if cycle%2==1 then 1 else -1

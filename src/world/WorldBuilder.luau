@@ -2,8 +2,9 @@ local Recipe = require(script.Parent.MapRecipe)
 local InteriorFactory = require(script.Parent.InteriorFactory)
 local ParkourBuilder = require(script.Parent.ParkourBuilder)
 local RaceBuilder = require(script.Parent.VerityRaceBuilder)
+local SurfaceTiles = require(script.Parent.WorldSurfaceTiles)
 local WorldBuilder = {}
-local VERSION = "open-neighborhood-5"
+local VERSION = "open-neighborhood-6-compact"
 local ROW_SPACING = 72
 
 local function parkTemplateFloor(target, world)
@@ -28,14 +29,20 @@ local function parkTemplateFloor(target, world)
 end
 function WorldBuilder.Build(parent, plotCount)
     local target = parent or workspace
-    local count = plotCount or 16
-    assert(type(count) == "number" and count >= 16 and count <= 128 and count % 2 == 0, "PlotCount must be even, 16..128")
+    local count = plotCount or 12
+    assert(type(count) == "number" and count >= 12 and count <= 128 and count % 2 == 0, "PlotCount must be even, 12..128")
     local existing = target:FindFirstChild("GeneratedWorld")
+    -- Explicit migration of our generated 16-house map; unrelated/custom worlds remain protected.
+    if existing and count==12 and existing:IsA("Model") and existing:GetAttribute("PlotCount")==16
+      and existing:GetAttribute("BuilderVersion")=="open-neighborhood-5" then
+        existing:Destroy();existing=nil
+    end
     if existing then
         assert(existing:IsA("Model"), "GeneratedWorld name is occupied")
         if existing:GetAttribute("BuilderVersion") == VERSION and existing:GetAttribute("PlotCount") == count then
             ParkourBuilder.Build(existing)
             RaceBuilder.Build(existing)
+            SurfaceTiles.Build(existing)
             parkTemplateFloor(target, existing)
             return existing
         end
@@ -62,7 +69,7 @@ function WorldBuilder.Build(parent, plotCount)
                 object.CanCollide = data.collide
                 object.CanTouch = false
                 object.CanQuery = data.alpha < 1
-                object.CastShadow = data.alpha == 0
+                object.CastShadow = data.alpha == 0 and data.collide and data.size[1]*data.size[2]*data.size[3]>=6
                 object.Material = if data.topSurface == "Studs" then Enum.Material.Plastic else Enum.Material.SmoothPlastic
                 object.TopSurface = if data.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
                 object.BottomSurface = Enum.SurfaceType.Smooth
@@ -81,7 +88,7 @@ function WorldBuilder.Build(parent, plotCount)
     end
     local extra = (count / 2 - 8) * ROW_SPACING
     for _, data in Recipe do
-        if data.path ~= "" and not data.path:match("^Plots/Plot_") then
+        if data.path ~= "" and not data.path:match("^Plots/Plot_") and not (data.path:match("/RoadDash") and math.abs(data.pos[3])+data.size[3]/2>310+extra/2) then
             local object = create(data, data.path)
             if object:IsA("BasePart") then
                 local name = object.Name
@@ -110,6 +117,7 @@ function WorldBuilder.Build(parent, plotCount)
     end
     ParkourBuilder.Build(root)
     RaceBuilder.Build(root)
+    SurfaceTiles.Build(root)
     parkTemplateFloor(target, root)
     root.Parent = target
     return root

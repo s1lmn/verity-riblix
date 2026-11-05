@@ -2,6 +2,7 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Locale=require(Shared.LocaleText)
 local EconomyConfig=require(Shared.EconomyConfig)
+local Layout=require(Shared.WorldLayout)
 local Targets={};Targets.__index=Targets
 function Targets.new(data,state,economy,notify)
 	local self=setmetatable({data=data,state=state,economy=economy,notify=notify,records={}},Targets)
@@ -11,9 +12,9 @@ function Targets.new(data,state,economy,notify)
 		p.Color=Color3.fromHex(color);p.Material=Enum.Material.SmoothPlastic;p.CanTouch=false;p.Parent=folder
 		return p
 	end
-	part("ArenaFloor",Vector3.new(0,.35,333),Vector3.new(84,.7,34),"665A99")
+	part("ArenaFloor",Vector3.new(0,.35,333+Layout.EndShift),Vector3.new(84,.7,34),"665A99")
 	for index,definition in {{"Энергокристалл",60,"78EEDB",3},{"Большой кристалл",140,"B594FF",5},{"Тренировочный страж",240,"FFD46D",8}} do
-		local pos=Vector3.new((index-2)*26,4,333)
+		local pos=Vector3.new((index-2)*26,4,333+Layout.EndShift)
 		local target=part("Target"..index,pos,Vector3.new(4,6,4),definition[3])
 		target.Material=Enum.Material.Neon
 		if index<3 then target.CFrame*=CFrame.Angles(0,0,math.pi/4) end

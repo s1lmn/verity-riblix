@@ -53,7 +53,7 @@ function Service:Return(player,exit)
  if self.resetMovement then self.resetMovement(player) end
  r.AssemblyLinearVelocity=Vector3.zero;r.AssemblyAngularVelocity=Vector3.zero
  if exit then
-  self:SetRun(player,nil);c:PivotTo(CFrame.new(164,4,300))
+  self:SetRun(player,nil);c:PivotTo(CFrame.new(164,4,300+Config.ZOffset))
  elseif run then
   local p=Config.Pads[run.checkpoint];run.index=run.checkpoint
   c:PivotTo(CFrame.new(p.x,p.y+4,p.z));self:SetRun(player,run)

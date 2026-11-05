@@ -19,7 +19,7 @@ local function construct(parent, origin, accent, name)
             object.CanCollide = data.collide
             object.CanTouch = false
             object.CanQuery = data.alpha < 1
-            object.CastShadow = data.alpha == 0
+            object.CastShadow = data.alpha == 0 and data.path:match("^Geometry/")~=nil and data.size[1]*data.size[2]*data.size[3]>=6
             object.Material = if data.topSurface == "Studs" then Enum.Material.Plastic else Enum.Material.SmoothPlastic
             object.TopSurface = if data.topSurface == "Studs" then Enum.SurfaceType.Studs else Enum.SurfaceType.Smooth
             object.BottomSurface = Enum.SurfaceType.Smooth

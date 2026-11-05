@@ -8,8 +8,8 @@ return table.freeze({
 	MoneyPassId = nil,
 	HeroPassId = nil, -- Real Homelander Game Pass ID; no placeholder entitlement.
 	HeroPassPrice = 99,
-	PlotCount = 16,
-	ServerCapacity = 16, -- Also set MaxPlayers in Creator Dashboard.
+	PlotCount = 12,
+	ServerCapacity = 12, -- Also set MaxPlayers in Creator Dashboard.
 	BaseWidth = 2,
 	BaseDepth = 2,
 	BaseHeight = 3,
