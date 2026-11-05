@@ -217,3 +217,39 @@ MoneyPass и tutorial, цены/статусы брать из Core/HouseConfig.
 каталогом физических покупок дома. Детали: docs/GROWTH_PANELS_STYLE.md,
 tools/check_growth_panels.py. Первый проход оформления готов локально;
 Studio Play/визуальная приёмка не выполнялись, Play не запускать.
+
+## Элементальные модели на утверждение
+
+Созданы6GLBобразцов: Aqua10/Frost25/Magma50/Cyber75/Rainbow100 и Cosmic75alt.
+Распределение предварительное, промежуточные уровни не менять до утверждения.
+assets/verity-elemental + docs/ELEMENTAL_MODELS_APPROVAL.md. Одно тело2208tri,
+skin отдельно от прежних8эмоций. LiveFactory/Core не менялись. Studio не подключена:
+assetupload/Robloximport/render ещё не проверены; не выдавать GLB/офлайн-превью
+за установленную игровую модель. Play не запускать.
+
+## Элементальные скины импортированы
+
+Новое поручение пользователя: импортировать в нашу версию. Shared.VerityElementalSkins
+и Factory/VisualController включают загруженные скины ТОЛЬКО на10/25/50/75/100;
+Cosmic остаётся preview-альтернативой. Использовать roblox-assets.json и UV-bake,
+не исходные GLBtexture IDs. Nativeбиблиотека6моделей включена в default Rojo.
+Детали/важный порядок MeshId→MeshType/проверки: docs/ELEMENTAL_MODELS_APPROVAL.md.
+StudioEdit загрузка всех6скинов/лиц и переходы стадий проверены. Без Play.
+
+## Полная прогрессия внешности1–100
+
+Новое поручение: дополнить оставшиеся модели по утверждённым образцам. Предыдущее
+ограничение точными10/25/50/75/100 отменено.1–9прежние базовые цвета;10–24Aqua,
+25–49Frost,50–74Magma,75–89Cyber,90–99Cosmic,100Rainbow.100nativeмоделей,
+16sharedтекстур,8отдельных эмоций, прежний рост/анимации/контроллеры. Новые
+descriptors.LevelKey/Tone учитываются Factory.SetStage. Anchors сохранены.
+Детали/фактические проверки/ограничения:docs/VERITY_ALL_LEVELS.md и
+assets/verity-elemental/all-levels/README.md. Не выдавать mock-тесты за StudioPlay.
+
+## Объединение полной серии с командным релизом
+
+По прямому поручению пользователя объединена серия1–100 с командной версией9c2fb07.
+Controller.Apply сохраняет командное прицеливание/поворот вокруг центра и нашу
+защиту VerityTint. Стройка/двери/витрина/способности/сохранения команды сохранены.
+Детали и проверки без Play:docs/ELEMENTAL_TEAM_MERGE.md. Старые Play-отчёты команды
+не выдавать за приёмку merge. Пользователь разрешил push, не Roblox Publish.

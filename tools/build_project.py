@@ -25,7 +25,8 @@ def build(rojo, preview=False, candidate=False):
     digest = hashlib.sha256()
     digest.update(b"studio-preview-v1" if preview else b"complete-game-v1")
     inputs = [*ROOT.glob("src/**/*.luau"), ROOT / "default.project.json", Path(__file__).resolve(),
-              ROOT / "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx"]
+              ROOT / "assets/verity-ten-textured/Verity_FaceTemplates.rbxmx",
+              ROOT / "assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx"]
     if preview:
         inputs.extend(ROOT.glob("tests/*.luau"))
     for path in sorted(inputs):

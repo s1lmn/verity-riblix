@@ -1,0 +1,73 @@
+{
+  "status": "Uploaded to Roblox and integrated at exact target levels; Studio Edit asset fetch and skin transitions verified; no Play",
+  "baseDiameter": 1.7,
+  "pivot": [
+    0,
+    0,
+    0
+  ],
+  "bodyCenter": [
+    0,
+    0.85,
+    0
+  ],
+  "forward": "-Z",
+  "scale": "unscaled; game uses Shared.LevelConfig only",
+  "trianglesPerBody": 2208,
+  "trianglesPerPreviewFace": 2,
+  "textureSize": [
+    1024,
+    512
+  ],
+  "faceLayer": "independent existing normalized SurfaceGui in Roblox; GLB face plane for preview only",
+  "emotions": [
+    "Joy",
+    "Love",
+    "Playful",
+    "Wink",
+    "Laugh",
+    "Surprise",
+    "Confident",
+    "Stars"
+  ],
+  "models": [
+    {
+      "skin": "Aqua",
+      "targetLevel": 10,
+      "file": "models/Verity_L010_Aqua.glb",
+      "alternate": false
+    },
+    {
+      "skin": "Frost",
+      "targetLevel": 25,
+      "file": "models/Verity_L025_Frost.glb",
+      "alternate": false
+    },
+    {
+      "skin": "Magma",
+      "targetLevel": 50,
+      "file": "models/Verity_L050_Magma.glb",
+      "alternate": false
+    },
+    {
+      "skin": "Cyber",
+      "targetLevel": 75,
+      "file": "models/Verity_L075_Cyber.glb",
+      "alternate": false
+    },
+    {
+      "skin": "Cosmic",
+      "targetLevel": 75,
+      "file": "models/Verity_L075_Cosmic.glb",
+      "alternate": true
+    },
+    {
+      "skin": "Rainbow",
+      "targetLevel": 100,
+      "file": "models/Verity_L100_Rainbow.glb",
+      "alternate": false
+    }
+  ],
+  "robloxAssets": "roblox-assets.json",
+  "robloxLibrary": "Verity_Elemental_Models.rbxmx"
+}
