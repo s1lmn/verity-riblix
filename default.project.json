@@ -115,6 +115,9 @@
           "$className": "Folder",
           "VerityVisualBootstrap": {
             "$path": "src/world-client/VerityVisualBootstrap.client.luau"
+          },
+          "HouseBuildEffects": {
+            "$path": "src/world-client/HouseBuildEffects.client.luau"
           }
         }
       }

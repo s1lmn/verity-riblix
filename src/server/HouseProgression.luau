@@ -84,10 +84,26 @@ end
 function HouseProgression:Update(plotId,state)
 	local record=self.plots[plotId]
 	if not record then return end
+	local previous=record.state
 	record.state=state
 	record.doorPad:SetAttribute("OwnerUserId",state and state.ownerUserId or 0)
 	record.floorPad:SetAttribute("OwnerUserId",state and state.ownerUserId or 0)
 	Construction.Apply(record.construction,state)
+	if previous and state and previous.ownerUserId == state.ownerUserId then
+		local stage
+		if state.HouseIncomeLevel > previous.HouseIncomeLevel then
+			stage = state.HouseIncomeLevel
+		elseif state.HouseSecondFloorOwned and not previous.HouseSecondFloorOwned then
+			stage = #Houses.IncomeUpgrades + 2
+		elseif state.HouseDoorOwned and not previous.HouseDoorOwned then
+			stage = #Houses.IncomeUpgrades + 1
+		end
+		if stage then
+			record.house:SetAttribute("HouseBuildCue", string.format("%d:%.3f", stage, workspace:GetServerTimeNow()))
+		end
+	else
+		record.house:SetAttribute("HouseBuildCue", nil)
+	end
 	local owned=state and state.HouseDoorOwned==true or false
 	local upper=state and state.HouseSecondFloorOwned==true or false
 	local locked=owned and state.HouseDoorLocked==true

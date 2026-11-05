@@ -1,5 +1,9 @@
 # VERITY release handoff
 
+## House construction animation, 5 November
+
+Confirmed construction purchases now play a short neon outline and rising bricks at the floor, door, roof or production module. `HouseProgression` marks progress increases for the current owner and the World client consumes fresh cues. Two effects can run at once on each client. Existing house reveals, collision handling and accessibility settings retain their roles. This pass was packaged without automated tests or Studio Play.
+
 ## Save reliability and milestone motion, 5 November
 
 Core uses the Roblox `UpdateAsync` callback to return the key value, associated user IDs and metadata. Each profile load has a unique lock token. Final saves wait for an active write, recognize a previously committed release on retry, and leave profiles closed for an autosave retry after a transport failure. The existing player data schema and store name are preserved. [Roblox UpdateAsync reference](https://create.roblox.com/docs/reference/engine/classes/GlobalDataStore#UpdateAsync).
