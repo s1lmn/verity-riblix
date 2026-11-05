@@ -66,7 +66,7 @@ function Schema.validate(raw)
   if type(id)~="string" or #id>64 or not id:match("^[%w_%-]+$") or owned~=true or countOwned>1000 then return nil,"INVALID_INVENTORY" end
  end
  for slot,id in data.CosmeticsEquipped do
-  if not Catalog.Slots[slot] or not Catalog.Items[id] or Catalog.Items[id].slot~=slot or not data.CosmeticsOwned[id] then return nil,"INVALID_EQUIPMENT" end
+  if not Catalog.Slots[slot] or not Catalog.Items[id] or Catalog.Items[id].slot~=slot or not Catalog.Owns(data.CosmeticsOwned,id) then return nil,"INVALID_EQUIPMENT" end
  end
  for _,field in {"TaskCooldowns","NeighborhoodTaskCooldowns"} do
   for id,endsAt in data[field] do

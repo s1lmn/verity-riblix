@@ -91,6 +91,9 @@
         },
         "VerityBattleService": {
           "$path": "src/server/VerityBattleService.luau"
+        },
+        "ActivityRewardService": {
+          "$path": "src/server/ActivityRewardService.luau"
         }
       },
       "GuidanceSmoke": {

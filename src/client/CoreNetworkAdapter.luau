@@ -66,7 +66,7 @@ function Adapter:Attach(folder)
 					elseif name=="WorldEvent" then self:AcceptWorld(payload)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
-							local messages={OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
+							local messages={ACTIVITY_REWARD_UNLOCKED="Новая награда за приключение!",OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
 								PARKOUR_FINISH="Паркур пройден! Награда получена.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
         STREET_DELIVERY_STARTED="Фургон Verity Express в районе! Следи за посылкой на главной дороге.",STREET_DELIVERY_DROPPED="Посылка выпала! Успей первым подобрать её на тротуаре.",STREET_DELIVERY_REWARD="Посылка твоя! Награда получена.",
         RACE_JOINED="Ты в заезде! Дождись второго участника у своего места.",RACE_STARTED="Старт! Болей за своего Verity!",RACE_WIN="Твой Verity победил! Награда получена.",RACE_FINISH="Заезд завершён! Можно попробовать ещё раз.",RACE_CANCELLED="Недостаточно участников. Verity вернулся к тебе.",
@@ -92,7 +92,7 @@ function Adapter:Attach(folder)
         elseif drop.compensation then message=Locale.Text("Коллекция доставки собрана! Компенсация ×5.")
         else message=string.format(Locale.Text("Награда доставки ×%d: $%s"),drop.multiplier or 1,Locale.Number(payload.reward)) end
        end
-							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward}) end
+							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward,achievementId=payload.achievementId,itemId=payload.itemId}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
 					end
 				end)

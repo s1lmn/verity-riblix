@@ -43,7 +43,7 @@ function PlayerStateService:PublicPlotSnapshot(userId)
 		HouseTier = Houses.getHouseTier(data.VerityLevel), HouseIncomeLevel = data.HouseIncomeLevel,
 		HouseBuildLevel = data.HouseIncomeLevel, HouseDoorOwned = data.HouseDoorOwned,
 		HouseDoorLocked = session.HouseDoorLocked == true, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
-		CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
+		CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),
 	}
 end
 
@@ -93,7 +93,7 @@ function PlayerStateService:Snapshot(userId)
 		PhoneOpen = session.PhoneOpen, Tasks = tasks,
   DeliveryPosition = if self.DeliveryPosition then self.DeliveryPosition(userId) else nil,
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
-  CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
+  CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),
   FeedCollection = table.clone(data.FeedCollection),
   ShowcaseCards = table.clone(data.ShowcaseCards or {}),
   AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = table.clone(data.AbilitiesEquipped),

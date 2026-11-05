@@ -33,6 +33,7 @@ function DeliveryService:Open(userId)
 	self.income:Settle(userId)
 	profile.Data.DeliveryState = "Opened"
 	profile.Data.VerityUnlocked = true
+ if self.onUnlocked then self.onUnlocked(userId) end
 	self.data:Touch(profile)
 	self.state:AdvanceTutorial(profile, 4)
 	self.verity:Event(userId, "BoxOpened")
