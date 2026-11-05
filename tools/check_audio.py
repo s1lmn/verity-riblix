@@ -142,6 +142,13 @@ n=#calls;ctx.net.Notification:Fire({code='STREET_DELIVERY_DROPPED',eventId='stre
 ctx.net.Notification:Fire({code='STREET_DELIVERY_REWARD',eventId='street_reward_1'})
 assert(calls[#calls]=='ParcelCollected','confirmed parcel pickup cue missing')
 n=#calls;ctx.net.Notification:Fire({code='STREET_DELIVERY_REWARD',eventId='street_reward_1'});assert(#calls==n,'parcel reward audio replay')
+ctx.net.Notification:Fire({code='RACE_JOINED',eventId='race_join'})
+assert(calls[#calls]=='TaskAccepted')
+ctx.net.Notification:Fire({code='RACE_STARTED',eventId='race_start'})
+assert(calls[#calls]=='TaskCheckpoint')
+ctx.net.Notification:Fire({code='RACE_WIN',eventId='race_win'})
+assert(calls[#calls]=='TaskCompleted')
+n=#calls;ctx.net.Notification:Fire({code='RACE_WIN',eventId='race_win'});assert(#calls==n,'race victory audio replay')
 print('Gameplay audio: confirmed grants only, delivery transition, task deduplication and owner-only reveal passed')
 '''.replace('GAMEPLAY_SOURCE',gameplay)
 with tempfile.TemporaryDirectory(prefix='verity-audio-') as temp:

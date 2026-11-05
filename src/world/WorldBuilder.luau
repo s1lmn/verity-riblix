@@ -1,6 +1,7 @@
 local Recipe = require(script.Parent.MapRecipe)
 local InteriorFactory = require(script.Parent.InteriorFactory)
 local ParkourBuilder = require(script.Parent.ParkourBuilder)
+local RaceBuilder = require(script.Parent.VerityRaceBuilder)
 local WorldBuilder = {}
 local VERSION = "open-neighborhood-5"
 local ROW_SPACING = 72
@@ -34,6 +35,7 @@ function WorldBuilder.Build(parent, plotCount)
         assert(existing:IsA("Model"), "GeneratedWorld name is occupied")
         if existing:GetAttribute("BuilderVersion") == VERSION and existing:GetAttribute("PlotCount") == count then
             ParkourBuilder.Build(existing)
+            RaceBuilder.Build(existing)
             parkTemplateFloor(target, existing)
             return existing
         end
@@ -107,6 +109,7 @@ function WorldBuilder.Build(parent, plotCount)
         end
     end
     ParkourBuilder.Build(root)
+    RaceBuilder.Build(root)
     parkTemplateFloor(target, root)
     root.Parent = target
     return root

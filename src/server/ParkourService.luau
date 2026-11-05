@@ -17,7 +17,7 @@ function Service:SetRun(player,run)
  player:SetAttribute("VerityParkourCheckpoint",if run then run.checkpoint else nil)
 end
 function Service:Touch(player,index)
- if player:GetAttribute("VerityRiding") then return false end
+ if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") then return false end
  local profile=self.data:Get(player.UserId)
  local character,root=self:Character(player)
  local pad=Config.Pads[index]

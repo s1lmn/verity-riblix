@@ -28,6 +28,7 @@ function Service:Character(player)
 	return character,root,humanoid
 end
 function Service:IsSafe(player,root)
+ if player:GetAttribute("VerityRaceSlot") then return true end
 	if workspace:GetServerTimeNow()<(player:GetAttribute("VerityProtectedUntil") or 0) then return true end
 	if player.Character and player.Character:FindFirstChildOfClass("ForceField") then return true end
 	-- All physical house footprints are sanctuaries, even before their walls are built.
@@ -389,7 +390,8 @@ function Service:Activate(player,slot,direction)
 	if now-(self.requests[player] or -math.huge)<.15 then return end
 	self.requests[player]=now
 	if slot~="Mobility" and slot~="Attack" and slot~="Ride" then return end
-	local profile=self.data:Get(player.UserId)
+	if player:GetAttribute("VerityRaceSlot") then return end
+ local profile=self.data:Get(player.UserId)
 	if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked then return end
 	if slot=="Ride" then self:Ride(player,profile,now);return end
  if self.active[player] and self.active[player].ride and slot=="Mobility" then return end

@@ -94,6 +94,7 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.HouseConstructionController).new(ctx))
  self.cleanup:Add(require(script.Parent.GameplayFeedbackController).new(ctx))
  self.cleanup:Add(require(script.Parent.StreetDeliveryController).new(ctx))
+ self.cleanup:Add(require(script.Parent.VerityRaceController).new(ctx))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
  self.cleanup:Add(require(script.Parent.AdminPanelController).new(ctx,self.visuals))
@@ -155,7 +156,7 @@ function Main.new()
 			self.notificationIds[payload.eventId]=true
 			table.insert(self.notificationOrder,payload.eventId)
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
-			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" then ctx.sound:Play("Reward") end end
+			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" then ctx.sound:Play("Reward") end end
 		end
 		ctx.notifications:Show(payload.message,payload.kind)
 	end))

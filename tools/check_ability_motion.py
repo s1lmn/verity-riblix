@@ -171,6 +171,8 @@ s:Stop(p)
 s,p,r,h,profile=rideFixture(50);s:Activate(p,'Ride');mounted=s.active[p]
 advance(7);physicsHeart:Fire(.1)
 assert(not s.active[p] and mounted.transition==nil and mounted.hull.destroyed,'stalled takeoff leaked transition')
+s,p=fixture('dash');p:SetAttribute('VerityRaceSlot',1)
+s:Activate(p,'Mobility');assert(not s.active[p] and s:IsSafe(p,{}),'queued racer can attack/move or be targeted')
 print('Ride: level/session gate, no purchase, parkour/ceiling/wall guards, snapshot, steering watchdog and timed/dismount cleanup passed; mocked geometry only')
 print('Ability server: dash/ownership, leap,12/18s flight, steering/cleanup and real attack feedback/cover passed; no Play')
 '''
