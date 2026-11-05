@@ -542,6 +542,7 @@ local circleEnglish={
  ["КУПЛЕНО"]="OWNED",
  ["+%d%% пассивного дохода"]="+%d%% passive income",
  ["Подойди и удерживай кнопку"]="Move closer and hold the button",
+ ["Подойди и нажми кнопку"]="Move closer and press the button",
  ["ВЫБРАТЬ СИЛУ"]="EQUIP POWER",
  ["КУПИТЬ СИЛУ"]="BUY POWER",
  ["Полёт + красные лазеры"]="Flight + red eye lasers",

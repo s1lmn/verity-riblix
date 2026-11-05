@@ -1,6 +1,7 @@
 --!nonstrict
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Players=game:GetService("Players")
+local RunService=game:GetService("RunService")
 local Shared=ReplicatedStorage.Shared
 local Forms=require(Shared.VerityAbilities)
 local Catalog=require(Shared.AbilityCatalog)
@@ -56,7 +57,7 @@ function Service:Stop(player,stopAttacks)
 	if not current then return end
 	self.active[player]=nil
 	if current.attachment then current.attachment:Destroy() end
-	if current.root and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then current.root:SetNetworkOwnershipAuto() end
+	if current.ownsPhysics and current.root and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then current.root:SetNetworkOwnershipAuto() end
 	local profile=self.data:Get(player.UserId)
 	local humanoid=current.character:FindFirstChildOfClass("Humanoid")
 	if humanoid and profile then humanoid.WalkSpeed=Forms.Get(profile.Data.VerityLevel).speed end
@@ -213,8 +214,9 @@ function Service:Activate(player,slot,direction)
 		if not self:Attack(player,item,id,character,root,direction.Unit) then return end
 		cooldowns[slot]=now+item.Cooldown;player:SetAttribute("VerityAttackReadyAt",cooldowns[slot]);return
 	end
-	self:Stop(player,false)
 	local action=item.MobilityAction or item.Action
+	if (action=="leap" or action=="flight") and not root:CanSetNetworkOwnership() then return end
+	self:Stop(player,false)
 	local duration=if item.MobilityAction then item.FlightDuration else item.Duration
 	cooldowns[slot]=now+(item.FlightCooldown or item.Cooldown)
 	player:SetAttribute("VerityAbilityReadyAt",cooldowns[slot])
@@ -227,11 +229,26 @@ function Service:Activate(player,slot,direction)
 		local hit=self:Cast(character,root.Position,root.Position+delta*10)
 		if not hit then root:ApplyImpulse(delta*root.AssemblyMass*item.Power) end
 	elseif action=="leap" then
-		root:ApplyImpulse(Vector3.yAxis*root.AssemblyMass*item.Power);humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		-- ChangeState must run on the simulator that owns this assembly.
+		-- Give replication one physics step before launching, then return control.
+		root:SetNetworkOwner(nil);current.ownsPhysics=true
+		humanoid.Jump=false;humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+		task.spawn(function()
+			RunService.Heartbeat:Wait()
+			if self.active[player]~=current or player.Character~=character or humanoid.Health<=0
+				or not root:IsDescendantOf(workspace) or root.Anchored or humanoid.SeatPart then return end
+			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+			-- Reach the launch speed even while falling; don't add to an upward jump.
+			local deltaY=math.max(0,item.Power-root.AssemblyLinearVelocity.Y)
+			root:ApplyImpulse(Vector3.yAxis*root.AssemblyMass*deltaY)
+			task.delay(.2,function()
+				if self.active[player]~=current or not root:IsDescendantOf(workspace) then return end
+				if root:CanSetNetworkOwnership() then root:SetNetworkOwnershipAuto();current.ownsPhysics=false end
+			end)
+		end)
 	elseif action=="sprint" then current.speed=item.Power;humanoid.WalkSpeed=current.speed
 	elseif action=="flight" then
-		if not root:CanSetNetworkOwnership() then self:Stop(player);return end
-		root:SetNetworkOwner(nil);current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
+		root:SetNetworkOwner(nil);current.ownsPhysics=true;current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
 		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 		local attachment=Instance.new("Attachment");attachment.Name="VerityFlight";attachment.Parent=root;current.attachment=attachment
 		local lift=Instance.new("LinearVelocity");lift.Attachment0=attachment;lift.RelativeTo=Enum.ActuatorRelativeTo.World
