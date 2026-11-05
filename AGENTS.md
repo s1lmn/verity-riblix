@@ -262,3 +262,11 @@ Flight12s/cooldown18s, геройский18s/24s. Steer10Hz, короткий Ju
 без ввода hover, stale direction обнуляется через0.35s. Серверная авторизация и
 ограничения сохранены. Документация/проверки:docs/ABILITY_MOTION_FIX.md,
 tools/check_ability_motion.py. Mock checks не подтверждают реальную физику; без Play.
+
+## Слияние исправлений способностей
+
+При push подтянуты fa69418/c8ac67d. Сохранены физические двери, новый рост/смерч,
+двухслойный combat raycast, CombatResult, серверная физика dash/leap/flight и Stop.
+Наши сокращение пути dash, полёт12/18s, Steer10Hz/timeout и таймер сохранены.
+Drive force ограничена Mass×1800. Подробности:docs/ABILITY_MOTION_FIX.md.
+Проверки кода/сборка без Play прошли, новый push разрешён пользователем.

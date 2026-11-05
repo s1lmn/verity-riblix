@@ -30,7 +30,7 @@ local function advance(t)
 end
 local workspace={GetServerTimeNow=function()return now end}
 function workspace:Blockcast(cf,size,delta,params)self.cast={cf=cf,size=size,delta=delta,params=params};return self.hit end
-local Enum={RaycastFilterType={Exclude=1},ActuatorRelativeTo={World=1},VelocityConstraintMode={Plane='plane',Vector='vector'},HumanoidStateType={Jumping=1,Freefall=2}}
+local Enum={RaycastFilterType={Exclude=1,Include=2},ActuatorRelativeTo={World=1},VelocityConstraintMode={Plane='plane',Vector='vector'},HumanoidStateType={Jumping=1,Freefall=2}}
 local RaycastParams={new=function()return {}end}
 local Instance={new=function(class)
  local o={ClassName=class,OnServerEvent=signal()}
@@ -41,12 +41,14 @@ local Catalog=(function() CATALOG end)()
 local Forms=(function() FORMS end)()
 local Numeric=(function() NUMERIC end)()
 local RS={Shared={VerityAbilities='forms',AbilityCatalog='catalog',Numeric='numeric'}}
-local game={GetService=function(_,n)return if n=='ReplicatedStorage' then RS else {}end}
+local PlayerList={}
+local ServerPlayers={GetPlayers=function()return PlayerList end}
+local game={GetService=function(_,n)return if n=='ReplicatedStorage' then RS elseif n=='Players' then ServerPlayers else {}end}
 local function require(k)return ({forms=Forms,catalog=Catalog,numeric=Numeric})[k]end
 local Service=(function() SERVICE end)()
 local function fixture(id)
- now=100;delayed={};workspace.hit=nil
- local root={Position=vec(0,3,0),Size=vec(2,2,1),CFrame={LookVector=vec(0,0,-1)},AssemblyMass=10,Parent=workspace}
+ now=100;delayed={};workspace.hit=nil;workspace.solidHit=nil;workspace.bodyHit=nil
+ local root={Position=vec(0,3,0),Size=vec(2,2,1),CFrame={LookVector=vec(0,0,-1)},AssemblyMass=10,AssemblyLinearVelocity=Vector3.zero,Parent=workspace}
  function root:IsDescendantOf(w)return self.Parent==w end
  function root:CanSetNetworkOwnership()return not self.denyOwner end
  function root:SetNetworkOwner(v)self.serverOwned=v==nil end
@@ -61,6 +63,7 @@ local function fixture(id)
  function player:SetAttribute(k,v)self.attrs[k]=v end
  function player:GetAttribute(k)return self.attrs[k]end
  local profile={Data={VerityUnlocked=true,VerityLevel=100,AbilitiesOwned={[id]=true},AbilitiesEquipped={Mobility=id}},HeroPassOwned=id=='homelander'}
+ PlayerList={player}
  local data={Get=function(_,uid)return if uid==1 then profile else nil end}
  local s=Service.new(data,{sessions={[1]={}}},{anchors={}},{records={}})
  s.remote.FireAllClients=function(_,e)s.event=e end
@@ -68,7 +71,7 @@ local function fixture(id)
  return s,player,root,hum,profile
 end
 local s,p,r,h=fixture('dash');s:Activate(p,'Mobility')
-assert(s.active[p] and s.active[p].velocity.VelocityConstraintMode=='plane')
+assert(s.active[p] and s.active[p].velocity.VelocityConstraintMode=='plane' and r.serverOwned,'dash ownership was not transferred')
 assert(s.active[p].velocity.PlaneVelocity.Y==-65 and not r.impulse,'dash still depends on one impulse')
 assert(workspace.cast.params.RespectCanCollide and math.abs(workspace.cast.delta.Magnitude-19.5)<1e-6)
 advance(.3);assert(not s.active[p] and h.WalkSpeed==32)
@@ -90,7 +93,29 @@ s,p=fixture('homelander');s:Activate(p,'Mobility');assert(s.active[p].untilTime=
 s,p,r=fixture('flight');r.denyOwner=true;s:Activate(p,'Mobility');assert(not s.active[p] and not p:GetAttribute('VerityAbilityReadyAt'))
 s,p,r,h,profile=fixture('dash');profile.Data.AbilitiesOwned={};s:Activate(p,'Mobility');assert(not s.active[p],'unowned action allowed')
 s,p,r,h=fixture('dash');s:Activate(p,'Mobility');local active=s.active[p];s:Activate(p,'Steer',vec(1,0,0));assert(active.velocity.VectorVelocity==nil,'steer hijacked dash')
-print('Ability server: sustained swept dash, obstacle/cooldown, ownership,12/18s flight,10Hz steering, stale input, altitude and cleanup passed; no Play')
+s,p,r,h=fixture('leap');s:Activate(p,'Mobility');assert(r.serverOwned and r.AssemblyLinearVelocity.Y==68,'team leap fix lost')
+function workspace:Raycast(origin,delta,params)
+ if params.RespectCanCollide then return self.solidHit else return self.bodyHit end
+end
+local function shoot(covered)
+ local service,player,root,hum,profile=fixture('dash')
+ profile.Data.AbilitiesOwned.repulsor=true;profile.Data.AbilitiesEquipped.Attack='repulsor'
+ local target={Parent=workspace,Position=vec(0,5,-30)}
+ service.targets.records[target]={health=100}
+ service.targets.Damage=function(_,part,damage)assert(part==target);return damage end
+ if covered then
+  workspace.solidHit={Instance={},Distance=8,Position=vec(0,5,-8)}
+  workspace.bodyHit={Instance=target,Distance=30,Position=target.Position}
+ else
+  workspace.solidHit={Instance=target,Distance=30,Position=target.Position}
+ end
+ service:Activate(player,'Attack',vec(0,0,-1));advance(.2)
+ assert(service.blocked and service.blocked.kind=='CombatResult')
+ return service.blocked.damage
+end
+assert(shoot(false)==18,'actual team attack/result path failed')
+assert(shoot(true)==0,'attack damaged through cover after merge')
+print('Ability server: dash/ownership, leap,12/18s flight, steering/cleanup and real attack feedback/cover passed; no Play')
 '''
 h += "\n" + r'''
 -- Actual client constructor/heartbeat: latch short jump inputs and show active time.

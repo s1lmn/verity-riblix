@@ -20,7 +20,7 @@ def tree(path,x,z,scale=1):
 def bench(path,x,z):
     group(path)
     part(path+'/Seat',(x,1.8,z),(3,.5,8),'wood')
-    part(path+'/Back',(x+1.2,3,z),(.5,2.5,8),'mint')
+    part(path+'/Back',(x+1.2,3,z),(.5,2.5,7.8),'mint')
     for dz in (-2.5,2.5):part(path+f'/Leg{dz}',(x,.8,z+dz),(2.5,1.6,.5),'navy')
 
 group('GeneratedWorld');group('GeneratedWorld/Environment');group('GeneratedWorld/Plots');group('GeneratedWorld/Plaza')
@@ -43,8 +43,9 @@ for row in range(8):
         pid=row*2+(1 if side==-1 else 2);root=f'GeneratedWorld/Plots/Plot_{pid:02}'
         group(root);group(root+'/Markers','Folder')
         part(root+'/Lawn',(side*85,.08,z),(120,.16,70),'lawn',studs=True)
-        part(root+'/Path',(side*40,.2,z),(30,.4,8),'paving',studs=True)
-        part(root+'/Porch',(side*51,.25,z),(6,.5,12),'cream',studs=True)
+        # The path, porch, and indoor floor meet at x=48 and x=53 without shared top faces.
+        part(root+'/Path',(side*36.55,.2,z),(22.9,.4,8),'paving',studs=True)
+        part(root+'/Porch',(side*50.5,.25,z),(5,.5,12),'cream',studs=True)
         part(root+'/VerityPlatform',(side*37,.35,z+24),(17,.7,17),'cream',studs=True)
         part(root+'/PlatformInset',(side*37,.73,z+24),(14,.06,14),palette[row],False,studs=True)
         part(root+'/UpgradeStation',(side*29,1,z+33),(3,2,2.5),palette[row])

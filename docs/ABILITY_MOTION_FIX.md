@@ -37,3 +37,20 @@ Play не запускался по действующему указанию. �
 API справка: [Blockcast](https://create.roblox.com/docs/reference/engine/classes/WorldRoot#Blockcast),
 [LinearVelocity](https://create.roblox.com/docs/reference/engine/classes/LinearVelocity),
 [ownership](https://create.roblox.com/docs/physics/network-ownership).
+
+## Объединение с c8ac67d
+
+При отправке получена командная fa69418/c8ac67d с независимыми исправлениями
+способностей. Сохранены CombatRays (отдельно физическое укрытие/неколлизионные
+конечности), правильный источник повторного луча, числовой damage и CombatResult,
+клиентская корректировка прицела. Декор пропускает выстрел, твёрдое укрытие блокирует.
+Командный leap устанавливает вертикальную скорость под server ownership.
+Dash/leap/flight временно передают физику серверу; Stop возвращает ownership и
+сбрасывает остаточную горизонтальную скорость dash. Drive использует ограниченную
+силу Mass×1800 (командная настройка), а не бесконечную силу первоначального fix.
+Наши body sweep/сокращение пути/12–18s/10Hz/watchdog/таймер сохранены.
+
+Командные физические двери, стройка, камера и облегчённый смерч объединены без
+замены нашей серии1–100. Проверка check_ability_motion дополнена фактическим
+attack/result path, отказом урона за укрытием, leap и ownership. Это mocks, не Play.
+Компиляция и полная сборка прошли; push разрешён новым прямым поручением пользователя.

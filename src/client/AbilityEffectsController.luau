@@ -6,6 +6,7 @@ local RunService=game:GetService("RunService")
 local Tween=game:GetService("TweenService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
 local Cleanup=require(script.Parent.Cleanup)
+local Locale=require(script.Parent.Locale)
 local Visuals=require(script.Parent.AbilityVisuals)
 local Controller={};Controller.__index=Controller
 local function part(parent,pos,size,color,ball)
@@ -65,9 +66,14 @@ end
 function Controller:Event(event)
 	if type(event)~="table" then return end
 	if event.kind=="Blocked" then
-  local messages={SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления."}
-  self.ctx.notifications:Show(messages[event.code] or messages.SAFE_ZONE);return
+  local messages={SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
+  self.ctx.notifications:Show(Locale.Text(messages[event.code] or messages.SAFE_ZONE));return
  end
+	if event.kind=="CombatResult" then
+		if event.damage>0 then self.ctx.notifications:Show(string.format(Locale.Text("Попадание • %s урона"),Locale.Number(event.damage)))
+		else self.ctx.notifications:Show(Locale.Text("Промах. Наведи прицел на цель без укрытия.")) end
+		return
+	end
 	local item=Catalog.Items[event.itemId]
 	local player=Players:GetPlayerByUserId(event.ownerUserId)
 	if not item or not player or not player.Character then return end

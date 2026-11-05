@@ -159,7 +159,11 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(id,product,_pu
  -- Closes prompt only. Never grants an entitlement from this event.
  Cosmetics:ClosePrompt(id,product)
 end)
-World.houseProgression = require(script.Parent.HouseProgression).new(World, Players, function(player, feature)
+World.houseProgression = require(script.Parent.HouseProgression).new(World, Players, function(player, feature, doorOwnerId)
+	if feature == "DoorExit" then
+		if Upgrade:SetHouseDoor(doorOwnerId, false) == "OK" then State:Publish(doorOwnerId, true) end
+		return
+	end
 	local id = player.UserId
 	local plotId = Plots.owners[id]
 	if not plotId then return end
