@@ -99,7 +99,7 @@ function Controller:Render()
 	local humanoid=char and char:FindFirstChildOfClass("Humanoid")
 	local riding=Players.LocalPlayer:GetAttribute("VerityRiding")==true
  local state=ctx.net.state
- local visible=not ctx.active and not ctx.presenting and humanoid and humanoid.Health>0
+ local visible=not Players.LocalPlayer:GetAttribute("VerityRaceSlot") and not ctx.active and not ctx.presenting and humanoid and humanoid.Health>0
 	local rideButton=ctx.refs.RideButton
  rideButton.Visible=visible and state and state.VerityUnlocked and state.VerityLevel>=Ride.MinLevel or false
  local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "L3 " else "R "

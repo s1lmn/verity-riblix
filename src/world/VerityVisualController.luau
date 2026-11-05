@@ -13,6 +13,7 @@ local Personality=require(Shared.VerityPersonality)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
 local Ride=require(Shared.VerityRideConfig)
+local Race=require(Shared.VerityRaceConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
 local Players=game:GetService("Players")
@@ -146,7 +147,8 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
  local pose=lifted*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0)
  local camera=workspace.CurrentCamera
  if record.riding then pose=record.origin end
- if model:GetAttribute("FollowOwner") and camera and not record.riding then
+ if record.racing then pose=record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0)end
+ if model:GetAttribute("FollowOwner") and camera and not record.riding and not record.racing then
   -- Rotate around the ball's centre, not its bottom pivot. Giant forms can
   -- look down toward a ground-level camera without shifting into that camera.
   local center=lifted.Position+Vector3.new(0,.85*scale,0)
@@ -319,6 +321,21 @@ function Controller:Follow(record,now,dt)
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model);return false end
+ record.racing=false
+ local raceSlot=owner:GetAttribute("VerityRaceSlot")
+ if type(raceSlot)=="number" and raceSlot%1==0 and raceSlot>=1 and raceSlot<=Race.MaxPlayers then
+  record.racing=true;record.riding=false
+  record.raceLevel=owner:GetAttribute("VerityRaceLevel") or record.level
+  local started=owner:GetAttribute("VerityRaceStartedAt")
+  local elapsed=started and math.max(0,workspace:GetServerTimeNow()-started)
+  local target=Race.Position(raceSlot,elapsed,owner:GetAttribute("VerityRaceFinishSeconds"),owner:GetAttribute("VerityRaceSeed"),.85*Levels.getVerityScale(record.raceLevel))
+  record.teleported=(record.origin.Position-target).Magnitude>Follow.TeleportDistance
+  record.origin=CFrame.new(target)*CFrame.Angles(0,math.pi,0)
+  record.velocity=if started then Vector3.new(0,0,10) else Vector3.zero
+  record.lastRoot=root.Position;record.mode="Racing";record.followStarted=false
+  record.model:SetAttribute("CompanionMode","Racing");visibility(record,0)
+  return true
+ end
  record.riding=owner:GetAttribute("VerityRiding")==true
  local scale=Levels.getVerityScale(if record.riding then record.model:GetAttribute("VerityLevel") else record.adminLevel or record.model:GetAttribute("VerityLevel"))
  if record.riding then
@@ -436,7 +453,7 @@ function Controller:Tick(now,dt)
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
 		local spawning=reveal and reveal.event.ownerUserId==record.owner and reveal.event.plotId==record.plot
 		local step=dt
-		if graphics and graphics.RemoteInterval>0 and Client and record.owner~=Client.UserId and not record.active and not spawning then
+		if graphics and graphics.RemoteInterval>0 and Client and record.owner~=Client.UserId and not record.active and not record.racing and not spawning then
 			record.budgetElapsed=(record.budgetElapsed or 0)+(dt or 1/60)
 			if record.budgetElapsed<graphics.RemoteInterval then continue end
 			step=record.budgetElapsed;record.budgetElapsed=0
@@ -444,6 +461,9 @@ function Controller:Tick(now,dt)
   record.spawnCover=if spawning then reveal.pose.cover else 0
   if spawning then reveal.boundModel=model end
   if not self:Follow(record,now,step) then continue end
+  if record.racing and record.active then
+   self.effects:CancelUpgrade(model);self:Finish(record,now)
+  end
   if spawning and not self.settings.values.ReducedMotion then
    local start=CFrame.new(reveal.origin.Position+Vector3.new(0,1.15,0))*record.origin.Rotation
    record.origin=start:Lerp(record.origin,reveal.pose.join)
@@ -451,7 +471,7 @@ function Controller:Tick(now,dt)
 		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<(graphics and graphics.EffectDistance or Profile.IdleDistance)
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
-			local event=if spawning or record.adminLevel then nil else record.ledger:Pop()
+			local event=if spawning or record.adminLevel or record.racing then nil else record.ledger:Pop()
 			if event then
 				record.active={event=event,started=now,yaw=record.lastYaw,lift=record.lastLift,burst=false}
 				self.Started:Fire(event,model)
@@ -472,7 +492,7 @@ function Controller:Tick(now,dt)
 			local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
 			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics) or not near)
 		end
-		local renderLevel=if record.riding then record.level else record.adminLevel or record.level
+		local renderLevel=if record.racing then record.raceLevel elseif record.riding then record.level else record.adminLevel or record.level
   local scale=Levels.getVerityScale(renderLevel)
 		local stage=Profile.Stage(renderLevel)
 		if active then

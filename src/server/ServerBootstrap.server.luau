@@ -118,6 +118,11 @@ if generatedWorld and generatedWorld:FindFirstChild("VerityParkour") then Parkou
 local StreetDelivery=require(script.Parent.StreetDeliveryService).new(Data,State,Economy,Players,clock,function(id,code,reward)
  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="StreetDelivery",reward=reward,eventId=guid()})
 end,workspace)
+local Race=require(script.Parent.VerityRaceService).new(Data,State,Economy,Players,clock,function(id,code,reward)
+ if code=="RACE_WIN" then World:React(id,"Stars",4)end
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="VerityRace",reward=reward,eventId=guid()})
+end)
+if generatedWorld and generatedWorld:FindFirstChild("VerityRaceTrack") then Race:Bind(generatedWorld.VerityRaceTrack)end
 local abilityShopRemote=Instance.new("RemoteEvent")
 abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
 require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
@@ -245,7 +250,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -296,6 +301,7 @@ local function onCharacter(player, character)
 	local death = humanoid.Died:Connect(function()
 		Abilities:Stop(player)
   Parkour:SetRun(player,nil)
+  Race:Remove(player)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -353,6 +359,7 @@ for plotId, anchors in World.anchors do
 end
 local function removePlayer(player)
  Parkour:Remove(player)
+ Race:Remove(player,true)
 	Abilities:Remove(player)
 	languages[player] = nil
 	local id = player.UserId
@@ -381,7 +388,7 @@ local incomeElapsed, stateElapsed, taskElapsed, houseElapsed = 0, 0, 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
 	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick() end
+	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick();Race:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then

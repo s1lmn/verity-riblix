@@ -112,6 +112,9 @@
         },
         "StreetDeliveryService": {
           "$path": "src/server/StreetDeliveryService.luau"
+        },
+        "VerityRaceService": {
+          "$path": "src/server/VerityRaceService.luau"
         }
       }
     },

@@ -67,6 +67,7 @@ function Adapter:Attach(folder)
 							local messages={OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
 								PARKOUR_FINISH="Паркур пройден! Награда получена.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
         STREET_DELIVERY_STARTED="Фургон Verity Express в районе! Следи за посылкой на главной дороге.",STREET_DELIVERY_DROPPED="Посылка выпала! Успей первым подобрать её на тротуаре.",STREET_DELIVERY_REWARD="Посылка твоя! Награда получена.",
+        RACE_JOINED="Ты в заезде! Дождись второго участника у своего места.",RACE_STARTED="Старт! Болей за своего Verity!",RACE_WIN="Твой Verity победил! Награда получена.",RACE_FINISH="Заезд завершён! Можно попробовать ещё раз.",RACE_CANCELLED="Недостаточно участников. Verity вернулся к тебе.",
         COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
 							if payload.source=="HouseFeature" then
 								messages={OK="Дом улучшен!",INSUFFICIENT_CASH="Не хватает денег",
