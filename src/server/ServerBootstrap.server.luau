@@ -115,6 +115,9 @@ local Parkour=require(script.Parent.ParkourService).new(Data,State,Economy,clock
  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Parkour",reward=reward,eventId=guid()})
 end,function(player)Abilities:Stop(player)end)
 if generatedWorld and generatedWorld:FindFirstChild("VerityParkour") then Parkour:Bind(generatedWorld.VerityParkour,Players) end
+local StreetDelivery=require(script.Parent.StreetDeliveryService).new(Data,State,Economy,Players,clock,function(id,code,reward)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="StreetDelivery",reward=reward,eventId=guid()})
+end,workspace)
 local abilityShopRemote=Instance.new("RemoteEvent")
 abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
 require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
@@ -242,7 +245,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, ParkourService=Parkour, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -378,7 +381,7 @@ local incomeElapsed, stateElapsed, taskElapsed, houseElapsed = 0, 0, 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
 	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick();Parkour:Tick() end
+	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then

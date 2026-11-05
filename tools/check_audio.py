@@ -136,6 +136,12 @@ assert(calls[#calls]=='BoxCeremony','ceremony used overlapping spawn cue')
 visuals.SpawnStopped:Fire(nil) -- Signal fixture is single-argument; nil means cancellation.
 assert(calls[#calls]=='stop:BoxCeremony','cancelled ceremony audio remained')
 routing:Destroy()
+ctx.net.Notification:Fire({code='STREET_DELIVERY_DROPPED',eventId='street_drop_1'})
+assert(calls[#calls]=='DeliveryArrived','street drop cue missing')
+n=#calls;ctx.net.Notification:Fire({code='STREET_DELIVERY_DROPPED',eventId='street_drop_1'});assert(#calls==n,'street drop audio replay')
+ctx.net.Notification:Fire({code='STREET_DELIVERY_REWARD',eventId='street_reward_1'})
+assert(calls[#calls]=='ParcelCollected','confirmed parcel pickup cue missing')
+n=#calls;ctx.net.Notification:Fire({code='STREET_DELIVERY_REWARD',eventId='street_reward_1'});assert(#calls==n,'parcel reward audio replay')
 print('Gameplay audio: confirmed grants only, delivery transition, task deduplication and owner-only reveal passed')
 '''.replace('GAMEPLAY_SOURCE',gameplay)
 with tempfile.TemporaryDirectory(prefix='verity-audio-') as temp:

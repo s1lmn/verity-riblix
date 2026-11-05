@@ -249,6 +249,12 @@ local ru = {
 	[" m"] = " м",
 }
 local en = {
+ ["Фургон Verity Express в районе! Следи за посылкой на главной дороге."] = "Verity Express is here! Watch for a parcel on the main road.",
+ ["Посылка выпала! Успей первым подобрать её на тротуаре."] = "A parcel fell out! Be first to collect it on the sidewalk.",
+ ["Посылка твоя! Награда получена."] = "The parcel is yours! Reward received.",
+ ["Упавшая посылка"] = "Dropped parcel",
+ ["Подобрать"] = "Collect",
+ ["ПОСЫЛКА! • %d с"] = "PARCEL! • %d s",
  ["Взлетаем!"] = "Taking off!",
  ["Приземляемся"] = "Landing",
  ["Подлети к свободному месту для приземления."] = "Fly to an open landing spot.",

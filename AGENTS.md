@@ -309,3 +309,16 @@ L3 заменяет конфликтующий Y (Y принадлежит ме�
 CanQuery сохраняется, владелец не задерживает swing. Изнутри хозяин может также
 закрыть дверь; прежний аварийный выход запертых гостей сохранён. Подробности и
 границы проверок:docs/OWNER_DOOR_PASSAGE.md,tools/check_owner_door.py. Без Play.
+
+## Уличная доставка Verity Express
+
+После push двери0b74b0c пользователь поручил следующий этап. Добавлен ранее
+предложенный им ивент фургона/выпадающей посылки: StreetDeliveryService,
+StreetDeliveryConfig, StreetDeliveryFactory, StreetDeliveryController. Первый
+старт45s/далее240s,24sпроезд,0.8sбросок,35sподбор, один победитель и15sbaseincome
+× прежний множитель. Серверные время/дистанция/LOS/сессия/выдача, нет claimRemote
+или новой save schema. Декоративная машина без коллизии, компактные атрибуты и
+клиентский проезд по серверному времени, один комплект моделей, reduced/cleanup.
+Прежние звуки DeliveryArrived/ParcelCollected с dedup, без двойного Reward.
+Детали/фактические границы проверки:docs/STREET_DELIVERY.md,
+tools/check_street_delivery.py. Новый этап локально, Play не запускать.

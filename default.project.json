@@ -112,6 +112,9 @@
         },
         "ParkourService": {
           "$path": "src/server/ParkourService.luau"
+        },
+        "StreetDeliveryService": {
+          "$path": "src/server/StreetDeliveryService.luau"
         }
       }
     },
