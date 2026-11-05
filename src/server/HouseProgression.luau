@@ -27,8 +27,8 @@ function HouseProgression:CanUseDoor(plotId,player,fromInside)
 	local point = record.pivot:PointToObjectSpace(root.Position)
 	local owner = state.ownerUserId==player.UserId
 	if not fromInside then return owner and point.Z>=14.25 end
-	return state.HouseDoorOwned and state.HouseDoorLocked and insideHouse(point)
-		and (owner or record.insideGuests[player.UserId]==character) or false
+	return state.HouseDoorOwned and insideHouse(point)
+  and (owner or state.HouseDoorLocked and record.insideGuests[player.UserId]==character) or false
 end
 
 local function part(parent, pivot, name, position, size, color)
@@ -184,7 +184,7 @@ function HouseProgression:Update(plotId,state)
 				end
 			end
 		end
-		record.door:Set(owned,locked,sameOwner and previous.HouseDoorOwned and owned)
+		record.door:Set(owned,locked,sameOwner and previous.HouseDoorOwned and owned,state and state.ownerUserId)
 	end
 	local signature=tostring(state and state.VerityUnlocked)..":"..tostring(state and state.ownerUserId)..":"..tostring(owned)..":"..tostring(upper)..":"..tostring(locked)
 	if record.signature==signature then return end
@@ -193,7 +193,8 @@ function HouseProgression:Update(plotId,state)
 	record.gate.Transparency=if upper then 1 else .48
 	record.floorControl.Transparency=1
 	record.doorPrompt.Enabled=state~=nil and state.VerityUnlocked
-	record.exitPrompt.Enabled=locked
+	record.exitPrompt.Enabled=owned
+ Locale.SetWorld(record.exitPrompt,"ActionText",if locked then "Открыть изнутри" else "Закрыть для гостей")
 	record.floorPrompt.Enabled=state~=nil and state.VerityUnlocked and not upper
 	Locale.SetWorld(record.doorPrompt,"ActionText",if not owned then "Купить за $%d" elseif locked then "Открыть гостям" else "Закрыть для гостей",table.unpack(if not owned then {Houses.Features.Door.Cost} else {}))
 	Locale.SetWorld(record.floorPrompt,"ActionText","Открыть за $%d",Houses.Features.SecondFloor.Cost)

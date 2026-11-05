@@ -165,7 +165,10 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(id,product,_pu
 end)
 World.houseProgression = require(script.Parent.HouseProgression).new(World, Players, function(player, feature, doorOwnerId)
 	if feature == "DoorExit" then
-		if Upgrade:SetHouseDoor(doorOwnerId, false) == "OK" then State:Publish(doorOwnerId, true) end
+		local session=State.sessions[doorOwnerId]
+  local locked=false
+  if player.UserId==doorOwnerId and session then locked=not session.HouseDoorLocked end
+  if Upgrade:SetHouseDoor(doorOwnerId, locked) == "OK" then State:Publish(doorOwnerId, true) end
 		return
 	end
 	local id = player.UserId

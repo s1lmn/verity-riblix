@@ -42,7 +42,58 @@ function Door.new(parent, housePivot)
 	model.WorldPivot = CFrame.identity
 	local axis = housePivot * CFrame.new(-3.64, 0, 14.25)
 	model:PivotTo(axis)
-	return setmetatable({model = model, leaf = leaf, parent = parent, axis = axis, angle = 0}, Door)
+	local self=setmetatable({model=model,leaf=leaf,parent=parent,axis=axis,angle=0,ownerLinks={},characterLinks={},passage={}},Door)
+ model.Destroying:Connect(function() self:Stop();self:ClearPassage() end)
+ return self
+end
+
+-- Per-part exceptions keep the closed leaf solid for everybody except its owner.
+-- Collision groups would require a separate pair for every plot/player.
+function Door:ClearCharacterPassage()
+ for _,link in self.characterLinks do link:Disconnect() end
+ table.clear(self.characterLinks)
+ for part,constraint in self.passage do constraint:Destroy();self.passage[part]=nil end
+ self.character=nil
+end
+function Door:ClearPassage()
+ self:ClearCharacterPassage()
+ for _,link in self.ownerLinks do link:Disconnect() end
+ table.clear(self.ownerLinks)
+ self.passPlayer=nil
+end
+function Door:BindCharacter(character)
+ self:ClearCharacterPassage()
+ if not character then return end
+ self.character=character
+ local function add(part)
+  if not part:IsA("BasePart") or self.passage[part] then return end
+  local constraint=Instance.new("NoCollisionConstraint")
+  constraint.Name="OwnerPassThrough";constraint.Part0=self.leaf;constraint.Part1=part
+  constraint.Parent=self.leaf;self.passage[part]=constraint
+ end
+ table.insert(self.characterLinks,character.DescendantAdded:Connect(add))
+ table.insert(self.characterLinks,character.DescendantRemoving:Connect(function(part)
+  local constraint=self.passage[part]
+  if constraint then constraint:Destroy();self.passage[part]=nil end
+ end))
+ for _,part in character:GetDescendants() do add(part) end
+end
+function Door:SetOwner(userId)
+ if self.ownerUserId==userId then return end
+ self:ClearPassage();self.ownerUserId=userId
+ if not userId then return end
+ local function bind(player)
+  if player.UserId~=self.ownerUserId or self.passPlayer then return end
+  self.passPlayer=player
+  table.insert(self.ownerLinks,player.CharacterAdded:Connect(function(character) self:BindCharacter(character) end))
+  table.insert(self.ownerLinks,player.CharacterRemoving:Connect(function(character)
+   if self.character==character then self:ClearCharacterPassage() end
+  end))
+  self:BindCharacter(player.Character)
+ end
+ table.insert(self.ownerLinks,Players.PlayerAdded:Connect(bind))
+ local player=Players:GetPlayerByUserId(userId)
+ if player then bind(player) end
 end
 
 function Door:Stop()
@@ -54,7 +105,8 @@ function Door:Apply(angle)
 	self.model:PivotTo(self.axis * CFrame.Angles(0, angle, 0))
 end
 
-function Door:Set(owned, closed, animate)
+function Door:Set(owned, closed, animate, ownerUserId)
+ self:SetOwner(if owned then ownerUserId else nil)
 	self:Stop()
 	self.leaf.CanCollide, self.leaf.CanQuery = owned, owned
 	local target = if closed then 0 else OPEN_ANGLE
@@ -71,6 +123,7 @@ function Door:Set(owned, closed, animate)
 		local nextAngle = from + (target - from) * t * t * (3 - 2 * t)
 		local nextLeaf = self.axis * CFrame.Angles(0, nextAngle, 0) * LEAF_OFFSET
 		for _, player in Players:GetPlayers() do
+   if player.UserId==self.ownerUserId then continue end
 			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if not root then continue end
 			local position = nextLeaf:PointToObjectSpace(root.Position)
