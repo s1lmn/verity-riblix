@@ -378,12 +378,14 @@ task.spawn(function()
 		task.wait(Config.SaveInterval)
 		if closing then break end
 		for id, profile in Data.profiles do
-			if not profile.Closing then
-				task.spawn(function()
+			task.spawn(function()
+				if profile.Closing then
+					if not Data:ReleaseAsync(id) then warn("Profile release retry failed", id) end
+				else
 					local ok, reason = Data:SaveAsync(id, false)
 					if not ok then warn("Autosave failed", id, reason) end
-				end)
-			end
+				end
+			end)
 		end
 	end
 end)
@@ -405,6 +407,6 @@ game:BindToClose(function()
 		task.spawn(function() Data:ReleaseAsync(id); pending -= 1 end)
 	end
 	local deadline = clock() + 25
-	while (pending > 0 or next(Data.loading) ~= nil) and clock() < deadline do task.wait(0.1) end
+	while (pending > 0 or next(Data.loading) ~= nil or next(Data.profiles) ~= nil) and clock() < deadline do task.wait(0.1) end
 end)
 print("VERITY Core ready", Config.PlotCount, "plots; protocol v1")
