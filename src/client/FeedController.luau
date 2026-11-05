@@ -378,7 +378,7 @@ function Feed.new(viewport, animation, settings, onReady, onCharge)
 	W.New("UITextSizeConstraint",{MinTextSize=8,MaxTextSize=12},hint)
 	self.card=cover
 	self.settingsConnection=settings.Changed.Event:Connect(function(values)
-		if values.ReducedMotion or values.ReducedEffects then self:FinishReveal() end
+		if values.ReducedMotion or (values.ReducedEffects or values.LowGraphics) then self:FinishReveal() end
 	end)
 	return self
 end
@@ -541,7 +541,7 @@ function Feed:Reveal(index, reward, animate, onImpact, isNew)
 	self.card=card
 	if not animate or self.settings.values.ReducedMotion then old:Destroy();onImpact(nil);return end
 	local profile=reveals[rarity.multiplier]
-	if profile and not self.settings.values.ReducedEffects then
+	if profile and not (self.settings.values.ReducedEffects or self.settings.values.LowGraphics) then
 		old:Destroy()
 		self:Celebrate(card,rarity,payout,profile,onImpact)
 		return

@@ -4,8 +4,8 @@ local RunService=game:GetService("RunService")
 local Cleanup=require(script.Parent.Cleanup)
 local Surfaces={};Surfaces.__index=Surfaces
 local BUDGET=48
-function Surfaces.new()
- local self=setmetatable({cleanup=Cleanup.new(),parts={},queue={},cursor=1},Surfaces)
+function Surfaces.new(settings)
+ local self=setmetatable({cleanup=Cleanup.new(),settings=settings,parts={},queue={},cursor=1},Surfaces)
  local function add(object)
   if not object:IsA("BasePart") or self.parts[object] or not object:FindFirstAncestor("GeneratedWorld") then return end
   local studs=object.TopSurface==Enum.SurfaceType.Studs or object:GetAttribute("StudSurfaceDetail")==true
@@ -31,8 +31,9 @@ function Surfaces.new()
 end
 function Surfaces:Tick(now)
  local camera=workspace.CurrentCamera;if not camera then return end
+ local graphics=self.settings and self.settings.values.Graphics
  local processed=0
- local limit=math.min(BUDGET,#self.queue)
+ local limit=math.min(if graphics and graphics.Tier==1 then 24 else BUDGET,#self.queue)
  while processed<limit and #self.queue>0 do
   if self.cursor>#self.queue then self.cursor=1 end
   local record=self.queue[self.cursor];local object=record.object
@@ -42,19 +43,23 @@ function Surfaces:Tick(now)
    continue
   end
   self.cursor+=1
-  if now-record.last<.12 then continue end
+  if now-record.last<(if graphics and graphics.Tier==1 then .25 else .12)then continue end
   local elapsed=math.min(.5,now-record.last);record.last=now
   local p=object.CFrame:PointToObjectSpace(camera.CFrame.Position);local half=object.Size*.5
   local dx,dy,dz=math.max(0,math.abs(p.X)-half.X),math.max(0,math.abs(p.Y)-half.Y),math.max(0,math.abs(p.Z)-half.Z)
   local distance=math.sqrt(dx*dx+dy*dy+dz*dz)
   if record.studs then
-   local smooth=if record.smooth then distance>40 else distance>64
+   local near=math.min(40,graphics and graphics.StudsNear or 40)
+   local far=math.min(64,graphics and graphics.StudsFar or 64)
+   local smooth=if graphics and graphics.Tier==1 then true elseif record.smooth then distance>near else distance>far
    if smooth~=record.smooth then
     record.smooth=smooth;object.TopSurface=if smooth then Enum.SurfaceType.Smooth else Enum.SurfaceType.Studs
    end
   end
   if record.glass and object:GetAttribute("ConstructionVisible")~=false then
-   local target=record.baseAlpha+(1-record.baseAlpha)*math.clamp((distance-90)/60,0,1)
+   local near=math.min(90,graphics and graphics.GlassNear or 90)
+   local far=math.min(150,graphics and graphics.GlassFar or 150)
+   local target=record.baseAlpha+(1-record.baseAlpha)*math.clamp((distance-near)/(far-near),0,1)
    record.alpha+=(target-record.alpha)*(1-math.exp(-8*elapsed))
    if math.abs(record.alpha-target)<.005 then record.alpha=target end
    if math.abs(object.LocalTransparencyModifier-record.alpha)>.002 then object.LocalTransparencyModifier=record.alpha end

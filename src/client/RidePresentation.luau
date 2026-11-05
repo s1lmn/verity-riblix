@@ -47,13 +47,14 @@ function Presentation:Record(player,character,root)
 end
 function Presentation:Tick(dt)
  local camera=workspace.CurrentCamera
- local effects=self.ctx.settings.values.ReducedEffects
+ local effects=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics)
+ local graphics=self.ctx.settings.values.Graphics
  local reducedMotion=self.ctx.settings.values.ReducedMotion
  local seen=self.seen;table.clear(seen)
  for _,player in Players:GetPlayers() do
   local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart")
   local hum=char and char:FindFirstChildOfClass("Humanoid")
-  local nearby=root and camera and (root.Position-camera.CFrame.Position).Magnitude<160
+  local nearby=root and camera and (root.Position-camera.CFrame.Position).Magnitude<(graphics and graphics.EffectDistance or 160)
   local riding=root and hum and hum.Health>0 and nearby and player:GetAttribute("VerityRiding")==true
   local record=self.records[player]
   if record and (record.character~=char or not root or not nearby or not hum or hum.Health<=0) then

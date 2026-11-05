@@ -82,14 +82,15 @@ function Controller:Event(event)
  local humanoid=player.Character:FindFirstChildOfClass("Humanoid")
  if not humanoid or humanoid.Health<=0 then return end
 	local camera=workspace.CurrentCamera
-	if not camera or (camera.CFrame.Position-event.origin).Magnitude>240 then return end
-	while #self.effects>=24 do local old=table.remove(self.effects,1);old.folder:Destroy();if old.highlight then old.highlight:Destroy() end end
+	local graphics=self.ctx.settings.values.Graphics
+	if not camera or (camera.CFrame.Position-event.origin).Magnitude>(graphics and graphics.AbilityDistance or 240) then return end
+	while #self.effects>=(graphics and graphics.MaxAbilityEffects or 24) do local old=table.remove(self.effects,1);old.folder:Destroy();if old.highlight then old.highlight:Destroy() end end
 	local folder=Instance.new("Folder");folder.Name=event.itemId;folder.Parent=self.folder
-	local color=Color3.fromHex(item.Color);local reduced=self.ctx.settings.values.ReducedEffects
+	local color=Color3.fromHex(item.Color);local reduced=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics)
 	local duration=if reduced and event.kind=="Attack" then math.min(event.duration,.4) else event.duration
 	local r={folder=folder,character=player.Character,owner=event.ownerUserId,started=os.clock(),duration=duration,lines={},item=item,kind=event.kind,origin=event.origin}
 	r.serverEndsAt=event.endsAt or (workspace:GetServerTimeNow()+event.duration)
-	Visuals.Prepare(r,reduced)
+	Visuals.Prepare(r,reduced,graphics and graphics.ParticleScale or 1)
 	table.insert(self.effects,r)
 	if event.kind=="Attack" then
 		local target=event.points[1]
@@ -145,7 +146,9 @@ function Controller:Event(event)
 	end
 end
 function Controller:Tick(dt)
-	self.elapsed+=dt;if self.elapsed<1/30 then return end;self.elapsed=0
+	local graphics=self.ctx.settings.values.Graphics
+	self.elapsed+=dt;if self.elapsed<(graphics and graphics.AbilityInterval or 1/30) then return end;self.elapsed=0
+	while #self.effects>(graphics and graphics.MaxAbilityEffects or 24) do local r=table.remove(self.effects,1);r.folder:Destroy() end
 	local now=os.clock();local camera=workspace.CurrentCamera
 	for index=#self.effects,1,-1 do
 		local r=self.effects[index];local player=Players:GetPlayerByUserId(r.owner)
@@ -172,7 +175,7 @@ function Controller:Tick(dt)
      local charge=math.clamp(age/.12,0,1)
      beam.eye.Size=Vector3.one*(.35+.45*charge)*(1+.08*math.sin(age*24))
      local eyeLight=beam.eye:FindFirstChildOfClass("PointLight")
-     if eyeLight then eyeLight.Brightness=(if self.ctx.settings.values.ReducedEffects then .4 else 1.5)*(1-math.clamp((alpha-.7)/.3,0,1)) end
+     if eyeLight then eyeLight.Brightness=(if (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) then .4 else 1.5)*(1-math.clamp((alpha-.7)/.3,0,1)) end
     end
 			end
    if beam.lightning and not self.ctx.settings.values.ReducedMotion then
@@ -196,8 +199,8 @@ function Controller:Tick(dt)
 	end
 	for model,r in self.stands do
 		if not model.Parent or not r.orb.Parent then self.stands[model]=nil;continue end
-		local close=camera and (camera.CFrame.Position-r.cf.Position).Magnitude<160
-		local reduced=self.ctx.settings.values.ReducedEffects
+		local close=camera and (camera.CFrame.Position-r.cf.Position).Magnitude<(graphics and graphics.StandDistance or 160)
+		local reduced=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics)
 		if r.light then r.light.Enabled=close;r.light.Brightness=(if r.premium then 2.5 else .5)*(1+.15*math.sin(now*2)) end
 		for _,e in r.emitters do e.Enabled=close and not reduced end
 		if close and not self.ctx.settings.values.ReducedMotion then r.orb.CFrame=r.cf*CFrame.new(0,math.sin(now*1.5)*(if r.premium then .3 else .12),0) end

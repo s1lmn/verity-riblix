@@ -57,7 +57,7 @@ function Feedback:HideBurst(burst)
 end
 function Feedback:Burst(position,now)
  if now-(self.lastBurst or -math.huge)<Profile.BurstCooldown then return end
- if self.ctx.settings.values.ReducedEffects or self.ctx.sound:IsCelebrating() or not root() then return end
+ if (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) or self.ctx.sound:IsCelebrating() or not root() then return end
  self.lastBurst=now
  local slot=self.bursts[1]
  for _,candidate in self.bursts do
@@ -74,7 +74,7 @@ function Feedback:StopArrival()
 end
 function Feedback:Arrival(state,now)
  self:StopArrival()
- if self.ctx.settings.values.ReducedMotion or self.ctx.settings.values.ReducedEffects then return end
+ if self.ctx.settings.values.ReducedMotion or (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) then return end
  local plots=workspace:FindFirstChild("CorePlots")
  local plot=plots and type(state.PlotId)=="number" and plots:FindFirstChild(string.format("Plot_%02d",state.PlotId))
  local source=plot and plot:FindFirstChild("CoreDeliveryBox")
@@ -123,7 +123,7 @@ function Feedback:TaskHighlights(now)
   local pulse=self.pulses[id]
   local active=entry.status=="Active"
   local near=r and target and target:IsA("BasePart") and (r.Position-target.Position).Magnitude<55
-  local visible=near and not self.ctx.settings.values.ReducedEffects and (active or pulse and now-pulse<.65)
+  local visible=near and not (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) and (active or pulse and now-pulse<.65)
   local glow=self.highlights[id]
   if not glow and visible then
    glow=Instance.new("Highlight");glow.Name="TaskFeedback_"..id
@@ -147,7 +147,7 @@ function Feedback:StopButton()
 end
 function Feedback:PressButton(now)
  self:StopButton()
- if self.ctx.settings.values.ReducedMotion or self.ctx.settings.values.ReducedEffects then return end
+ if self.ctx.settings.values.ReducedMotion or (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) then return end
  local folder=workspace:FindFirstChild("GameplayInteractions")
  local target=folder and folder:FindFirstChild("PRESS_BUTTON");local r=root()
  if not target or not target:IsA("BasePart") or not r or (r.Position-target.Position).Magnitude>30 then return end
@@ -170,7 +170,7 @@ function Feedback:Tick(now)
  self:TickArrival(now)
  if now>=(self.highlightAt or 0) then self.highlightAt=now+.1;self:TaskHighlights(now) end
  local reduced=self.ctx.settings.values.ReducedMotion
- local muted=self.ctx.settings.values.ReducedEffects or self.ctx.sound:IsCelebrating() or not root()
+ local muted=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) or self.ctx.sound:IsCelebrating() or not root()
  local camera=workspace.CurrentCamera
  for _,burst in self.bursts do
   if not burst.started then continue end

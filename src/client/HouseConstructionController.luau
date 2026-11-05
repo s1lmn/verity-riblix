@@ -34,7 +34,7 @@ function Controller.new(ctx)
     cancel(record,p)
     if p.Name:find("Glass") then continue end
     p.LocalTransparencyModifier=0
-    if animate and close and before==false and visible and budget>0 and not ctx.settings.values.ReducedEffects then
+    if animate and close and before==false and visible and budget>0 and not (ctx.settings.values.ReducedEffects or ctx.settings.values.LowGraphics) then
      budget-=1;p.LocalTransparencyModifier=1
      local tween=Tween:Create(p,TweenInfo.new(if ctx.settings.values.ReducedMotion then .15 else .65,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{LocalTransparencyModifier=0})
      record.tweens[p]=tween
@@ -65,7 +65,7 @@ function Controller.new(ctx)
  self.cleanup:Add(Collection:GetInstanceRemovedSignal("VerityGrowingHouse"):Connect(remove))
  for _,house in Collection:GetTagged("VerityGrowingHouse") do add(house) end
  self.cleanup:Add(ctx.settings.Changed.Event:Connect(function(values)
-  if not values.ReducedEffects and not values.ReducedMotion then return end
+  if not (values.ReducedEffects or values.LowGraphics) and not values.ReducedMotion then return end
   for _,r in self.records do
    for p in r.tweens do cancel(r,p);if p.Parent then p.LocalTransparencyModifier=0 end end
   end
