@@ -88,6 +88,9 @@
         },
         "AdminAccess": {
           "$path": "src/server/AdminAccess.luau"
+        },
+        "VerityBattleService": {
+          "$path": "src/server/VerityBattleService.luau"
         }
       },
       "GuidanceSmoke": {

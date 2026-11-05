@@ -609,6 +609,47 @@ local circleEnglish={
 }
 for source,target in circleEnglish do en[source]=target end
 
+
+local activityEnglish={
+ ["Нажми атаку • выходи из красных кругов"]="Tap attack • dodge the red circles",
+ ["R1 — атака • выходи из красных кругов"]="R1 — attack • dodge the red circles",
+ ["Сад прыжков"]="Jump Garden",
+ ["Радужный зигзаг"]="Rainbow Zigzag",
+ ["Лазерный ритм"]="Laser Rhythm",
+ ["Неоновые маятники"]="Neon Sweepers",
+ ["Острова точности"]="Precision Islands",
+ ["Звёздный подъём"]="Starlight Climb",
+ ["ЗОЛОТО"]="GOLD",
+ ["СЕРЕБРО"]="SILVER",
+ ["БРОНЗА"]="BRONZE",
+ ["Импульс арены"]="Arena Pulse",
+ ["Искра"]="Spark",
+ ["Страж"]="Watcher",
+ ["Неоновый титан"]="Neon Titan",
+ ["Начать битву"]="Start battle",
+ ["Арена Verity • 5 волн • бесплатно"]="Verity Arena • 5 waves • free",
+ ["БИТВЫ VERITY\n5 волн и босс • 1–4 игрока"]="VERITY BATTLES\n5 waves and a boss • 1–4 players",
+ ["Паркур Verity"]="Verity Parkour",
+ ["Выйти с маршрута"]="Leave course",
+ ["Вернуться к началу"]="Return to start",
+ ["%s • паркур за %d с"]="%s • parkour in %ds",
+ ["%d / %d • %d с • ошибок: %d"]="%d / %d • %ds • retries: %d",
+ ["АРЕНА • ВОЛНА %d / %d"]="ARENA • WAVE %d / %d",
+ ["G — атака • выходи из красных кругов"]="G — attack • dodge the red circles",
+ ["Готовься! Следующая волна через %d с"]="Get ready! Next wave in %ds",
+ ["На маршруте используй прыжки. Способности доступны после выхода."]="Use jumps on the course. Powers return when you leave.",
+ ["Ты на арене! Готовься к пяти волнам."]="You joined the arena! Get ready for five waves.",
+ ["Арена занята. Дождись конца битвы."]="Arena busy. Wait for the battle to end.",
+ ["Награда арены скоро обновится."]="Your arena reward will refresh soon.",
+ ["Сначала заверши текущую активность."]="Finish your current activity first.",
+ ["Новая волна! Выходи из красных кругов."]="New wave! Dodge the red circles.",
+ ["Появился Неоновый титан!"]="The Neon Titan has arrived!",
+ ["Пять волн пройдены! Награда получена."]="All five waves cleared! Reward collected.",
+ ["Битва завершена. Попробуй ещё раз!"]="Battle ended. Try again!",
+ ["Ловушка! Ты вернулся на контрольную точку."]="Trap! Returned to your checkpoint.",
+}
+for source,target in activityEnglish do en[source]=target end
+
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source
 end

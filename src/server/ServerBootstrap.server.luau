@@ -123,6 +123,19 @@ local Race=require(script.Parent.VerityRaceService).new(Data,State,Economy,Playe
  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="VerityRace",reward=reward,eventId=guid()})
 end)
 if generatedWorld and generatedWorld:FindFirstChild("VerityRaceTrack") then Race:Bind(generatedWorld.VerityRaceTrack)end
+local BattleModel=require(ReplicatedStorage.World.VerityBattleBuilder).Build(generatedWorld or workspace)
+local Battle=require(script.Parent.VerityBattleService).new(BattleModel,Data,State,Economy,Players,clock,CombatTargets,Abilities,function(id,code,reward)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="VerityBattle",reward=reward,eventId=guid()})
+end)
+Abilities.arena=Battle
+local activitiesRemote=Instance.new("RemoteEvent");activitiesRemote.Name="VerityActivities";activitiesRemote.Parent=ReplicatedStorage
+local activityLimits={}
+activitiesRemote.OnServerEvent:Connect(function(player,action,...)
+ if select("#",...)>0 or player.Parent~=Players or not Data:Get(player.UserId) or not (Battle.members[player] or Parkour.runs[player]) or clock()-(activityLimits[player] or -math.huge)<.5 then return end
+ activityLimits[player]=clock()
+ if action=="LeaveBattle" and Battle.members[player] then Battle:Remove(player,true)
+ elseif action=="LeaveParkour" and Parkour.runs[player] then Parkour:Return(player,true) end
+end)
 local abilityShopRemote=Instance.new("RemoteEvent")
 abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
 require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
@@ -250,7 +263,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -301,6 +314,7 @@ local function onCharacter(player, character)
 	local death = humanoid.Died:Connect(function()
 		Abilities:Stop(player)
   Parkour:SetRun(player,nil)
+  Battle:Remove(player,false)
   Race:Remove(player)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
@@ -358,6 +372,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+ Battle:Forget(player);activityLimits[player]=nil
  Parkour:Remove(player)
  Race:Remove(player,true)
 	Abilities:Remove(player)
@@ -388,7 +403,7 @@ local incomeElapsed, stateElapsed, taskElapsed, houseElapsed = 0, 0, 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
 	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick();Race:Tick() end
+	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval) end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then
