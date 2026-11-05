@@ -111,6 +111,10 @@ local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Econom
  send(id,"NotificationEvent",{protocolVersion=1,code="COMBAT_REWARD",reward=reward,eventId=guid(),source="Combat"})
 end)
 local Abilities = require(script.Parent.VerityAbilityService).new(Data, State, World, CombatTargets)
+local Parkour=require(script.Parent.ParkourService).new(Data,State,Economy,clock,function(id,code,reward)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Parkour",reward=reward,eventId=guid()})
+end,function(player)Abilities:Stop(player)end)
+if generatedWorld and generatedWorld:FindFirstChild("VerityParkour") then Parkour:Bind(generatedWorld.VerityParkour,Players) end
 local abilityShopRemote=Instance.new("RemoteEvent")
 abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
 require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
@@ -235,7 +239,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, ParkourService=Parkour, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -285,6 +289,7 @@ local function onCharacter(player, character)
 	player:SetAttribute("VerityProtectedUntil", clock()+8)
 	local death = humanoid.Died:Connect(function()
 		Abilities:Stop(player)
+  Parkour:SetRun(player,nil)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -341,6 +346,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+ Parkour:Remove(player)
 	Abilities:Remove(player)
 	languages[player] = nil
 	local id = player.UserId
@@ -369,7 +375,7 @@ local incomeElapsed, stateElapsed, taskElapsed, houseElapsed = 0, 0, 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
 	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick() end
+	if houseElapsed >= .15 then houseElapsed=0;World.houseProgression:Tick();Parkour:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then

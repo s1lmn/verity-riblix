@@ -154,7 +154,7 @@ function Main.new()
 			self.notificationIds[payload.eventId]=true
 			table.insert(self.notificationOrder,payload.eventId)
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
-			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" then ctx.sound:Play("Reward") end end
+			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" then ctx.sound:Play("Reward") end end
 		end
 		ctx.notifications:Show(payload.message,payload.kind)
 	end))

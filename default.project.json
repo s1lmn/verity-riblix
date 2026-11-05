@@ -109,6 +109,9 @@
         },
         "AdminAccess": {
           "$path": "src/server/AdminAccess.luau"
+        },
+        "ParkourService": {
+          "$path": "src/server/ParkourService.luau"
         }
       }
     },

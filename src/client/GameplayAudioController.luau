@@ -16,7 +16,8 @@ function Gameplay.new(ctx,visuals)
  end))
  self.cleanup:Add(ctx.net.Notification.Event:Connect(function(payload)
   if not self:Accept("note",payload.eventId) then return end
-  if payload.code=="TASK_REWARD" then ctx.sound:Play("TaskCompleted")
+  if payload.code=="TASK_REWARD" or payload.code=="PARKOUR_FINISH" then ctx.sound:Play("TaskCompleted")
+  elseif payload.code=="PARKOUR_CHECKPOINT" then ctx.sound:Play("TaskCheckpoint")
   elseif payload.code=="INSUFFICIENT_CASH" then ctx.sound:Play("NotEnoughCash")
   elseif payload.code=="OK" and payload.source=="HouseFeature" then ctx.sound:Play("DecorPurchased")
   elseif payload.code=="HOUSE_UPGRADED" then ctx.sound:Play("Success") end

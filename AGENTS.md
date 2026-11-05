@@ -270,3 +270,12 @@ tools/check_ability_motion.py. Mock checks не подтверждают реа�
 Наши сокращение пути dash, полёт12/18s, Steer10Hz/timeout и таймер сохранены.
 Drive force ограничена Mass×1800. Подробности:docs/ABILITY_MOTION_FIX.md.
 Проверки кода/сборка без Play прошли, новый push разрешён пользователем.
+
+## Паркур района
+
+Следующий этап по запросу пользователя: optionalпаркур13платформ на боковом острове
+X170..282,Z230..370. Дома/арена/карта v5 не перестраивались. ParkourBuilder добавляет
+его идемпотентно; ParkourService владеет ordered-прохождением/чекпоинтами/возвратом/
+наградой20sbaseincome и90scooldown текущей сессии. Core Economy/notifications/audio
+переиспользуются, нет клиентской выдачи денег. Документация/реальные границы проверок:
+docs/PARKOUR.md,tools/check_parkour.py. Проходимость рассчитана, без Play.

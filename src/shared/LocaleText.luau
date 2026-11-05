@@ -249,6 +249,16 @@ local ru = {
 	[" m"] = " м",
 }
 local en = {
+ ["ПАРКУР • СТАРТ"] = "PARKOUR • START",
+ ["ФИНИШ • НАГРАДА"] = "FINISH • REWARD",
+ ["ЧЕКПОИНТ 4"] = "CHECKPOINT 4",
+ ["ЧЕКПОИНТ 7"] = "CHECKPOINT 7",
+ ["ЧЕКПОИНТ 10"] = "CHECKPOINT 10",
+ ["Прыгай по номерам. Падение вернёт к флагу."] = "Follow the numbers. Falling returns you to your flag.",
+ ["Паркур пройден! Награда получена."] = "Parkour complete! Reward received.",
+ ["Чекпоинт сохранён!"] = "Checkpoint saved!",
+ ["Отличная тренировка! Награда скоро обновится."] = "Great practice! Your reward will refresh soon.",
+
  ["Сейчас способность недоступна. Попробуй после приземления."] = "This ability is unavailable right now. Try after landing.",
 	["ПОЛЁТ • %d с"] = "FLIGHT • %ds",
 	["Перед тобой препятствие — отойди от стены."] = "An obstacle is too close. Step away from the wall.",

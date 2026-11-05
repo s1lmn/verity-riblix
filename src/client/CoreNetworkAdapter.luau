@@ -58,7 +58,8 @@ function Adapter:Attach(folder)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
 							local messages={OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
-								COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
+								PARKOUR_FINISH="Паркур пройден! Награда получена.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
+        COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
 							if payload.source=="HouseFeature" then
 								messages={OK="Дом улучшен!",INSUFFICIENT_CASH="Не хватает денег",
 									ALREADY_OWNED="Куплено",BOX_NOT_OPENED="Сначала распакуй Verity"}
