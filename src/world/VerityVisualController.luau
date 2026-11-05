@@ -128,6 +128,7 @@ function Controller:Register(model,attempt)
  record.cleanup:Add(model:GetAttributeChangedSignal("EmotionUntil"):Connect(function()
   if Client and record.owner==Client.UserId and not record.active
    and (model:GetAttribute("EmotionUntil") or 0)>workspace:GetServerTimeNow() then
+   record.pendingReaction=os.clock()
    self.Emotion:Fire(model:GetAttribute("Emotion"))
   end
  end))
@@ -539,6 +540,14 @@ function Controller:Tick(now,dt)
 			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(renderLevel),renderLevel) end
 		end
 		visibility(record,record.visibility or 0)
+  if record.pendingReaction then
+   if now-record.pendingReaction<.6 and now>=(record.reactionAt or 0) and own and near and not active and not spawning
+    and not record.racing and not record.riding and not reduced and not self.settings.values.ReducedEffects and not self.settings.values.LowGraphics then
+    record.reactionAt=now+3
+    self.effects:React(model,model:GetPivot(),scale,renderLevel,now)
+   end
+   record.pendingReaction=nil
+  end
 		if now>=(record.fxAt or 0) or not near then
 			record.fxAt=now+(graphics and graphics.VFXInterval or 0)
 			self.effects:Update(model,model:GetPivot(),scale,stage,now,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics),

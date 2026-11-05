@@ -6,6 +6,7 @@ local Drops = require(Shared.FeedDrops)
 local Locale = require(Shared.LocaleText)
 local Construction = require(script.Parent.HouseConstruction)
 local Door = require(script.Parent.HouseDoor)
+local TrophyShelf=require(game:GetService("ReplicatedStorage").World.ActivityTrophyShelf)
 local PadFactory = require(game:GetService("ReplicatedStorage").World.PurchasePadFactory)
 local HouseProgression = {}
 HouseProgression.__index = HouseProgression
@@ -111,7 +112,7 @@ function HouseProgression.new(world, players, activate)
 		light.Parent=lamp
 		local record={doorPad=doorPad,floorPad=floorPad,construction=construction,house=house,pivot=pivot,door=door,doorPrompt=doorPrompt,exitPrompt=exitPrompt,
 			gate=gate,floorPrompt=floorPrompt,floorControl=floorControl,decor=decor,
-			insideGuests={},showcase=showcase,showcaseStand=showcaseStand}
+			insideGuests={},showcase=showcase,showcaseStand=showcaseStand,trophies={}}
 		self.plots[plotId]=record
 		doorPrompt.Triggered:Connect(function(player)
 			if self:CanUseDoor(plotId,player,false) then activate(player,"Door") end
@@ -138,6 +139,7 @@ function HouseProgression:Update(plotId,state)
 	if not record then return end
 	local previous=record.state
 	record.state=state
+ TrophyShelf.Update(record.trophies,record.house,record.pivot,state)
 	local sameOwner = previous and state and previous.ownerUserId == state.ownerUserId
 	local cards = state and state.ShowcaseCards or {}
 	local before = sameOwner and previous.ShowcaseCards or {}

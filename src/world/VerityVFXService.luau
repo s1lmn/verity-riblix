@@ -2,6 +2,7 @@
 -- Client-only effects with bounded geometry and no uploaded textures.
 local Profile = if script then require(game:GetService("ReplicatedStorage").Shared.VerityAnimationProfile) else nil
 local Celebration=require(game:GetService("ReplicatedStorage").Shared.VerityUpgradeCelebration)
+local Skins=require(game:GetService("ReplicatedStorage").Shared.VerityElementalSkins)
 local VFX = {}
 VFX.__index = VFX
 local MAX_BURST_PARTS = Celebration.MaxParticles
@@ -334,7 +335,7 @@ function VFX:Emit(model,origin,scale,level,now,charge,tint)
         local p=self:Acquire();if not p then break end
         local angle=i*math.pi*2/count
         local color=if tint then tint:Lerp(palette[4],(i%4)*.12) else palette[(i-1)%#palette+1]
-        p.Color=color;p.Shape=Enum.PartType.Ball
+        p.Color=color;p.Shape=Enum.PartType.Ball;p.Material=Enum.Material.Neon
         local size=math.clamp(scale*(.075+(i%4)*.012),.12,.85)
         p.Size=Vector3.one*size
         table.insert(self.active,{part=p,owner=model,charge=charge,scale=scale,angle=angle,index=i,
@@ -343,6 +344,42 @@ function VFX:Emit(model,origin,scale,level,now,charge,tint)
             velocity=Vector3.new(math.cos(angle),.7+(i%4)*.23,math.sin(angle))*math.min(4.5,scale*.6+1.5),
             started=now,lifetime=if charge then look.duration*.54 else look.lifetime+(i%3)*.12})
     end
+end
+
+-- Only the local companion requests these short action reactions.
+function VFX:React(model,origin,scale,level,now)
+ local skin=Skins.Get(level)
+ if not skin then return end
+ local family=skin.Family
+ local count=math.clamp(math.floor(8*(self.particleScale or 1)),3,8)
+ local radius=scale*.96+.1
+ local size=math.clamp(scale*.065,.16,.5)
+ for i=1,count do
+  local p=self:Acquire();if not p then break end
+  local angle=i*2*math.pi/count
+  local radial=Vector3.new(math.cos(angle),0,math.sin(angle))
+  local velocity=radial*(if family=="Magma" then 2.6 else 1.3)+Vector3.new(0,if family=="Aqua" then 2.2 else 1.7,0)
+  local color=Color3.fromHex(skin.Hex)
+  p.Shape=Enum.PartType.Block;p.Material=Enum.Material.Neon
+  p.Size=Vector3.one*size
+  local opacity=1
+  if family=="Aqua" then
+   p.Shape=Enum.PartType.Ball;p.Material=Enum.Material.SmoothPlastic
+   p.Size=Vector3.one*size*(1+(i%3)*.3);color=Color3.fromHex(if i%2==0 then "8DFFF2" else "41CFFA");opacity=.6
+  elseif family=="Magma" then
+   p.Size=Vector3.new(size*.55,size*1.6,size*.55);color=Color3.fromHex(if i%2==0 then "FFE67C" else "FF803E")
+  elseif family=="Cyber" then
+   p.Size=Vector3.new(size,size,size*1.6);color=Color3.fromHex(if i%2==0 then "5BFFF0" else "FF79ED")
+  elseif family=="Frost" then
+   p.Size=Vector3.new(size*.55,size*1.8,size*.55);color=Color3.fromHex(if i%2==0 then "D9F9FF" else "7EE3FF")
+  else
+   p.Size=Vector3.new(size*.6,size*1.7,size*.6)
+   color=if family=="Rainbow" then Color3.fromHSV(i/count,.65,1) else Color3.fromHex(if i%2==0 then "FFF19D" else "C8A5FF")
+  end
+  p.Color=color;p.Transparency=1
+  table.insert(self.active,{part=p,owner=model,reaction=family,opacity=opacity,index=i,started=now,lifetime=.8+(i%3)*.08,
+   position=origin.Position+Vector3.new(0,scale*.85,0)+radial*radius,velocity=velocity})
+ end
 end
 
 function VFX:BeginUpgrade(model,origin,scale,level,now,tint)
@@ -372,14 +409,21 @@ function VFX:Tick(now)
             local fade=math.clamp((u-.3)/.7,0,1)
             local twinkle=.82+.18*math.sin(t*15+item.index*2.1)
             local position
-            if item.charge then
+            if item.reaction then
+                local acceleration=if item.reaction=="Aqua" then 1 else -3
+                position=item.position+item.velocity*t+Vector3.new(0,acceleration*t*t,0)
+                if item.reaction=="Cyber" then
+                    -- Brief stepped pixels, rather than another persistent trail.
+                    position=item.position+item.velocity*(math.floor(t*12)/12)
+                end
+            elseif item.charge then
                 local center=item.owner:GetPivot().Position+item.offset+Vector3.new(0,item.scale*.85,0)
                 local angle=item.angle+t*8
                 local radius=item.scale*(1.2-.28*u)
                 position=center+Vector3.new(math.cos(angle)*radius,item.scale*(-.5+u*.95+.12*math.sin(item.index)),math.sin(angle)*radius)
             else position=item.position+item.velocity*t-Vector3.new(0,1.6*t*t,0) end
             item.part.CFrame=CFrame.new(position)*CFrame.Angles(t,0,t*2)
-            item.part.Transparency=1-(1-fade)*twinkle*math.min(1,t/.09)
+            item.part.Transparency=1-(1-fade)*twinkle*math.min(1,t/.09)*(item.opacity or 1)
 		end
 	end
 end

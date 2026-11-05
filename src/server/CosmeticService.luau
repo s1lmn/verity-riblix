@@ -6,11 +6,21 @@ local Service={};Service.__index=Service
 function Service.new(data,state,products,clock)
  local self=setmetatable({data=data,state=state,products=products,clock=clock,byItem={}},Service)
  for product,id in products do
-  assert(type(product)=="number" and product>0 and product%1==0 and Catalog.Items[id],"Invalid cosmetic product")
+  assert(type(product)=="number" and product>0 and product%1==0 and Catalog.Items[id] and not Catalog.Items[id].achievement and not Catalog.Items[id].starter and not Catalog.Items[id].variantOf,"Invalid cosmetic product")
   assert(not self.byItem[id],"Duplicate cosmetic product mapping")
   self.byItem[id]=product
  end
  return self
+end
+function Service:GrantStarter(userId)
+ local profile=self.data:Get(userId)
+ if not profile or not profile.Data.VerityUnlocked then return false end
+ local changed=false
+ for _,id in Catalog.Order do
+  if Catalog.Items[id].starter and not profile.Data.CosmeticsOwned[id] then profile.Data.CosmeticsOwned[id]=true;changed=true end
+ end
+ if changed then self.data:Touch(profile) end
+ return changed
 end
 function Service:Catalog(purchasesEnabled)
  local result={}
@@ -28,7 +38,7 @@ function Service:Equip(userId,itemId,equipped)
  local item=Catalog.Items[itemId]
  if not item then return "INVALID_ITEM" end
  if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
- if not profile.Data.CosmeticsOwned[itemId] then return "NOT_OWNED" end
+ if not Catalog.Owns(profile.Data.CosmeticsOwned,itemId) then return "NOT_OWNED" end
  if equipped then profile.Data.CosmeticsEquipped[item.slot]=itemId
  elseif profile.Data.CosmeticsEquipped[item.slot]==itemId then profile.Data.CosmeticsEquipped[item.slot]=nil end
  self.data:Touch(profile)
@@ -38,6 +48,7 @@ function Service:PreparePurchase(userId,itemId)
  local profile,session=self.data:Get(userId),self.state.sessions[userId]
  if not profile or not session then return "NOT_READY" end
  if not Catalog.Items[itemId] then return "INVALID_ITEM" end
+ if Catalog.Items[itemId].achievement or Catalog.Items[itemId].starter or Catalog.Items[itemId].variantOf then return "PRODUCT_UNAVAILABLE" end
  if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
  if profile.Data.CosmeticsOwned[itemId] then return "ALREADY_OWNED" end
  local product=self.byItem[itemId]

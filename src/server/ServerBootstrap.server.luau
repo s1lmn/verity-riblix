@@ -99,7 +99,11 @@ local Phone = require(script.Parent.PhoneService).new(Data, State, Economy, cloc
 local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock,
 	function(userId, taskId) return World:IsNearTask(userId, taskId) end)
 local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, require(script.Parent.CosmeticProducts), clock)
+Delivery.onUnlocked=function(id) Cosmetics:GrantStarter(id) end
 State.CosmeticsCatalog = function() return Cosmetics:Catalog(not usingStudioMemory) end
+local ActivityRewards=require(script.Parent.ActivityRewardService).new(Data,State,function(id,rewardId,itemId)
+ send(id,"NotificationEvent",{protocolVersion=1,code="ACTIVITY_REWARD_UNLOCKED",source="ActivityReward",achievementId=rewardId,itemId=itemId,eventId=guid()})
+end)
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
 Tasks.onReward = function(id, reward)
 	World:React(id,"Confident",2)
@@ -127,6 +131,9 @@ local BattleModel=require(ReplicatedStorage.World.VerityBattleBuilder).Build(gen
 local Battle=require(script.Parent.VerityBattleService).new(BattleModel,Data,State,Economy,Players,clock,CombatTargets,Abilities,function(id,code,reward)
  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="VerityBattle",reward=reward,eventId=guid()})
 end)
+Parkour.onCompleted=function(id) ActivityRewards:Grant(id,"parkour_clear") end
+Race.onWinner=function(id) ActivityRewards:Grant(id,"race_champion") end
+Battle.onCompleted=function(id) ActivityRewards:Grant(id,"titan_victory") end
 Abilities.arena=Battle
 local activitiesRemote=Instance.new("RemoteEvent");activitiesRemote.Name="VerityActivities";activitiesRemote.Parent=ReplicatedStorage
 local activityLimits={}
@@ -265,7 +272,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -357,6 +364,7 @@ local function claimHouse(player, requestedPlot)
 	if not plotId then return reason end
 
 	State:Attach(userId, plotId)
+ Cosmetics:GrantStarter(userId)
 	local spawnPoint = World.anchors[plotId].SpawnPoint
 	spawnPoint.Enabled = true
 	player.RespawnLocation = spawnPoint

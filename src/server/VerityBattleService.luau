@@ -59,6 +59,7 @@ function Service:Finish(won)
  for player in self.members do
   local root=self:Valid(player);local profile=self.data:Get(player.UserId)
   if won and root and profile then
+   if self.onCompleted then self.onCompleted(player.UserId) end
    self.ready[player]=self.clock()+C.Cooldown;player:SetAttribute("VerityBattleReadyAt",self.ready[player])
    local ok,reward=self.economy:AddCash(player.UserId,Income.getIncome(profile.Data.VerityLevel)*C.RewardSeconds*self.economy:GetMultiplier(profile))
    if ok then self.state:Publish(player.UserId,true);self.notify(player.UserId,"BATTLE_WIN",reward) end

@@ -36,6 +36,7 @@ function Service:Touch(player,index)
  if now-(run.lastStep or run.started)<Config.MinStepSeconds then return false end
  if pad.finish then
   if now-run.started<Config.MinimumRunSeconds then return false end
+  if self.onCompleted then self.onCompleted(player.UserId) end
   if now<(self.ready[player] or 0) then
    self:SetRun(player,nil);self.notify(player.UserId,"PARKOUR_PRACTICE",0);return true
   end

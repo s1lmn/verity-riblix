@@ -18,7 +18,7 @@ function Skin.Build(parent)
  local badge=box(root,"BoutiqueBadge",20,16,76,7,T.Pink,4)
  local title=W.Text(root,"Title","СТИЛЬ VERITY",20,true)
  title.Position=UDim2.fromOffset(20,28);title.Size=UDim2.new(1,-86,0,32)
- local subtitle=W.Text(root,"Subtitle","Примерь новый образ для своего шарика",12,false,T.Muted)
+ local subtitle=W.Text(root,"Subtitle","Награды за приключения и украшения Verity",12,false,T.Muted)
  subtitle.Position=UDim2.fromOffset(20,64);subtitle.Size=UDim2.new(1,-40,0,34)
  local close=W.Button(root,"Close","×",T.Gold)
  close.Position=UDim2.new(1,-62,0,24);close.Size=UDim2.fromOffset(44,44);close.TextSize=26
@@ -43,10 +43,12 @@ function Skin.Build(parent)
 end
 function Skin.Card(parent,item,index)
  local color=if item.slot=="Face" then T.Blue elseif item.slot=="Head" then T.Pink else T.Gold
- local root=W.Round(W.Frame(parent,item.id,UDim2.new(1,-6,0,164),T.White),16)
+ local root=W.Round(W.Frame(parent,item.id,UDim2.new(1,-6,0,if item.starter then 216 else 164),T.White),16)
  root.LayoutOrder=index+1;W.Stroke(root,color,2).Transparency=.45
  local tile=box(root,"ItemIcon",12,12,38,38,color,10)
- if item.slot=="Face" then
+ if item.id=="parkour_star_band" then
+  local star=W.Text(tile,"ParkourStar","★",28,true,T.Gold);star.Size=UDim2.fromScale(1,1);star.TextXAlignment=Enum.TextXAlignment.Center
+ elseif item.slot=="Face" then
   for _,x in {5,21} do
    local lens=box(tile,"Lens",x,11,13,13,T.Ink,4);lens.BackgroundTransparency=1
    W.Stroke(lens,T.Ink,2).Transparency=0
@@ -67,7 +69,23 @@ function Skin.Card(parent,item,index)
  preview.Position=UDim2.fromOffset(12,108);preview.Size=UDim2.new(.43,-16,0,44);preview.TextSize=12
  local buy=W.Button(root,"EquipOrBuy","ЗАГРУЗКА…",T.Mint)
  buy.Position=UDim2.new(.43,4,0,108);buy.Size=UDim2.new(.57,-16,0,44);buy.TextSize=12;buy.TextWrapped=true
- return {Root=root,buy=buy,info=info,name=name,category=category,tryOn=preview}
+ local tones={}
+ if item.starter then
+  local Catalog=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
+  for index,id in Catalog.Variants[item.id] do
+   local variant=Catalog.Items[id];local tone=Catalog.Tones[variant.tone]
+   local button=W.Button(root,"Tone_"..variant.tone,tone.name,Color3.fromHex(tone.color))
+   button.Position=UDim2.new((index-1)/3,12-(index-1)*4,0,160)
+   button.Size=UDim2.new(1/3,-16,0,44);button.TextSize=12
+   tones[id]=button
+  end
+ end
+ local progress
+ if item.achievement then
+  local track=W.Round(W.Frame(root,"AchievementProgress",UDim2.new(1,-24,0,4),T.Soft),2);track.Position=UDim2.fromOffset(12,101)
+  progress=W.Round(W.Frame(track,"Fill",UDim2.fromScale(0,1),color),2)
+ end
+ return {Root=root,buy=buy,info=info,name=name,category=category,tryOn=preview,progress=progress,tones=tones}
 end
 function Skin.Layout(p,size,panelX)
  local x=panelX or 12

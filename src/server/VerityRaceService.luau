@@ -95,6 +95,7 @@ function Service:Finish(cancelled)
  self.model:SetAttribute("RaceWinner",winner and winner.player.DisplayName or nil)
  for _,entry in self.entries do self:ClearPlayer(entry.player)end
  if winner then
+  if self.onWinner then self.onWinner(winner.player.UserId) end
   local profile=self.data:Get(winner.player.UserId)
   local amount=Income.getIncome(winner.level)*Config.RewardSeconds*self.economy:GetMultiplier(profile)
   local ok,reward=self.economy:AddCash(winner.player.UserId,amount)
