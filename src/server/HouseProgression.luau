@@ -65,6 +65,8 @@ function HouseProgression.new(world, players, activate)
 		local record={doorPad=doorPad,floorPad=floorPad,construction=construction,house=house,pivot=pivot,door=door,doorPrompt=doorPrompt,control=control,
 			gate=gate,floorPrompt=floorPrompt,floorControl=floorControl,decor=decor,
 			constraints=constraints,closed=door.CFrame,open=pivot*CFrame.new(9,4.4,14.5)}
+		door:SetAttribute("ClosedPose", record.closed)
+		door:SetAttribute("OpenPose", record.open)
 		self.plots[plotId]=record
 		for feature,stationPrompt in {Door=doorPrompt,SecondFloor=floorPrompt} do
 			stationPrompt.Triggered:Connect(function(player)
@@ -130,6 +132,12 @@ function HouseProgression:Update(plotId,state)
 	record.house:SetAttribute("HouseDoorOwned",owned)
 	record.house:SetAttribute("HouseDoorLocked",locked)
 	record.house:SetAttribute("HouseSecondFloorOwned",upper)
+	if not owned or not previous or previous.ownerUserId ~= state.ownerUserId then
+		record.house:SetAttribute("HouseDoorMotionCue", nil)
+	elseif previous.HouseDoorOwned and (previous.HouseDoorLocked == true) ~= locked then
+		record.house:SetAttribute("HouseDoorMotionCue",
+			string.format("%d:%.3f", if locked then 1 else 0, workspace:GetServerTimeNow()))
+	end
 end
 
 function HouseProgression:Tick()

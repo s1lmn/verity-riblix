@@ -4,6 +4,8 @@
 
 Confirmed construction purchases now play a short neon outline and rising bricks at the floor, door, roof or production module. `HouseProgression` marks progress increases for the current owner and the World client consumes fresh cues. Two effects can run at once on each client. Existing house reveals, collision handling and accessibility settings retain their roles. This pass was packaged without automated tests or Studio Play.
 
+Door toggles now use a short local slide. The server applies access and collision when it confirms the toggle. Nearby clients display a temporary copy of the panel for 0.34 seconds. Rapid toggles continue from the panel's current position. This follow-up was packaged under the same test restriction.
+
 ## Save reliability and milestone motion, 5 November
 
 Core uses the Roblox `UpdateAsync` callback to return the key value, associated user IDs and metadata. Each profile load has a unique lock token. Final saves wait for an active write, recognize a previously committed release on retry, and leave profiles closed for an autosave retry after a transport failure. The existing player data schema and store name are preserved. [Roblox UpdateAsync reference](https://create.roblox.com/docs/reference/engine/classes/GlobalDataStore#UpdateAsync).

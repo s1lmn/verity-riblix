@@ -14,11 +14,15 @@ local HouseConfig = require(houseConfigModule)
 
 local TAG = "VerityGrowingHouse"
 local CUE = "HouseBuildCue"
+local DOOR_CUE = "HouseDoorMotionCue"
 local MAX_ACTIVE = 2
 local MAX_DISTANCE = 140
+local DOOR_DURATION = 0.34
+local DOOR_DISTANCE = 90
 local STAGE_COUNT = #HouseConfig.IncomeUpgrades
 local records, connections, settingConnections = {}, {}, {}
 local activeCount = 0
+local activeDoors = 0
 
 local function isReduced()
 	local gui = playerGui:FindFirstChild("VerityUI")
@@ -41,6 +45,56 @@ end
 
 local function findChild(parent, name)
 	return parent and parent:FindFirstChild(name)
+end
+
+local function stopDoor(record)
+	local motion = record.doorMotion
+	if not motion then return end
+	record.doorMotion = nil
+	activeDoors -= 1
+	motion.tween:Cancel()
+	motion.tween:Destroy()
+	motion.proxy:Destroy()
+	if motion.door.Parent then motion.door.LocalTransparencyModifier = motion.originalVisibility end
+end
+
+local function slideDoor(house, record)
+	local previous = record.doorMotion
+	local from = previous and previous.proxy.CFrame
+	stopDoor(record)
+	local cue = house:GetAttribute(DOOR_CUE)
+	if type(cue) ~= "string" or isReduced() or not house:IsDescendantOf(workspace) then return end
+	if activeDoors >= MAX_ACTIVE then return end
+	local locked, timeText = cue:match("^([01]):(%d+%.%d+)$")
+	local started = tonumber(timeText)
+	if not started then return end
+	local age = workspace:GetServerTimeNow() - started
+	if age < -0.5 or age > 0.8 then return end
+
+	local door = findChild(house:FindFirstChild("HouseProgression"), "OwnerDoor")
+	if not door or not door:IsA("Part") then return end
+	local closed, open = door:GetAttribute("ClosedPose"), door:GetAttribute("OpenPose")
+	if typeof(closed) ~= "CFrame" or typeof(open) ~= "CFrame" then return end
+	local target = if locked == "1" then closed else open
+	local camera = workspace.CurrentCamera
+	if not camera or (camera.CFrame.Position - target.Position).Magnitude > DOOR_DISTANCE then return end
+
+	local proxy = Instance.new("Part")
+	proxy.Name, proxy.Size, proxy.Color, proxy.Material = "HouseDoorSlide", door.Size, door.Color, door.Material
+	proxy.TopSurface, proxy.BottomSurface = door.TopSurface, door.BottomSurface
+	proxy.CFrame = if from and previous.door == door then from elseif locked == "1" then open else closed
+	proxy.Anchored, proxy.CanCollide, proxy.CanTouch, proxy.CanQuery, proxy.CastShadow = true, false, false, false, false
+	local tween = TweenService:Create(proxy, TweenInfo.new(DOOR_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+		{CFrame = target})
+	local motion = {door = door, originalVisibility = door.LocalTransparencyModifier, proxy = proxy, tween = tween}
+	record.doorMotion = motion
+	activeDoors += 1
+	door.LocalTransparencyModifier = 1
+	proxy.Parent = workspace
+	tween:Play()
+	task.delay(DOOR_DURATION + 0.03, function()
+		if record.doorMotion == motion then stopDoor(record) end
+	end)
 end
 
 local function effectAnchor(house, stage)
@@ -138,6 +192,7 @@ local function add(house)
 	records[house] = record
 	-- Existing cue values are baseline state on join and stream-in.
 	record.connection = house:GetAttributeChangedSignal(CUE):Connect(function() playCue(house, record) end)
+	record.doorConnection = house:GetAttributeChangedSignal(DOOR_CUE):Connect(function() slideDoor(house, record) end)
 end
 
 local function remove(house)
@@ -145,12 +200,17 @@ local function remove(house)
 	if not record then return end
 	records[house] = nil
 	record.connection:Disconnect()
+	record.doorConnection:Disconnect()
 	stop(record)
+	stopDoor(record)
 end
 
 local function updateSettings()
 	if isReduced() then
-		for _, record in records do stop(record) end
+		for _, record in records do
+			stop(record)
+			stopDoor(record)
+		end
 	end
 end
 
