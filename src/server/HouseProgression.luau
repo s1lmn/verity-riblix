@@ -2,7 +2,10 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Houses = require(Shared.HouseConfig)
+local Drops = require(Shared.FeedDrops)
 local Locale = require(Shared.LocaleText)
+local Construction = require(script.Parent.HouseConstruction)
+local PadFactory = require(game:GetService("ReplicatedStorage").World.PurchasePadFactory)
 local HouseProgression = {}
 HouseProgression.__index = HouseProgression
 
@@ -33,15 +36,38 @@ function HouseProgression.new(world, players, activate)
 		local house = anchors.WorkshopHouse
 		if not house then continue end
 		local pivot = house:GetPivot()
+		local construction = Construction.Create(house)
 		local folder = Instance.new("Folder")
 		folder.Name,folder.Parent = "HouseProgression",house
+		local showcase = {}
+		local showcaseStand = {}
+		for _, x in {-11.8, -6.2} do
+			local leg = part(folder, pivot, "ShowcaseLeg", Vector3.new(x, 0.9, 15.72), Vector3.new(0.32, 1.8, 0.48), "6B55A2")
+			leg.Transparency, leg.CanQuery = 1, false
+			table.insert(showcaseStand, leg)
+		end
+		local rail = part(folder, pivot, "ShowcaseRail", Vector3.new(-9, 1.55, 15.72), Vector3.new(7.95, 0.3, 0.48), "B99AF3")
+		rail.Transparency, rail.CanQuery = 1, false
+		table.insert(showcaseStand, rail)
+		for slot = 1, Drops.ShowcaseSlots do
+			local frame = part(folder, pivot, "CardFrame" .. slot,
+				Vector3.new(-9 + (slot - 2) * 2.65, 3.2, 15.8), Vector3.new(2.45, 3.25, 0.18), "53408F")
+			frame.Transparency, frame.CanQuery, frame.CastShadow = 1, false, false
+			frame:SetAttribute("ShowcaseSlot", slot)
+			frame:AddTag("VerityCardFrame")
+			showcase[slot] = frame
+		end
 		local door = part(folder,pivot,"OwnerDoor",Vector3.new(0,4.4,14.5),Vector3.new(7.8,8.8,.55),"53408F")
 		door.Material = Enum.Material.SmoothPlastic
-		local control = part(folder,pivot,"DoorControl",Vector3.new(5.3,3.2,13.5),Vector3.new(1.2,1.5,.5),"72F4CF")
-		local doorPrompt = prompt(control,plotId,"Дверь с замком")
+		local control = part(folder,pivot,"DoorControl",Vector3.new(8,1.5,10),Vector3.new(.2,.2,.2),"72F4CF")
+		control.Transparency=1;control.CanQuery=false
+  local doorPrompt = prompt(control,plotId,"Дверь с замком")
+  local doorPad=PadFactory.Create(folder,pivot*CFrame.new(8,.14,10),"Door",plotId,doorPrompt)
 		local gate = part(folder,pivot,"StairGate",Vector3.new(19,7.4,-25.5),Vector3.new(9,14.8,.5),"9C77FF")
-		local floorControl = part(folder,pivot,"FloorControl",Vector3.new(12.8,3,-24),Vector3.new(1.4,2,1.4),"FFD45F")
-		local floorPrompt = prompt(floorControl,plotId,"Второй этаж")
+		local floorControl = part(folder,pivot,"FloorControl",Vector3.new(10,1.5,-20),Vector3.new(.2,.2,.2),"FFD45F")
+		floorControl.Transparency=1;floorControl.CanQuery=false
+  local floorPrompt = prompt(floorControl,plotId,"Второй этаж")
+  local floorPad=PadFactory.Create(folder,pivot*CFrame.new(10,.14,-20),"Floor",plotId,floorPrompt)
 		local decor = Instance.new("Folder")
 		decor.Name,decor.Parent = "UpperFloorFurnishing",folder
 		part(decor,pivot,"CloudSofa",Vector3.new(-14,17.3,-38),Vector3.new(12,2.6,5),"A98BFF")
@@ -55,9 +81,11 @@ function HouseProgression.new(world, players, activate)
 		light.Parent=lamp
 		local constraints = Instance.new("Folder")
 		constraints.Name,constraints.Parent="OwnerDoorPassage",folder
-		local record={house=house,pivot=pivot,door=door,doorPrompt=doorPrompt,control=control,
+		local record={doorPad=doorPad,floorPad=floorPad,construction=construction,house=house,pivot=pivot,door=door,doorPrompt=doorPrompt,control=control,
 			gate=gate,floorPrompt=floorPrompt,floorControl=floorControl,decor=decor,
-			constraints=constraints,closed=door.CFrame,open=pivot*CFrame.new(9,4.4,14.5)}
+			constraints=constraints,closed=door.CFrame,open=pivot*CFrame.new(9,4.4,14.5),showcase=showcase,showcaseStand=showcaseStand}
+		door:SetAttribute("ClosedPose", record.closed)
+		door:SetAttribute("OpenPose", record.open)
 		self.plots[plotId]=record
 		for feature,stationPrompt in {Door=doorPrompt,SecondFloor=floorPrompt} do
 			stationPrompt.Triggered:Connect(function(player)
@@ -77,7 +105,40 @@ end
 function HouseProgression:Update(plotId,state)
 	local record=self.plots[plotId]
 	if not record then return end
+	local previous=record.state
 	record.state=state
+	local sameOwner = previous and state and previous.ownerUserId == state.ownerUserId
+	local cards = state and state.ShowcaseCards or {}
+	local before = sameOwner and previous.ShowcaseCards or {}
+	if not sameOwner then
+		for _, support in record.showcaseStand do support.Transparency = if state then 0 else 1 end
+	end
+	for slot, frame in record.showcase do
+		local key = tostring(slot)
+		if not sameOwner or cards[key] ~= before[key] then
+			local changeAt = if sameOwner then workspace:GetServerTimeNow() else 0
+			frame.Transparency = if state then 0 else 1
+			frame:SetAttribute("DisplayCard", if state then string.format("%d:%.3f", cards[key] or 0, changeAt) else nil)
+		end
+	end
+	record.doorPad:SetAttribute("OwnerUserId",state and state.ownerUserId or 0)
+	record.floorPad:SetAttribute("OwnerUserId",state and state.ownerUserId or 0)
+	Construction.Apply(record.construction,state)
+	if sameOwner then
+		local stage
+		if state.HouseIncomeLevel > previous.HouseIncomeLevel then
+			stage = state.HouseIncomeLevel
+		elseif state.HouseSecondFloorOwned and not previous.HouseSecondFloorOwned then
+			stage = #Houses.IncomeUpgrades + 2
+		elseif state.HouseDoorOwned and not previous.HouseDoorOwned then
+			stage = #Houses.IncomeUpgrades + 1
+		end
+		if stage then
+			record.house:SetAttribute("HouseBuildCue", string.format("%d:%.3f", stage, workspace:GetServerTimeNow()))
+		end
+	else
+		record.house:SetAttribute("HouseBuildCue", nil)
+	end
 	local owned=state and state.HouseDoorOwned==true or false
 	local upper=state and state.HouseSecondFloorOwned==true or false
 	local locked=owned and state.HouseDoorLocked==true
@@ -90,7 +151,7 @@ function HouseProgression:Update(plotId,state)
 	record.control.Color=Color3.fromHex(if locked then "FF859C" else "72F4CF")
 	record.gate.CanCollide=not upper
 	record.gate.Transparency=if upper then 1 else .48
-	record.floorControl.Transparency=if upper then 1 else 0
+	record.floorControl.Transparency=1
 	record.doorPrompt.Enabled=state~=nil and state.VerityUnlocked
 	record.floorPrompt.Enabled=state~=nil and state.VerityUnlocked and not upper
 	Locale.SetWorld(record.doorPrompt,"ActionText",if not owned then "Купить за $%d" elseif locked then "Открыть гостям" else "Закрыть для гостей",table.unpack(if not owned then {Houses.Features.Door.Cost} else {}))
@@ -104,6 +165,12 @@ function HouseProgression:Update(plotId,state)
 	record.house:SetAttribute("HouseDoorOwned",owned)
 	record.house:SetAttribute("HouseDoorLocked",locked)
 	record.house:SetAttribute("HouseSecondFloorOwned",upper)
+	if not owned or not previous or previous.ownerUserId ~= state.ownerUserId then
+		record.house:SetAttribute("HouseDoorMotionCue", nil)
+	elseif previous.HouseDoorOwned and (previous.HouseDoorLocked == true) ~= locked then
+		record.house:SetAttribute("HouseDoorMotionCue",
+			string.format("%d:%.3f", if locked then 1 else 0, workspace:GetServerTimeNow()))
+	end
 end
 
 function HouseProgression:Tick()

@@ -23,11 +23,29 @@ function PlayerStateService:AdvanceTutorial(profile, step)
 		self.data:Touch(profile)
 	end
 end
+
+-- Shared world events are visible to other players. Project only what they
+-- need to present the plot and companion, independently of the owner snapshot.
+function PlayerStateService:PublicPlotSnapshot(userId)
+	local profile, session = self.data:Get(userId), self.sessions[userId]
+	if not profile or not session then return nil end
+	local data = profile.Data
+	return {
+		protocolVersion = 1, stateRevision = profile.Revision, ownerUserId = userId, PlotId = session.PlotId,
+		VerityLevel = data.VerityLevel, VerityScale = Levels.getVerityScale(data.VerityLevel),
+		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
+		HouseTier = Houses.getHouseTier(data.VerityLevel), HouseIncomeLevel = data.HouseIncomeLevel,
+		HouseBuildLevel = data.HouseIncomeLevel, HouseDoorOwned = data.HouseDoorOwned,
+		HouseDoorLocked = session.HouseDoorLocked == true, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
+		CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
+	}
+end
+
 function PlayerStateService:Snapshot(userId)
 	local profile, session = self.data:Get(userId), self.sessions[userId]
 	if not profile or not session then return nil end
 	local data, level = profile.Data, profile.Data.VerityLevel
-	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel)
+	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel,data.HouseDoorOwned,data.HouseSecondFloorOwned)
 	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
 	local tasks = {}
@@ -47,7 +65,7 @@ function PlayerStateService:Snapshot(userId)
 		VerityScale = Levels.getVerityScale(level),
 		NextVerityScale = if level < 100 then Levels.getVerityScale(level + 1) else nil,
 		NextMilestoneLevel = Levels.getNextMilestone(level),
-		HouseIncomeLevel = data.HouseIncomeLevel,
+		HouseIncomeLevel = data.HouseIncomeLevel, HouseBuildLevel = data.HouseIncomeLevel, HouseIncomeMultiplier = houseMultiplier,
 		HouseDoorOwned = data.HouseDoorOwned, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
 		HouseDoorLocked = session.HouseDoorLocked == true,
 		IncomePerSecond = if data.VerityUnlocked then Economy.getIncome(level) * houseMultiplier * multiplier else 0,
@@ -64,6 +82,9 @@ function PlayerStateService:Snapshot(userId)
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
   CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
   FeedCollection = table.clone(data.FeedCollection),
+  ShowcaseCards = table.clone(data.ShowcaseCards or {}),
+  AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = table.clone(data.AbilitiesEquipped),
+  HeroPassOwned = profile.HeroPassOwned==true, HeroPassId = Config.HeroPassId,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end

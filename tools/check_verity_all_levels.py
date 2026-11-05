@@ -19,6 +19,10 @@ for d,m in zip(data['levels'],models):
  assert len(emotions.findall('Item'))==8
  assert 1<=d['suggestedScale']<=15
 source=(R/'src/world/VerityFactory.luau').read_text();stage=source[source.index('function Factory.SetStage'):source.index('\nreturn Factory')]
+visual=(R/'src/world/VerityVisualController.luau').read_text()
+apply=visual[visual.index('function Controller:Apply('):visual.index('\n-- The existing model controller owns attack facing')]
+assert 'p:GetAttribute("VerityTint")~=nil' in visual
+
 h='''
 local V={};V.__index=V
 local function vector(x,y,z)return setmetatable({X=x,Y=y,Z=z},V)end
@@ -59,7 +63,24 @@ for level,id in {[10]='Aqua',[25]='Frost',[50]='Magma',[75]='Cyber',[90]='Cosmic
 end
 for _,level in {0,101,-1,.5}do assert(Skins.Get(level)==nil)end
 assert(Skins.Get(75,'Cosmic').Id=='Cosmic','preview override')
-print('100 native models, unique refs, existing8-face contract,16 texture IDs, anchor preservation, actual stage function over200 forward/reverse transitions passed; no Play')
-'''.replace('CONFIG',(R/'src/shared/VerityElementalSkins.luau').read_text()).replace('STAGE',stage)
+-- Execute the merged Apply method: camera/aim ownership remains the team's path,
+-- while the elemental Body must keep its texture-neutral color.
+local CF={};CF.__index=CF;function CF.__mul()return setmetatable({},CF)end
+local CFrame={new=function()return setmetatable({},CF)end,Angles=function()return setmetatable({},CF)end}
+local workspace={CurrentCamera=nil}
+local Controller={}
+APPLY_METHOD
+local previous={};local nextColor={}
+local textured={Parent=true,Color=previous,GetAttribute=function()return false end}
+local plain={Parent=true,Color=previous,GetAttribute=function()return true end}
+local renderModel={PrimaryPart={FindFirstChild=function()return nil end}}
+function renderModel:IsDescendantOf()return true end
+function renderModel:GetScale()return 1 end
+function renderModel:GetAttribute()return false end
+function renderModel:PivotTo(p)self.pose=p end
+Controller.Apply({}, {model=renderModel,origin=CFrame.new(),stageLevel=1,tints={textured,plain}},1,0,0,nextColor,1)
+assert(textured.Color==previous and plain.Color==nextColor,'merge recolored texture or froze ordinary color')
+print('100 native models,8 faces,16 textures,200 skin transitions and merged renderer tint protection passed; no Play')
+'''.replace('CONFIG',(R/'src/shared/VerityElementalSkins.luau').read_text()).replace('STAGE',stage).replace('APPLY_METHOD',apply)
 with tempfile.TemporaryDirectory(prefix='verity-all-levels-') as t:
  p=Path(t)/'check.luau';p.write_text(h);subprocess.run([str(R.parent/'luau/luau'),str(p)],check=True)

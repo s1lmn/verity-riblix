@@ -11,7 +11,7 @@ function Surfaces.new()
 	local function add(object)
 		if not object:IsA("BasePart") or not object:FindFirstAncestor("GeneratedWorld") then return end
 		local studs=object.TopSurface==Enum.SurfaceType.Studs
-		local glass=object.Name:find("Glass")~=nil and object.Transparency>0 and object.Transparency<1
+		local glass=object.Name:find("Glass")~=nil
 		if studs or glass then
 			self.parts[object]={studs=studs,glass=glass,smooth=false,alpha=object.LocalTransparencyModifier,baseAlpha=object.LocalTransparencyModifier}
 		end
@@ -40,7 +40,7 @@ function Surfaces:Tick(now)
 				object.TopSurface=if smooth then Enum.SurfaceType.Smooth else Enum.SurfaceType.Studs
 			end
 		end
-		if record.glass then
+		if record.glass and object:GetAttribute("ConstructionVisible")~=false then
 			local target=math.clamp((distance-100)/100,0,1)
 			local alpha=record.baseAlpha+(1-record.baseAlpha)*target
 			record.alpha+=(alpha-record.alpha)*.65

@@ -47,9 +47,9 @@ function Skin.BuildVerity(parent)
  r.Milestone=place(W.Text(discovery,"Milestone","Next discovery: —",14,true),12,37,-24,76)
  r.Buy=W.Button(r.Body,"UpgradeVerity","WAITING FOR SERVER",T.Mint)
  r.Buy.Size=UDim2.new(1,-6,0,52);r.Buy.TextWrapped=true;r.Buy.LayoutOrder=3
- local ability=card(r.Body,"AbilityCard",104,4)
+ local ability=card(r.Body,"AbilityCard",152,4)
  place(W.Text(ability,"Title","YOUR ABILITY",12,true,T.Purple),12,8,-24,24)
- r.Ability=place(W.Text(ability,"Ability","",13,true),12,36,-24,56)
+ r.Ability=place(W.Text(ability,"Ability","",13,true),12,36,-24,104)
  r.Note=W.Line(r.Body,"Note","All 100 levels and all five discoveries are available for free.",50,12,false,T.Muted);r.Note.LayoutOrder=5
  r.Boost=W.Line(r.Body,"Boost","",68,13,false,T.Purple);r.Boost.Visible=false;r.Boost.LayoutOrder=6
  r.MoneyPass=W.Button(r.Body,"TripleMoney","×3 ДЕНЬГИ • СКОРО",T.Gold)
@@ -60,12 +60,16 @@ end
 function Skin.BuildWorkshop(parent)
  return shell(parent,"Workshop","HOME WORKSHOP","Visit the workshop inside your house to buy upgrades.",T.Mint)
 end
+function Skin.BuildAbilities(parent)
+ return shell(parent,"Abilities","СУПЕРСПОСОБНОСТИ","Покупай силы. Выбирай свой стиль боя.",T.Purple)
+end
 function Skin.WorkshopCards(panel,houses)
  local r={rows={},features={}}
- local summary=card(panel.Body,"WorkshopSummary",100,0,T.Mint:Lerp(T.White,.75))
+ local summary=card(panel.Body,"WorkshopSummary",132,0,T.Mint:Lerp(T.White,.75))
  place(W.Text(summary,"Title","YOUR HOUSE COLLECTION",12,true),12,8,-24,24)
  r.summary=place(W.Text(summary,"Progress","",14,true),12,35,-24,40)
- local track=W.Round(W.Frame(summary,"Track",UDim2.new(1,-24,0,8),T.White),4);track.Position=UDim2.fromOffset(12,80)
+ r.income=place(W.Text(summary,"Income","",12,false,T.Purple),12,79,-24,24)
+ local track=W.Round(W.Frame(summary,"Track",UDim2.new(1,-24,0,8),T.White),4);track.Position=UDim2.fromOffset(12,112)
  r.fill=W.Round(W.Frame(track,"Fill",UDim2.fromScale(0,1),T.Mint),4)
  for index,featureId in {"Door","SecondFloor"} do
   local row=card(panel.Body,featureId,104,index)
@@ -75,13 +79,15 @@ function Skin.WorkshopCards(panel,houses)
  r.lock=W.Button(panel.Body,"HouseDoorLock","Закрыть для гостей",T.Mint)
  r.lock.Size=UDim2.new(1,-6,0,48);r.lock.LayoutOrder=3;r.lock.TextWrapped=true
  for index,upgrade in houses.IncomeUpgrades do
-  local row=card(panel.Body,"Upgrade"..index,124,index+3)
+  local row=card(panel.Body,"Upgrade"..index,180,index+3,Color3.fromHex(upgrade.Color):Lerp(T.White,.85))
   local badge=W.Round(W.Frame(row,"StepBadge",UDim2.fromOffset(36,36),T.Gold),10);badge.Position=UDim2.fromOffset(12,12)
   local number=W.Text(badge,"Number",string.format("%02d",index),14,true)
   number.Size=UDim2.fromScale(1,1);number.TextXAlignment=Enum.TextXAlignment.Center
   local title=place(W.Text(row,"Title","",14,true),60,8,-72,44)
   local detail=place(W.Text(row,"Detail","",12,false,T.Muted),12,65,-24,47)
-  r.rows[index]={root=row,title=title,detail=detail,upgrade=upgrade}
+  local buy=W.Button(row,"Build","",Color3.fromHex(upgrade.Color))
+  buy.Position=UDim2.fromOffset(12,128);buy.Size=UDim2.new(1,-24,0,40);buy.TextSize=12;buy.TextWrapped=true
+  r.rows[index]={root=row,title=title,detail=detail,description=detail,buy=buy,upgrade=upgrade}
  end
  return r
 end

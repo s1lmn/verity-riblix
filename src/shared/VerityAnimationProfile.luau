@@ -53,6 +53,29 @@ function Profile.Conceal(progress: number): number
 	return rise((progress-.10)/.12)*(1-rise((progress-.69)/.19))
 end
 
+local function motion(level: number, t: number, scale: number): (number, number)
+	local arc = math.sin(math.pi * t)
+	if level == 10 then
+		-- Two light hops, with the second one landing as the colour is revealed.
+		local hops = math.sin(2 * math.pi * t) ^ 2
+		return arc * (0.025 + 0.055 * hops) * scale, math.sin(4 * math.pi * t) * arc * 0.16
+	elseif level == 25 then
+		-- Rise gently and hold the hover before settling into the new idle.
+		local hover = smooth(t / 0.38) * (1 - smooth((t - 0.7) / 0.3))
+		return hover * 0.085 * scale, arc * 0.19
+	elseif level == 50 then
+		-- The upward impulse peaks with the existing bloom and particle burst.
+		local charge = smooth((t - 0.26) / (Profile.Bloom - 0.26))
+		local release = 1 - smooth((t - Profile.Bloom) / (1 - Profile.Bloom))
+		return charge * release * 0.1 * scale, math.sin(2 * math.pi * t) * arc * 0.22
+	elseif level == 75 then
+		return arc * 0.09 * scale, 2 * math.pi * smooth((t - 0.1) / 0.78)
+	elseif level == 100 then
+		return arc * 0.13 * scale, 2 * math.pi * smooth((t - 0.16) / 0.74)
+	end
+	return arc * 0.06 * scale, math.sin(2 * math.pi * t) * 0.12
+end
+
 function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reducedMotion: boolean)
 	assert(newLevel == oldLevel + 1, "One animation must represent one purchased level")
 	local old, target = Levels.getVerityScale(oldLevel), Levels.getVerityScale(newLevel)
@@ -61,11 +84,15 @@ function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reduc
 	if reducedMotion then scale = old + (target - old) * smooth(t)
 	elseif t < 0.15 then scale = old * (1 - 0.06 * smooth(t / 0.15))
 	elseif t < 0.58 then scale = old * 0.94 + (target * Profile.MaxExpansion - old * 0.94) * smooth((t - 0.15) / 0.43)
-	else scale = target * (Profile.MaxExpansion - (Profile.MaxExpansion - 1) * smooth((t - 0.58) / 0.42)) end
+	else
+		local settle = (t - 0.58) / 0.42
+		local recoil = 0.009 * math.sin(math.pi * settle)^2 * smooth(settle)
+		scale = target * (1 + (Profile.MaxExpansion - 1) * (1 - smooth(settle)) - recoil)
+	end
 	if t == 1 then scale = target end
 	local stage = Profile.Stage(newLevel)
-	local lift = if reducedMotion then 0 else math.sin(math.pi * t) * target * (if stage == 5 then 0.13 else 0.06)
-	local yaw = if reducedMotion then 0 elseif newLevel == 75 or newLevel == 100 then 2 * math.pi * smooth(t) else math.sin(math.pi * 2 * t) * 0.12
+	local lift, yaw = 0, 0
+	if not reducedMotion then lift, yaw = motion(newLevel, t, target) end
 	local blend = if reducedMotion then smooth(t) else smooth((t - 0.16) / 0.53)
 	return { scale = scale, lift = lift, yaw = yaw, blend = blend, stage = stage }
 end

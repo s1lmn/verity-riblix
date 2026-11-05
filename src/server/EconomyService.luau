@@ -22,7 +22,7 @@ end
 function EconomyService:GetIncomePerSecond(userId)
 	local profile = self.data:Get(userId)
 	if not profile or not profile.Data.VerityUnlocked then return 0 end
-	return Economy.getIncome(profile.Data.VerityLevel) * Houses.getIncomeMultiplier(profile.Data.HouseIncomeLevel) * self:GetMultiplier(profile)
+	return Economy.getIncome(profile.Data.VerityLevel) * Houses.getIncomeMultiplier(profile.Data.HouseIncomeLevel,profile.Data.HouseDoorOwned,profile.Data.HouseSecondFloorOwned) * self:GetMultiplier(profile)
 end
 function EconomyService:GetSwipeIncome(userId)
 	local profile = self.data:Get(userId)

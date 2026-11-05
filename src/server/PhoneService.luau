@@ -32,4 +32,23 @@ function PhoneService:Swipe(userId)
 	self.state:AdvanceTutorial(profile, 6)
 	return "OK", actual, cardId, count==0
 end
+function PhoneService:SetShowcaseCard(userId, slot, cardId)
+	local profile = self.data:Get(userId)
+	if not profile or not self.state.sessions[userId] then return "NOT_READY" end
+	local data = profile.Data
+	if not data.VerityUnlocked then return "BOX_NOT_OPENED" end
+	if cardId ~= 0 and not data.FeedCollection[tostring(cardId)] then return "CARD_NOT_OWNED" end
+	local key = tostring(slot)
+	local selected = if cardId == 0 then nil else cardId
+	if data.ShowcaseCards[key] == selected then return "OK" end
+	if selected then
+		for index = 1, Drops.ShowcaseSlots do
+			local other = tostring(index)
+			if data.ShowcaseCards[other] == selected then data.ShowcaseCards[other] = nil end
+		end
+	end
+	data.ShowcaseCards[key] = selected
+	self.data:Touch(profile)
+	return "OK"
+end
 return PhoneService

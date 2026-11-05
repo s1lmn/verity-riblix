@@ -1,5 +1,7 @@
 
 --!nonstrict
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 local Drops = require(game:GetService("ReplicatedStorage").Shared.FeedDrops)
 local Feed = require(script.Parent.FeedController)
 local Locale = require(script.Parent.Locale)
@@ -17,8 +19,8 @@ function Collection.Count(state)
 	return count
 end
 
-function Collection.new(refs)
-	local self = setmetatable({cleanup=Cleanup.new(),open=false,rows={},signature=nil,body=refs.Body},Collection)
+function Collection.new(refs, ctx)
+	local self = setmetatable({cleanup=Cleanup.new(),open=false,rows={},signature=nil,body=refs.Body,ctx=ctx},Collection)
 	self.root=self.cleanup:Add(W.Round(W.Frame(refs.Root,"CardCollection"),12))
 	self.root.Visible,self.root.Active,self.root.ZIndex=false,true,8
 	W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Purple:Lerp(T.White,.82)),Rotation=75},self.root)
@@ -31,9 +33,10 @@ function Collection.new(refs)
 	self.title=W.Text(self.root,"CollectionTitle","",15,true)
 	self.title.Position,self.title.Size=UDim2.fromOffset(10,2),UDim2.new(1,-74,0,38)
 	local back=W.Button(self.root,"Back","←",T.Purple:Lerp(T.White,.75))
+	self.back = back
 	back.AnchorPoint,back.Position,back.Size=Vector2.new(1,0),UDim2.new(1,-4,0,2),UDim2.fromOffset(48,44)
 	self.cleanup:Add(back.Activated:Connect(function()
-		if self.preview then self.preview:Destroy();self.preview=nil;self.list.Visible=true
+		if self.preview then self:ClosePreview()
 		else self:SetOpen(false) end
 	end))
 	self.list=W.New("ScrollingFrame",{
@@ -50,13 +53,92 @@ end
 function Collection:SetOpen(open)
 	self.open,self.root.Visible=open,open
 	self.body.Visible=not open
-	if not open and self.preview then self.preview:Destroy();self.preview=nil;self.list.Visible=true end
-	if open then self:Render(self.state) end
+	if not open then self:ClosePreview() end
+	if open then
+		self:Render(self.state)
+		if UserInputService.PreferredInput == Enum.PreferredInput.Gamepad then GuiService.SelectedObject = self.back end
+	end
+end
+
+function Collection:ClosePreview()
+	local previousSelection = self.previousSelection
+	self.previousSelection = nil
+	if self.previewScale then self.ctx.animation:Cancel(self.previewScale); self.previewScale = nil end
+	if self.preview then self.preview:Destroy(); self.preview = nil end
+	if self.controls then self.controls:Destroy(); self.controls = nil end
+	self.previewId, self.slotButtons, self.focusSlot = nil, nil, nil
+	self.list.Visible = true
+	if previousSelection and previousSelection.Parent and UserInputService.PreferredInput == Enum.PreferredInput.Gamepad then
+		GuiService.SelectedObject = previousSelection
+	end
+end
+
+function Collection:OpenPreview(cardId)
+	self:ClosePreview()
+	self.previousSelection = GuiService.SelectedObject
+	self.list.Visible = false
+	self.previewId = cardId
+	self.preview = Feed.Draw(self.root, cardId)
+	self.preview.Position, self.preview.Size = UDim2.fromOffset(4, 46), UDim2.new(1, -8, 1, -126)
+	self.controls = W.Frame(self.root, "ShowcaseControls", UDim2.new(1, -8, 0, 72))
+	self.controls.Position, self.controls.BackgroundTransparency = UDim2.new(0, 4, 1, -74), 1
+	local heading = W.Text(self.controls, "ShowcaseTitle", "Витрина у дома", 13, true)
+	heading.Size, heading.TextXAlignment = UDim2.new(1, 0, 0, 22), Enum.TextXAlignment.Center
+	self.slotButtons = {}
+	for slot = 1, Drops.ShowcaseSlots do
+		local button = W.Button(self.controls, "Slot" .. slot, "", T.Mint)
+		button.Position = UDim2.new((slot - 1) / Drops.ShowcaseSlots, 2, 0, 24)
+		button.Size = UDim2.new(1 / Drops.ShowcaseSlots, -4, 0, 44)
+		button.TextScaled = true
+		W.New("UITextSizeConstraint", {MinTextSize = 8, MaxTextSize = 14}, button)
+		self.slotButtons[slot] = button
+		button.Activated:Connect(function()
+			local net = self.ctx.net
+			local state = net.state
+			if not state or net:IsBusy() or not (state.FeedCollection or {})[tostring(cardId)] then return end
+			local current = (state.ShowcaseCards or {})[tostring(slot)]
+			if UserInputService.PreferredInput == Enum.PreferredInput.Gamepad then
+				self.focusSlot = slot
+				GuiService.SelectedObject = self.back
+			end
+			self.ctx.request("SetShowcaseCard", {slot = slot, cardId = if current == cardId then 0 else cardId})
+			self:RenderSlots()
+		end)
+	end
+	if not self.ctx.settings.values.ReducedMotion then
+		local scale = W.New("UIScale", {Scale = 0.96}, self.preview)
+		self.previewScale = scale
+		self.ctx.animation:Tween(scale, 0.18, {Scale = 1})
+	end
+	self:RenderSlots()
+	if self.slotButtons[1].Selectable and UserInputService.PreferredInput == Enum.PreferredInput.Gamepad then
+		GuiService.SelectedObject = self.slotButtons[1]
+	end
+end
+
+function Collection:RenderSlots()
+	if not self.slotButtons then return end
+	local state, net = self.state, self.ctx.net
+	local slots = state and state.ShowcaseCards or {}
+	local pending = net:IsBusy("SetShowcaseCard")
+	for slot, button in self.slotButtons do
+		local current = slots[tostring(slot)]
+		local label = if current == self.previewId then "Снять %d" elseif current then "Заменить %d" else "Рамка %d"
+		local enabled = state ~= nil and net.connected and not net:IsBusy()
+		W.SetButton(button, string.format(Locale.Text(label), slot), enabled, pending)
+		button.BackgroundColor3 = if not enabled then T.Disabled elseif current == self.previewId then T.Gold else T.Mint
+	end
+	if self.focusSlot and not net:IsBusy() then
+		local button = self.slotButtons[self.focusSlot]
+		self.focusSlot = nil
+		if button and button.Selectable and GuiService.SelectedObject == self.back then GuiService.SelectedObject = button end
+	end
 end
 
 function Collection:Render(state)
 	self.state=state
 	if not self.open then return end
+	self:RenderSlots()
 	local cards=state and state.FeedCollection or {}
 	self.title.Text=string.format(Locale.Text("Коллекция • %d / %d"),Collection.Count(state),#Feed.Posts)
 	local parts={}
@@ -110,17 +192,15 @@ function Collection:Render(state)
 				..(if copies then "\n"..string.format(Locale.Text("Найдено раз • %d"),copies) else "\n"..string.format("#%02d",id))
 			detail.Position,detail.Size=UDim2.fromOffset(98,53),UDim2.new(1,-108,0,36)
 			if copies then
-				row.Activated:Connect(function()
-					if self.preview then self.preview:Destroy() end
-					self.list.Visible=false
-					self.preview=Feed.Draw(self.root,id)
-					self.preview.Position,self.preview.Size=UDim2.fromOffset(4,46),UDim2.new(1,-8,1,-50)
-				end)
+				row.Activated:Connect(function() self:OpenPreview(id) end)
 			end
 			table.insert(self.rows,row)
 		end
 	end
 end
 
-function Collection:Destroy() self.cleanup:Destroy() end
+function Collection:Destroy()
+	self:ClosePreview()
+	self.cleanup:Destroy()
+end
 return Collection

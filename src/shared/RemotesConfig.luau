@@ -1,8 +1,10 @@
 --!strict
+local Numeric = require(script.Parent.Numeric)
+local Drops = require(script.Parent.FeedDrops)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
-	"RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
-	"RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSync",
+	"RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
+	"RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
 function RemotesConfig.isOperationId(value: any): boolean
@@ -19,10 +21,15 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 	if name == "RequestHouseDoor" then
 		allowed.locked = true
 		if type(payload.locked) ~= "boolean" then return false, "INVALID_OPEN" end
+	elseif name == "RequestSetShowcaseCard" then
+		allowed.slot = true
+		allowed.cardId = true
+		if not Numeric.isInteger(payload.slot, 1, Drops.ShowcaseSlots)
+			or not Numeric.isInteger(payload.cardId, 0, Drops.CardCount) then return false, "INVALID_CARD" end
 	elseif name == "RequestPhoneSession" then
 		allowed.open = true
 		if type(payload.open) ~= "boolean" then return false, "INVALID_OPEN" end
-	elseif name == "RequestEquipCosmetic" or name == "RequestCosmeticPurchase" then
+	elseif name == "RequestEquipCosmetic" or name == "RequestCosmeticPurchase" or name == "RequestBuyAbility" or name == "RequestEquipAbility" then
   allowed.itemId = true
   if type(payload.itemId)~="string" or #payload.itemId<1 or #payload.itemId>64 or not string.match(payload.itemId,"^[%w_%-]+$") then return false,"INVALID_ITEM" end
   if name == "RequestEquipCosmetic" then

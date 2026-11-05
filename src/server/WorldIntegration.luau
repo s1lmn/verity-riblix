@@ -6,6 +6,7 @@ local Config = require(Shared.GameConfig)
 local Tasks = require(Shared.TaskConfig)
 local Levels = require(Shared.LevelConfig)
 local Houses = require(Shared.HouseConfig)
+local PadFactory = require(game:GetService("ReplicatedStorage").World.PurchasePadFactory)
 
 local function updateWorkshop(anchors, state)
 	local level = if state then state.HouseIncomeLevel else 0
@@ -17,8 +18,9 @@ local function updateWorkshop(anchors, state)
 	local required = if unlocked and nextUpgrade and not canBuy then nextUpgrade.Level else nil
 	local last = anchors.WorkshopStatus
 	local owned = state ~= nil
-	if last and last.level == level and last.status == status and last.required == required and last.owned == owned then return end
-	anchors.WorkshopStatus = {level = level, status = status, required = required, owned = owned}
+	local bonus = math.round(((state and state.HouseIncomeMultiplier or 1)-1)*100)
+	if last and last.level == level and last.status == status and last.required == required and last.owned == owned and last.bonus == bonus then return end
+	anchors.WorkshopStatus = {level = level, status = status, required = required, owned = owned, bonus = bonus}
 	for index, crystal in anchors.WorkshopLights do
 		crystal.Material = if index <= level then Enum.Material.Neon else Enum.Material.SmoothPlastic
 		crystal.Transparency = if index <= level then 0 else .7
@@ -27,14 +29,14 @@ local function updateWorkshop(anchors, state)
 	prompt.Enabled = canBuy == true
 	if canBuy then
 		LocaleText.SetWorld(prompt, "ObjectText", nextUpgrade.Name)
-		LocaleText.SetWorld(prompt, "ActionText", "Купить за $%d (+25%% дохода Verity)", nextUpgrade.Cost)
+		LocaleText.SetWorld(prompt, "ActionText", "Строить за $%d (+%d%% дохода)", nextUpgrade.Cost, math.round(nextUpgrade.Bonus*100))
 	end
 	local label = anchors.WorkshopSign
-	label.Parent.Enabled = owned
-	if required then LocaleText.SetWorld(label, "Text", "Мастерская Verity • +%d%% дохода\nСледующее улучшение требует уровень Verity %d", level * 25, required)
+	label.Parent.Enabled = false -- Replaced by the compact circular purchase label.
+	if required then LocaleText.SetWorld(label, "Text", "Мастерская Verity • +%d%% дохода\nСледующее улучшение требует уровень Verity %d", bonus, required)
 	else
-		LocaleText.SetWorld(label, "Text", "Мастерская Verity • +%d%% дохода\n%s", level * 25, status)
-		label:SetAttribute("Text_locale_en", string.format("Verity Workshop • +%d%% income\n%s", level * 25, LocaleText.Get("en", status)))
+		LocaleText.SetWorld(label, "Text", "Мастерская Verity • +%d%% дохода\n%s", bonus, status)
+		label:SetAttribute("Text_locale_en", string.format("Verity Workshop • +%d%% income\n%s", bonus, LocaleText.Get("en", status)))
 	end
 end
 local houseColors = {
@@ -43,9 +45,10 @@ local houseColors = {
 	Color3.fromRGB(255, 167, 105), Color3.fromRGB(255, 216, 90),
 }
 
-local function updateHouseSign(anchors, player, tier)
+local function updateHouseSign(anchors, player, tier, buildLevel)
+	anchors.HouseSign.Parent.Enabled = player ~= nil
 	if player then
-		LocaleText.SetWorld(anchors.HouseSign, "Text", "Дом %s\nУровень дома %d / 6", player.DisplayName, tier)
+		LocaleText.SetWorld(anchors.HouseSign, "Text", "Дом %s\nСтройка %d / 10", player.DisplayName, buildLevel or 0)
 	else
 		LocaleText.SetWorld(anchors.HouseSign, "Text", "Свободный дом")
 	end
@@ -186,6 +189,13 @@ function WorldIntegration.new(workspace, players, plots, world)
 		buy:AddTag("VerityHouseWorkshop")
 		buy.Parent = workshop
 		anchors.WorkshopPrompt = buy
+  workshop.Transparency=1;workshop.CanCollide=false;workshop.CanTouch=false;workshop.CanQuery=false
+  local incomeCF=if house then house:GetPivot()*CFrame.new(-11,.14,2)
+   else CFrame.new(workshop.Position.X,.65,workshop.Position.Z)
+  anchors.IncomePad=PadFactory.Create(model,incomeCF,"Income",id,buy)
+  local claimCF=if house then house:GetPivot()*CFrame.new(0,.14,17)
+   else CFrame.new(anchors.ClaimPoint.Position.X,.65,anchors.ClaimPoint.Position.Z)
+  anchors.ClaimPad=PadFactory.Create(model,claimCF,"Claim",id,anchors.ClaimPrompt)
 		local workshopGui = Instance.new("BillboardGui")
 		workshopGui.Name = "VerityWorkshop"
 		workshopGui.Size = UDim2.fromOffset(240, 50)
@@ -206,21 +216,6 @@ function WorldIntegration.new(workspace, players, plots, world)
 		workshopCorner.Parent = workshopLabel
 		anchors.WorkshopSign = workshopLabel
 		anchors.WorkshopLights = {}
-		for index = 1, #Houses.IncomeUpgrades do
-			local crystal = Instance.new("Part")
-			crystal.Name = "IncomeCrystal"
-			crystal.Shape = Enum.PartType.Ball
-			crystal.Size = Vector3.one * .4
-			local column = (index - 1) % 5 - 2
-			local row = math.floor((index - 1) / 5) - .5
-			crystal.CFrame = workshop.CFrame * CFrame.new(column * .48, workshop.Size.Y / 2 + .32, row * .58)
-			crystal.Anchored = true
-			crystal.CanCollide, crystal.CanQuery, crystal.CanTouch = false, false, false
-			crystal.Color = houseColors[(index - 1) % #houseColors + 1]
-			crystal.Transparency = .7
-			crystal.Parent = model
-			anchors.WorkshopLights[index] = crystal
-		end
 		local sign = Instance.new("BillboardGui")
 		sign.Name = "HouseStatus"
 		sign.Adornee = self.anchors[id].HouseEntrance or self.anchors[id].SpawnPoint
@@ -233,7 +228,9 @@ function WorldIntegration.new(workspace, players, plots, world)
 		label.Font = Enum.Font.GothamBold
 		label.TextSize = 13
 		label.TextWrapped = true
-		label.TextColor3 = Color3.fromRGB(34, 38, 75)
+		label.TextColor3 = Color3.fromRGB(242,250,255)
+		label.BackgroundTransparency=1
+		label.TextStrokeColor3=Color3.fromRGB(18,34,55);label.TextStrokeTransparency=.2
 		label.Parent = sign
 		local corner = Instance.new("UICorner")
 		corner.CornerRadius = UDim.new(0, 9)
@@ -305,13 +302,14 @@ function WorldIntegration:UpdatePlot(userId, state)
 	local plotId = self.plots.owners[userId]
 	if not plotId then return end
 	local model = self.anchors[plotId].Model
-	if model:GetAttribute("OwnerUserId") ~= userId or model:GetAttribute("HouseTier") ~= state.HouseTier then
-		updateHouseSign(self.anchors[plotId], self.players:GetPlayerByUserId(userId), state.HouseTier)
+	if model:GetAttribute("OwnerUserId") ~= userId or model:GetAttribute("HouseTier") ~= state.HouseTier or model:GetAttribute("HouseIncomeLevel") ~= state.HouseIncomeLevel then
+		updateHouseSign(self.anchors[plotId], self.players:GetPlayerByUserId(userId), state.HouseTier,state.HouseIncomeLevel)
 	end
 	model:SetAttribute("OwnerUserId", userId)
+	self.anchors[plotId].ClaimPad:SetAttribute("OwnerUserId",userId)
 	updateWorkshop(self.anchors[plotId], state)
 	if self.houseProgression then self.houseProgression:Update(plotId, state) end
-	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
+	for _, key in {"HouseIncomeLevel", "HouseBuildLevel", "VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
 		model:SetAttribute(key, state[key])
 	end
 	model:SetAttribute("StateRevision", state.stateRevision)
@@ -333,7 +331,7 @@ function WorldIntegration:UpdatePlot(userId, state)
 	if worldPlot then
 		worldPlot:SetAttribute("OwnerUserId", userId)
 		worldPlot:SetAttribute("PlotId", plotId)
-		for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
+		for _, key in {"HouseIncomeLevel", "HouseBuildLevel", "VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond"} do
 			worldPlot:SetAttribute(key, state[key])
 		end
 		worldPlot:SetAttribute("StateRevision", state.stateRevision)
@@ -358,11 +356,12 @@ function WorldIntegration:ClearPlot(plotId)
 	local verity = self.verities[owner]
 	if verity then verity:Destroy(); self.verities[owner] = nil end
 	model:SetAttribute("OwnerUserId", 0)
+	self.anchors[plotId].ClaimPad:SetAttribute("OwnerUserId",0)
 	updateHouseSign(self.anchors[plotId], nil)
 	self.anchors[plotId].ClaimPrompt.Enabled = true
 	updateWorkshop(self.anchors[plotId], nil)
 	if self.houseProgression then self.houseProgression:Update(plotId, nil) end
-	for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
+	for _, key in {"HouseIncomeLevel", "HouseBuildLevel", "VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 		model:SetAttribute(key, nil)
 	end
 	local box = model:FindFirstChild("CoreDeliveryBox")
@@ -370,7 +369,7 @@ function WorldIntegration:ClearPlot(plotId)
 	local worldPlot = self.anchors[plotId].WorldPlot
 	if worldPlot then
 		worldPlot:SetAttribute("OwnerUserId", 0)
-		for _, key in {"VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
+		for _, key in {"HouseIncomeLevel", "HouseBuildLevel", "VerityLevel", "VerityScale", "HouseTier", "VerityUnlocked", "DeliveryState", "IncomePerSecond", "StateRevision"} do
 			worldPlot:SetAttribute(key, nil)
 		end
 	end

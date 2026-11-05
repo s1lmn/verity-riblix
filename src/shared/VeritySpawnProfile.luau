@@ -9,8 +9,10 @@ function Spawn.Sample(age: number, reduced: boolean)
  local opening=smooth((age-1.95)/.55)
  local tail=1-smooth((age-3.65)/(Spawn.Duration-3.65))
  local charge=smooth((age-.55)/1.7)*(1-smooth((age-Spawn.Reveal)/.65))
+ local hop=math.clamp((age-1.55)/.76,0,1)
  return {
-  cover=1-reveal, open=if reduced then (if age>=Spawn.Reveal then 1 else 0) else opening, charge=charge, tail=tail,
+  cover=1-reveal, open=if reduced then (if age>=Spawn.Reveal then 1 else 0) else opening + .09 * math.sin(math.pi * opening), charge=charge, tail=tail,
+  boxLift=if reduced then 0 else .16 * math.sin(math.pi * hop)^2,
   shake=if reduced or age>=Spawn.Reveal then 0 else math.sin(age*(19+age*9))*(.025+.075*charge),
   join=smooth((age-Spawn.Join)/1.45),
   scale=if reduced then 1 else 1+.12*math.sin(math.pi*reveal)*(1-smooth((age-3.1)/.7)),

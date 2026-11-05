@@ -1,8 +1,8 @@
 --!nonstrict
 -- A single boundary between the authoritative Core wire format and UI presentation types.
 local Protocol = {}
-Protocol.RequestNames = {HouseDoor="RequestHouseDoor",Sync="RequestSync",OpenBox="RequestOpenBox",UpgradeVerity="RequestUpgradeVerity",
-	UpgradeSwipe="RequestUpgradeSwipe",PhoneSession="RequestPhoneSession",Swipe="RequestSwipe",
+Protocol.RequestNames = {BuyAbility="RequestBuyAbility",EquipAbility="RequestEquipAbility",UpgradeHouse="RequestUpgradeHouse",HouseDoor="RequestHouseDoor",Sync="RequestSync",OpenBox="RequestOpenBox",UpgradeVerity="RequestUpgradeVerity",
+	UpgradeSwipe="RequestUpgradeSwipe",PhoneSession="RequestPhoneSession",Swipe="RequestSwipe",SetShowcaseCard="RequestSetShowcaseCard",
 	EquipCosmetic="RequestEquipCosmetic",CosmeticPurchase="RequestCosmeticPurchase",TaskStart="RequestTaskStart",TaskComplete="RequestTaskComplete"}
 function Protocol.State(raw)
 	if type(raw)~="table" then return nil end

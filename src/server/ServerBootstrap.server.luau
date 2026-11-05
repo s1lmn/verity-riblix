@@ -18,8 +18,9 @@ local Runtime = require(script.Parent.Runtime)
 assert(not Runtime.Services, "Core already started")
 local function clock() return workspace:GetServerTimeNow() end
 local function guid() return HttpService:GenerateGUID(false) end
+local usingStudioMemory = RunService:IsStudio() and Config.StudioDataMode == "Memory"
 local store
-if RunService:IsStudio() and Config.StudioDataMode == "Memory" then
+if usingStudioMemory then
 	local records = {}
 	store = {UpdateAsync = function(_, key, transform)
 		local updated = transform(records[key])
@@ -98,14 +99,34 @@ local Phone = require(script.Parent.PhoneService).new(Data, State, Economy, cloc
 local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock,
 	function(userId, taskId) return World:IsNearTask(userId, taskId) end)
 local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, require(script.Parent.CosmeticProducts), clock)
-State.CosmeticsCatalog = function() return Cosmetics:Catalog() end
+State.CosmeticsCatalog = function() return Cosmetics:Catalog(not usingStudioMemory) end
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
 Tasks.onReward = function(id, reward)
 	World:React(id,"Confident",2)
 	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State, send, guid) end
-local Abilities = require(script.Parent.VerityAbilityService).new(Data, State)
+local AbilityShop = require(script.Parent.AbilityShopService).new(Data,State,Economy,MarketplaceService)
+local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Economy,function(id,reward)
+ send(id,"NotificationEvent",{protocolVersion=1,code="COMBAT_REWARD",reward=reward,eventId=guid(),source="Combat"})
+end)
+local Abilities = require(script.Parent.VerityAbilityService).new(Data, State, World, CombatTargets)
+local abilityShopRemote=Instance.new("RemoteEvent")
+abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
+require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
+local function refreshHeroPass(player)
+ task.spawn(function()
+  for attempt=1,3 do
+   if player.Parent~=Players then return end
+   local status=AbilityShop:RefreshPassAsync(player.UserId)
+   if status~="UNAVAILABLE" then return end
+   task.wait(attempt*2)
+  end
+ end)
+end
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player,id,purchased)
+ if purchased and id==AbilityShop.passId then refreshHeroPass(player) end
+end)
 State.send = function(userId, snapshot)
 	local player = Players:GetPlayerByUserId(userId)
 	if player then Abilities:Refresh(player, player.Character, snapshot) end
@@ -114,8 +135,17 @@ State.send = function(userId, snapshot)
 end
 local Remote = require(script.Parent.RemoteService).new(Data, State, clock,
 	function(userId, result) send(userId, "ActionResult", result) end)
+Remote:Register("RequestBuyAbility",function(id,payload) return AbilityShop:Buy(id,payload.itemId) end)
+Remote:Register("RequestEquipAbility",function(id,payload) return AbilityShop:Equip(id,payload.itemId) end)
+Remote:Register("RequestUpgradeHouse",function(id)
+ local plotId=Plots.owners[id]
+ if not plotId or not World:IsNearWorkshop(id,plotId) then return "TOO_FAR" end
+ local status=Upgrade:UpgradeHouse(id)
+ return if status=="HOUSE_UPGRADED" then "OK" else status
+end)
 Remote:Register("RequestEquipCosmetic", function(id,payload) return Cosmetics:Equip(id,payload.itemId,payload.equipped) end)
 Remote:Register("RequestCosmeticPurchase", function(id,payload)
+ if usingStudioMemory then return "PRODUCT_UNAVAILABLE" end
  local status,product=Cosmetics:PreparePurchase(id,payload.itemId)
  if status=="OK" then task.defer(function()
   local player=Players:GetPlayerByUserId(id)
@@ -154,6 +184,9 @@ Remote:Register("RequestUpgradeVerity", function(id)
 end)
 Remote:Register("RequestUpgradeSwipe", function(id) return Upgrade:UpgradeSwipe(id) end)
 Remote:Register("RequestPhoneSession", function(id, payload) return Phone:SetOpen(id, payload.open) end)
+Remote:Register("RequestSetShowcaseCard", function(id, payload)
+	return Phone:SetShowcaseCard(id, payload.slot, payload.cardId)
+end)
 Remote:Register("RequestSwipe", function(id)
 	local status,reward,cardId,isNewCard=Phone:Swipe(id)
 	if status=="OK" then World:React(id,"Love",2) end
@@ -164,7 +197,7 @@ Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Comple
 Remote:Register("RequestSync", function(id)
 	local plots = {}
 	for owner in State.sessions do
-		local state = State:Snapshot(owner)
+		local state = State:PublicPlotSnapshot(owner)
 		if state then table.insert(plots, state) end
 	end
 	send(id, "WorldEvent", {protocolVersion = 1, type = "WorldSnapshot", eventId = guid(),
@@ -198,7 +231,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -245,6 +278,7 @@ local function onCharacter(player, character)
 	character:PivotTo(World.anchors[plotId or 1].SpawnPoint.CFrame)
 	Abilities:Refresh(player, character, State:Snapshot(player.UserId))
 	character:SetAttribute("SpawnReady", true)
+	player:SetAttribute("VerityProtectedUntil", clock()+8)
 	local death = humanoid.Died:Connect(function()
 		Abilities:Stop(player)
 		Tasks:OnDeath(player.UserId)
@@ -266,6 +300,7 @@ local function onPlayer(player)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
 	refreshMoneyPass(player)
+	refreshHeroPass(player)
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
 	player:SetAttribute("HouseSelectionReady", true)
 	if player.Character then task.spawn(onCharacter, player, player.Character)
@@ -291,7 +326,7 @@ local function claimHouse(player, requestedPlot)
 	anchors.ClaimPrompt.Enabled = false
 	player:SetAttribute("HousePlotId", plotId)
 	State:Publish(userId, true)
-	Verity:Event(userId, "PlotAssigned", {state = State:Snapshot(userId), presentation = false})
+	Verity:Event(userId, "PlotAssigned", {state = State:PublicPlotSnapshot(userId), presentation = false})
 	Delivery:Begin(userId)
 	return "OK"
 end
@@ -302,7 +337,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
-	Abilities:Stop(player)
+	Abilities:Remove(player)
 	languages[player] = nil
 	local id = player.UserId
 	player:SetAttribute("HouseSelectionReady", nil)
@@ -348,17 +383,20 @@ task.spawn(function()
 		task.wait(Config.SaveInterval)
 		if closing then break end
 		for id, profile in Data.profiles do
-			if not profile.Closing then
-				task.spawn(function()
+			task.spawn(function()
+				if profile.Closing then
+					if not Data:ReleaseAsync(id) then warn("Profile release retry failed", id) end
+				else
 					local ok, reason = Data:SaveAsync(id, false)
 					if not ok then warn("Autosave failed", id, reason) end
-				end)
-			end
+				end
+			end)
 		end
 	end
 end)
 -- Disabled until real owned product IDs are configured; no placeholder IDs.
 MarketplaceService.ProcessReceipt = function(receipt)
+	if usingStudioMemory then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	local granted
  if Cosmetics.products[receipt.ProductId] then
   granted = Cosmetics:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId)
@@ -375,6 +413,6 @@ game:BindToClose(function()
 		task.spawn(function() Data:ReleaseAsync(id); pending -= 1 end)
 	end
 	local deadline = clock() + 25
-	while (pending > 0 or next(Data.loading) ~= nil) and clock() < deadline do task.wait(0.1) end
+	while (pending > 0 or next(Data.loading) ~= nil or next(Data.profiles) ~= nil) and clock() < deadline do task.wait(0.1) end
 end)
 print("VERITY Core ready", Config.PlotCount, "plots; protocol v1")

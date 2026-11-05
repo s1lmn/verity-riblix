@@ -92,6 +92,18 @@
         "MoneyPassService": {
           "$path": "src/server/MoneyPassService.luau"
         },
+        "AbilityShopService": {
+          "$path": "src/server/AbilityShopService.luau"
+        },
+        "AbilityStands": {
+          "$path": "src/server/AbilityStands.luau"
+        },
+        "CombatTargets": {
+          "$path": "src/server/CombatTargets.luau"
+        },
+        "HouseConstruction": {
+          "$path": "src/server/HouseConstruction.luau"
+        },
         "AdminAccess": {
           "$path": "src/server/AdminAccess.luau"
         }
@@ -106,6 +118,12 @@
           "$className": "Folder",
           "VerityVisualBootstrap": {
             "$path": "src/world-client/VerityVisualBootstrap.client.luau"
+          },
+          "HouseBuildEffects": {
+            "$path": "src/world-client/HouseBuildEffects.client.luau"
+          },
+          "CardShowcase": {
+            "$path": "src/world-client/CardShowcase.client.luau"
           }
         }
       }
