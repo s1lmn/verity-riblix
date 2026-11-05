@@ -61,8 +61,19 @@ function Controller:Activate(slot,fromButton)
 		if fromButton or Input.PreferredInput~=Enum.PreferredInput.KeyboardAndMouse then
 			ray=camera:ViewportPointToRay(camera.ViewportSize.X/2,camera.ViewportSize.Y/2)
 		else local pos=Input:GetMouseLocation();ray=camera:ScreenPointToRay(pos.X,pos.Y) end
-		local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude;params.FilterDescendantsInstances={char}
+		local exclude,bodies={char},{}
+		for _,player in Players:GetPlayers() do
+			if player.Character and player.Character~=char then
+				table.insert(exclude,player.Character);table.insert(bodies,player.Character)
+			end
+		end
+		local params=RaycastParams.new();params.FilterDescendantsInstances=exclude;params.RespectCanCollide=true
 		local hit=workspace:Raycast(ray.Origin,ray.Direction*400,params)
+		if #bodies>0 then
+			params.FilterType,params.FilterDescendantsInstances,params.RespectCanCollide=Enum.RaycastFilterType.Include,bodies,false
+			local body=workspace:Raycast(ray.Origin,ray.Direction*400,params)
+			if body and (not hit or body.Distance<hit.Distance) then hit=body end
+		end
 		local target=if hit then hit.Position else ray.Origin+ray.Direction*400
 		local delta=target-root.Position;if delta.Magnitude<.1 then return false end;direction=delta.Unit
 	end

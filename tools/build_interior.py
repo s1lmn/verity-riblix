@@ -23,8 +23,10 @@ p('Geometry/WallFront',(0,6,14.5),(34,12,1),'wall')
 p('Geometry/WallLeft',(-16.5,6,0),(1,12,28),'wall')
 p('Geometry/WallRight',(16.5,6,0),(1,12,28),'wall')
 p('Geometry/Ceiling',(0,12.5,0),(34,1,30),'white')
-for name,pos,size in [('Back',(0,.5,-13.875),(32,1,.25)),('Front',(0,.5,13.875),(32,1,.25)),('Left',(-15.875,.5,0),(.25,1,28)),('Right',(15.875,.5,0),(.25,1,28))]:
-    p('Geometry/Skirting'+name,pos,size,'mint',collide=False)
+for side in (-1,1):
+    p(f'Geometry/SkirtingBack{side}',(side*11,.5,-13.875),(10,1,.25),'mint',collide=False)
+    p(f'Geometry/SkirtingFront{side}',(side*10.2,.5,13.875),(11.6,1,.25),'mint',collide=False)
+    p(f'Geometry/SkirtingSide{side}',(side*15.875,.5,0),(.25,1,27.5),'mint',collide=False)
 for y in (4,8):
     p(f'Geometry/BackSeam{y}',(0,y,-13.95),(32,.08,.1),'sand',collide=False)
     p(f'Geometry/LeftSeam{y}',(-15.95,y,0),(.1,.08,28),'sand',collide=False)
@@ -92,7 +94,7 @@ for x in (-12,-8):
 for j,z in enumerate((-12,-5.5)):
     p(f'Furniture/Dining/ChairSeat{j}',(-10,1.9,z),(2.75,.4,2.5),'mint')
     backz=z+(-1.1 if j==0 else 1.1)
-    p(f'Furniture/Dining/ChairBack{j}',(-10,3,backz),(2.75,2.5,.4),'mint')
+    p(f'Furniture/Dining/ChairBack{j}',(-10,3,backz),(2.6,2.5,.4),'mint')
     for dx in (-.9,.9):
         for dz in (-.8,.8):p(f'Furniture/Dining/ChairLeg{j}_{dx}_{dz}',(-10+dx,.85,z+dz),(.35,1.7,.35),'wood')
 p('Furniture/Dining/Bowl',(-10,3.85,-8.75),(1.3,.4,1.3),'pink',collide=False)
@@ -102,7 +104,7 @@ for j,x in enumerate((-10.35,-9.65)):p(f'Furniture/Dining/Fruit{j}',(x,4.2,-8.75
 p('Furniture/Decor/WindowFrame',(-15.8,7.5,-8),(.25,5.5,5),'white',collide=False)
 p('Furniture/Decor/WindowGlass',(-15.6,7.5,-8),(.1,4.75,4.25),'blue',collide=False)
 p('Furniture/Decor/WindowMullion',(-15.5,7.5,-8),(.1,4.75,.25),'white',collide=False)
-p('Furniture/Decor/WindowCrossbar',(-15.5,7.5,-8),(.1,.25,4.25),'white',collide=False)
+p('Furniture/Decor/WindowCrossbar',(-15.5,7.5,-8),(.06,.25,4.25),'white',collide=False)
 for z in (-11,-5):p('Furniture/Decor/Curtain'+str(z),(-15.2,7.25,z),(.5,6,1),'yellow',collide=False)
 def plant(name,x,z):
     p('Furniture/Plants/'+name+'Pot',(x,1,z),(2,2,2),'purple')
@@ -159,7 +161,7 @@ p('Geometry/LivingRight',(24.5,15,-34),(1,30,40),'wall')
 # Wide, genuinely open 11 x 9 stud passage from the original room.
 for side in (-1,1):
     p(f'Geometry/PassageWall{side}',(side*15.25,7.5,-14.5),(19.5,15,1),'wall')
-    p(f'Geometry/PassageFrame{side}',(side*5.625,4.5,-14.25),(.4,9,1.7),'navy',collide=False)
+    p(f'Geometry/PassageFrame{side}',(side*5.625,4.58,-14.25),(.4,8.84,1.7),'navy',collide=False)
 p('Geometry/PassageLintel',(0,12,-14.5),(11,6,1),'wall')
 p('Geometry/PassageFrameTop',(0,9.085,-14.25),(11.5,.25,1.7),'navy',collide=False)
 p('Geometry/UpperFront',(0,23,-14.5),(50,14,1),'upperwall')
@@ -176,11 +178,11 @@ for i in range(32):
     p(f'Geometry/Stairs/Step{i:02}',(19,top/2,z),(8,top,.75),'wood')
     p(f'Geometry/Stairs/Nosing{i:02}',(19,top+.025,z+.275),(8,.05,.2),'mint',collide=False)
     for x in (14.75,23.25):
-        p(f'Geometry/Stairs/Handrail{i:02}_{x}',(x,top+3,z),(.3,.3,.85),'navy')
+        p(f'Geometry/Stairs/Handrail{i:02}_{x}',(x,top+3,z),(.38,.3,.85),'navy')
         if i%4==0 or i==31:
             p(f'Geometry/Stairs/Post{i:02}_{x}',(x,top+1.5,z),(.3,3,.3),'mint')
-p('Geometry/UpperOpeningRail',(13.75,18,-37.5),(.3,.3,25),'navy')
-p('Geometry/UpperOpeningFrontRail',(19,18,-24.75),(10,.3,.3),'navy')
+p('Geometry/UpperOpeningRail',(13.75,18,-37.5),(.38,.3,25),'navy')
+p('Geometry/UpperOpeningFrontRail',(19,18,-24.75),(10,.3,.38),'navy')
 for z in (-49,-45,-41,-37,-33,-29,-25):
     p('Geometry/UpperOpeningPost'+str(z),(13.75,17,z),(.3,2,.3),'mint')
 for x in (16,20,23):p('Geometry/UpperFrontPost'+str(x),(x,17,-24.75),(.3,2,.3),'mint')
@@ -192,7 +194,7 @@ for n in nodes:
 p('Furniture/Upper/WindowFrame',(-12,23,-53.7),(12,7,.3),'navy',collide=False)
 p('Furniture/Upper/WindowGlass',(-12,23,-53.45),(11.25,6.25,.15),'blue',collide=False)
 p('Furniture/Upper/WindowMullion',(-12,23,-53.3),(.35,6.25,.15),'tile',collide=False)
-p('Furniture/Upper/WindowCrossbar',(-12,23,-53.3),(11.25,.35,.15),'tile',collide=False)
+p('Furniture/Upper/WindowCrossbar',(-12,23,-53.3),(11.25,.35,.09),'tile',collide=False)
 
 # Asset-free framed Verity portraits made from shallow toy-block shapes.
 # This stylised mascot is replaceable once the final Verity reference is supplied.
@@ -207,8 +209,8 @@ def portrait(name,x,y,z,face='back',body='pink',crown=False):
     art('Ground',0,-2.4,6.3,.8,'mint',.06,.35)
     art('Body',0,-.5,3.8,3.1,body,.08,.4)
     art('Head',0,.4,4.3,2.8,body,.08,.45)
-    art('EarL',-1.4,2,1,1.3,body,.08,.45)
-    art('EarR',1.4,2,1,1.3,body,.08,.45)
+    art('EarL',-1.4,2,1,1.3,body,.08,.41)
+    art('EarR',1.4,2,1,1.3,body,.08,.41)
     for side in (-1,1):
         art('EyeWhite'+str(side),side*.9,.6,.9,1.15,'white',.06,.55)
         art('Pupil'+str(side),side*.85,.5,.45,.7,'navy',.06,.65)
@@ -216,7 +218,7 @@ def portrait(name,x,y,z,face='back',body='pink',crown=False):
     art('Smile',0,-.6,.9,.25,'navy',.06,.6)
     if crown:
         art('CrownBand',0,2.25,2.8,.5,'yellow',.08,.65)
-        for j,u in enumerate((-1,0,1)):art('CrownTip'+str(j),u,2.7,.55,.65,'yellow',.08,.65)
+        for j,u in enumerate((-1,0,1)):art('CrownTip'+str(j),u,2.7,.55,.65,'yellow',.08,.69)
 portrait('VerityWelcome',-15.7,7,1,face='left',body='pink')
 portrait('VerityCrown',-10,7,-53.8,body='mint',crown=True)
 portrait('VerityUpstairs',7,23,-53.8,body='purple',crown=True)
@@ -239,7 +241,7 @@ for side in (-1,1):
     for x,width in ((side*16,2),(side*4.5,1)):
         p(f'Geometry/FrontPier{side}_{x}',(x,6,14.5),(width,8,1),'mint')
     p(f'Geometry/FrontGlass{side}',(side*10,6,14.5),(10,8,.15),'blue',alpha=.72)
-    p(f'Geometry/OpenDoorPost{side}',(side*4.125,4.5,14.5),(.4,9,1.4),'navy',collide=False)
+    p(f'Geometry/OpenDoorPost{side}',(side*4.125,4.55,14.5),(.4,8.9,1.4),'navy',collide=False)
 p('Geometry/FrontHeader',(0,11,14.5),(34,2,1),'mint')
 p('Geometry/OpenDoorLintel',(0,9.5,14.5),(8,1,1),'mint')
 # Side glazing opens views of the living room and the upper floor to neighbours.
@@ -268,7 +270,7 @@ for n in nodes:
         n['accent']=True
 # Extra decoration downstairs; upstairs intentionally stays sparse.
 p('Furniture/Decor/BookcaseBack',(-14.75,2.75,-3.25),(.25,5.5,3.5),'wood')
-for y in (.4,2.6,5.3):p('Furniture/Decor/Bookshelf'+str(y),(-13.75,y,-3.25),(2.25,.25,3.5),'wood')
+for y in (.4,2.6,5.3):p('Furniture/Decor/Bookshelf'+str(y),(-13.69,y,-3.25),(2.13,.25,3.36),'wood')
 for j,z in enumerate((-4.5,-3.7,-2.9,-2.1)):
     p(f'Furniture/Decor/Book{j}',(-13.7,1.4,z),(1.5,1.5,.55),('blue','pink','yellow','purple')[j],collide=False)
 plant('LivingCorner',-20,-48)
@@ -330,7 +332,7 @@ for key,value in zip(('R','G','B'),(.6,.63,.7)):E.SubElement(ambient,key).text=s
 E.ElementTree(doc).write(OUT/'InteriorPreview.rbxlx',encoding='utf-8',xml_declaration=True)
 
 # Cutaways are review views only; the exported model remains fully enclosed.
-hidden={'Geometry/WallFront','Geometry/WallRight','Geometry/Ceiling','Geometry/SkirtingFront','Geometry/SkirtingRight','Geometry/LivingRight','Geometry/LivingBack','Geometry/LivingLeft','Geometry/UpperCeiling','Geometry/UpperFront','Geometry/UpperBackLining','Geometry/UpperLeftLining','Geometry/UpperRightLining','Geometry/UpperFloorMain','Geometry/UpperFloorFront','Geometry/UpperLanding'}
+hidden={'Geometry/WallFront','Geometry/WallRight','Geometry/Ceiling','Geometry/SkirtingFront-1','Geometry/SkirtingFront1','Geometry/SkirtingSide1','Geometry/LivingRight','Geometry/LivingBack','Geometry/LivingLeft','Geometry/UpperCeiling','Geometry/UpperFront','Geometry/UpperBackLining','Geometry/UpperLeftLining','Geometry/UpperRightLining','Geometry/UpperFloorMain','Geometry/UpperFloorFront','Geometry/UpperLanding'}
 # Keep the first-floor halves of the distant living-room walls in the cutaway.
 cutaway=[dict(n) for n in nodes if n['path'] not in hidden and not n['path'].startswith(('Geometry/RoofCap','Geometry/PassageWall','Geometry/PassageLintel','Furniture/Entry/Door','Furniture/Entry/Handle','Furniture/Lamps/','Geometry/Upper','Furniture/Upper/','Furniture/Plants/UpperCorner','Furniture/Gallery/VerityUpstairs'))]
 for name,pos,size in [('CutawayBack',(0,7.5,-54.5),(50,15,1)),('CutawayLeft',(-24.5,7.5,-34),(1,15,40))]:

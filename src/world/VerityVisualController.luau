@@ -455,12 +455,14 @@ function Controller:Tick(now,dt)
 			if ownGrowth then
 				showingGrowth=true
 				record.growthCover=Profile.Conceal(alpha)
-				self.effects:Growth(model:GetPivot(),model:GetScale(),alpha,Profile.Bloom,
-					newColor,Profile.IsMilestone(event.newLevel),model)
 			end
 			local targetLift=if pose.stage>=2 and not reduced then event.newScale*0.05 else 0
 			local lift=active.lift+(targetLift-active.lift)*pose.blend+pose.lift
 			self:Apply(record,pose.scale,lift,active.yaw+pose.yaw,oldColor:Lerp(newColor,pose.blend),if alpha>=0.58 then event.newLevel else event.oldLevel)
+			if ownGrowth then
+				self.effects:Growth(model:GetPivot(),pose.scale,alpha,Profile.Bloom,
+					newColor,Profile.IsMilestone(event.newLevel),model)
+			end
 			scale,stage=pose.scale,pose.stage
 			if alpha>=Profile.Bloom and not active.burst then
 				active.burst=true

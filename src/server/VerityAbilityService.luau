@@ -56,7 +56,10 @@ function Service:Stop(player,stopAttacks)
 	if not current then return end
 	self.active[player]=nil
 	if current.attachment then current.attachment:Destroy() end
-	if current.root and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then current.root:SetNetworkOwnershipAuto() end
+	if current.ownsPhysics and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then
+		if current.dash then current.root.AssemblyLinearVelocity=Vector3.yAxis*current.root.AssemblyLinearVelocity.Y end
+		current.root:SetNetworkOwnershipAuto()
+	end
 	local profile=self.data:Get(player.UserId)
 	local humanoid=current.character:FindFirstChildOfClass("Humanoid")
 	if humanoid and profile then humanoid.WalkSpeed=Forms.Get(profile.Data.VerityLevel).speed end
@@ -80,25 +83,46 @@ function Service:Candidates()
 	end
 	return candidates
 end
-function Service:Cast(character,origin,destination,ignore)
-	local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances=if ignore then {character,ignore} else {character}
-	-- Query character limbs as well as walls; CanQuery hides our decorative VFX.
-	params.IgnoreWater=true;params.RespectCanCollide=false
+local function rayParams(filter,kind,physical)
+	local params=RaycastParams.new()
+	params.FilterType,params.FilterDescendantsInstances=kind,filter
+	params.IgnoreWater,params.RespectCanCollide=true,physical
+	return params
+end
+
+function Service:CombatRays(character,ignoredCharacter)
+	local exclude,include={character},{}
+	if ignoredCharacter then table.insert(exclude,ignoredCharacter) end
+	for _,player in Players:GetPlayers() do
+		local other=player.Character
+		if other and other~=character then
+			table.insert(exclude,other)
+			if other~=ignoredCharacter then table.insert(include,other) end
+		end
+	end
+	return rayParams(exclude,Enum.RaycastFilterType.Exclude,true), rayParams(include,Enum.RaycastFilterType.Include,false)
+end
+
+local function cast(origin,destination,cover,bodies)
 	local delta=destination-origin
-	return if delta.Magnitude>.01 then workspace:Raycast(origin,delta,params) else nil
+	if delta.Magnitude<=.01 then return nil end
+	-- Decorative parts do not stop a shot. Noncollidable avatar limbs still count as hits.
+	local solid=workspace:Raycast(origin,delta,cover)
+	local body=workspace:Raycast(origin,delta,bodies)
+	return if body and (not solid or body.Distance<solid.Distance) then body else solid
 end
 function Service:Matches(candidate,instance)
 	return instance==candidate.part or (candidate.character and instance:IsDescendantOf(candidate.character))
 end
 function Service:Hit(player,candidate,damage)
 	if candidate.player then
-		if candidate.player==player then return false end
+		if candidate.player==player then return 0 end
 		local character,root,humanoid=self:Character(candidate.player)
-		if not root or character~=candidate.character or self:IsSafe(candidate.player,root) then return false end
+		if not root or character~=candidate.character or self:IsSafe(candidate.player,root) then return 0 end
 		local shield=(candidate.player:GetAttribute("VerityShieldUntil") or 0)>workspace:GetServerTimeNow()
+		local before=humanoid.Health
 		humanoid:TakeDamage(damage*(if shield then .25 else 1))
-		return true
+		return math.max(0,before-humanoid.Health)
 	end
 	return self.targets:Damage(candidate.part,damage,player.UserId)
 end
@@ -108,7 +132,8 @@ function Service:Attack(player,item,id,character,root,direction)
 	end
 	local head=character:FindFirstChild("Head")
 	local origin=if head then head.Position else root.Position+Vector3.new(0,2,0)
-	local result=self:Cast(character,origin,origin+direction*item.Range)
+	local cover,bodies=self:CombatRays(character)
+	local result=cast(origin,origin+direction*item.Range,cover,bodies)
 	local endpoint=if result then result.Position else origin+direction*item.Range
 	local candidates=self:Candidates();local primary
 	for _,candidate in candidates do
@@ -123,7 +148,7 @@ function Service:Attack(player,item,id,character,root,direction)
 			if delta.Magnitude<1 or delta.Magnitude>item.Range then continue end
 			local dot=direction:Dot(delta.Unit)
 			if dot<=best then continue end
-			local hit=self:Cast(character,origin,candidate.part.Position)
+			local hit=cast(origin,candidate.part.Position,cover,bodies)
 			if hit and self:Matches(candidate,hit.Instance) then best=dot;primary=candidate;endpoint=hit.Position end
 		end
 	end
@@ -134,19 +159,20 @@ function Service:Attack(player,item,id,character,root,direction)
 		for _,candidate in candidates do
 			if candidate.player==player or (candidate.part.Position-endpoint).Magnitude>item.Radius then continue end
 			-- No damage through a wall: validate direct sight from the caster too.
-			local hit=self:Cast(character,origin,candidate.part.Position)
+			local hit=cast(origin,candidate.part.Position,cover,bodies)
 			if hit and self:Matches(candidate,hit.Instance) then table.insert(victims,candidate) end
 		end
 	elseif primary and item.Chains then
 		local used={[primary.part]=true};local from=primary.part.Position;local fromInstance=primary.character or primary.part
 		for _=2,item.Chains do
 			local nextTarget;local nearest=item.ChainRange
+			local chainCover,chainBodies=self:CombatRays(character,fromInstance)
 			for _,candidate in candidates do
 				local distance=(candidate.part.Position-from).Magnitude
 				if candidate.player==player or used[candidate.part] or distance>nearest then continue end
-				local hit=self:Cast(character,from+Vector3.new(0,2,0),candidate.part.Position,fromInstance)
+				local hit=cast(from+Vector3.new(0,2,0),candidate.part.Position,chainCover,chainBodies)
 				-- Check from the owner as well; avoids chaining through cover.
-				local ownerHit=self:Cast(character,origin,candidate.part.Position)
+				local ownerHit=cast(origin,candidate.part.Position,cover,bodies)
 				if ownerHit and self:Matches(candidate,ownerHit.Instance) and (not hit or self:Matches(candidate,hit.Instance)) then
 					nextTarget=candidate;nearest=distance
 				end
@@ -156,7 +182,8 @@ function Service:Attack(player,item,id,character,root,direction)
 			fromInstance=nextTarget.character or nextTarget.part;table.insert(points,from)
 		end
 	end
-	local token={character=character,id=id};self.attacks[player]=token
+	local token={};self.attacks[player]=token
+	local dealt=0
 	self.remote:FireAllClients({kind="Attack",ownerUserId=player.UserId,itemId=id,origin=origin,points=points,duration=item.Duration or .5})
 	local ticks=if item.Action=="laser" then 3 else 1
 	for tick=1,ticks do
@@ -166,29 +193,45 @@ function Service:Attack(player,item,id,character,root,direction)
 			local equipped=profile and profile.Data.AbilitiesEquipped.Attack
 			if profile and not Catalog.Equipped(profile.Data,"Attack",profile.HeroPassOwned) then equipped=nil end
 			if self.attacks[player]~=token or liveCharacter~=character or not liveRoot or equipped~=id or self:IsSafe(player,liveRoot) then return end
+			local liveHead=liveCharacter:FindFirstChild("Head")
+			local currentOrigin=if liveHead then liveHead.Position else liveRoot.Position+Vector3.new(0,2,0)
+			local liveCover,liveBodies=self:CombatRays(liveCharacter)
 			for index,candidate in victims do
 				if not candidate.part.Parent then continue end
 				local delta=candidate.part.Position-liveRoot.Position
 				if delta.Magnitude>item.Range+(item.ChainRange or item.Radius or 0) then continue end
 				-- Recheck cover on each laser tick, including newly closed doors.
-				local currentOrigin=liveRoot.Position+Vector3.new(0,2,0)
-				local hit=self:Cast(character,currentOrigin,candidate.part.Position)
+				local hit=cast(currentOrigin,candidate.part.Position,liveCover,liveBodies)
 				if hit and self:Matches(candidate,hit.Instance) then
-					self:Hit(player,candidate,item.Damage/ticks*(if item.Chains then .8^(index-1) else 1))
+					dealt+=self:Hit(player,candidate,item.Damage/ticks*(if item.Chains then .8^(index-1) else 1))
 				end
 			end
-			if tick==ticks and self.attacks[player]==token then self.attacks[player]=nil end
+			if tick==ticks and self.attacks[player]==token then
+				self.attacks[player]=nil
+				self.remote:FireClient(player,{kind="CombatResult",damage=dealt})
+			end
 		end)
 	end
 	return true
 end
+
+local function addVelocity(current,name)
+	local root=current.root
+	local attachment=Instance.new("Attachment");attachment.Name=name;attachment.Parent=root
+	local velocity=Instance.new("LinearVelocity")
+	velocity.Attachment0,velocity.RelativeTo=attachment,Enum.ActuatorRelativeTo.World
+	velocity.MaxForce=root.AssemblyMass*1800
+	current.attachment,current.velocity=attachment,velocity
+	return velocity
+end
+
 function Service:Activate(player,slot,direction)
 	local now=workspace:GetServerTimeNow()
 	if slot=="Steer" then
 		if now-(self.steering[player] or -math.huge)<.15 then return end
 		self.steering[player]=now
 		local current=self.active[player]
-		if not current or not current.velocity or now>=current.untilTime or player.Character~=current.character then return end
+		if not current or not current.flight or now>=current.untilTime or player.Character~=current.character then return end
 		if typeof(direction)~="Vector3" or not Numeric.isFinite(direction.X) or not Numeric.isFinite(direction.Y)
 			or not Numeric.isFinite(direction.Z) or direction.Magnitude>1.1 then return end
 		local _,root=self:Character(player);if not root then return end
@@ -213,30 +256,46 @@ function Service:Activate(player,slot,direction)
 		if not self:Attack(player,item,id,character,root,direction.Unit) then return end
 		cooldowns[slot]=now+item.Cooldown;player:SetAttribute("VerityAttackReadyAt",cooldowns[slot]);return
 	end
-	self:Stop(player,false)
 	local action=item.MobilityAction or item.Action
 	local duration=if item.MobilityAction then item.FlightDuration else item.Duration
+	local usesPhysics=action=="dash" or action=="leap" or action=="flight"
+	if usesPhysics and not root:CanSetNetworkOwnership() then return end
+	local dashDirection
+	if action=="dash" then
+		local facing=root.CFrame.LookVector*Vector3.new(1,0,1)
+		if facing.Magnitude<.01 then return end
+		dashDirection=facing.Unit
+		local params=rayParams({character},Enum.RaycastFilterType.Exclude,true)
+		local hit=workspace:Spherecast(root.Position,.95,dashDirection*(item.Power*duration+1.25),params)
+		if hit then
+			if hit.Distance<3 then self.remote:FireClient(player,{kind="Blocked",code="OBSTACLE"});return end
+			duration=math.min(duration,(hit.Distance-1.25)/item.Power)
+		end
+	end
+	self:Stop(player,false)
+	if usesPhysics then root:SetNetworkOwner(nil) end
 	cooldowns[slot]=now+(item.FlightCooldown or item.Cooldown)
 	player:SetAttribute("VerityAbilityReadyAt",cooldowns[slot])
 	player:SetAttribute("VerityMobilityUntil",now+duration)
 	player:SetAttribute("VerityMobilityColor",item.Color)
-	local current={character=character,id=id,root=root,untilTime=now+duration};self.active[player]=current
+	local current={character=character,id=id,root=root,untilTime=now+duration,ownsPhysics=usesPhysics};self.active[player]=current
 	if action=="shield" then player:SetAttribute("VerityShieldUntil",now+duration)
 	elseif action=="dash" then
-		local facing=root.CFrame.LookVector;local delta=Vector3.new(facing.X,0,facing.Z)
-		local hit=self:Cast(character,root.Position,root.Position+delta*10)
-		if not hit then root:ApplyImpulse(delta*root.AssemblyMass*item.Power) end
+		current.dash=true
+		local velocity=addVelocity(current,"VerityDash")
+		velocity.VelocityConstraintMode=Enum.VelocityConstraintMode.Plane
+		velocity.PrimaryTangentAxis,velocity.SecondaryTangentAxis=Vector3.xAxis,Vector3.zAxis
+		velocity.PlaneVelocity=Vector2.new(dashDirection.X,dashDirection.Z)*item.Power
+		velocity.Parent=current.attachment
 	elseif action=="leap" then
-		root:ApplyImpulse(Vector3.yAxis*root.AssemblyMass*item.Power);humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		local velocity=root.AssemblyLinearVelocity
+		root.AssemblyLinearVelocity=Vector3.new(velocity.X,item.Power,velocity.Z)
 	elseif action=="sprint" then current.speed=item.Power;humanoid.WalkSpeed=current.speed
 	elseif action=="flight" then
-		if not root:CanSetNetworkOwnership() then self:Stop(player);return end
-		root:SetNetworkOwner(nil);current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
-		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-		local attachment=Instance.new("Attachment");attachment.Name="VerityFlight";attachment.Parent=root;current.attachment=attachment
-		local lift=Instance.new("LinearVelocity");lift.Attachment0=attachment;lift.RelativeTo=Enum.ActuatorRelativeTo.World
-		lift.VelocityConstraintMode=Enum.VelocityConstraintMode.Vector;lift.VectorVelocity=Vector3.new(0,8,0)
-		lift.ForceLimitsEnabled=false;lift.Parent=attachment;current.velocity=lift
+		current.flight=true;current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
+		local velocity=addVelocity(current,"VerityFlight")
+		velocity.VectorVelocity=Vector3.new(0,8,0)
+		velocity.Parent=current.attachment
 	end
 	self.remote:FireAllClients({kind="Mobility",ownerUserId=player.UserId,itemId=id,origin=root.Position,duration=duration,endsAt=now+duration})
 	task.delay(duration,function() if self.active[player]==current then self:Stop(player,false) end end)

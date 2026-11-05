@@ -86,6 +86,9 @@
         "HouseProgression": {
           "$path": "src/server/HouseProgression.luau"
         },
+        "HouseDoor": {
+          "$path": "src/server/HouseDoor.luau"
+        },
         "MoneyPassService": {
           "$path": "src/server/MoneyPassService.luau"
         },

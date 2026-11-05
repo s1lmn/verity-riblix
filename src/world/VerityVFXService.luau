@@ -174,11 +174,18 @@ function VFX:Update(model, origin, scale, stage, now, reducedEffects, near, leve
 end
 
 local TAU = 2 * math.pi
-local STRANDS,STRAND_SEGMENTS = 6,20
+local STRANDS,STRAND_SEGMENTS = 4,12
 local RIBBONS = STRANDS*STRAND_SEGMENTS
-local WAVES = 48
-local SPARKS = 64
-local MIST = 40
+local WAVE_SEGMENTS = 10
+local WAVES = 2*WAVE_SEGMENTS
+local SPARKS = 28
+local MIST = 16
+
+local function ribbonPoint(center,scale,radius,angle,t)
+	angle+=t*TAU*1.3
+	local r=radius*(.72+.38*t)
+	return center+Vector3.new(math.cos(angle)*r,scale*(-.95+2.5*t),math.sin(angle)*r)
+end
 
 local function makeGrowth(parent)
 	local parts = {}
@@ -218,6 +225,8 @@ end
 function VFX:Growth(origin, scale, progress, peak, newColor, milestone,owner)
 	if not self.growth then self.growth = makeGrowth(self.folder) end
 	local growth = self.growth
+	local recolor = growth.tint ~= newColor
+	growth.tint = newColor
 	growth.visible = true
 	growth.owner=owner
 	local white = growth.white
@@ -244,32 +253,30 @@ function VFX:Growth(origin, scale, progress, peak, newColor, milestone,owner)
 			local strand = math.floor((i - 1) / STRAND_SEGMENTS)
 			local segment = (i - 1) % STRAND_SEGMENTS
 			local direction = if strand%3==1 then -1 else 1
-			local function point(t)
-				local angle=direction*spin+strand*TAU/STRANDS+t*TAU*1.3
-				local r=radius*(.72+.38*t)
-				return center+Vector3.new(math.cos(angle)*r,scale*(-.95+2.5*t),math.sin(angle)*r)
-			end
-			local a,b=point(segment/STRAND_SEGMENTS),point((segment+1)/STRAND_SEGMENTS)
-			part.Size=Vector3.new(scale*.13,scale*.22,(b-a).Magnitude*1.12)
+			local angle=direction*spin+strand*TAU/STRANDS
+			local a=ribbonPoint(center,scale,radius,angle,segment/STRAND_SEGMENTS)
+			local b=ribbonPoint(center,scale,radius,angle,(segment+1)/STRAND_SEGMENTS)
+			part.Size=Vector3.new(scale*.16,scale*.24,(b-a).Magnitude*1.1)
 			part.CFrame=CFrame.lookAt((a+b)/2,b)
-			part.Color=newColor:Lerp(white,.12+strand*.07)
+			if recolor then part.Color=newColor:Lerp(white,.12+strand*.07) end
 			part.Transparency=1-math.clamp(energy*(.65+.35*conceal)*(1-.55*release),0,1)
 		elseif i <= RIBBONS + WAVES then
 			local index = i - RIBBONS - 1
-			local wave = math.floor(index / 16)
+			local wave = math.floor(index / WAVE_SEGMENTS)
+			if recolor then part.Color = newColor:Lerp(white, wave * .14) end
 			local t = math.clamp((release - wave * .12) / .79, 0, 1)
 			if t <= 0 or t >= 1 then part.Transparency = 1; continue end
-			local angle = index % 16 * TAU / 16 + wave * .23
+			local angle = index % WAVE_SEGMENTS * TAU / WAVE_SEGMENTS + wave * .23
 			local ringRadius = scale * (1 + t * (if milestone then 1.35 else 1.1))
 			local rotation = CFrame.new(center) * CFrame.Angles(.28 + wave * .22, wave * 1.25, 0)
 			part.CFrame = rotation * CFrame.new(math.cos(angle) * ringRadius, 0, math.sin(angle) * ringRadius)
 				* CFrame.Angles(0, -angle, 0)
-			part.Size = Vector3.new(scale * .033, scale * .033, ringRadius * .36)
-			part.Color = newColor:Lerp(white, wave * .14)
+			part.Size = Vector3.new(scale * .044, scale * .044, ringRadius * .54)
 			part.Transparency = 1 - .9 * math.sin(math.pi * t) ^ .72
 		elseif i<=RIBBONS+WAVES+SPARKS then
 			local index = i - RIBBONS - WAVES - 1
-			if release <= 0 or (not milestone and index >= 48) then part.Transparency = 1; continue end
+			if recolor then part.Color = newColor:Lerp(white, (index % 5) * .11) end
+			if release <= 0 or (not milestone and index >= 20) then part.Transparency = 1; continue end
 			local angle = index * 2.399963
 			local spread = 1 - (1 - release)^2
 			local distance = scale * (1 + spread * (1 + (index % 5) * .18))
@@ -278,18 +285,17 @@ function VFX:Growth(origin, scale, progress, peak, newColor, milestone,owner)
 			local size = scale * (.10 + (index % 4) * .025) * (1 - release * .65)
 			part.CFrame = CFrame.lookAt(position, center)
 			part.Size = Vector3.new(size, size, size * (if index % 3 == 0 then 1 else 2.8))
-			part.Color = newColor:Lerp(white, (index % 5) * .11)
 			part.Transparency = 1 - .94 * math.sin(math.pi * release) ^ .68
 		else
 			local index=i-RIBBONS-WAVES-SPARKS-1
-			local layer=math.floor(index/8)
-			local angle=index%8*TAU/8+spin*(if layer%2==0 then 1 else -1)+layer*.3
+			local layer=math.floor(index/4)
+			local angle=index%4*TAU/4+spin*(if layer%2==0 then 1 else -1)+layer*.3
 			local r=scale*(.82+.08*layer)*(1+release*.6)
 			local y=scale*(-.7+layer*.53+.09*math.sin(spin+index))
 			local size=scale*(.68+.12*math.sin(index*2.3+spin))
 			part.Size=Vector3.one*size
 			part.CFrame=CFrame.new(center+Vector3.new(math.cos(angle)*r,y,math.sin(angle)*r))
-			part.Color=newColor:Lerp(white,.12+(index%4)*.10)
+			if recolor then part.Color=newColor:Lerp(white,.12+(index%4)*.10) end
 			part.Transparency=1-conceal*.92
 		end
 	end

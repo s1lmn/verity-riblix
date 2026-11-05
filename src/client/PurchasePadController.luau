@@ -182,8 +182,11 @@ function Controller:Render()
 			and prompt.Parent~=nil and prompt.Parent:IsA("BasePart")
 			and (root.Position-prompt.Parent.Position).Magnitude<=prompt.MaxActivationDistance or false
 		if prompt then
-			local enabled=r.canBuy
+			local minZ=prompt:GetAttribute("ExteriorMinZ")
+			local enabled=r.canBuy and (not minZ or (root and prompt.Parent
+				and prompt.Parent.CFrame:PointToObjectSpace(root.Position).Z>=minZ)) or false
 			if prompt.Enabled~=enabled then prompt.Enabled=enabled end
+			r.near=r.near and enabled
 		end
 		r.gui.Enabled=visible and uiAllowed
 		if visible then
