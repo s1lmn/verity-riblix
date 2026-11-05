@@ -1,6 +1,7 @@
 --!nonstrict
 local Locale = require(script.Parent.Locale)
 local Cleanup = require(script.Parent.Cleanup)
+local GraphicsQuality=require(script.Parent.GraphicsQuality)
 local Settings = {}
 Settings.__index = Settings
 
@@ -13,7 +14,9 @@ function Settings.new(refs)
 		local gui=refs.Root:FindFirstAncestorOfClass("ScreenGui")
 		if gui then
 			gui:SetAttribute("ReducedMotion",self.values.ReducedMotion)
-			gui:SetAttribute("ReducedEffects",self.values.ReducedEffects)
+			gui:SetAttribute("ReducedEffects",self.values.ReducedEffects or self.values.LowGraphics)
+			gui:SetAttribute("GraphicsTier",self.values.Graphics and self.values.Graphics.Tier or 3)
+			gui:SetAttribute("CardRenderDistance",self.values.Graphics and self.values.Graphics.CardDistance or 55)
 			gui:SetAttribute("UISounds",self.values.UISounds)
 			gui:SetAttribute("UIVolume",self.values.Volume)
 		end
@@ -41,6 +44,10 @@ function Settings.new(refs)
 	self.cleanup:Add(Locale.Changed.Event:Connect(function() render(true) end))
 	self.cleanup:Add(refs.Minus.Activated:Connect(function() self.values.Volume = math.max(0, self.values.Volume - 0.1); render() end))
 	self.cleanup:Add(refs.Plus.Activated:Connect(function() self.values.Volume = math.min(1, self.values.Volume + 0.1); render() end))
+	self.cleanup:Add(GraphicsQuality.new(function(profile)
+		self.values.Graphics=profile;self.values.LowGraphics=profile.Tier==1
+		render()
+	end))
 	render()
 	return self
 end

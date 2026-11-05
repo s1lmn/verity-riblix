@@ -102,9 +102,12 @@ cleanup:Add(RunService.Heartbeat:Connect(function(dt)
 	elapsed = 0
 	local camera = workspace.CurrentCamera
 	local quiet = reduced()
+	local interface=gui:FindFirstChild("VerityUI")
+	local distance=interface and interface:GetAttribute("CardRenderDistance") or DISTANCE
 	for frame, record in records do
 		local packet = frame:GetAttribute("DisplayCard")
-		local limit = if record.surface then DISTANCE + 5 else DISTANCE - 5
+		if record.surface and record.surface.MaxDistance~=distance then record.surface.MaxDistance=distance end
+		local limit = if record.surface then distance + 5 else distance - 5
 		local near = camera and frame:IsDescendantOf(workspace)
 			and (frame.Position - camera.CFrame.Position).Magnitude <= limit
 		if not near or packet == nil then

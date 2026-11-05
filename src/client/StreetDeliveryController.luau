@@ -40,7 +40,7 @@ function Controller:Tick()
  if type(cycle)~="number" or cycle<1 or cycle%1~=0 or type(started)~="number" then return end
  if not self.round or self.round.cycle~=cycle or self.round.started~=started then self:BuildRound(cycle,started) end
  local now=workspace:GetServerTimeNow();local round=self.round;local pose=Config.Sample(round,now)
- local reduced=self.ctx.settings.values.ReducedMotion;local effects=self.ctx.settings.values.ReducedEffects
+ local reduced=self.ctx.settings.values.ReducedMotion;local effects=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics)
  self.truck.Parent=if pose.truckVisible then self.folder else nil
  if pose.truckVisible then
   local frame=CFrame.new(Config.RoadX,.18,pose.truckZ)*CFrame.Angles(0,math.pi,0)

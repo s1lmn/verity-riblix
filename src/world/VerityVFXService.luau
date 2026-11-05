@@ -320,7 +320,7 @@ end
 
 function VFX:Emit(model,origin,scale,level,now,charge,tint)
     local look=Celebration.Get(level)
-    local count=if charge then look.chargeCount else look.burstCount
+    local count=math.floor((if charge then look.chargeCount else look.burstCount)*(self.particleScale or 1))
     local palette={Color3.fromHex("FFD85A"),Color3.fromHex("FF70BF"),Color3.fromHex("6AE6FF"),Color3.fromHex("FFFFFF")}
     for i=1,count do
         local p=self:Acquire();if not p then break end

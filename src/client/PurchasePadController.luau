@@ -148,7 +148,7 @@ function Controller:Render()
 			end
 		end
 		if r.light then
-			r.light.Enabled=visible and not self.ctx.settings.values.ReducedEffects
+			r.light.Enabled=visible and not (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics)
 			if visible then r.light.Color=color;r.light.Brightness=if ready then .9 else .3 end
 		end
 		r.color=color

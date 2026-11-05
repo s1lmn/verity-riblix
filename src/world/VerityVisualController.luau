@@ -429,25 +429,33 @@ function Controller:Tick(now,dt)
  reveal=self.spawn.active
 	local camera=workspace.CurrentCamera
 	local showingGrowth=false
-	if self.settings.values.ReducedEffects or self.settings.values.ReducedMotion then self.effects:SuppressBursts() end
+	local graphics=self.settings.values.Graphics
+	self.effects.particleScale=graphics and graphics.ParticleScale or 1
+	if (self.settings.values.ReducedEffects or self.settings.values.LowGraphics) or self.settings.values.ReducedMotion then self.effects:SuppressBursts() end
 	for model,record in self.records do
 		if not model:IsDescendantOf(workspace) then self:Remove(model);continue end
 		local spawning=reveal and reveal.event.ownerUserId==record.owner and reveal.event.plotId==record.plot
+		local step=dt
+		if graphics and graphics.RemoteInterval>0 and Client and record.owner~=Client.UserId and not record.active and not spawning then
+			record.budgetElapsed=(record.budgetElapsed or 0)+(dt or 1/60)
+			if record.budgetElapsed<graphics.RemoteInterval then continue end
+			step=record.budgetElapsed;record.budgetElapsed=0
+		else record.budgetElapsed=0 end
   record.spawnCover=if spawning then reveal.pose.cover else 0
   if spawning then reveal.boundModel=model end
-  if not self:Follow(record,now,dt) then continue end
+  if not self:Follow(record,now,step) then continue end
   if spawning and not self.settings.values.ReducedMotion then
    local start=CFrame.new(reveal.origin.Position+Vector3.new(0,1.15,0))*record.origin.Rotation
    record.origin=start:Lerp(record.origin,reveal.pose.join)
   end
-		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<Profile.IdleDistance
+		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<(graphics and graphics.EffectDistance or Profile.IdleDistance)
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
 			local event=if spawning or record.adminLevel then nil else record.ledger:Pop()
 			if event then
 				record.active={event=event,started=now,yaw=record.lastYaw,lift=record.lastLift,burst=false}
 				self.Started:Fire(event,model)
-				if near and not reduced and not self.settings.values.ReducedEffects then
+				if near and not reduced and not (self.settings.values.ReducedEffects or self.settings.values.LowGraphics) then
 					self.effects:BeginUpgrade(model,model:GetPivot(),event.newScale,event.newLevel,now,Factory.Color(event.newLevel))
 				end
 			end
@@ -456,13 +464,13 @@ function Controller:Tick(now,dt)
 		record.growthCover=0
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
-		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,dt or 1/60,now,reduced or not near or active~=nil or spawning==true or (record.abilityAimUntil or 0)>now,record.teleported)
+		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,step or 1/60,now,reduced or not near or active~=nil or spawning==true or (record.abilityAimUntil or 0)>now,record.teleported)
 		local body=model:FindFirstChild("Body")
 		local face=body and body:FindFirstChild("FaceGui")
 		if face then
 			record.faceLife=record.faceLife or {}
 			local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
-			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,self.settings.values.ReducedEffects or not near)
+			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics) or not near)
 		end
 		local renderLevel=if record.riding then record.level else record.adminLevel or record.level
   local scale=Levels.getVerityScale(renderLevel)
@@ -473,7 +481,7 @@ function Controller:Tick(now,dt)
 			local pose=Profile.Sample(event.oldLevel,event.newLevel,alpha,reduced)
 			local oldColor,newColor=Factory.Color(event.oldLevel),Factory.Color(event.newLevel)
 			local ownGrowth=Client and event.ownerUserId==Client.UserId
-				and not reduced and not self.settings.values.ReducedEffects and near
+				and not reduced and not (self.settings.values.ReducedEffects or self.settings.values.LowGraphics) and near
 			if ownGrowth then
 				showingGrowth=true
 				record.growthCover=Profile.Conceal(alpha)
@@ -488,7 +496,7 @@ function Controller:Tick(now,dt)
 			scale,stage=pose.scale,pose.stage
 			if alpha>=Profile.Bloom and not active.burst then
 				active.burst=true
-				if near and not reduced and not self.settings.values.ReducedEffects then self.effects:Burst(model,model:GetPivot(),scale,event.newLevel,now,newColor) end
+				if near and not reduced and not (self.settings.values.ReducedEffects or self.settings.values.LowGraphics) then self.effects:Burst(model,model:GetPivot(),scale,event.newLevel,now,newColor) end
 			end
 			if alpha>=1 then self:Finish(record,now);scale=event.newScale end
 		else
@@ -499,8 +507,11 @@ function Controller:Tick(now,dt)
 			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(renderLevel),renderLevel) end
 		end
 		visibility(record,record.visibility or 0)
-		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,
-			near and not active and not spawning,renderLevel,reduced,record.teleported,Factory.Color(renderLevel))
+		if now>=(record.fxAt or 0) or not near then
+			record.fxAt=now+(graphics and graphics.VFXInterval or 0)
+			self.effects:Update(model,model:GetPivot(),scale,stage,now,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics),
+				near and not active and not spawning,renderLevel,reduced,record.teleported,Factory.Color(renderLevel))
+		end
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)

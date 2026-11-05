@@ -9,7 +9,7 @@ local function piece(r,position,color,size)
 	p.Parent=r.folder;return p
 end
 local function ring(r,center,radius,color,normal,life,delay,mode,tilt)
-	local parts={};local count=if r.reduced then 8 else 14
+	local parts={};local count=if r.reduced then 8 elseif r.particleScale<1 then 10 else 14
 	for _=1,count do
 		local p=piece(r,center,color);p.Name="EnergyArc";p.Transparency=1;table.insert(parts,p)
 	end
@@ -27,7 +27,7 @@ local function burst(r,center,color,count,delay)
 	e.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,.3),NumberSequenceKeypoint.new(.35,.2),NumberSequenceKeypoint.new(1,0)})
 	e.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,.05),NumberSequenceKeypoint.new(.65,.25),NumberSequenceKeypoint.new(1,1)})
 	e.Parent=attachment
-	table.insert(r.bursts,{emitter=e,count=count,delay=delay or 0})
+	table.insert(r.bursts,{emitter=e,count=math.max(1,math.floor(count*r.particleScale)),delay=delay or 0})
 end
 local function trail(r,source,side,color,lifetime)
 	local a=Instance.new("Attachment");a.Position=Vector3.new(side*.8,.35,0);a.Parent=source
@@ -43,14 +43,15 @@ local function jet(r,source,color)
 	if r.reduced then return end
 	local attach=Instance.new("Attachment");attach.Parent=source
 	local e=Instance.new("ParticleEmitter");e.Texture="rbxasset://textures/particles/sparkles_main.dds"
-	e.Rate=22;e.EmissionDirection=Enum.NormalId.Bottom;e.Speed=NumberRange.new(5,11)
+	e.Rate=22*r.particleScale;e.EmissionDirection=Enum.NormalId.Bottom;e.Speed=NumberRange.new(5,11)
 	e.SpreadAngle=Vector2.new(16,16);e.Lifetime=NumberRange.new(.12,.3);e.Acceleration=Vector3.new(0,-14,0)
 	e.Color=ColorSequence.new(WHITE,color);e.LightEmission=1;e.LightInfluence=0
 	e.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,.55),NumberSequenceKeypoint.new(1,0)})
 	e.Parent=attach;table.insert(r.emitters,e)
 end
 
-function Visuals.Prepare(r,reduced)
+function Visuals.Prepare(r,reduced,particleScale)
+	r.particleScale=particleScale or 1
 	r.reduced=reduced;r.rings={};r.bursts={};r.emitters={};r.motionTrails={};r.motes={}
 	r.channelDuration=r.duration;r.color=Color3.fromHex(r.item.Color)
 end
@@ -122,7 +123,7 @@ function Visuals.Mobility(r,root,humanoid)
 	end
 end
 function Visuals.Tick(r,age,root,humanoid,settings)
-	local reduced=settings.ReducedEffects;local motion=settings.ReducedMotion
+	local reduced=(settings.ReducedEffects or settings.LowGraphics);local motion=settings.ReducedMotion
 	for _,b in r.bursts do
 		if not b.done and age>=b.delay then b.done=true;if not reduced and not motion then b.emitter:Emit(b.count) end end
 	end

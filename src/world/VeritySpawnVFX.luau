@@ -68,7 +68,7 @@ function Spawn:Tick(now)
  local age=now-a.started
  if age>=Profile.Duration then self:Stop(true);return end
  local reduced=self.settings.values.ReducedMotion
- local subtle=reduced or self.settings.values.ReducedEffects
+ local subtle=reduced or (self.settings.values.ReducedEffects or self.settings.values.LowGraphics)
  local pose=Profile.Sample(age,reduced);a.pose=pose
  local cf=a.origin*CFrame.new(0,pose.boxLift,0)*CFrame.Angles(0,0,pose.shake)
  local boxFade=math.clamp((age-2.5)/.9,0,1)

@@ -95,7 +95,7 @@ function Presentation:Start(event,model)
  local special=milestone and milestone.level==event.newLevel
  self:RenderCopy()
  self.ctx.sound:PlayUpgrade(event,true)
- if not self.ctx.settings.values.ReducedEffects and not self.ctx.settings.values.ReducedMotion then
+ if not (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) and not self.ctx.settings.values.ReducedMotion then
   local glow=Instance.new("Highlight")
   glow.Name="UpgradeGlow";glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
   glow.FillColor=newColor;glow.FillTransparency=.8;glow.OutlineColor=T.Paper;glow.OutlineTransparency=.15;glow.Parent=model
@@ -185,7 +185,7 @@ function Presentation:Tick(now)
  if not hum or hum.Health<=0 or not a.model:IsDescendantOf(workspace) or now-a.started>5 then self:Stop();return end
  local age=now-a.started
  local impactAge=age-a.look.duration*Profile.Bloom
- local subtle=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
+ local subtle=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) or self.ctx.settings.values.ReducedMotion
  local pulse=if subtle then 0 else Celebration.Pulse(impactAge)
  if a.completed and now-a.completed>1.25 then self:Stop();return end
  local size=self.ctx.refs.Safe.AbsoluteSize
@@ -198,7 +198,7 @@ function Presentation:Tick(now)
  local progress=math.clamp(age/Profile.Duration(a.event.newLevel),0,1)
  local hue=smooth((progress-.16)/.53)
  local glow=Profile.Glow(progress)
- local reduced=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion
+ local reduced=(self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) or self.ctx.settings.values.ReducedMotion
  self.wash.Visible=not reduced
  self.wash.BackgroundTransparency=1-glow*.32-(if a.look.special then pulse*.06 else 0)
  self.washGradient.Rotation=24+smooth(progress)*34
@@ -214,7 +214,7 @@ function Presentation:Tick(now)
   camera.CFrame=pose*CFrame.new(x,y,0)*CFrame.Angles(0,0,roll);camera.Focus=a.model:GetPivot()
  end
  if a.glow then
-  if self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.ReducedMotion then
+  if (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) or self.ctx.settings.values.ReducedMotion then
    a.glow:Destroy();a.glow=nil
   else
    local flare=glow
@@ -230,7 +230,7 @@ function Presentation:Tick(now)
  end
  local burstAge=a.completed and now-a.completed
  for i,piece in self.confetti do
-  piece.Visible=burstAge~=nil and burstAge<1.1 and not self.ctx.settings.values.ReducedEffects and not self.ctx.settings.values.ReducedMotion
+  piece.Visible=burstAge~=nil and burstAge<1.1 and not (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) and not self.ctx.settings.values.ReducedMotion
   if piece.Visible then
    local x=(i/19-.5)*.8
    piece.Position=UDim2.fromScale(.5+x*(.3+burstAge),.3+burstAge*.24+(i%3)*.04)
