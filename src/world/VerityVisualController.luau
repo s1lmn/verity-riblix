@@ -94,8 +94,16 @@ function Controller:Register(model,attempt)
 	if self.byOwner[identity] then self:Remove(self.byOwner[identity].model) end
 	local anchor=model:GetAttribute("VerityOrigin")
 	local record={model=model,owner=owner,plot=plot,key=identity,origin=if typeof(anchor)=="CFrame" then anchor else model:GetPivot(),level=level,revision=revision,
-		ledger=Ledger.new(),tints={},cleanup=Cleanup.new(),idleStart=os.clock(),baseYaw=0,lastYaw=0,lastLift=0,completed=0}
-	for _,p in model:GetDescendants() do if p:IsA("BasePart") and p:GetAttribute("VerityTint")~=nil then table.insert(record.tints,p) end end
+		ledger=Ledger.new(),tints={},parts={},cleanup=Cleanup.new(),idleStart=os.clock(),baseYaw=0,lastYaw=0,lastLift=0,completed=0}
+	local function trackPart(p)
+		if p:IsA("BasePart") then record.parts[p]=true;record.appliedVisibility=nil end
+	end
+	for _,p in model:GetDescendants() do
+		trackPart(p)
+		if p:IsA("BasePart") and p:GetAttribute("VerityTint")~=nil then table.insert(record.tints,p) end
+	end
+	record.cleanup:Add(model.DescendantAdded:Connect(trackPart))
+	record.cleanup:Add(model.DescendantRemoving:Connect(function(p) record.parts[p]=nil end))
 	record.ledger:Seed(revision,level)
 	self.records[model],self.byOwner[identity]=record,record
 	self:Apply(record,Levels.getVerityScale(level),0,0,Factory.Color(level),level)
@@ -156,7 +164,7 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
   end
  end
  model:PivotTo(pose)
-	for _,p in record.tints do if p.Parent and p:GetAttribute("VerityTint")~=false then p.Color=color end end
+	for _,p in record.tints do if p.Parent and p:GetAttribute("VerityTint")~=false and p.Color~=color then p.Color=color end end
 	if record.stageLevel~=level then
 		Factory.SetStage(model,level)
 		local label=model.PrimaryPart:FindFirstChild("LevelLabel")
@@ -297,7 +305,7 @@ visibility=function(record,alpha)
  end
  if record.appliedVisibility==alpha then return end
  record.appliedVisibility=alpha
- for _,p in record.model:GetDescendants() do if p:IsA("BasePart") then
+ for p in record.parts do if p.Parent then
   p.LocalTransparencyModifier=if faceEnabled and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
  end end
  local primary=record.model.PrimaryPart
@@ -492,7 +500,7 @@ function Controller:Tick(now,dt)
 		end
 		visibility(record,record.visibility or 0)
 		self.effects:Update(model,model:GetPivot(),scale,stage,now,self.settings.values.ReducedEffects,
-			near and not active and not spawning,renderLevel,reduced,record.teleported)
+			near and not active and not spawning,renderLevel,reduced,record.teleported,Factory.Color(renderLevel))
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)

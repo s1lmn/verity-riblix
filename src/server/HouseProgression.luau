@@ -210,7 +210,15 @@ function HouseProgression:Update(plotId,state)
 end
 
 function HouseProgression:Tick()
-	local players=self.players:GetPlayers()
+	local occupants={}
+	for _,player in self.players:GetPlayers() do
+		local character=player.Character
+		local root=character and character:FindFirstChild("HumanoidRootPart")
+		local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+		if root and humanoid and humanoid.Health>0 then
+			table.insert(occupants,{player=player,character=character,root=root})
+		end
+	end
 	for _,record in self.plots do
 		local state=record.state
 		local locked=state and state.HouseDoorOwned and state.HouseDoorLocked
@@ -219,9 +227,8 @@ function HouseProgression:Tick()
 			local player=self.players:GetPlayerByUserId(userId)
 			if not player or player.Character~=character then record.insideGuests[userId]=nil end
 		end
-		for _,player in players do
-			local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if not root then continue end
+		for _,occupant in occupants do
+			local player,root=occupant.player,occupant.root
 			local p=record.pivot:PointToObjectSpace(root.Position)
 			if not insideHouse(p) then record.insideGuests[player.UserId]=nil;continue end
 			local guestLocked=locked and state.ownerUserId~=player.UserId and record.insideGuests[player.UserId]~=player.Character

@@ -167,7 +167,8 @@ function Feedback:TickButton(now)
 end
 function Feedback:Tick(now)
  self:TickButton(now)
- self:TickArrival(now);self:TaskHighlights(now)
+ self:TickArrival(now)
+ if now>=(self.highlightAt or 0) then self.highlightAt=now+.1;self:TaskHighlights(now) end
  local reduced=self.ctx.settings.values.ReducedMotion
  local muted=self.ctx.settings.values.ReducedEffects or self.ctx.sound:IsCelebrating() or not root()
  local camera=workspace.CurrentCamera

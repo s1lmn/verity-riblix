@@ -16,9 +16,6 @@
       },
       "$attributes": {
         "VerityRuntimeMode": "Core"
-      },
-      "VerityElementalModels": {
-        "$path": "assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx"
       }
     },
     "ServerScriptService": {
@@ -145,6 +142,12 @@
     "Workspace": {
       "$properties": {
         "StreamingEnabled": true
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "VerityElementalModels": {
+        "$path": "assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx"
       }
     }
   }

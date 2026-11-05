@@ -261,12 +261,18 @@ function Service:Drive(current,root,velocity,plane)
  drive.ForceLimitsEnabled=true;drive.MaxForce=root.AssemblyMass*1800;drive.Parent=attachment;current.velocity=drive
 end
 function Service:WatchFlightInput(player,current)
- local token={};current.steerToken=token
- task.delay(.35,function()
-  if self.active[player]==current and current.steerToken==token and current.velocity then
-   current.velocity.VectorVelocity=Vector3.zero
-  end
- end)
+ current.lastSteerAt=workspace:GetServerTimeNow()
+ if current.steerWatching then return end
+ current.steerWatching=true
+ local function check()
+  if self.active[player]~=current or not current.velocity then current.steerWatching=false;return end
+  local remaining=.35-(workspace:GetServerTimeNow()-current.lastSteerAt)
+  if remaining>0 then task.delay(remaining,check);return end
+  current.steerWatching=false
+  -- A stale input timer must never stop the guided takeoff/landing transition.
+  if not current.phase and current.velocity.Parent then current.velocity.VectorVelocity=Vector3.zero end
+ end
+ task.delay(.35,check)
 end
 -- Landing considers physical surfaces only; visual companion parts never support the rider.
 function Service:RideLanding(current,position)
@@ -433,7 +439,7 @@ function Service:Activate(player,slot,direction)
 		task.spawn(function()
 			RunService.Heartbeat:Wait()
 			if self.active[player]~=current or player.Character~=character or humanoid.Health<=0
-				or not root:IsDescendantOf(workspace) or root.Anchored or humanoid.SeatPart then return end
+				or not root:IsDescendantOf(workspace) or not humanoid.Parent or root.Anchored or humanoid.SeatPart then return end
 			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 			-- Reach the launch speed even while falling; don't add to an upward jump.
 			local deltaY=math.max(0,item.Power-root.AssemblyLinearVelocity.Y)

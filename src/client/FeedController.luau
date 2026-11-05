@@ -407,7 +407,8 @@ function Feed:FinishReveal()
 	self.busy = false
 	reveal.effects:Destroy()
 	self.card.Visible = true
-	self.animation:Tween(self.card,0,{Size=UDim2.fromScale(1,1)})
+	self.animation:Cancel(self.card)
+	self.card.Size=UDim2.fromScale(1,1)
 	self.card.Position = UDim2.new()
 	self.card.AnchorPoint = Vector2.zero
 	if not self.dead then

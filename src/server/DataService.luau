@@ -86,9 +86,16 @@ function DataService:SaveAsync(userId, release)
 	if profile.Saving then return false, "SAVE_BUSY" end
 	if profile.Closing and not release then return false, "PROFILE_CLOSING" end
 	profile.Saving = true
-	local snapshot = Schema.copy(profile.Data)
-	local valid = Schema.validate(snapshot)
-	if not valid then profile.Saving = false; profile.Writable = false; return false, "INVALID_PROFILE" end
+	local prepared,snapshot=pcall(function()
+		local copy=Schema.copy(profile.Data)
+		if not Schema.validate(copy) then return nil end
+		return copy
+	end)
+	if not prepared or not snapshot then
+		profile.Saving=false;profile.Writable=false
+		warn("Profile snapshot rejected",userId,if prepared then "INVALID_PROFILE" else tostring(snapshot))
+		return false,"INVALID_PROFILE"
+	end
 	local revision = profile.Revision
 	local ok, record = self:_update(userId, function(old)
 		if type(old) ~= "table" then return nil end

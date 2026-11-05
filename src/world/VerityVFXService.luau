@@ -83,7 +83,8 @@ end
 
 function VFX:Hide(model)
 	local group=self.groups[model]
-	if not group then return end
+	if not group or group.hidden then return end
+	group.hidden=true
 	hideGeometry(group)
 	group.light.Enabled,group.highlight.Enabled=false,false
 	group.fire.Enabled=false
@@ -135,11 +136,12 @@ function VFX:UpdateAura(group,origin,scale,level,now,color,reducedMotion,reset)
 	group.lastPosition,group.lastTime=position,now
 end
 
-function VFX:Update(model, origin, scale, stage, now, reducedEffects, near, level, reducedMotion, reset)
+function VFX:Update(model, origin, scale, stage, now, reducedEffects, near, level, reducedMotion, reset, tint)
 	if reducedEffects or not near then self:Hide(model);return end
 	local group=self:Group(model)
+	group.hidden=false
 	local body=if model:IsA("BasePart") then model else model:FindFirstChild("Body")
-	local color=if body then body.Color else Color3.fromHex("59C9FF")
+	local color=tint or (if body then body.Color else Color3.fromHex("59C9FF"))
 	self:UpdateAura(group,origin,scale,level or model:GetAttribute("VerityLevel") or 1,now,color,reducedMotion,reset)
 	if stage<2 or reducedMotion then hideGeometry(group);return end
 	local center=origin.Position+Vector3.new(0,scale*.85,0)
