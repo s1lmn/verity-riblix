@@ -82,6 +82,14 @@ function Tutorial:UIButton(key)
  if key=="Close" and self.ctx.active then return refs.Panels[self.ctx.active].Close end
 end
 function Tutorial:Target(goal)
+ if goal.target=="StreetParcel" then
+  local folder=workspace:FindFirstChild("VerityStreetDelivery")
+  local anchor=folder and folder:FindFirstChild("ParcelClaim")
+  local visuals=workspace:FindFirstChild("StreetDeliveryVisuals")
+  local parcel=visuals and visuals:FindFirstChild("FallenGift")
+  if anchor then return anchor.Position,parcel end
+  return nil
+ end
  if goal.target=="Delivery" then
   local state=self.ctx.net.state;local id=state and state.PlotId
   local plots=workspace:FindFirstChild("CorePlots")
@@ -176,6 +184,10 @@ end
 function Tutorial:Render()
  local ctx=self.ctx
  self.goal=Goals.Resolve(ctx.net.state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow())
+ local delivery=workspace:FindFirstChild("VerityStreetDelivery")
+ if not ctx.active and self.goal and self.goal.id=="tasks" and delivery and delivery:GetAttribute("Phase")=="Collect" then
+  self.goal={id="street-parcel",kind="World",target="StreetParcel",title="Посылка Verity Express",detail="Следуй к посылке",near="Нажми %s и подбери посылку",touch="Коснись «Подобрать» у посылки",prompt=true,radius=7}
+ end
  if not self.goal and not ctx.active and Players.LocalPlayer:GetAttribute("HouseSelectionReady")
   and not Players.LocalPlayer:GetAttribute("HousePlotId") then
   self.goal={id="claim-house",kind="Wait",title="Выбери дом",detail="Подойди к свободному дому и нажми «Занять дом»"}
@@ -191,7 +203,8 @@ end
 function Tutorial:Update(now)
  if self.dead then return end
  local ctx,goal=self.ctx,self.goal
- if ctx.presenting then
+ local player=Players.LocalPlayer
+ if ctx.presenting or ctx.rewardOverlay or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive") or player:GetAttribute("VerityParkourStep") then
   ctx.refs.Tutorial.Visible=false;self.pointer.Visible=false;self.compass.Visible=false
   self:SetButton(nil);self:HideWorld();return
  end
@@ -259,7 +272,7 @@ function Tutorial:Update(now)
    self.compass.Rotation=math.deg(math.atan2(delta:Dot(right),delta:Dot(forward)));self.compass.Visible=true
   end
  end
- self.anchor.Position=position;self.pin.Enabled=true;self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("ТВОЯ КОРОБКА") else Locale.Text(goal.title)
+ self.anchor.Position=position;self.pin.Enabled=goal.target~="StreetParcel";self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("ТВОЯ КОРОБКА") else Locale.Text(goal.title)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4+(if ctx.settings.values.ReducedMotion then 0 else math.sin(now*2)*.15),0)
  self.highlight.Adornee=part;self.highlight.Enabled=part~=nil
  if near then self:HideArrows() else self:ComputeRoute(root,position,now);self:DrawRoute(root,now) end

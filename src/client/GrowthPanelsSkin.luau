@@ -45,16 +45,22 @@ function Skin.BuildVerity(parent)
  local discovery=card(r.Body,"NextDiscovery",124,2,T.Gold:Lerp(T.White,.78))
  place(W.Text(discovery,"Title","NEXT DISCOVERY",12,true),12,8,-24,24)
  r.Milestone=place(W.Text(discovery,"Milestone","Next discovery: —",14,true),12,37,-24,76)
+ local unlock=card(r.Body,"NextUnlock",76,3,T.Purple:Lerp(T.White,.88))
+ unlock.Visible=false;r.NextUnlockCard=unlock
+ r.NextUnlock=place(W.Text(unlock,"Caption","",13,true,T.Purple),12,6,-24,40)
+ local track=W.Round(W.Frame(unlock,"ProgressTrack",UDim2.new(1,-24,0,7),T.Soft),4)
+ track.Position=UDim2.fromOffset(12,55)
+ r.NextUnlockFill=W.Round(W.Frame(track,"Fill",UDim2.fromScale(0,1),T.Purple),4)
  r.Buy=W.Button(r.Body,"UpgradeVerity","WAITING FOR SERVER",T.Mint)
- r.Buy.Size=UDim2.new(1,-6,0,52);r.Buy.TextWrapped=true;r.Buy.LayoutOrder=3
- local ability=card(r.Body,"AbilityCard",152,4)
+ r.Buy.Size=UDim2.new(1,-6,0,52);r.Buy.TextWrapped=true;r.Buy.LayoutOrder=4
+ local ability=card(r.Body,"AbilityCard",152,5)
  place(W.Text(ability,"Title","YOUR ABILITY",12,true,T.Purple),12,8,-24,24)
  r.Ability=place(W.Text(ability,"Ability","",13,true),12,36,-24,104)
- r.Note=W.Line(r.Body,"Note","All 100 levels and all five discoveries are available for free.",50,12,false,T.Muted);r.Note.LayoutOrder=5
- r.Boost=W.Line(r.Body,"Boost","",68,13,false,T.Purple);r.Boost.Visible=false;r.Boost.LayoutOrder=6
+ r.Note=W.Line(r.Body,"Note","All 100 levels and all five discoveries are available for free.",50,12,false,T.Muted);r.Note.LayoutOrder=6
+ r.Boost=W.Line(r.Body,"Boost","",68,13,false,T.Purple);r.Boost.Visible=false;r.Boost.LayoutOrder=7
  r.MoneyPass=W.Button(r.Body,"TripleMoney","×3 ДЕНЬГИ • СКОРО",T.Gold)
- r.MoneyPass.Size=UDim2.new(1,-6,0,48);r.MoneyPass.TextSize=13;r.MoneyPass.TextWrapped=true;r.MoneyPass.LayoutOrder=7
- r.MoneyPassHint=W.Line(r.Body,"TripleMoneyDetails","Навсегда • пассивный доход, карточки и задания",48,12,false,T.Muted);r.MoneyPassHint.LayoutOrder=8
+ r.MoneyPass.Size=UDim2.new(1,-6,0,48);r.MoneyPass.TextSize=13;r.MoneyPass.TextWrapped=true;r.MoneyPass.LayoutOrder=8
+ r.MoneyPassHint=W.Line(r.Body,"TripleMoneyDetails","Навсегда • пассивный доход, карточки и задания",48,12,false,T.Muted);r.MoneyPassHint.LayoutOrder=9
  return r
 end
 function Skin.BuildWorkshop(parent)

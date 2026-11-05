@@ -3,11 +3,13 @@ local Shared=game:GetService("ReplicatedStorage").Shared
 local Config=require(Shared.ParkourConfig)
 local Locale=require(Shared.LocaleText)
 local Builder={}
+local VISUAL_VERSION=2
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityParkour")
- if old and old:GetAttribute("ParkourVersion")==Config.Version then return old end
+ if old and old:GetAttribute("ParkourVersion")==Config.Version and old:GetAttribute("ParkourVisualVersion")==VISUAL_VERSION then return old end
  if old then old:Destroy() end -- Rebuild only this generated activity, never the neighborhood.
  local model=Instance.new("Model");model.Name="VerityParkour";model:SetAttribute("ParkourVersion",Config.Version)
+ model:SetAttribute("ParkourVisualVersion",VISUAL_VERSION)
  local function part(name,pos,size,color,collide,neon)
   local p=Instance.new("Part");p.Name=name;p.Anchored=true;p.Position=pos;p.Size=size;p.Color=Color3.fromHex(color)
   p.Material=if neon then Enum.Material.Neon else Enum.Material.Plastic
@@ -25,6 +27,26 @@ function Builder.Build(parent)
   p.CanTouch=true;p:SetAttribute("ParkourIndex",index);p:SetAttribute("ParkourCheckpoint",pad.checkpoint)
   part("Rim"..index,pos-Vector3.new(0,.43,0),Vector3.new(pad.w+.22,.15,pad.d+.22),colors[pad.section],false,true)
   part("Support"..index,Vector3.new(pad.x,pad.y/2-.4,pad.z),Vector3.new(2,pad.y,2),"7959B2",false)
+  if (index-1)%8==0 then
+   for _,side in {-1,1} do
+    local pillar=pos+Vector3.new(side*(pad.w/2-.55),3,-pad.d/2+.8)
+    part("SectionPillar",pillar,Vector3.new(1.05,5,1.05),colors[pad.section],false)
+    part("SectionStud",pillar+Vector3.new(0,2.65,0),Vector3.new(1.45,.34,1.45),"FFF2D1",false)
+   end
+   part("SectionArch",pos+Vector3.new(0,5.7,-pad.d/2+.8),Vector3.new(pad.w,.62,1.2),colors[pad.section],false)
+  elseif pad.section==2 or pad.section==5 or pad.section==6 then
+   -- Mark the direction of the next jump on the platform rather than with floating text.
+   local nextPad=Config.Pads[index+1]
+   if nextPad then
+    local direction=Vector3.new(nextPad.x-pad.x,0,nextPad.z-pad.z).Unit
+    local center=pos+Vector3.new(0,.56,0)+direction*(math.min(pad.w,pad.d)*.30)
+    local aim=CFrame.lookAt(center,center+direction)
+    for _,side in {-1,1} do
+     local stripe=part("LandingArrow",center,Vector3.new(.22,.07,1.25),"FFF2D1",false)
+     stripe.CFrame=aim*CFrame.new(side*.35,0,0)*CFrame.Angles(0,side*math.rad(35),0)
+    end
+   end
+  end
   if pad.checkpoint then
    for _,side in {-1,1} do
     part("CheckpointPost",pos+Vector3.new(side*(pad.w/2-.7),3,0),Vector3.new(.6,5,.6),"FFF2D1",false)
@@ -32,8 +54,10 @@ function Builder.Build(parent)
    end
   end
   if pad.hazard then
-   local marker=part("Hazard"..index,pos+Vector3.new(0,1.25,0),Vector3.new(pad.w-.5,.16,if pad.hazard=="Pulse" then pad.d-.5 else .6),"FF6485",false,true)
-   marker:SetAttribute("ParkourHazard",index);marker.Transparency=.8
+   local frame,size=Config.HazardGeometry(index,0)
+   local marker=part("Hazard"..index,frame.Position,size,"FF6485",false,true)
+   marker.CFrame=frame
+   marker:SetAttribute("ParkourHazard",index);marker.Transparency=.70
   end
  end
  local finish=Config.Pads[#Config.Pads];local start=model:FindFirstChild("Pad01")

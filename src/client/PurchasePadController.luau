@@ -127,8 +127,9 @@ function Controller:Render()
 				and prompt.Parent.CFrame:PointToObjectSpace(root.Position).Z>=minZ)) or false
 			if prompt.Enabled~=enabled then prompt.Enabled=enabled end
 		end
-		r.gui.Enabled=visible and uiAllowed
-		if visible then
+		local showLabel=visible and uiAllowed and root and (root.Position-r.anchor.Position).Magnitude<=r.gui.MaxDistance
+		r.gui.Enabled=showLabel==true
+		if showLabel then
 			r.title.Text=Locale.Text(title);r.detail.Text=Locale.Text(detail)
 			r.price.Text=if kind=="Hero" then tostring(model:GetAttribute("OfferPrice") or Config.HeroPassPrice).." R$"
 				elseif cost==0 then Locale.Text("БЕСПЛАТНО") elseif cost then "$"..Locale.Number(cost) else Locale.Text("КУПЛЕНО")

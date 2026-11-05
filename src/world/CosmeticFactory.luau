@@ -32,18 +32,21 @@ function Factory.Apply(model,equipped)
    part(item,"Hat",Vector3.new(.58,.43,.58),Vector3.new(0,1.96,0),"59C9FF")
    part(item,"Pom",Vector3.one*.2,Vector3.new(0,2.27,0),"FFDE23",Enum.PartType.Ball)
   elseif key=="delivery_cap" then
-   part(item,"Cap",Vector3.new(.92,.32,.78),Vector3.new(0,1.85,0),"FFB72D")
-   part(item,"Visor",Vector3.new(1,.07,.57),Vector3.new(0,1.73,-.44),"55DCC9")
-   part(item,"Badge",Vector3.new(.25,.18,.04),Vector3.new(0,1.85,-.41),"FFF3CE")
+   part(item,"CourierCap",Vector3.new(.94,.38,.85),Vector3.new(0,1.83,0),"55DCC9")
+   part(item,"Visor",Vector3.new(1.06,.1,.62),Vector3.new(0,1.68,-.40),"64557F")
+   part(item,"ParcelBadge",Vector3.new(.31,.20,.055),Vector3.new(0,1.84,-.442),"FFF0CE")
+   part(item,"Stamp",Vector3.new(.075,.08,.02),Vector3.new(.08,1.875,-.478),"FFB72D")
   elseif key=="delivery_goggles" then
    for _,side in {-1,1} do
     part(item,"Frame",Vector3.new(.5,.33,.1),Vector3.new(side*.29,1.04,-.83),"FFB72D")
-    part(item,"Lens",Vector3.new(.38,.22,.11),Vector3.new(side*.29,1.04,-.89),"55DCC9")
+    part(item,"Lens",Vector3.new(.38,.22,.11),Vector3.new(side*.29,1.04,-.89),"64557F")
+    part(item,"Stamp",Vector3.new(.08,.08,.025),Vector3.new(side*.37,1.10,-.953),"55DCC9")
    end
    part(item,"Bridge",Vector3.new(.15,.06,.1),Vector3.new(0,1.04,-.88),"FFF3CE")
   elseif key=="delivery_wings" then
    for _,side in {-1,1} do
-    part(item,"Stud",Vector3.one*.12,Vector3.new(side*.85,1,0),"FFB72D",Enum.PartType.Ball)
+    local seal=part(item,"GoldSeal",Vector3.new(.09,.25,.25),Vector3.new(side*.89,1,0),"FFB72D",Enum.PartType.Cylinder)
+    part(item,"SealMark",Vector3.new(.08,.08,.025),Vector3.new(seal.Position.X,1,-.129),"FFF0CE")
     for i=1,3 do
      local wing=part(item,"Wing",Vector3.new(.12,.12,.32+(4-i)*.1),Vector3.new(side*(.91+i*.08),.93+i*.04,.06),"55DCC9")
      wing.CFrame*=CFrame.Angles(0,0,-side*.35)

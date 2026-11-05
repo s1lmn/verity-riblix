@@ -75,7 +75,7 @@ function Builder.Build(playerGui)
  refs.AbilityButton=ability
  refs.AttackButton=W.Button(safe,"VerityAttack","",T.Pink:Lerp(T.Paper,.55))
  refs.AttackButton.AnchorPoint=Vector2.new(1,0);refs.AttackButton.Position=UDim2.new(1,-12,0,192)
- refs.AttackButton.Size=UDim2.fromOffset(124,44);refs.AttackButton.TextSize=11;refs.AttackButton.Visible=false
+	refs.AttackButton.Size=UDim2.fromOffset(124,44);refs.AttackButton.TextSize=11;refs.AttackButton.TextWrapped=true;refs.AttackButton.Visible=false
  refs.RideButton=W.Button(safe,"VerityRide","",T.Mint)
  refs.RideButton.AnchorPoint=Vector2.new(1,0);refs.RideButton.Position=UDim2.new(1,-12,0,244)
  refs.RideButton.Size=UDim2.fromOffset(124,44);refs.RideButton.TextSize=11;refs.RideButton.TextWrapped=true;refs.RideButton.Visible=false

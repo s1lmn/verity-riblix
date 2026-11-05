@@ -2,6 +2,7 @@
 -- Audio observes confirmed Core state; it never completes tasks or grants purchases.
 local Players=game:GetService("Players")
 local Cleanup=require(script.Parent.Cleanup)
+local ActivityCard=require(script.Parent.ActivityCard)
 local Cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
 local Gameplay={};Gameplay.__index=Gameplay
 
@@ -20,8 +21,9 @@ function Gameplay.new(ctx,visuals)
   if payload.code=="TASK_REWARD" or payload.code=="PARKOUR_FINISH" or payload.code=="RACE_WIN" or payload.code=="BATTLE_WIN" then ctx.sound:Play("TaskCompleted")
   elseif payload.code=="RACE_JOINED" then ctx.sound:Play("TaskAccepted")
   elseif payload.code=="RACE_STARTED" or payload.code=="RACE_FINISH" then ctx.sound:Play("TaskCheckpoint")
-  elseif payload.code=="STREET_DELIVERY_DROPPED" then ctx.sound:Play("DeliveryArrived")
-  elseif payload.code=="STREET_DELIVERY_REWARD" then ctx.sound:Play(if payload.deliveryReward and payload.deliveryReward.rare then "Milestone25" else "ParcelCollected")
+  elseif payload.code=="STREET_DELIVERY_DROPPED" then
+   if not ActivityCard.Blocked(ctx) and not ActivityCard.ActivityRunning() then ctx.sound:Play("DeliveryArrived") end
+  elseif payload.code=="STREET_DELIVERY_REWARD" then ctx.sound:Play(if payload.deliveryReward and payload.deliveryReward.rare then "ParcelRare" else "ParcelCollected")
   elseif payload.code=="BATTLE_BOSS" then ctx.sound:Play("Milestone100")
   elseif payload.code=="BATTLE_WAVE" then ctx.sound:Play("TaskCheckpoint")
   elseif payload.code=="PARKOUR_CHECKPOINT" then ctx.sound:Play("TaskCheckpoint")

@@ -78,6 +78,7 @@ function Controller:Enqueue(id)
  self.presented[id]=true;table.insert(self.queue,id)
 end
 function Controller:Close()
+ self.ctx.rewardOverlay=false
  self.card.Visible=false;self.current=nil;self.pending=nil
  self.ctx.animation:Cancel(self.scale)
  for _,star in self.stars do self.ctx.animation:Cancel(star);star.Visible=false end
@@ -107,6 +108,7 @@ function Controller:Tick()
   if Input.PreferredInput==Enum.PreferredInput.Gamepad then self.previousFocus=Gui.SelectedObject;Gui.SelectedObject=self.equip end
  end
  self.card.Visible=self.current~=nil and not blocked
+ ctx.rewardOverlay=self.card.Visible
  if not self.card.Visible then return end
  local size=ctx.refs.Safe.AbsoluteSize;local height=math.min(410,size.Y-24)
  self.card.Size=UDim2.fromOffset(math.min(360,size.X-24),height)

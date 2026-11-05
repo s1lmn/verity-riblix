@@ -20,6 +20,7 @@ function Verity:Render()
 	local state=net.state
 	local r=self.refs
 	if not state then
+		r.NextUnlockCard.Visible=false
 		W.SetButton(r.Buy,Locale.Text("WAITING FOR SERVER"),false,false)
 		return
 	end
@@ -47,6 +48,17 @@ function Verity:Render()
 	local nextStage=Model.NextMilestone(level)
 	r.Milestone.Text=if nextStage then string.format(Locale.Text("NEXT • LEVEL %d  /  %s\n%s"),nextStage.level,Locale.Text(nextStage.name),Locale.Text(nextStage.reward))
 		else Locale.Text("ALL DISCOVERIES UNLOCKED\nCrown, unique idle, layered aura and celebration effects.")
+	local unlock=state.NextUnlock
+	r.NextUnlockCard.Visible=type(unlock)=="table"
+	if r.NextUnlockCard.Visible then
+		local item=Catalog.Items[unlock.itemId]
+		local name=Locale.Text(unlock.name or (item and item.Name) or "Способность")
+		r.NextUnlock.Text=if unlock.kind=="AbilityPurchase" then string.format(Locale.Text("Покупка: %s • $%s / $%s"),name,Locale.Number(unlock.progress),Locale.Number(unlock.total))
+			elseif unlock.kind=="AbilityAccess" then string.format(Locale.Text("%s • покупка с уровня %d"),name,unlock.requiredLevel)
+			elseif unlock.kind=="Riding" then string.format(Locale.Text("Поездки на Verity • уровень %d"),unlock.requiredLevel)
+			else string.format(Locale.Text("Новый облик • уровень %d"),unlock.requiredLevel)
+		r.NextUnlockFill.Size=UDim2.fromScale(math.clamp(unlock.progress/math.max(unlock.total,1),0,1),1)
+	end
 	local busy=net:IsBusy("UpgradeVerity")
 	local affordable=not maxed and state.NextVerityUpgradeCost~=nil and state.Cash>=state.NextVerityUpgradeCost
 	local text=if maxed then Locale.Text("MAX LEVEL • 15×") elseif not state.VerityUnlocked then Locale.Text("OPEN YOUR DELIVERY BOX FIRST")

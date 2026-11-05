@@ -26,7 +26,7 @@ function Controller.new(ctx)
 		local details=W.Text(row,"Details","",11,false,T.Muted)
 		details.Position,details.Size=UDim2.fromOffset(0,77),UDim2.new(1,0,0,24)
 		local button=W.Button(row,"Buy","",if item.Premium then T.Gold else color)
-		button.AnchorPoint,button.Position,button.Size=Vector2.new(0,1),UDim2.new(0,0,1,0),UDim2.new(1,0,0,40)
+		button.AnchorPoint,button.Position,button.Size=Vector2.new(0,1),UDim2.new(0,0,1,0),UDim2.new(1,0,0,44)
 		button.TextSize=12
 		if item.Premium then
 			local emblem=W.Text(row,"Emblem","◉  ═══════  ◉",28,true,Color3.fromHex("FF244A"))
@@ -83,26 +83,35 @@ end
 function Controller:Render()
 	if not self.ctx.refs.Panels.ABILITIES.Root.Visible then return end
 	local state=self.ctx.net.state
+	local projected={}
+	for _,entry in state and state.AbilityCollection or {} do projected[entry.id]=entry end
 	for id,row in self.rows do
 		local item=Catalog.Items[id]
+		local entry=projected[id]
 		local owned=state and (if item.Premium then state.HeroPassOwned else (state.AbilitiesOwned or {})[id])
 		local equipped=state and (state.AbilitiesEquipped or {})[item.Slot]==id
 		if item.MobilityAction and equipped then equipped=(state.AbilitiesEquipped or {}).Mobility==id end
-		row.title.Text=Locale.Text(item.Name)
+		if entry then owned=entry.owned;equipped=entry.state=="Equipped" end
 		row.description.Text=Locale.Text(item.Description)
 		row.details.Text=if item.Premium then Locale.Text("Постоянный набор • F: полёт • G: лазеры")
 			elseif item.Slot=="Attack" then string.format(Locale.Text("Уровень %d • урон %d • перезарядка %d с"),item.Level,item.Damage,item.Cooldown)
 			else string.format(Locale.Text("Уровень %d • перезарядка %d с • кнопка F"),item.Level,item.Cooldown)
 		local unlocked=state and state.VerityUnlocked and state.VerityLevel>=item.Level
 		local price=if item.Premium then (self.offer and self.offer.PriceInRobux or Config.HeroPassPrice) else item.Cost
+		local available=unlocked and (if item.Premium then self.offer~=nil else state.Cash>=price)
+		local label=if equipped and owned then "Установлена" elseif owned then "Получена"
+			elseif entry and entry.state=="Purchasable" and not entry.blockedReason or available then "Доступна" else "Закрыта"
+		row.title.Text=Locale.Text(label).." · "..Locale.Text(item.Name)
+		row.title.TextSize=if row.root.AbsoluteSize.X<290 then 12 else 15
 		local text=if equipped then Locale.Text("ВЫБРАНО") elseif owned then Locale.Text("ВЫБРАТЬ")
 			elseif item.Premium and not self.passId then string.format(Locale.Text("СКОРО • %d R$"),price)
 			elseif item.Premium and not self.offer then Locale.Text("ПРОПУСК ВРЕМЕННО НЕДОСТУПЕН")
 			elseif not unlocked then string.format(Locale.Text("ОТКРОЕТСЯ НА УРОВНЕ %d"),item.Level)
 			elseif item.Premium then string.format(Locale.Text("КУПИТЬ • %d R$"),price)
 			else Locale.Text("КУПИТЬ • $")..Locale.Number(price)
-		W.SetButton(row.button,text,unlocked and not equipped and not self.ctx.net:IsBusy() and self.ctx.net.connected
-			and not self.promptOpen and (owned or (if item.Premium then self.offer~=nil else state.Cash>=price)) or false,false)
+		local canAct=if not entry then unlocked and (owned or available) elseif owned then entry.canEquip
+			elseif item.Premium then unlocked and self.offer~=nil else entry.canBuy and entry.affordable
+		W.SetButton(row.button,text,canAct and not equipped and not self.ctx.net:IsBusy() and self.ctx.net.connected and not self.promptOpen or false,false)
 	end
 end
 function Controller:Destroy() self.dead=true;self.cleanup:Destroy() end

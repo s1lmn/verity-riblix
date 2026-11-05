@@ -3,6 +3,7 @@ local Locale = require(script.Parent.Locale)
 local Players=game:GetService("Players")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Abilities=require(ReplicatedStorage.Shared.VerityAbilities)
+local ActivityCard=require(script.Parent.ActivityCard)
 local W=require(script.Parent.UIWidgets)
 local RunService=game:GetService("RunService")
 local GuiService=game:GetService("GuiService")
@@ -66,7 +67,7 @@ function Main.new()
 	self.cleanup:Add(require(script.Parent.WorldSurfaceController).new(ctx.settings))
 	ctx.animation=self.cleanup:Add(Animation.new(ctx.settings))
 	ctx.sound=self.cleanup:Add(Sound.new(ctx.settings))
-	ctx.notifications=self.cleanup:Add(Notifications.new(refs.Toasts))
+	ctx.notifications=self.cleanup:Add(Notifications.new(refs.Toasts,ctx.settings,ctx.animation))
 	ctx.rewards=self.cleanup:Add(Rewards.new(refs.Reward,ctx.settings))
 	ctx.open=function(name) self:Open(name) end
 	ctx.close=function() self:Open(nil) end
@@ -96,7 +97,7 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.GameplayFeedbackController).new(ctx))
  self.cleanup:Add(require(script.Parent.StreetDeliveryController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityRaceController).new(ctx))
- self.cleanup:Add(require(script.Parent.ActivitiesController).new(ctx))
+ ctx.activities=self.cleanup:Add(require(script.Parent.ActivitiesController).new(ctx))
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
@@ -165,7 +166,10 @@ function Main.new()
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
 			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" then ctx.sound:Play("Reward") end end
 		end
-		ctx.notifications:Show(payload.message,payload.kind)
+		if (payload.code=="STREET_DELIVERY_STARTED" or payload.code=="STREET_DELIVERY_DROPPED")
+			and (ActivityCard.Blocked(ctx) or ActivityCard.ActivityRunning()) then return end
+		local drop=if payload.code=="STREET_DELIVERY_REWARD" then payload.deliveryReward else nil
+		ctx.notifications:Show(payload.message,if drop and drop.rare then "DeliveryRare" else payload.kind,if drop then 3 else nil)
 	end))
 	self.cleanup:Add(ctx.net.World.Event:Connect(function(event)
 		local animated=self.visuals:HandleWorld(event)

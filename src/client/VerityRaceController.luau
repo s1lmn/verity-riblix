@@ -8,16 +8,12 @@ local Config=require(game:GetService("ReplicatedStorage").Shared.VerityRaceConfi
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
-local T=require(script.Parent.UITheme)
+local ActivityCard=require(script.Parent.ActivityCard)
 local Controller={};Controller.__index=Controller
 function Controller.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),gates={}},Controller)
- local card=W.Round(W.Frame(ctx.refs.Safe,"RaceStatus",UDim2.fromOffset(330,58),T.Paper),12)
- card.AnchorPoint=Vector2.new(.5,1);card.Position=UDim2.new(.5,0,1,-16);card.Visible=false;self.card=card;self.cleanup:Add(card)
- W.Stroke(card,T.Purple,2)
- self.title=W.Text(card,"Title","",13,true,T.Purple);self.title.Position=UDim2.fromOffset(10,5);self.title.Size=UDim2.new(1,-68,0,21)
- self.detail=W.Text(card,"Detail","",11,false,T.Ink);self.detail.Position=UDim2.fromOffset(10,29);self.detail.Size=UDim2.new(1,-68,0,20)
- self.leave=W.Button(card,"LeaveRace","×",T.Pink);self.leave.Position=UDim2.new(1,-52,0,7);self.leave.Size=UDim2.fromOffset(44,44)
+ self.card,self.title,self.detail,self.leave=ActivityCard.Build(ctx.refs.Safe,"RaceStatus","LeaveRace")
+ self.cleanup:Add(self.card)
  self.cleanup:Add(self.leave.Activated:Connect(function()self:Leave()end))
  Actions:BindAction("VerityRaceLeave",function(_,state)
   if state==Enum.UserInputState.Begin and self:Leave() then return Enum.ContextActionResult.Sink end
@@ -42,7 +38,7 @@ function Controller:Tick(dt)
  local track=world and world:FindFirstChild("VerityRaceTrack")
  if self.track~=track then self:RestoreGates();self.track=track end
  local player=Players.LocalPlayer;local slot=player:GetAttribute("VerityRaceSlot")
- self.card.Visible=track~=nil and slot~=nil and not self.ctx.active and not self.ctx.presenting
+ self.card.Visible=track~=nil and slot~=nil and not ActivityCard.Blocked(self.ctx)
  if not track then return end
  local phase=track:GetAttribute("RacePhase") or "Waiting"
  local count=track:GetAttribute("RaceCount") or 0
@@ -58,7 +54,7 @@ function Controller:Tick(dt)
  local board=track:FindFirstChild("RaceBoard");local gui=board and board:FindFirstChild("RaceLabel");local text=gui and gui:FindFirstChild("Text")
  if text then text.Text=caption end
  if self.card.Visible then
-  self.card.Size=UDim2.fromOffset(math.min(330,math.max(210,self.ctx.refs.Safe.AbsoluteSize.X-24)),58)
+  ActivityCard.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
   self.title.Text=caption
   local total,own=0,0
   for lane=1,Config.MaxPlayers do

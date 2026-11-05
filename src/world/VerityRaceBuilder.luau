@@ -14,7 +14,7 @@ function Builder.Build(parent)
  end
  local function label(p,text,width)
   local g=Instance.new("BillboardGui");g.Name="RaceLabel";g.Size=UDim2.fromOffset(width or 170,52);g.StudsOffsetWorldSpace=Vector3.new(0,3,0)
-  g.MaxDistance=160;g.Parent=p
+  g.MaxDistance=if p.Name=="RaceSign" then 45 elseif p.Name=="RaceBoard" then 38 else 24;g.Parent=p
   local t=Instance.new("TextLabel");t.Name="Text";t.Size=UDim2.fromScale(1,1);t.BackgroundTransparency=.1
   t.BackgroundColor3=Color3.fromHex("55416E");t.TextColor3=Color3.fromHex("FFF0CE");t.Font=Enum.Font.GothamBold;t.TextSize=14;t.TextWrapped=true;t.Parent=g
   local c=Instance.new("UICorner");c.CornerRadius=UDim.new(0,10);c.Parent=t

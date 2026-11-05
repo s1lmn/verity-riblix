@@ -22,7 +22,7 @@ function B.Build(parent)
  local entry=p("Entry",Vector3.new(0,1,-32),Vector3.new(9,2,5),"FFD35C",true)
  local q=Instance.new("ProximityPrompt");q.Name="JoinBattle";q.MaxActivationDistance=12;q.HoldDuration=.3;q.RequiresLineOfSight=false
  Locale.SetWorld(q,"ActionText","Начать битву");Locale.SetWorld(q,"ObjectText","Арена Verity • 5 волн • бесплатно");q.Parent=entry
- local label=Instance.new("BillboardGui");label.Size=UDim2.fromOffset(270,66);label.StudsOffsetWorldSpace=Vector3.new(0,5,0);label.MaxDistance=90;label.Parent=entry
+ local label=Instance.new("BillboardGui");label.Size=UDim2.fromOffset(220,52);label.StudsOffsetWorldSpace=Vector3.new(0,4,0);label.MaxDistance=38;label.Parent=entry
  local text=Instance.new("TextLabel");text.Size=UDim2.fromScale(1,1);text.BackgroundTransparency=1;text.TextColor3=Color3.fromHex("FFE57E")
  text.Font=Enum.Font.GothamBold;text.TextSize=16;text.TextWrapped=true;text.TextStrokeTransparency=.3;text.Parent=label
  Locale.SetWorld(text,"Text","БИТВЫ VERITY\n5 волн и босс • 1–4 игрока")

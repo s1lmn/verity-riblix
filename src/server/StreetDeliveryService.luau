@@ -32,7 +32,7 @@ function Service:Start(now)
  -- Exactly one hidden server roll per parcel, before anybody interacts.
  round.prize=Config.PickReward(self.random:NextNumber());round.cosmeticUnit=self.random:NextNumber()
  self.nextAt=now+Config.Interval;self.prompt.Enabled=false
- self.anchor.Position=Vector3.new(round.x,Config.ParcelY,round.z)
+ self.anchor.Position=Config.PickupPosition(round)
  for _,key in {"RewardKind","RewardItemId","RewardCash","RewardMultiplier","RewardCompensation"} do self.folder:SetAttribute(key,nil) end
  self.folder:SetAttribute("Cycle",self.cycle);self.folder:SetAttribute("StartedAt",now);self.folder:SetAttribute("WinnerUserId",nil)
  self.folder:SetAttribute("Phase","Driving");self:Announce("STREET_DELIVERY_STARTED")

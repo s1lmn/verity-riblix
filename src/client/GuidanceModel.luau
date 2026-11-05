@@ -80,6 +80,9 @@ function Model.Resolve(state,panel,selectedTaskId,now)
   end
   return {id="cooldowns",kind="Wait",title="Задания скоро обновятся",detail="Пока можно заработать в телефоне"}
  end
+ if state.Progression and state.Progression.stage=="FirstActivity" and entries.PRESS_BUTTON and entries.PRESS_BUTTON.status=="Ready" then
+  return ui("first-activity-menu","Nav.TASKS","Попробуй первое задание","Нажми кнопку с заданиями слева")
+ end
  return ui("tasks","Nav.TASKS","Хочешь больше денег?","Нажми кнопку с заданиями слева")
 end
 return Model

@@ -86,10 +86,12 @@ function Adapter:Attach(folder)
 							end
 							local message=messages[payload.code]
        local drop=payload.deliveryReward
-       if payload.code=="STREET_DELIVERY_REWARD" and type(drop)=="table" then
-        if drop.itemId and Cosmetics.Items[drop.itemId] then
+       if payload.code=="STREET_DELIVERY_REWARD" and type(drop)=="table" and drop.version==1 and type(drop.cycle)=="number" then
+        if self.lastDeliveryCycle and drop.cycle<=self.lastDeliveryCycle then return end
+        self.lastDeliveryCycle=drop.cycle
+        if drop.compensation then message=Locale.Text("Коллекция доставки собрана! Компенсация ×5.").." +$"..Locale.Number(drop.cash)
+        elseif drop.itemId and Cosmetics.Items[drop.itemId] and Cosmetics.Items[drop.itemId].source=="StreetDelivery" then
          message=string.format(Locale.Text("Из посылки: %s!"),Locale.Text(Cosmetics.Items[drop.itemId].name))
-        elseif drop.compensation then message=Locale.Text("Коллекция доставки собрана! Компенсация ×5.")
         else message=string.format(Locale.Text("Награда доставки ×%d: $%s"),drop.multiplier or 1,Locale.Number(payload.reward)) end
        end
 							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward,achievementId=payload.achievementId,itemId=payload.itemId}) end

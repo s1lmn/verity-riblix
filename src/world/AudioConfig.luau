@@ -28,6 +28,7 @@ Config.UI.Success = {SoundId="rbxassetid://93023753263103", Volume=0.34, Duratio
 Config.UI.TaskAccepted = {SoundId="rbxassetid://117439463331498", Volume=0.32, Duration=1.13, Channel="Feature"}
 Config.UI.DeliveryArrived = {SoundId="rbxassetid://133429553361538", Volume=0.4, Duration=2.11, Channel="Feature"}
 Config.UI.ParcelCollected = {SoundId="rbxassetid://93591987243531", Volume=0.32, Duration=0.85}
+Config.UI.ParcelRare = {SoundId="rbxassetid://121612787120900", Volume=0.37, Duration=1.46, Channel="Feature"}
 Config.UI.TaskCompleted = {SoundId="rbxassetid://100780862076235", Volume=0.48, Duration=2.67, Channel="Feature"}
 Config.UI.TaskCheckpoint = {SoundId="rbxassetid://109200213826462", Volume=0.28, Duration=0.62}
 Config.UI.EmotionHappy = {SoundId="rbxassetid://108870682323012", Volume=0.22, Duration=0.95, Channel="Emotion"}
