@@ -76,5 +76,5 @@ for d in levels:
  for name,uri in face_ids.items():_,p=item(emotions,'StringValue',name,ref+name);val(p,'string','Value',uri)
  single=E.Element('roblox',{'version':'4'});single.append(copy.deepcopy(model));E.indent(single);E.ElementTree(single).write(OUT/'models'/f'{d["name"]}.rbxmx',encoding='utf-8',xml_declaration=True)
 E.indent(library);E.ElementTree(library).write(OUT/'Verity_All_100_Models.rbxmx',encoding='utf-8',xml_declaration=True)
-p=R/'default.project.json';j=json.loads(p.read_text());j['tree']['ReplicatedStorage']['VerityElementalModels']={'$path':'assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx'};p.write_text(json.dumps(j,indent=2)+'\n')
+p=R/'default.project.json';j=json.loads(p.read_text());j['tree']['ReplicatedStorage'].pop('VerityElementalModels',None);j['tree'].setdefault('ServerStorage',{'$className':'ServerStorage'})['VerityElementalModels']={'$path':'assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx'};p.write_text(json.dumps(j,indent=2)+'\n')
 print('Built100 native models and cached runtime descriptors;16 shared textures; original1–9 palette; normalized size and8 independent emotions.')

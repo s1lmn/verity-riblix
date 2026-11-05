@@ -73,7 +73,7 @@ function Service:Stop(player,stopAttacks)
  end
  self.active[player]=nil
 	if current.attachment then current.attachment:Destroy() end
-	if current.ownsPhysics and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then
+	if current.ownsPhysics and current.root and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then
 		if current.dash then current.root.AssemblyLinearVelocity=Vector3.yAxis*current.root.AssemblyLinearVelocity.Y end
 		current.root:SetNetworkOwnershipAuto()
 	end
@@ -262,12 +262,18 @@ function Service:Drive(current,root,velocity,plane)
  drive.ForceLimitsEnabled=true;drive.MaxForce=root.AssemblyMass*1800;drive.Parent=attachment;current.velocity=drive
 end
 function Service:WatchFlightInput(player,current)
- local token={};current.steerToken=token
- task.delay(.35,function()
-  if self.active[player]==current and current.steerToken==token and current.velocity then
-   current.velocity.VectorVelocity=Vector3.zero
-  end
- end)
+ current.lastSteerAt=workspace:GetServerTimeNow()
+ if current.steerWatching then return end
+ current.steerWatching=true
+ local function check()
+  if self.active[player]~=current or not current.velocity then current.steerWatching=false;return end
+  local remaining=.35-(workspace:GetServerTimeNow()-current.lastSteerAt)
+  if remaining>0 then task.delay(remaining,check);return end
+  current.steerWatching=false
+  -- A stale input timer must never stop the guided takeoff/landing transition.
+  if not current.phase and current.velocity.Parent then current.velocity.VectorVelocity=Vector3.zero end
+ end
+ task.delay(.35,check)
 end
 -- Landing considers physical surfaces only; visual companion parts never support the rider.
 function Service:RideLanding(current,position)
@@ -429,8 +435,22 @@ function Service:Activate(player,slot,direction)
   current.dash=true;current.speed=dashVelocity.Magnitude;humanoid.WalkSpeed=current.speed
   self:Drive(current,root,dashVelocity,true)
 	elseif action=="leap" then
-		local velocity=root.AssemblyLinearVelocity
-  root.AssemblyLinearVelocity=Vector3.new(velocity.X,item.Power,velocity.Z)
+		-- ChangeState must run on the simulator that owns this assembly.
+		-- Give replication one physics step before launching, then return control.
+		humanoid.Jump=false;humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+		task.spawn(function()
+			RunService.Heartbeat:Wait()
+			if self.active[player]~=current or player.Character~=character or humanoid.Health<=0
+				or not root:IsDescendantOf(workspace) or not humanoid.Parent or root.Anchored or humanoid.SeatPart then return end
+			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+			-- Reach the launch speed even while falling; don't add to an upward jump.
+			local deltaY=math.max(0,item.Power-root.AssemblyLinearVelocity.Y)
+			root:ApplyImpulse(Vector3.yAxis*root.AssemblyMass*deltaY)
+			task.delay(.2,function()
+				if self.active[player]~=current or not root:IsDescendantOf(workspace) then return end
+				if root:CanSetNetworkOwnership() then root:SetNetworkOwnershipAuto();current.ownsPhysics=false end
+			end)
+		end)
 	elseif action=="sprint" then current.speed=item.Power;humanoid.WalkSpeed=current.speed
 	elseif action=="flight" then
 		current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed

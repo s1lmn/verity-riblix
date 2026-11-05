@@ -25,7 +25,8 @@ function Factory.Create(parent,cf,kind,plotId,prompt)
 	local light=Instance.new("PointLight");light.Color=Color3.fromHex("FF6C8F")
 	light.Brightness=.35;light.Range=9;light.Shadows=false;light.Parent=anchor
 	local reference=Instance.new("ObjectValue");reference.Name="Prompt";reference.Value=prompt;reference.Parent=model
-	prompt.Style=Enum.ProximityPromptStyle.Custom
+	prompt.Style=Enum.ProximityPromptStyle.Default
+	prompt.UIOffset=Vector2.new(0,48)
 	prompt.RequiresLineOfSight=false
 	prompt:SetAttribute("PurchaseCircle",true)
 	prompt.ClickablePrompt=true

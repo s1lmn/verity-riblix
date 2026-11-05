@@ -11,14 +11,14 @@ function MoneyPass.new(ctx)
 	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),refs=ctx.refs.Panels.VERITY},MoneyPass)
 	self.cleanup:Add(ctx.net.StateChanged.Event:Connect(function(state)
 		local passId=state.MoneyPassId
-		if passId and passId~=self.passId then
-			self.passId=passId
-			task.spawn(function()
+		if passId~=self.passId then
+			self.passId=passId;self.offer=nil;self.promptOpen=false
+			if passId then task.spawn(function()
 				local ok,offer=pcall(function() return Market:GetProductInfoAsync(passId,Enum.InfoType.GamePass) end)
 				if self.dead or self.passId~=passId then return end
 				self.offer=if ok and type(offer)=="table" and offer.IsForSale and type(offer.PriceInRobux)=="number" then offer else nil
 				self:Render()
-			end)
+			end) end
 		end
 		self:Render()
 	end))

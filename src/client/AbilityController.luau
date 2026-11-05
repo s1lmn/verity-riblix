@@ -40,8 +40,9 @@ function Controller.new(ctx)
  end))
  local elapsed=0
 	self.cleanup:Add(RunService.Heartbeat:Connect(function(dt)
-		self:Render();elapsed+=dt
+		elapsed+=dt
 		if elapsed<.1 then return end;elapsed=0
+		self:Render()
 		local item=self:Item("Mobility")
 		if not self.remote or (not Players.LocalPlayer:GetAttribute("VerityRiding") and (not item or (item.Action~="flight" and not item.MobilityAction)))
 			or (Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)<workspace:GetServerTimeNow() then return end

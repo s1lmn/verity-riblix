@@ -115,7 +115,11 @@ function Main.new()
 	end
 	for _,panel in refs.Panels do self.cleanup:Add(panel.Close.Activated:Connect(function() self:Open(nil) end)) end
 	self.cleanup:Add(refs.SettingsButton.Activated:Connect(function() self:Open(if ctx.active=="SETTINGS" then nil else "SETTINGS") end))
-	self.cleanup:Add(refs.Safe:GetPropertyChangedSignal("AbsoluteSize"):Connect(function() refs.Layout(ctx.active~=nil) end))
+	self.cleanup:Add(refs.Safe:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		ctx.animation:Cancel(refs.Panels.PHONE.Root)
+		refs.Panels.PHONE.Root.Rotation=0
+		refs.Layout(ctx.active~=nil)
+	end))
 	local shutdown=Instance.new("BindableEvent")
 	shutdown.Name,shutdown.Parent="Shutdown",refs.Gui
 	self.cleanup:Add(shutdown.Event:Connect(function() self:Destroy() end))
@@ -234,7 +238,12 @@ function Main:Render()
 	self.refs.Income.Text=if state then "+$"..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec") else Locale.Text("+$— / sec")
 	self.refs.Level.Text=if state then string.format(Locale.Text("LVL %d / 100"),state.VerityLevel) else Locale.Text("LVL — / 100")
 	self:RenderAbility()
-	self.verity:Render();self.workshop:Render();self.phone:Render();self.tasks:Render();self.tutorial:Render();self.cosmetics:Render()
+	if ctx.active=="VERITY" then self.verity:Render() end
+	if ctx.active=="WORKSHOP" then self.workshop:Render() end
+	if ctx.active=="PHONE" then self.phone:Render() end
+	if ctx.active=="COSMETICS" then self.cosmetics:Render() end
+	-- Tasks also select the world guide target when their panel is closed.
+	self.tasks:Render();self.tutorial:Render()
 	local selected=GuiService.SelectedObject
 	if ctx.active and selected and selected:IsDescendantOf(self.refs.Panels[ctx.active].Root) and not selected.Selectable then self:SetFocus(ctx.active) end
 end
@@ -263,12 +272,12 @@ function Main:Tick(dt)
 	end
 	local now=os.clock()
 	if self.versions.issue then self.refs.Status.Text=self.versions:IssueText() end
-	self:RenderAbility()
 	ctx.rewards:Tick(now)
  ctx.sound:Tick(now,dt)
-	self.tasks:Render();self.tutorial:Render()
+	if ctx.active=="TASKS" then self.tasks:Render() end
+	self.tutorial:Render()
 	self.phone:ReconcileSession()
-	self.verity:Render()
+	if ctx.active=="VERITY" then self.verity:Render() end
 	self.refs.Banner.Visible=now<self.bannerUntil
 	if now>=self.nextPresentation then
 		local event=self.ledger:Pop()

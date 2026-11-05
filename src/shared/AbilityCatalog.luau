@@ -4,7 +4,7 @@ local Catalog = {}
 Catalog.Order = {"dash","leap","sprint","shield","flight","repulsor","eye_laser","lightning","gravity","nova","homelander"}
 Catalog.Items = {
 	dash={Name="Квантовый рывок",Description="Мощный рывок вперёд со световым следом.",Slot="Mobility",Level=1,Cost=75,Action="dash",Cooldown=5,Duration=.3,Power=65,Color="79E8FF"},
-	leap={Name="Прыжок титана",Description="Взлети над районом одним прыжком.",Slot="Mobility",Level=3,Cost=300,Action="leap",Cooldown=8,Duration=.8,Power=68,Color="A5FF80"},
+	leap={Name="Прыжок титана",Description="Взлети над районом одним прыжком.",Slot="Mobility",Level=3,Cost=300,Action="leap",Cooldown=8,Duration=.8,Power=115,Color="A5FF80"},
 	sprint={Name="Сверхскорость",Description="Пять секунд сверхбыстрого бега.",Slot="Mobility",Level=6,Cost=900,Action="sprint",Cooldown=12,Duration=5,Power=44,Color="FFE26A"},
 	shield={Name="Энергетический щит",Description="Четыре секунды защиты: входящий урон снижен на 75%.",Slot="Mobility",Level=10,Cost=2500,Action="shield",Cooldown=14,Duration=4,Color="83BFFF"},
 	flight={Name="Небесный полёт",Description="12 секунд управляемого полёта. Движение и прыжок — подъём.",Slot="Mobility",Level=15,Cost=9000,Action="flight",Cooldown=18,Duration=12,Power=34,Color="8FFFE6"},

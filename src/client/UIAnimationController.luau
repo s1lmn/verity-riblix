@@ -6,7 +6,7 @@ local Animation = {}
 Animation.__index = Animation
 
 function Animation.new(settings)
-	local self=setmetatable({ settings = settings, cleanup = Cleanup.new(), tweens = {}, goals = {}, dead = false }, Animation)
+	local self=setmetatable({ settings = settings, cleanup = Cleanup.new(), tweens = {}, goals = {}, destroyLinks = {}, dead = false }, Animation)
 	self.cleanup:Add(settings.Changed.Event:Connect(function(values)
 		if not values.ReducedMotion then return end
 		for instance in self.tweens do self:Cancel(instance, true) end
@@ -16,6 +16,9 @@ end
 
 function Animation:Cancel(instance, settle)
 	local tween, goal = self.tweens[instance], self.goals[instance]
+	local link=self.destroyLinks[instance]
+	self.destroyLinks[instance]=nil
+	if link then link:Disconnect() end
 	if not tween then return end
 	self.tweens[instance], self.goals[instance] = nil, nil
 	tween:Cancel()
@@ -27,7 +30,8 @@ end
 
 function Animation:Tween(instance, duration, properties)
 	self:Cancel(instance)
-	if self.settings.values.ReducedMotion then
+	if self.dead or not instance.Parent then return end
+	if duration<=0 or self.settings.values.ReducedMotion then
 		for key, value in properties do instance[key] = value end
 		self.tweens[instance] = nil
 		self.goals[instance] = nil
@@ -36,9 +40,12 @@ function Animation:Tween(instance, duration, properties)
 	local tween = TweenService:Create(instance, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), properties)
 	self.tweens[instance] = tween
 	self.goals[instance] = properties
+	self.destroyLinks[instance]=instance.Destroying:Connect(function() self:Cancel(instance) end)
 	tween.Completed:Once(function()
 		if self.tweens[instance] ~= tween then return end
 		self.tweens[instance], self.goals[instance] = nil, nil
+		local link=self.destroyLinks[instance];self.destroyLinks[instance]=nil
+		if link then link:Disconnect() end
 		tween:Destroy()
 	end)
 	tween:Play()
@@ -86,5 +93,6 @@ function Animation:Destroy()
 	for instance in self.tweens do self:Cancel(instance) end
 	table.clear(self.tweens)
 	table.clear(self.goals)
+	for instance,link in self.destroyLinks do link:Disconnect();self.destroyLinks[instance]=nil end
 end
 return Animation

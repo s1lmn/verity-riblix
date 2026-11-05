@@ -14,7 +14,7 @@ local function release(record)
  record.cleanup:Destroy()
 end
 function Presentation.new(ctx,companions)
- local self=setmetatable({ctx=ctx,companions=companions,records={},cleanup=Cleanup.new()},Presentation)
+ local self=setmetatable({ctx=ctx,companions=companions,records={},seen={},cleanup=Cleanup.new()},Presentation)
  self.cleanup:Add(RunService.PreSimulation:Connect(function(dt) self:Tick(math.min(dt,.1)) end))
  return self
 end
@@ -49,7 +49,7 @@ function Presentation:Tick(dt)
  local camera=workspace.CurrentCamera
  local effects=self.ctx.settings.values.ReducedEffects
  local reducedMotion=self.ctx.settings.values.ReducedMotion
- local seen={}
+ local seen=self.seen;table.clear(seen)
  for _,player in Players:GetPlayers() do
   local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart")
   local hum=char and char:FindFirstChildOfClass("Humanoid")
@@ -83,7 +83,8 @@ function Presentation:Tick(dt)
   record.emitter.Enabled=riding and not effects and (moving or phase=="Takeoff")
   record.trail.Enabled=riding and moving and phase=="Cruise" and not effects and not reducedMotion
   record.light.Enabled=riding and not effects
-  if effects then record.emitter:Clear();record.trail:Clear() end
+  if effects and not record.effectsMuted then record.emitter:Clear();record.trail:Clear() end
+  record.effectsMuted=effects
   if phase~=record.phase then
    if not effects and riding and (record.phase or phase=="Takeoff") then
     record.emitter:Emit(if phase=="Takeoff" then 24 elseif phase=="Landing" then 18 else 10)
@@ -95,7 +96,7 @@ function Presentation:Tick(dt)
  for player,record in self.records do if not seen[player] then release(record);self.records[player]=nil end end
 end
 function Presentation:Destroy()
- self.cleanup:Destroy()
+ self.cleanup:Destroy();table.clear(self.seen)
  for player,record in self.records do release(record);self.records[player]=nil end
 end
 return Presentation

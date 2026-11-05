@@ -46,10 +46,12 @@ function W.Button(parent, name, text, color)
 end
 
 function W.SetButton(button, text, enabled, loading)
-	button.Text = text
-	button.Interactable = enabled
-	button.Selectable = enabled
-	button:SetAttribute("UIState", if loading then "Loading" elseif enabled then "Normal" else "Disabled")
+	enabled=enabled==true
+	if button.Text~=text then button.Text=text end
+	if button.Interactable~=enabled then button.Interactable=enabled end
+	if button.Selectable~=enabled then button.Selectable=enabled end
+	local state=if loading then "Loading" elseif enabled then "Normal" else "Disabled"
+	if button:GetAttribute("UIState")~=state then button:SetAttribute("UIState",state) end
 end
 
 function W.List(parent, gap, horizontal)

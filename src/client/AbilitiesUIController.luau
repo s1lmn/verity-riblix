@@ -46,14 +46,15 @@ function Controller.new(ctx)
 		end))
 	end
 	self.cleanup:Add(ctx.net.StateChanged.Event:Connect(function(state)
-		if state.HeroPassId and self.passId~=state.HeroPassId then
-			self.passId=state.HeroPassId
-			task.spawn(function()
-				local ok,offer=pcall(function() return Market:GetProductInfoAsync(self.passId,Enum.InfoType.GamePass) end)
-				if self.dead then return end
+		local passId=state.HeroPassId
+		if self.passId~=passId then
+			self.passId=passId;self.offer=nil;self.promptOpen=false
+			if passId then task.spawn(function()
+				local ok,offer=pcall(function() return Market:GetProductInfoAsync(passId,Enum.InfoType.GamePass) end)
+				if self.dead or self.passId~=passId then return end
 				self.offer=if ok and type(offer)=="table" and offer.IsForSale and type(offer.PriceInRobux)=="number" then offer else nil
 				self:Render()
-			end)
+			end) end
 		end
 		self:Render()
 	end))
@@ -76,9 +77,11 @@ function Controller.new(ctx)
 			body.CanvasPosition=Vector2.new(0,math.max(0,offset))
 		end
 	end)) end
+	self.cleanup:Add(ctx.refs.Panels.ABILITIES.Root:GetPropertyChangedSignal("Visible"):Connect(function() self:Render() end))
 	self:Render();return self
 end
 function Controller:Render()
+	if not self.ctx.refs.Panels.ABILITIES.Root.Visible then return end
 	local state=self.ctx.net.state
 	for id,row in self.rows do
 		local item=Catalog.Items[id]

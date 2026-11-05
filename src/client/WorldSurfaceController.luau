@@ -45,7 +45,7 @@ function Surfaces:Tick(now)
 			local alpha=record.baseAlpha+(1-record.baseAlpha)*target
 			record.alpha+=(alpha-record.alpha)*.65
 			if math.abs(record.alpha-alpha)<.005 then record.alpha=alpha end
-			object.LocalTransparencyModifier=record.alpha
+			if math.abs(object.LocalTransparencyModifier-record.alpha)>.001 then object.LocalTransparencyModifier=record.alpha end
 		end
 	end
 end

@@ -13,8 +13,8 @@ function UI.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),rows={},prices={}},UI)
  local panel=ctx.refs.Panels.COSMETICS
  local preview=panel.Preview
- local world=W.New("WorldModel",{},preview)
- local camera=W.New("Camera",{CFrame=CFrame.lookAt(Vector3.new(0,1.1,-4.3),Vector3.new(0,1,0)),FieldOfView=40},preview)
+ local world=self.cleanup:Add(W.New("WorldModel",{},preview))
+ local camera=self.cleanup:Add(W.New("Camera",{CFrame=CFrame.lookAt(Vector3.new(0,1.1,-4.3),Vector3.new(0,1,0)),FieldOfView=40},preview))
  preview.CurrentCamera=camera
  self.preview=Factory.Create(world,CFrame.identity,{level=1,preview=true})
  Locale.Bind(self.preview.PrimaryPart.LevelLabel.Title,"VERITY • LVL %d",1)
@@ -66,7 +66,9 @@ function UI:Render()
    self.prices[offer.productId]=false
    task.spawn(function()
     local ok,info=pcall(function()return Market:GetProductInfoAsync(offer.productId,Enum.InfoType.Product)end)
-    if ok and info.IsForSale~=false and type(info.PriceInRobux)=="number" then self.prices[offer.productId]=info.PriceInRobux end
+    if self.dead then return end
+    if ok and type(info)=="table" and info.IsForSale~=false and type(info.PriceInRobux)=="number" then self.prices[offer.productId]=info.PriceInRobux end
+    if self.ctx.refs.Panels.COSMETICS.Root.Visible then self:Render() end
    end)
   end
   local text=if owned then (if equipped then Locale.Text("REMOVE") else Locale.Text("EQUIP")) elseif available then (if price then Locale.Text("BUY · R$")..price else Locale.Text("BUY WITH ROBUX")) else Locale.Text("NOT ON SALE")
@@ -74,5 +76,5 @@ function UI:Render()
   row.info.Text=if equipped then Locale.Text("Equipped · saved with your progress") elseif owned then Locale.Text("Owned") elseif available then Locale.Text("Roblox confirms the purchase") else Locale.Text("Preview available · shop item is not on sale yet")
  end
 end
-function UI:Destroy() self.cleanup:Destroy() end
+function UI:Destroy() self.dead=true;self.cleanup:Destroy() end
 return UI

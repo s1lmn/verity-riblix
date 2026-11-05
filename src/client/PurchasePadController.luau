@@ -1,10 +1,7 @@
 --!nonstrict
 local Players=game:GetService("Players")
 local Collection=game:GetService("CollectionService")
-local Prompts=game:GetService("ProximityPromptService")
-local Input=game:GetService("UserInputService")
 local RunService=game:GetService("RunService")
-local Tween=game:GetService("TweenService")
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Houses=require(Shared.HouseConfig)
 local Catalog=require(Shared.AbilityCatalog)
@@ -19,7 +16,7 @@ local BLUE=Color3.fromHex("86E5FF")
 local GOLD=Color3.fromHex("FFD877")
 
 function Controller.new(ctx)
-	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),pads={},byPrompt={},pending={},elapsed=0,dead=false},Controller)
+	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),pads={},pending={},elapsed=0,dead=false},Controller)
 	local folder=Instance.new("Folder");folder.Name="VerityPurchaseLabels";folder.Parent=Players.LocalPlayer.PlayerGui
 	self.folder=folder;self.cleanup:Add(folder)
 	local function add(model)
@@ -32,8 +29,8 @@ function Controller.new(ctx)
 		end
 		self.pending[model]=nil
 		local gui=Instance.new("BillboardGui");gui.Name="Purchase_"..model.Name;gui.Adornee=anchor
-		gui.Size=UDim2.fromOffset(218,132);gui.StudsOffsetWorldSpace=Vector3.new(0,model:GetAttribute("LabelHeight") or 3.4,0)
-		gui.MaxDistance=48;gui.AlwaysOnTop=false;gui.Active=true;gui.Enabled=false;gui.Parent=folder
+		gui.Size=UDim2.fromOffset(218,84);gui.StudsOffsetWorldSpace=Vector3.new(0,model:GetAttribute("LabelHeight") or 3.4,0)
+		gui.MaxDistance=48;gui.AlwaysOnTop=false;gui.Active=false;gui.Enabled=false;gui.Parent=folder
 		local function text(name,y,size,bold)
 			local label=W.Text(gui,name,"",size,bold,Color3.fromHex("F2FAFF"))
 			label.Position=UDim2.fromOffset(4,y);label.Size=UDim2.new(1,-8,0,20)
@@ -42,72 +39,22 @@ function Controller.new(ctx)
 		end
 		local title=text("Action",0,14,true);local detail=text("Upgrade",21,11,false)
 		local price=text("Price",41,16,true);local status=text("Status",62,10,true)
-		local button=W.Button(gui,"Interact","E",Color3.fromHex("17263B"))
-		button.AnchorPoint=Vector2.new(.5,0);button.Position=UDim2.new(.5,0,0,85);button.Size=UDim2.fromOffset(44,44)
-		button.TextColor3=GREEN;button.TextSize=14;button.Visible=false
-		local corner=button:FindFirstChildOfClass("UICorner");corner.CornerRadius=UDim.new(1,0)
-		local stroke=button:FindFirstChildOfClass("UIStroke");stroke.Thickness=2;stroke.Transparency=.1;stroke.Color=GREEN
 		local record={model=model,anchor=anchor,reference=reference,gui=gui,title=title,detail=detail,price=price,status=status,
-			button=button,stroke=stroke,cleanup=Cleanup.new(),parts={},light=anchor:FindFirstChildOfClass("PointLight")}
+			parts={},light=anchor:FindFirstChildOfClass("PointLight")}
 		for _,p in model:GetDescendants() do
 			if p:IsA("BasePart") and p:GetAttribute("PadAlpha")~=nil then
 				table.insert(record.parts,{part=p,alpha=p:GetAttribute("PadAlpha"),glow=p:GetAttribute("PadGlow"),size=p:GetAttribute("PadSize") or p.Size})
 			end
 		end
 		self.pads[model]=record
-		record.cleanup:Add(button.InputBegan:Connect(function(input)
-			if input.UserInputType~=Enum.UserInputType.Touch and input.UserInputType~=Enum.UserInputType.MouseButton1 then return end
-			if record.canBuy and record.near and record.prompt then
-				record.touchHeld=true;record.touchInput=input;record.prompt:InputHoldBegin()
-			end
-		end))
-		record.cleanup:Add(button.InputEnded:Connect(function(input)
-			if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-				if record.touchHeld and record.touchInput==input and record.prompt then
-					record.prompt:InputHoldEnd();record.touchHeld=false;record.touchInput=nil
-				end
-			end
-		end))
 	end
 	local function remove(model)
 		self.pending[model]=nil
 		local r=self.pads[model];if not r then return end
-		if r.touchHeld and r.prompt then r.prompt:InputHoldEnd() end
-		if r.prompt then self.byPrompt[r.prompt]=nil end
-		r.cleanup:Destroy();r.gui:Destroy();self.pads[model]=nil
+		r.gui:Destroy();self.pads[model]=nil
 	end
 	self.cleanup:Add(Collection:GetInstanceAddedSignal("VerityPurchasePad"):Connect(add))
 	self.cleanup:Add(Collection:GetInstanceRemovedSignal("VerityPurchasePad"):Connect(remove))
-	self.cleanup:Add(Prompts.PromptShown:Connect(function(prompt)
-		local r=self.byPrompt[prompt];if r then r.shown=true end
-	end))
-	self.cleanup:Add(Prompts.PromptHidden:Connect(function(prompt)
-		local r=self.byPrompt[prompt]
-		if r then
-			r.shown=false;r.holdAt=nil
-			if r.touchHeld then prompt:InputHoldEnd();r.touchHeld=false end
-		end
-	end))
-	self.cleanup:Add(Prompts.PromptButtonHoldBegan:Connect(function(prompt)
-		local r=self.byPrompt[prompt];if r then r.holdAt=os.clock() end
-	end))
-	self.cleanup:Add(Prompts.PromptButtonHoldEnded:Connect(function(prompt)
-		local r=self.byPrompt[prompt];if r then r.holdAt=nil end
-	end))
-	self.cleanup:Add(Prompts.PromptTriggered:Connect(function(prompt)
-		local r=self.byPrompt[prompt];if r then r.holdAt=nil end
-	end))
-	local function release(input)
-		for _,r in self.pads do
-			if r.touchHeld and r.prompt and (not input or input==r.touchInput) then
-				r.prompt:InputHoldEnd();r.touchHeld=false;r.touchInput=nil;r.holdAt=nil
-			end
-		end
-	end
-	self.cleanup:Add(Input.InputEnded:Connect(function(input)
-		if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then release(input) end
-	end))
-	self.cleanup:Add(Input.WindowFocusReleased:Connect(release))
 	for _,model in Collection:GetTagged("VerityPurchasePad") do add(model) end
 	self.cleanup:Add(RunService.Heartbeat:Connect(function(dt)
 		self.elapsed+=dt;if self.elapsed<.1 then return end;self.elapsed=0;self:Render()
@@ -168,37 +115,26 @@ function Controller:Render()
 	for model,r in self.pads do
 		if not model.Parent then continue end
 		local prompt=r.reference.Value
-		if prompt~=r.prompt then
-			if r.prompt then self.byPrompt[r.prompt]=nil end
-			r.prompt=prompt;if prompt then self.byPrompt[prompt]=r end
-		end
 		local visible,ready,title,detail,cost,reason,bonus,color=self:Offer(r)
 		visible=visible and camera and (camera.CFrame.Position-r.anchor.Position).Magnitude<80 or false
 		local uiAllowed=not self.ctx.active and not self.ctx.presenting
 		local kind=model:GetAttribute("PurchaseKind")
 		r.visible=visible;r.canBuy=(ready or kind=="Ability") and visible and uiAllowed
 			and humanoid~=nil and humanoid.Health>0 or false
-		r.near=root~=nil and humanoid~=nil and humanoid.Health>0 and prompt~=nil
-			and prompt.Parent~=nil and prompt.Parent:IsA("BasePart")
-			and (root.Position-prompt.Parent.Position).Magnitude<=prompt.MaxActivationDistance or false
 		if prompt then
 			local minZ=prompt:GetAttribute("ExteriorMinZ")
 			local enabled=r.canBuy and (not minZ or (root and prompt.Parent
 				and prompt.Parent.CFrame:PointToObjectSpace(root.Position).Z>=minZ)) or false
 			if prompt.Enabled~=enabled then prompt.Enabled=enabled end
-			r.near=r.near and enabled
 		end
 		r.gui.Enabled=visible and uiAllowed
 		if visible then
 			r.title.Text=Locale.Text(title);r.detail.Text=Locale.Text(detail)
 			r.price.Text=if kind=="Hero" then tostring(model:GetAttribute("OfferPrice") or Config.HeroPassPrice).." R$"
 				elseif cost==0 then Locale.Text("БЕСПЛАТНО") elseif cost then "$"..Locale.Number(cost) else Locale.Text("КУПЛЕНО")
-			r.status.Text=reason or (if bonus then string.format(Locale.Text("+%d%% пассивного дохода"),bonus) else Locale.Text("Подойди и удерживай кнопку"))
+			r.status.Text=reason or (if bonus then string.format(Locale.Text("+%d%% пассивного дохода"),bonus) else Locale.Text(if prompt and prompt.HoldDuration>0 then "Подойди и удерживай кнопку" else "Подойди и нажми кнопку"))
 			r.title.TextColor3=color;r.price.TextColor3=color
-			r.button.Visible=r.near and r.canBuy
-			r.button.Text=if Input.PreferredInput==Enum.PreferredInput.Touch then "✓" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "X" else (prompt and Input:GetStringForKeyCode(prompt.KeyboardKeyCode) or "E")
-			r.button.TextColor3=color;r.stroke.Color=color
-			r.stroke.Thickness=if r.holdAt and prompt then 2+3*math.clamp((now-r.holdAt)/math.max(.1,prompt.HoldDuration),0,1) else 2
+
 		end
 		for _,entry in r.parts do
 			local p=entry.part

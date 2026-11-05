@@ -30,11 +30,15 @@ function Adapter:Start()
 		local now=os.clock()
 		for _,item in self.tracker:Expire(now) do self.TimedOut:Fire(item);self.PendingChanged:Fire() end
 		for id,sent in self.sent do
-			if now-sent.at>=8 and sent.retries<2 and self.tracker.byId[id] then
-				sent.at=now;sent.retries+=1;sent.remote:FireServer(sent.payload)
+			local retryAfter=math.min(30,8*2^math.min(sent.retries,2))
+			local remote=self.remotes[sent.action]
+			if now-sent.at>=retryAfter and self.tracker.byId[id] and self.connected and remote then
+				sent.at=now;sent.retries=math.min(sent.retries+1,2)
+				-- Same operation ID: recover its outcome without charging again.
+				remote:FireServer(sent.payload)
 			end
 		end
-		if self.connected and (not self.state or self.needSync) and not self:IsBusy() and now>=self.retryAt then
+		if self.connected and (not self.state or self.needSync or next(self.fences)~=nil) and next(self.tracker.pending)==nil and now>=self.retryAt then
 			self.retryAt=now+0.75;self:Request("Sync",nil,true)
 		end
 	end))
@@ -46,12 +50,15 @@ function Adapter:Attach(folder)
 	self.folder,self.connected,self.remotes=folder,false,{}
 	if not folder then self.ConnectionChanged:Fire(false);return end
 	local bound={}
+	self.remoteCleanup:Add(function()
+		for remote,link in bound do link:Disconnect();bound[remote]=nil end
+	end)
 	local function discover()
 		for _,name in {"PlayerStateUpdated","ActionResult","WorldEvent","NotificationEvent"} do
 			local remote=folder:FindFirstChild(name)
 			if remote and remote:IsA("RemoteEvent") and not bound[remote] then
-				bound[remote]=true
-				self.remoteCleanup:Add(remote.OnClientEvent:Connect(function(payload)
+				bound[remote]=remote.OnClientEvent:Connect(function(payload)
+					if remote.Parent~=folder then return end
 					if name=="PlayerStateUpdated" then self:AcceptState(payload)
 					elseif name=="ActionResult" then self:AcceptResult(payload)
 					elseif name=="WorldEvent" then self:AcceptWorld(payload)
@@ -78,29 +85,34 @@ function Adapter:Attach(folder)
 							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
 					end
-				end))
+				end)
 			end
 		end
 		for action,name in Protocol.RequestNames do
 			local remote=folder:FindFirstChild(name);self.remotes[action]=if remote and remote:IsA("RemoteEvent") then remote else nil
 		end
-		local ready=self.remotes.Sync~=nil and bound[folder:FindFirstChild("PlayerStateUpdated")]==true
-			and bound[folder:FindFirstChild("ActionResult")]==true
+		local ready=self.remotes.Sync~=nil and bound[folder:FindFirstChild("PlayerStateUpdated")]~=nil
+			and bound[folder:FindFirstChild("ActionResult")]~=nil
 		if ready~=self.connected then self.connected=ready;self.needSync=true;self.ConnectionChanged:Fire(ready) end
 	end
-	self.remoteCleanup:Add(folder.ChildAdded:Connect(discover));self.remoteCleanup:Add(folder.ChildRemoved:Connect(discover))
+	self.remoteCleanup:Add(folder.ChildAdded:Connect(discover))
+	self.remoteCleanup:Add(folder.ChildRemoved:Connect(function(remote)
+		local link=bound[remote]
+		if link then link:Disconnect();bound[remote]=nil end
+		discover()
+	end))
 	discover()
 end
 function Adapter:Request(action,args,handshake)
 	local remote=self.remotes[action]
 	if not self.connected or not remote or (not self.state and not handshake) then return nil,"Waiting for the game server." end
-	if self:IsBusy(action) then return nil,"Waiting for the previous server result." end
+	if self:IsBusy(action) and not (action=="Sync" and next(self.tracker.pending)==nil) then return nil,"Waiting for the previous server result." end
 	self.sequence+=1
 	Players.LocalPlayer:SetAttribute("VerityClientSequence",self.sequence)
 	local id=string.format("%.0f",self.sequence)
 	if not self.tracker:Begin(action,id,os.clock(),if self.state then self.state.stateRevision else -1) then return nil end
 	local payload=table.clone(args or {});payload.operationId=id
-	self.sent[id]={remote=remote,payload=payload,at=os.clock(),retries=0}
+	self.sent[id]={action=action,payload=payload,at=os.clock(),retries=0}
 	remote:FireServer(payload);self.PendingChanged:Fire()
 	return id
 end
@@ -122,9 +134,9 @@ function Adapter:AcceptResult(raw)
 	if not pending then return end
 	self.sent[result.operationId]=nil
 	if result.success and (not self.state or result.stateRevision>self.state.stateRevision) then self.fences[result.action]=result.stateRevision end
-	if result.action=="Sync" then self.needSync=not result.success or not self.state
+	if result.action=="Sync" then self.needSync=not result.success or not self.state or next(self.fences)~=nil
 	elseif not result.replayed or result.action=="Swipe" then self.Result:Fire(result) end
-	if result.replayed then self.needSync=true end
+	if result.replayed or pending.unresolved then self.needSync=true end
 	self.PendingChanged:Fire()
 end
 function Adapter:AcceptWorld(raw)

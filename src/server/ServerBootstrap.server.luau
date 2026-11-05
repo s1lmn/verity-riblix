@@ -430,12 +430,22 @@ game:BindToClose(function()
 	closing = true
 	Data.closed = true
 	for id in State.sessions do Income:Settle(id) end
-	local pending = 0
-	for id in Data.profiles do
-		pending += 1
-		task.spawn(function() Data:ReleaseAsync(id); pending -= 1 end)
+	local deadline=clock()+25
+	local flushing,retryAt={},{}
+	-- Stop mutations after final income settlement, including while an autosave yields.
+	for _,profile in Data.profiles do profile.Closing=true end
+	while clock()<deadline and (next(flushing)~=nil or next(Data.loading)~=nil or next(Data.profiles)~=nil) do
+		for id,profile in Data.profiles do
+			if flushing[id] or profile.Saving or profile.Releasing or clock()<(retryAt[id] or 0) then continue end
+			flushing[id]=true
+			task.spawn(function()
+				local ok,result=pcall(function() return Data:ReleaseAsync(id) end)
+				flushing[id]=nil;retryAt[id]=clock()+1
+				if not ok then warn("Shutdown profile release failed",id,result) end
+			end)
+		end
+		task.wait(.1)
 	end
-	local deadline = clock() + 25
-	while (pending > 0 or next(Data.loading) ~= nil or next(Data.profiles) ~= nil) and clock() < deadline do task.wait(0.1) end
+	if next(Data.profiles)~=nil or next(Data.loading)~=nil then warn("Shutdown persistence deadline reached; some profiles remain unconfirmed") end
 end)
 print("VERITY Core ready", Config.PlotCount, "plots; protocol v1")

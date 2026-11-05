@@ -48,7 +48,10 @@ function Phone:SetOpen(open)
  self.open=open
  self.animateOpen=open and changed
 
-	if not open then self.feed:FinishReveal();self.collection:SetOpen(false) end
+	if not open then
+  self.ctx.animation:Cancel(self.refs.Root);self.refs.Root.Rotation=0
+  self.feed:FinishReveal();self.collection:SetOpen(false)
+ end
 	self.input:Cancel()
 	self:ReconcileSession()
 end
