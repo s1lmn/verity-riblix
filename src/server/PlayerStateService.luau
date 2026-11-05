@@ -23,6 +23,24 @@ function PlayerStateService:AdvanceTutorial(profile, step)
 		self.data:Touch(profile)
 	end
 end
+
+-- Shared world events are visible to other players. Project only what they
+-- need to present the plot and companion, independently of the owner snapshot.
+function PlayerStateService:PublicPlotSnapshot(userId)
+	local profile, session = self.data:Get(userId), self.sessions[userId]
+	if not profile or not session then return nil end
+	local data = profile.Data
+	return {
+		protocolVersion = 1, stateRevision = profile.Revision, ownerUserId = userId, PlotId = session.PlotId,
+		VerityLevel = data.VerityLevel, VerityScale = Levels.getVerityScale(data.VerityLevel),
+		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
+		HouseTier = Houses.getHouseTier(data.VerityLevel), HouseIncomeLevel = data.HouseIncomeLevel,
+		HouseBuildLevel = data.HouseIncomeLevel, HouseDoorOwned = data.HouseDoorOwned,
+		HouseDoorLocked = session.HouseDoorLocked == true, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
+		CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
+	}
+end
+
 function PlayerStateService:Snapshot(userId)
 	local profile, session = self.data:Get(userId), self.sessions[userId]
 	if not profile or not session then return nil end

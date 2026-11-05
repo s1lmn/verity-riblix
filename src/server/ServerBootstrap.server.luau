@@ -18,8 +18,9 @@ local Runtime = require(script.Parent.Runtime)
 assert(not Runtime.Services, "Core already started")
 local function clock() return workspace:GetServerTimeNow() end
 local function guid() return HttpService:GenerateGUID(false) end
+local usingStudioMemory = RunService:IsStudio() and Config.StudioDataMode == "Memory"
 local store
-if RunService:IsStudio() and Config.StudioDataMode == "Memory" then
+if usingStudioMemory then
 	local records = {}
 	store = {UpdateAsync = function(_, key, transform)
 		local updated = transform(records[key])
@@ -98,7 +99,7 @@ local Phone = require(script.Parent.PhoneService).new(Data, State, Economy, cloc
 local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock,
 	function(userId, taskId) return World:IsNearTask(userId, taskId) end)
 local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, require(script.Parent.CosmeticProducts), clock)
-State.CosmeticsCatalog = function() return Cosmetics:Catalog() end
+State.CosmeticsCatalog = function() return Cosmetics:Catalog(not usingStudioMemory) end
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
 Tasks.onReward = function(id, reward)
 	World:React(id,"Confident",2)
@@ -144,6 +145,7 @@ Remote:Register("RequestUpgradeHouse",function(id)
 end)
 Remote:Register("RequestEquipCosmetic", function(id,payload) return Cosmetics:Equip(id,payload.itemId,payload.equipped) end)
 Remote:Register("RequestCosmeticPurchase", function(id,payload)
+ if usingStudioMemory then return "PRODUCT_UNAVAILABLE" end
  local status,product=Cosmetics:PreparePurchase(id,payload.itemId)
  if status=="OK" then task.defer(function()
   local player=Players:GetPlayerByUserId(id)
@@ -192,7 +194,7 @@ Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Comple
 Remote:Register("RequestSync", function(id)
 	local plots = {}
 	for owner in State.sessions do
-		local state = State:Snapshot(owner)
+		local state = State:PublicPlotSnapshot(owner)
 		if state then table.insert(plots, state) end
 	end
 	send(id, "WorldEvent", {protocolVersion = 1, type = "WorldSnapshot", eventId = guid(),
@@ -321,7 +323,7 @@ local function claimHouse(player, requestedPlot)
 	anchors.ClaimPrompt.Enabled = false
 	player:SetAttribute("HousePlotId", plotId)
 	State:Publish(userId, true)
-	Verity:Event(userId, "PlotAssigned", {state = State:Snapshot(userId), presentation = false})
+	Verity:Event(userId, "PlotAssigned", {state = State:PublicPlotSnapshot(userId), presentation = false})
 	Delivery:Begin(userId)
 	return "OK"
 end
@@ -391,6 +393,7 @@ task.spawn(function()
 end)
 -- Disabled until real owned product IDs are configured; no placeholder IDs.
 MarketplaceService.ProcessReceipt = function(receipt)
+	if usingStudioMemory then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	local granted
  if Cosmetics.products[receipt.ProductId] then
   granted = Cosmetics:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId)

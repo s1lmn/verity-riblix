@@ -78,6 +78,8 @@ CoreProtocol преобразует wire-формат во внутренний 
 ## Мировая презентация
 
 WorldEvent wire: {protocolVersion=1,type,eventId,ownerUserId,plotId,stateRevision,...}.
+WorldSnapshot.plots и PlotAssigned.state содержат публичную проекцию участка и спутника.
+Полный профиль отправляется владельцу через PlayerStateUpdated.
 VerityLevelChanged содержит oldLevel/newLevel/oldScale/newScale/milestoneLevel?.
 Одна покупка = один переход; события HouseTierChanged/MilestoneReached с purchaseEventId
 не создают вторую презентацию. WorldSnapshot/PlotAssigned применяют baseline без истории.
