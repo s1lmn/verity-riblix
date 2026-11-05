@@ -1,0 +1,52 @@
+[
+  {
+    "id": "AquaBloom",
+    "family": "Aqua",
+    "tier": 2
+  },
+  {
+    "id": "AquaCrest",
+    "family": "Aqua",
+    "tier": 3
+  },
+  {
+    "id": "FrostPrism",
+    "family": "Frost",
+    "tier": 2
+  },
+  {
+    "id": "FrostAurora",
+    "family": "Frost",
+    "tier": 3
+  },
+  {
+    "id": "MagmaBlaze",
+    "family": "Magma",
+    "tier": 2
+  },
+  {
+    "id": "MagmaCore",
+    "family": "Magma",
+    "tier": 3
+  },
+  {
+    "id": "CyberPulse",
+    "family": "Cyber",
+    "tier": 2
+  },
+  {
+    "id": "CyberOverdrive",
+    "family": "Cyber",
+    "tier": 3
+  },
+  {
+    "id": "CosmicNova",
+    "family": "Cosmic",
+    "tier": 2
+  },
+  {
+    "id": "CosmicNebula",
+    "family": "Cosmic",
+    "tier": 3
+  }
+]

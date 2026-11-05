@@ -94,7 +94,7 @@ function Controller:Register(model,attempt)
 	local anchor=model:GetAttribute("VerityOrigin")
 	local record={model=model,owner=owner,plot=plot,key=identity,origin=if typeof(anchor)=="CFrame" then anchor else model:GetPivot(),level=level,revision=revision,
 		ledger=Ledger.new(),tints={},cleanup=Cleanup.new(),idleStart=os.clock(),baseYaw=0,lastYaw=0,lastLift=0,completed=0}
-	for _,p in model:GetDescendants() do if p:IsA("BasePart") and p:GetAttribute("VerityTint") then table.insert(record.tints,p) end end
+	for _,p in model:GetDescendants() do if p:IsA("BasePart") and p:GetAttribute("VerityTint")~=nil then table.insert(record.tints,p) end end
 	record.ledger:Seed(revision,level)
 	self.records[model],self.byOwner[identity]=record,record
 	self:Apply(record,Levels.getVerityScale(level),0,0,Factory.Color(level),level)
@@ -134,7 +134,7 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	if not model:IsDescendantOf(workspace) then return end
 	if math.abs(model:GetScale()-scale)>0.000001 then model:ScaleTo(scale) end
 	model:PivotTo(record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0))
-	for _,p in record.tints do if p.Parent then p.Color=color end end
+	for _,p in record.tints do if p.Parent and p:GetAttribute("VerityTint")~=false then p.Color=color end end
 	if record.stageLevel~=level then
 		Factory.SetStage(model,level)
 		local label=model.PrimaryPart:FindFirstChild("LevelLabel")

@@ -16,6 +16,9 @@
       },
       "$attributes": {
         "VerityRuntimeMode": "Core"
+      },
+      "VerityElementalModels": {
+        "$path": "assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx"
       }
     },
     "ServerScriptService": {

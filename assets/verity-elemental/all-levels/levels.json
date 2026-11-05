@@ -1,0 +1,1408 @@
+{
+  "mesh": "rbxassetid://98969698787830",
+  "meshDiameter": 2.8,
+  "baseDiameter": 1.7,
+  "textureCount": 16,
+  "levels": [
+    {
+      "level": 1,
+      "id": "Sunny",
+      "family": "Basic",
+      "texture": null,
+      "hex": "FFDA21",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L001_Sunny",
+      "suggestedScale": 1.0
+    },
+    {
+      "level": 2,
+      "id": "Mango",
+      "family": "Basic",
+      "texture": null,
+      "hex": "FF8A00",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L002_Mango",
+      "suggestedScale": 1.2817332597753621
+    },
+    {
+      "level": 3,
+      "id": "Cherry",
+      "family": "Basic",
+      "texture": null,
+      "hex": "FF4566",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L003_Cherry",
+      "suggestedScale": 1.507824461410805
+    },
+    {
+      "level": 4,
+      "id": "Bubblegum",
+      "family": "Basic",
+      "texture": null,
+      "hex": "FF2DBB",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L004_Bubblegum",
+      "suggestedScale": 1.7167887604420318
+    },
+    {
+      "level": 5,
+      "id": "Grape",
+      "family": "Basic",
+      "texture": null,
+      "hex": "9D2AFF",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L005_Grape",
+      "suggestedScale": 1.9153540615431672
+    },
+    {
+      "level": 6,
+      "id": "Blue",
+      "family": "Basic",
+      "texture": null,
+      "hex": "2468FF",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L006_Blue",
+      "suggestedScale": 2.1065285503486857
+    },
+    {
+      "level": 7,
+      "id": "Cyan",
+      "family": "Basic",
+      "texture": null,
+      "hex": "08DDF5",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L007_Cyan",
+      "suggestedScale": 2.2920124038852494
+    },
+    {
+      "level": 8,
+      "id": "Mint",
+      "family": "Basic",
+      "texture": null,
+      "hex": "04E6B2",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L008_Mint",
+      "suggestedScale": 2.4728938686018314
+    },
+    {
+      "level": 9,
+      "id": "Lime",
+      "family": "Basic",
+      "texture": null,
+      "hex": "B4F51B",
+      "tone": [
+        1,
+        1,
+        1
+      ],
+      "name": "Verity_L009_Lime",
+      "suggestedScale": 2.6499265428369636
+    },
+    {
+      "level": 10,
+      "id": "Aqua",
+      "family": "Aqua",
+      "texture": "rbxassetid://71775648259419",
+      "hex": "14DDEB",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L010_Aqua",
+      "suggestedScale": 2.823661599293202
+    },
+    {
+      "level": 11,
+      "id": "Aqua",
+      "family": "Aqua",
+      "texture": "rbxassetid://71775648259419",
+      "hex": "14DDEB",
+      "tone": [
+        0.985,
+        0.995,
+        0.9775
+      ],
+      "name": "Verity_L011_Aqua",
+      "suggestedScale": 2.994518735787689
+    },
+    {
+      "level": 12,
+      "id": "Aqua",
+      "family": "Aqua",
+      "texture": "rbxassetid://71775648259419",
+      "hex": "14DDEB",
+      "tone": [
+        0.97,
+        0.99,
+        0.955
+      ],
+      "name": "Verity_L012_Aqua",
+      "suggestedScale": 3.1628275982691925
+    },
+    {
+      "level": 13,
+      "id": "Aqua",
+      "family": "Aqua",
+      "texture": "rbxassetid://71775648259419",
+      "hex": "14DDEB",
+      "tone": [
+        0.955,
+        0.985,
+        0.9325
+      ],
+      "name": "Verity_L013_Aqua",
+      "suggestedScale": 3.3288535534010237
+    },
+    {
+      "level": 14,
+      "id": "Aqua",
+      "family": "Aqua",
+      "texture": "rbxassetid://71775648259419",
+      "hex": "14DDEB",
+      "tone": [
+        0.94,
+        0.98,
+        0.91
+      ],
+      "name": "Verity_L014_Aqua",
+      "suggestedScale": 3.492814543408731
+    },
+    {
+      "level": 15,
+      "id": "AquaBloom",
+      "family": "Aqua",
+      "texture": "rbxassetid://128811655596682",
+      "hex": "14DDEB",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L015_AquaBloom",
+      "suggestedScale": 3.6548925609081118
+    },
+    {
+      "level": 16,
+      "id": "AquaBloom",
+      "family": "Aqua",
+      "texture": "rbxassetid://128811655596682",
+      "hex": "14DDEB",
+      "tone": [
+        0.985,
+        0.995,
+        0.9775
+      ],
+      "name": "Verity_L016_AquaBloom",
+      "suggestedScale": 3.815241724142057
+    },
+    {
+      "level": 17,
+      "id": "AquaBloom",
+      "family": "Aqua",
+      "texture": "rbxassetid://128811655596682",
+      "hex": "14DDEB",
+      "tone": [
+        0.97,
+        0.99,
+        0.955
+      ],
+      "name": "Verity_L017_AquaBloom",
+      "suggestedScale": 3.9739941200114024
+    },
+    {
+      "level": 18,
+      "id": "AquaBloom",
+      "family": "Aqua",
+      "texture": "rbxassetid://128811655596682",
+      "hex": "14DDEB",
+      "tone": [
+        0.955,
+        0.985,
+        0.9325
+      ],
+      "name": "Verity_L018_AquaBloom",
+      "suggestedScale": 4.1312641332343905
+    },
+    {
+      "level": 19,
+      "id": "AquaBloom",
+      "family": "Aqua",
+      "texture": "rbxassetid://128811655596682",
+      "hex": "14DDEB",
+      "tone": [
+        0.94,
+        0.98,
+        0.91
+      ],
+      "name": "Verity_L019_AquaBloom",
+      "suggestedScale": 4.28715172001721
+    },
+    {
+      "level": 20,
+      "id": "AquaCrest",
+      "family": "Aqua",
+      "texture": "rbxassetid://117525920824850",
+      "hex": "14DDEB",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L020_AquaCrest",
+      "suggestedScale": 4.441744928004888
+    },
+    {
+      "level": 21,
+      "id": "AquaCrest",
+      "family": "Aqua",
+      "texture": "rbxassetid://117525920824850",
+      "hex": "14DDEB",
+      "tone": [
+        0.985,
+        0.995,
+        0.9775
+      ],
+      "name": "Verity_L021_AquaCrest",
+      "suggestedScale": 4.5951218666292455
+    },
+    {
+      "level": 22,
+      "id": "AquaCrest",
+      "family": "Aqua",
+      "texture": "rbxassetid://117525920824850",
+      "hex": "14DDEB",
+      "tone": [
+        0.97,
+        0.99,
+        0.955
+      ],
+      "name": "Verity_L022_AquaCrest",
+      "suggestedScale": 4.7473522692335735
+    },
+    {
+      "level": 23,
+      "id": "AquaCrest",
+      "family": "Aqua",
+      "texture": "rbxassetid://117525920824850",
+      "hex": "14DDEB",
+      "tone": [
+        0.955,
+        0.985,
+        0.9325
+      ],
+      "name": "Verity_L023_AquaCrest",
+      "suggestedScale": 4.898498746975161
+    },
+    {
+      "level": 24,
+      "id": "AquaCrest",
+      "family": "Aqua",
+      "texture": "rbxassetid://117525920824850",
+      "hex": "14DDEB",
+      "tone": [
+        0.94,
+        0.98,
+        0.91
+      ],
+      "name": "Verity_L024_AquaCrest",
+      "suggestedScale": 5.048617806572628
+    },
+    {
+      "level": 25,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L025_Frost",
+      "suggestedScale": 5.197760684711096
+    },
+    {
+      "level": 26,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.991111,
+        0.995556,
+        1.0
+      ],
+      "name": "Verity_L026_Frost",
+      "suggestedScale": 5.345974038397292
+    },
+    {
+      "level": 27,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.982222,
+        0.991111,
+        1.0
+      ],
+      "name": "Verity_L027_Frost",
+      "suggestedScale": 5.493300520900248
+    },
+    {
+      "level": 28,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.973333,
+        0.986667,
+        1.0
+      ],
+      "name": "Verity_L028_Frost",
+      "suggestedScale": 5.639779265910518
+    },
+    {
+      "level": 29,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.964444,
+        0.982222,
+        1.0
+      ],
+      "name": "Verity_L029_Frost",
+      "suggestedScale": 5.785446297400975
+    },
+    {
+      "level": 30,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.955556,
+        0.977778,
+        1.0
+      ],
+      "name": "Verity_L030_Frost",
+      "suggestedScale": 5.930334878836472
+    },
+    {
+      "level": 31,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.946667,
+        0.973333,
+        1.0
+      ],
+      "name": "Verity_L031_Frost",
+      "suggestedScale": 6.07447581248868
+    },
+    {
+      "level": 32,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.937778,
+        0.968889,
+        1.0
+      ],
+      "name": "Verity_L032_Frost",
+      "suggestedScale": 6.21789769740986
+    },
+    {
+      "level": 33,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.928889,
+        0.964444,
+        1.0
+      ],
+      "name": "Verity_L033_Frost",
+      "suggestedScale": 6.360627152924331
+    },
+    {
+      "level": 34,
+      "id": "Frost",
+      "family": "Frost",
+      "texture": "rbxassetid://131856364653320",
+      "hex": "59C9FF",
+      "tone": [
+        0.92,
+        0.96,
+        1.0
+      ],
+      "name": "Verity_L034_Frost",
+      "suggestedScale": 6.50268901317971
+    },
+    {
+      "level": 35,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L035_FrostPrism",
+      "suggestedScale": 6.644106497268389
+    },
+    {
+      "level": 36,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.991111,
+        0.995556,
+        1.0
+      ],
+      "name": "Verity_L036_FrostPrism",
+      "suggestedScale": 6.78490135861474
+    },
+    {
+      "level": 37,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.982222,
+        0.991111,
+        1.0
+      ],
+      "name": "Verity_L037_FrostPrism",
+      "suggestedScale": 6.9250940166749935
+    },
+    {
+      "level": 38,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.973333,
+        0.986667,
+        1.0
+      ],
+      "name": "Verity_L038_FrostPrism",
+      "suggestedScale": 7.064703673476779
+    },
+    {
+      "level": 39,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.964444,
+        0.982222,
+        1.0
+      ],
+      "name": "Verity_L039_FrostPrism",
+      "suggestedScale": 7.203748417105768
+    },
+    {
+      "level": 40,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.955556,
+        0.977778,
+        1.0
+      ],
+      "name": "Verity_L040_FrostPrism",
+      "suggestedScale": 7.342245313906214
+    },
+    {
+      "level": 41,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.946667,
+        0.973333,
+        1.0
+      ],
+      "name": "Verity_L041_FrostPrism",
+      "suggestedScale": 7.480210490883839
+    },
+    {
+      "level": 42,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.937778,
+        0.968889,
+        1.0
+      ],
+      "name": "Verity_L042_FrostPrism",
+      "suggestedScale": 7.617659209570965
+    },
+    {
+      "level": 43,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.928889,
+        0.964444,
+        1.0
+      ],
+      "name": "Verity_L043_FrostPrism",
+      "suggestedScale": 7.754605932425005
+    },
+    {
+      "level": 44,
+      "id": "FrostPrism",
+      "family": "Frost",
+      "texture": "rbxassetid://77572967487889",
+      "hex": "59C9FF",
+      "tone": [
+        0.92,
+        0.96,
+        1.0
+      ],
+      "name": "Verity_L044_FrostPrism",
+      "suggestedScale": 7.8910643826747435
+    },
+    {
+      "level": 45,
+      "id": "FrostAurora",
+      "family": "Frost",
+      "texture": "rbxassetid://115610286130137",
+      "hex": "59C9FF",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L045_FrostAurora",
+      "suggestedScale": 8.027047598398212
+    },
+    {
+      "level": 46,
+      "id": "FrostAurora",
+      "family": "Frost",
+      "texture": "rbxassetid://115610286130137",
+      "hex": "59C9FF",
+      "tone": [
+        0.98,
+        0.99,
+        1.0
+      ],
+      "name": "Verity_L046_FrostAurora",
+      "suggestedScale": 8.162567981506538
+    },
+    {
+      "level": 47,
+      "id": "FrostAurora",
+      "family": "Frost",
+      "texture": "rbxassetid://115610286130137",
+      "hex": "59C9FF",
+      "tone": [
+        0.96,
+        0.98,
+        1.0
+      ],
+      "name": "Verity_L047_FrostAurora",
+      "suggestedScale": 8.297637342216051
+    },
+    {
+      "level": 48,
+      "id": "FrostAurora",
+      "family": "Frost",
+      "texture": "rbxassetid://115610286130137",
+      "hex": "59C9FF",
+      "tone": [
+        0.94,
+        0.97,
+        1.0
+      ],
+      "name": "Verity_L048_FrostAurora",
+      "suggestedScale": 8.432266939513205
+    },
+    {
+      "level": 49,
+      "id": "FrostAurora",
+      "family": "Frost",
+      "texture": "rbxassetid://115610286130137",
+      "hex": "59C9FF",
+      "tone": [
+        0.92,
+        0.96,
+        1.0
+      ],
+      "name": "Verity_L049_FrostAurora",
+      "suggestedScale": 8.566467518050862
+    },
+    {
+      "level": 50,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L050_Magma",
+      "suggestedScale": 8.700249341858452
+    },
+    {
+      "level": 51,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.993333,
+        0.986667
+      ],
+      "name": "Verity_L051_Magma",
+      "suggestedScale": 8.833622225200434
+    },
+    {
+      "level": 52,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.986667,
+        0.973333
+      ],
+      "name": "Verity_L052_Magma",
+      "suggestedScale": 8.966595560876517
+    },
+    {
+      "level": 53,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.98,
+        0.96
+      ],
+      "name": "Verity_L053_Magma",
+      "suggestedScale": 9.099178346221667
+    },
+    {
+      "level": 54,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.973333,
+        0.946667
+      ],
+      "name": "Verity_L054_Magma",
+      "suggestedScale": 9.23137920703346
+    },
+    {
+      "level": 55,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.966667,
+        0.933333
+      ],
+      "name": "Verity_L055_Magma",
+      "suggestedScale": 9.363206419627986
+    },
+    {
+      "level": 56,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.96,
+        0.92
+      ],
+      "name": "Verity_L056_Magma",
+      "suggestedScale": 9.494667931202594
+    },
+    {
+      "level": 57,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.953333,
+        0.906667
+      ],
+      "name": "Verity_L057_Magma",
+      "suggestedScale": 9.625771378663828
+    },
+    {
+      "level": 58,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.946667,
+        0.893333
+      ],
+      "name": "Verity_L058_Magma",
+      "suggestedScale": 9.7565241060616
+    },
+    {
+      "level": 59,
+      "id": "Magma",
+      "family": "Magma",
+      "texture": "rbxassetid://123521799338149",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.94,
+        0.88
+      ],
+      "name": "Verity_L059_Magma",
+      "suggestedScale": 9.886933180755365
+    },
+    {
+      "level": 60,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L060_MagmaBlaze",
+      "suggestedScale": 10.017005408424813
+    },
+    {
+      "level": 61,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.993333,
+        0.986667
+      ],
+      "name": "Verity_L061_MagmaBlaze",
+      "suggestedScale": 10.146747347025784
+    },
+    {
+      "level": 62,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.986667,
+        0.973333
+      ],
+      "name": "Verity_L062_MagmaBlaze",
+      "suggestedScale": 10.276165319781901
+    },
+    {
+      "level": 63,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.98,
+        0.96
+      ],
+      "name": "Verity_L063_MagmaBlaze",
+      "suggestedScale": 10.405265427293244
+    },
+    {
+      "level": 64,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.973333,
+        0.946667
+      ],
+      "name": "Verity_L064_MagmaBlaze",
+      "suggestedScale": 10.53405355883532
+    },
+    {
+      "level": 65,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.966667,
+        0.933333
+      ],
+      "name": "Verity_L065_MagmaBlaze",
+      "suggestedScale": 10.662535402914461
+    },
+    {
+      "level": 66,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.96,
+        0.92
+      ],
+      "name": "Verity_L066_MagmaBlaze",
+      "suggestedScale": 10.790716457139455
+    },
+    {
+      "level": 67,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.953333,
+        0.906667
+      ],
+      "name": "Verity_L067_MagmaBlaze",
+      "suggestedScale": 10.918602037463494
+    },
+    {
+      "level": 68,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.946667,
+        0.893333
+      ],
+      "name": "Verity_L068_MagmaBlaze",
+      "suggestedScale": 11.046197286845567
+    },
+    {
+      "level": 69,
+      "id": "MagmaBlaze",
+      "family": "Magma",
+      "texture": "rbxassetid://102578713315707",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.94,
+        0.88
+      ],
+      "name": "Verity_L069_MagmaBlaze",
+      "suggestedScale": 11.173507183375857
+    },
+    {
+      "level": 70,
+      "id": "MagmaCore",
+      "family": "Magma",
+      "texture": "rbxassetid://102037139973152",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L070_MagmaCore",
+      "suggestedScale": 11.300536547905706
+    },
+    {
+      "level": 71,
+      "id": "MagmaCore",
+      "family": "Magma",
+      "texture": "rbxassetid://102037139973152",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.985,
+        0.97
+      ],
+      "name": "Verity_L071_MagmaCore",
+      "suggestedScale": 11.42729005121911
+    },
+    {
+      "level": 72,
+      "id": "MagmaCore",
+      "family": "Magma",
+      "texture": "rbxassetid://102037139973152",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.97,
+        0.94
+      ],
+      "name": "Verity_L072_MagmaCore",
+      "suggestedScale": 11.553772220779408
+    },
+    {
+      "level": 73,
+      "id": "MagmaCore",
+      "family": "Magma",
+      "texture": "rbxassetid://102037139973152",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.955,
+        0.91
+      ],
+      "name": "Verity_L073_MagmaCore",
+      "suggestedScale": 11.679987447082
+    },
+    {
+      "level": 74,
+      "id": "MagmaCore",
+      "family": "Magma",
+      "texture": "rbxassetid://102037139973152",
+      "hex": "FF970A",
+      "tone": [
+        1.0,
+        0.94,
+        0.88
+      ],
+      "name": "Verity_L074_MagmaCore",
+      "suggestedScale": 11.80593998964121
+    },
+    {
+      "level": 75,
+      "id": "Cyber",
+      "family": "Cyber",
+      "texture": "rbxassetid://99085075088493",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L075_Cyber",
+      "suggestedScale": 11.931633982637097
+    },
+    {
+      "level": 76,
+      "id": "Cyber",
+      "family": "Cyber",
+      "texture": "rbxassetid://99085075088493",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.98,
+        0.995
+      ],
+      "name": "Verity_L076_Cyber",
+      "suggestedScale": 12.05707344024586
+    },
+    {
+      "level": 77,
+      "id": "Cyber",
+      "family": "Cyber",
+      "texture": "rbxassetid://99085075088493",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.96,
+        0.99
+      ],
+      "name": "Verity_L077_Cyber",
+      "suggestedScale": 12.18226226167556
+    },
+    {
+      "level": 78,
+      "id": "Cyber",
+      "family": "Cyber",
+      "texture": "rbxassetid://99085075088493",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.94,
+        0.985
+      ],
+      "name": "Verity_L078_Cyber",
+      "suggestedScale": 12.307204235927074
+    },
+    {
+      "level": 79,
+      "id": "Cyber",
+      "family": "Cyber",
+      "texture": "rbxassetid://99085075088493",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.92,
+        0.98
+      ],
+      "name": "Verity_L079_Cyber",
+      "suggestedScale": 12.431903046298693
+    },
+    {
+      "level": 80,
+      "id": "CyberPulse",
+      "family": "Cyber",
+      "texture": "rbxassetid://124027373471744",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L080_CyberPulse",
+      "suggestedScale": 12.556362274651221
+    },
+    {
+      "level": 81,
+      "id": "CyberPulse",
+      "family": "Cyber",
+      "texture": "rbxassetid://124027373471744",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.98,
+        0.995
+      ],
+      "name": "Verity_L081_CyberPulse",
+      "suggestedScale": 12.680585405449229
+    },
+    {
+      "level": 82,
+      "id": "CyberPulse",
+      "family": "Cyber",
+      "texture": "rbxassetid://124027373471744",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.96,
+        0.99
+      ],
+      "name": "Verity_L082_CyberPulse",
+      "suggestedScale": 12.804575829592835
+    },
+    {
+      "level": 83,
+      "id": "CyberPulse",
+      "family": "Cyber",
+      "texture": "rbxassetid://124027373471744",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.94,
+        0.985
+      ],
+      "name": "Verity_L083_CyberPulse",
+      "suggestedScale": 12.928336848053306
+    },
+    {
+      "level": 84,
+      "id": "CyberPulse",
+      "family": "Cyber",
+      "texture": "rbxassetid://124027373471744",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.92,
+        0.98
+      ],
+      "name": "Verity_L084_CyberPulse",
+      "suggestedScale": 13.05187167532482
+    },
+    {
+      "level": 85,
+      "id": "CyberOverdrive",
+      "family": "Cyber",
+      "texture": "rbxassetid://102304124700888",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L085_CyberOverdrive",
+      "suggestedScale": 13.175183442703789
+    },
+    {
+      "level": 86,
+      "id": "CyberOverdrive",
+      "family": "Cyber",
+      "texture": "rbxassetid://102304124700888",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.98,
+        0.995
+      ],
+      "name": "Verity_L086_CyberOverdrive",
+      "suggestedScale": 13.298275201406256
+    },
+    {
+      "level": 87,
+      "id": "CyberOverdrive",
+      "family": "Cyber",
+      "texture": "rbxassetid://102304124700888",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.96,
+        0.99
+      ],
+      "name": "Verity_L087_CyberOverdrive",
+      "suggestedScale": 13.421149925533255
+    },
+    {
+      "level": 88,
+      "id": "CyberOverdrive",
+      "family": "Cyber",
+      "texture": "rbxassetid://102304124700888",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.94,
+        0.985
+      ],
+      "name": "Verity_L088_CyberOverdrive",
+      "suggestedScale": 13.543810514893142
+    },
+    {
+      "level": 89,
+      "id": "CyberOverdrive",
+      "family": "Cyber",
+      "texture": "rbxassetid://102304124700888",
+      "hex": "A337FF",
+      "tone": [
+        1.0,
+        0.92,
+        0.98
+      ],
+      "name": "Verity_L089_CyberOverdrive",
+      "suggestedScale": 13.666259797689422
+    },
+    {
+      "level": 90,
+      "id": "Cosmic",
+      "family": "Cosmic",
+      "texture": "rbxassetid://90153269297708",
+      "hex": "7930ED",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L090_Cosmic",
+      "suggestedScale": 13.788500533081917
+    },
+    {
+      "level": 91,
+      "id": "Cosmic",
+      "family": "Cosmic",
+      "texture": "rbxassetid://90153269297708",
+      "hex": "7930ED",
+      "tone": [
+        0.99,
+        0.98,
+        1.0
+      ],
+      "name": "Verity_L091_Cosmic",
+      "suggestedScale": 13.910535413628574
+    },
+    {
+      "level": 92,
+      "id": "Cosmic",
+      "family": "Cosmic",
+      "texture": "rbxassetid://90153269297708",
+      "hex": "7930ED",
+      "tone": [
+        0.98,
+        0.96,
+        1.0
+      ],
+      "name": "Verity_L092_Cosmic",
+      "suggestedScale": 14.032367067614791
+    },
+    {
+      "level": 93,
+      "id": "Cosmic",
+      "family": "Cosmic",
+      "texture": "rbxassetid://90153269297708",
+      "hex": "7930ED",
+      "tone": [
+        0.97,
+        0.94,
+        1.0
+      ],
+      "name": "Verity_L093_Cosmic",
+      "suggestedScale": 14.153998061276571
+    },
+    {
+      "level": 94,
+      "id": "Cosmic",
+      "family": "Cosmic",
+      "texture": "rbxassetid://90153269297708",
+      "hex": "7930ED",
+      "tone": [
+        0.96,
+        0.92,
+        1.0
+      ],
+      "name": "Verity_L094_Cosmic",
+      "suggestedScale": 14.275430900923478
+    },
+    {
+      "level": 95,
+      "id": "CosmicNova",
+      "family": "Cosmic",
+      "texture": "rbxassetid://86427932204167",
+      "hex": "7930ED",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L095_CosmicNova",
+      "suggestedScale": 14.396668034966908
+    },
+    {
+      "level": 96,
+      "id": "CosmicNova",
+      "family": "Cosmic",
+      "texture": "rbxassetid://86427932204167",
+      "hex": "7930ED",
+      "tone": [
+        0.98,
+        0.96,
+        1.0
+      ],
+      "name": "Verity_L096_CosmicNova",
+      "suggestedScale": 14.517711855858908
+    },
+    {
+      "level": 97,
+      "id": "CosmicNova",
+      "family": "Cosmic",
+      "texture": "rbxassetid://86427932204167",
+      "hex": "7930ED",
+      "tone": [
+        0.96,
+        0.92,
+        1.0
+      ],
+      "name": "Verity_L097_CosmicNova",
+      "suggestedScale": 14.63856470194632
+    },
+    {
+      "level": 98,
+      "id": "CosmicNebula",
+      "family": "Cosmic",
+      "texture": "rbxassetid://129615127233466",
+      "hex": "7930ED",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L098_CosmicNebula",
+      "suggestedScale": 14.759228859244864
+    },
+    {
+      "level": 99,
+      "id": "CosmicNebula",
+      "family": "Cosmic",
+      "texture": "rbxassetid://129615127233466",
+      "hex": "7930ED",
+      "tone": [
+        0.96,
+        0.92,
+        1.0
+      ],
+      "name": "Verity_L099_CosmicNebula",
+      "suggestedScale": 14.879706563137344
+    },
+    {
+      "level": 100,
+      "id": "Rainbow",
+      "family": "Rainbow",
+      "texture": "rbxassetid://89209678660281",
+      "hex": "FF7BD9",
+      "tone": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "name": "Verity_L100_Rainbow",
+      "suggestedScale": 15.0
+    }
+  ]
+}

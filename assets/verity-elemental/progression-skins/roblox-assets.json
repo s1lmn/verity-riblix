@@ -1,0 +1,15 @@
+{
+  "textures": {
+    "AquaCrest": "rbxassetid://117525920824850",
+    "FrostAurora": "rbxassetid://115610286130137",
+    "CosmicNebula": "rbxassetid://129615127233466",
+    "CosmicNova": "rbxassetid://86427932204167",
+    "MagmaCore": "rbxassetid://102037139973152",
+    "CyberPulse": "rbxassetid://124027373471744",
+    "AquaBloom": "rbxassetid://128811655596682",
+    "MagmaBlaze": "rbxassetid://102578713315707",
+    "FrostPrism": "rbxassetid://77572967487889",
+    "CyberOverdrive": "rbxassetid://102304124700888"
+  },
+  "source": "Actual Studio upload_image readback 2026-11-05; existing shared mesh Roblox UV convention"
+}

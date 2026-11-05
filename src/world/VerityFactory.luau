@@ -8,10 +8,13 @@ local Levels = require(Shared.LevelConfig)
 local Profile = require(Shared.VerityAnimationProfile)
 local Version = require(Shared.ProjectVersion)
 local Looks = require(Shared.VerityCompanionLevels)
+local Skins = require(Shared.VerityElementalSkins)
 local FaceUI = require(script.Parent.VerityFaceUI)
 local Factory = {}
 
 function Factory.Color(level)
+ local skin=Skins.Get(level)
+ if skin then return Color3.fromHex(skin.Hex) end
 	if Looks.IsValid(level) then return Color3.fromHex(Looks.Get(level).Hex) end
 	return if level == 1 then Color3.fromRGB(255, 222, 35) else Color3.fromHSV(((level - 1) * 0.61803398875 + 0.13) % 1, 0.82, 1)
 end
@@ -42,6 +45,7 @@ function Factory.Create(parent, origin, metadata)
 	local scale = Levels.getVerityScale(level)
 	local model = Instance.new("Model")
 	model.Name, model.ModelStreamingMode = "Verity", Enum.ModelStreamingMode.Persistent
+ if metadata.preview and metadata.elementalSkin then model:SetAttribute("ElementalSkinOverride",metadata.elementalSkin) end
 	local ink, white, pink = Color3.fromHex("22264B"), Color3.fromHex("FFF9FF"), Color3.fromHex("FF5CB8")
 	local color = Factory.Color(level)
 	local root = part(model, "Root", Vector3.one * 0.04, Vector3.zero, white)
@@ -106,6 +110,26 @@ function Factory.Create(parent, origin, metadata)
 end
 
 function Factory.SetStage(model, level)
+ local body=model:FindFirstChild("Body")
+ if body then
+  local skin=Skins.Get(level,model:GetAttribute("ElementalSkinOverride"))
+  local id=if skin then (skin.LevelKey or skin.Id) else "Base"
+  if body:GetAttribute("ElementalAppliedSkin")~=id then
+   local mesh=body:FindFirstChildOfClass("SpecialMesh")
+   if mesh then
+    if skin then
+     mesh.MeshType=Enum.MeshType.FileMesh;mesh.MeshId=Skins.MeshId;mesh.TextureId=skin.Texture
+     mesh.Scale=Vector3.one*(Skins.BodyDiameter/Skins.MeshDiameter)*model:GetScale()
+     mesh.VertexColor=skin.Tone or Vector3.one
+     body.Color=Color3.new(1,1,1);body:SetAttribute("VerityTint",false)
+    else
+     mesh.MeshId="";mesh.TextureId="";mesh.MeshType=Enum.MeshType.Sphere;mesh.Scale=Vector3.one;mesh.VertexColor=Vector3.one
+     body.Color=Factory.Color(level);body:SetAttribute("VerityTint",true)
+    end
+    body:SetAttribute("ElementalAppliedSkin",id)
+   end
+  end
+ end
 	local crown = model:FindFirstChild("Crown")
 	if crown then for _, p in crown:GetChildren() do if p:IsA("BasePart") then p.Transparency = if level == 100 and model:GetAttribute("Cosmetic_Head")==nil then 0 else 1 end end end
 end
