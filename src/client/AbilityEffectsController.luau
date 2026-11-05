@@ -8,6 +8,7 @@ local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local Visuals=require(script.Parent.AbilityVisuals)
+local RidePresentation=require(script.Parent.RidePresentation)
 local Controller={};Controller.__index=Controller
 local function part(parent,pos,size,color,ball)
 	local p=Instance.new("Part");p.Anchored=true;p.CanCollide=false;p.CanQuery=false;p.CanTouch=false;p.CastShadow=false
@@ -47,7 +48,8 @@ function Controller.new(ctx)
 	for _,model in Collection:GetTagged("VerityAbilityStand") do stand(model) end
 	local remote=ReplicatedStorage:WaitForChild("UseVerityAbility",10)
 	if remote then self.cleanup:Add(remote.OnClientEvent:Connect(function(event) self:Event(event) end)) end
-	self.cleanup:Add(RunService.RenderStepped:Connect(function(dt) self:Tick(dt) end))
+	self.cleanup:Add(RidePresentation.new(ctx,self.companions))
+ self.cleanup:Add(RunService.RenderStepped:Connect(function(dt) self:Tick(dt) end))
 	self.cleanup:Add(function()
 		for _,r in self.effects do if r.highlight then r.highlight:Destroy() end end
 		for _,r in self.stands do
@@ -66,7 +68,7 @@ end
 function Controller:Event(event)
 	if type(event)~="table" then return end
 	if event.kind=="Blocked" then
-  local messages={SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
+  local messages={RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
   self.ctx.notifications:Show(Locale.Text(messages[event.code] or messages.SAFE_ZONE));return
  end
 	if event.kind=="CombatResult" then

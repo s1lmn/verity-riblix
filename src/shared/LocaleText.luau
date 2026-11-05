@@ -249,6 +249,13 @@ local ru = {
 	[" m"] = " м",
 }
 local en = {
+ ["Взлетаем!"] = "Taking off!",
+ ["Приземляемся"] = "Landing",
+ ["Подлети к свободному месту для приземления."] = "Fly to an open landing spot.",
+ ["Для посадки на Verity выйди на просторное место."] = "Find an open space to ride Verity.",
+ ["Сначала заверши паркур или выйди из него."] = "Finish or leave the parkour course first.",
+ ["Спешиться"] = "Dismount",
+ ["Верхом на Verity"] = "Ride Verity",
  ["ПАРКУР • СТАРТ"] = "PARKOUR • START",
  ["ФИНИШ • НАГРАДА"] = "FINISH • REWARD",
  ["ЧЕКПОИНТ 4"] = "CHECKPOINT 4",

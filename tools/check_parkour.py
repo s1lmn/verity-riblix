@@ -34,6 +34,7 @@ function char:FindFirstChildOfClass(n)return if n=='Humanoid' then hum else nil 
 function char:PivotTo(cf)root.Position=cf end
 local player={UserId=1,Character=char,attrs={}}
 function player:SetAttribute(k,v)self.attrs[k]=v end
+function player:GetAttribute(k)return self.attrs[k]end
 local profile={Data={VerityUnlocked=true,VerityLevel=1}}
 local data={Get=function(_,id)return if id==1 then profile else nil end}
 local state={sessions={[1]={}},Publish=function()publishes+=1 end}

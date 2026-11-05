@@ -12,6 +12,7 @@ local FaceUI=require(script.Parent.VerityFaceUI)
 local Personality=require(Shared.VerityPersonality)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
+local Ride=require(Shared.VerityRideConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
 local Players=game:GetService("Players")
@@ -136,7 +137,8 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	local lifted=record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)
  local pose=lifted*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0)
  local camera=workspace.CurrentCamera
- if model:GetAttribute("FollowOwner") and camera then
+ if record.riding then pose=record.origin end
+ if model:GetAttribute("FollowOwner") and camera and not record.riding then
   -- Rotate around the ball's centre, not its bottom pivot. Giant forms can
   -- look down toward a ground-level camera without shifting into that camera.
   local center=lifted.Position+Vector3.new(0,.85*scale,0)
@@ -309,7 +311,19 @@ function Controller:Follow(record,now,dt)
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model);return false end
- local scale=Levels.getVerityScale(record.adminLevel or record.model:GetAttribute("VerityLevel"))
+ record.riding=owner:GetAttribute("VerityRiding")==true
+ local scale=Levels.getVerityScale(if record.riding then record.model:GetAttribute("VerityLevel") else record.adminLevel or record.model:GetAttribute("VerityLevel"))
+ if record.riding then
+  record.origin=CFrame.new(root.Position-Vector3.new(0,1.7*scale+Ride.SeatOffset,0))*root.CFrame.Rotation
+  record.lastRoot=root.Position;record.mode="Riding";record.followStarted=false
+  local phase=owner:GetAttribute("VerityRidePhase")
+  local y0,y1=owner:GetAttribute("VerityRideY0"),owner:GetAttribute("VerityRideY1")
+  local progress=if y0 and y1 and math.abs(y1-y0)>.01 then math.clamp((root.Position.Y-y0)/(y1-y0),0,1) else 1
+  progress=progress*progress*(3-2*progress)
+  local alpha=if phase=="Takeoff" then 1-progress elseif phase=="Landing" then progress else 0
+  record.model:SetAttribute("CompanionMode","Riding");visibility(record,alpha)
+  return true
+ end
  local x,y,z=Follow.Offset(scale,record.plot)
  local heading=root.CFrame.Rotation
  local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
@@ -442,7 +456,7 @@ function Controller:Tick(now,dt)
 			local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
 			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,self.settings.values.ReducedEffects or not near)
 		end
-		local renderLevel=record.adminLevel or record.level
+		local renderLevel=if record.riding then record.level else record.adminLevel or record.level
   local scale=Levels.getVerityScale(renderLevel)
 		local stage=Profile.Stage(renderLevel)
 		if active then

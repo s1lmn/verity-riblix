@@ -6,6 +6,7 @@ local Actions=game:GetService("ContextActionService")
 local GuiService=game:GetService("GuiService")
 local RunService=game:GetService("RunService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
+local Ride=require(ReplicatedStorage.Shared.VerityRideConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
@@ -22,7 +23,13 @@ function Controller.new(ctx)
 		end,false,if slot=="Mobility" then Enum.KeyCode.F else Enum.KeyCode.G,if slot=="Mobility" then Enum.KeyCode.ButtonL1 else Enum.KeyCode.ButtonR1)
 		self.cleanup:Add(function() Actions:UnbindAction(action) end)
 	end
-	local reticle=W.Text(ctx.refs.Safe,"CombatReticle","+",22,true,Color3.fromHex("FFE7BD"))
+	self.cleanup:Add(ctx.refs.RideButton.Activated:Connect(function() self:Activate("Ride",true) end))
+ Actions:BindAction("VerityRide",function(_,state)
+  if state==Enum.UserInputState.Begin and self:Activate("Ride",false) then return Enum.ContextActionResult.Sink end
+  return Enum.ContextActionResult.Pass
+ end,false,Enum.KeyCode.R,Enum.KeyCode.ButtonL3)
+ self.cleanup:Add(function() Actions:UnbindAction("VerityRide") end)
+ local reticle=W.Text(ctx.refs.Safe,"CombatReticle","+",22,true,Color3.fromHex("FFE7BD"))
 	reticle.AnchorPoint,reticle.Position,reticle.Size=Vector2.new(.5,.5),UDim2.fromScale(.5,.5),UDim2.fromOffset(24,24)
 	reticle.TextXAlignment=Enum.TextXAlignment.Center;reticle.TextStrokeTransparency=.35;reticle.Visible=false
 	self.reticle=reticle
@@ -36,7 +43,7 @@ function Controller.new(ctx)
 		self:Render();elapsed+=dt
 		if elapsed<.1 then return end;elapsed=0
 		local item=self:Item("Mobility")
-		if not self.remote or not item or (item.Action~="flight" and not item.MobilityAction)
+		if not self.remote or (not Players.LocalPlayer:GetAttribute("VerityRiding") and (not item or (item.Action~="flight" and not item.MobilityAction)))
 			or (Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)<workspace:GetServerTimeNow() then return end
 		local char=Players.LocalPlayer.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health<=0 then return end
@@ -56,7 +63,7 @@ function Controller:Item(slot)
 	return Catalog.Equipped(state,slot,state.HeroPassOwned)
 end
 function Controller:Activate(slot,fromButton)
-	local ctx=self.ctx;local button=if slot=="Mobility" then ctx.refs.AbilityButton else ctx.refs.AttackButton
+	local ctx=self.ctx;local button=if slot=="Ride" then ctx.refs.RideButton elseif slot=="Mobility" then ctx.refs.AbilityButton else ctx.refs.AttackButton
 	if not self.remote or ctx.active or ctx.presenting or GuiService.MenuIsOpen or Input:GetFocusedTextBox()
 		or not button.Visible or not button.Interactable then return false end
 	local direction
@@ -89,10 +96,20 @@ end
 function Controller:Render()
 	local ctx=self.ctx;local char=Players.LocalPlayer.Character
 	local humanoid=char and char:FindFirstChildOfClass("Humanoid")
-	local visible=not ctx.active and not ctx.presenting and humanoid and humanoid.Health>0
-	for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
+	local riding=Players.LocalPlayer:GetAttribute("VerityRiding")==true
+ local state=ctx.net.state
+ local visible=not ctx.active and not ctx.presenting and humanoid and humanoid.Health>0
+	local rideButton=ctx.refs.RideButton
+ rideButton.Visible=visible and state and state.VerityUnlocked and state.VerityLevel>=Ride.MinLevel or false
+ local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "L3 " else "R "
+ local remaining=math.max(0,math.ceil((Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)-workspace:GetServerTimeNow()))
+ local phase=Players.LocalPlayer:GetAttribute("VerityRidePhase")
+ local transitioning=riding and (phase=="Takeoff" or phase=="Landing")
+ local caption=if phase=="Takeoff" then "Взлетаем!" elseif phase=="Landing" then "Приземляемся" elseif riding then "Спешиться" else "Верхом на Verity"
+ W.SetButton(rideButton,key..Locale.Text(caption)..(if riding and not transitioning then " · "..remaining else ""),ctx.net.connected and not transitioning,false)
+ for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
 		local item=self:Item(slot)
-		button.Visible=visible and item~=nil or false
+		button.Visible=visible and item~=nil and not (riding and slot=="Mobility") or false
 		if not button.Visible then continue end
 		local attribute=if slot=="Mobility" then "VerityAbilityReadyAt" else "VerityAttackReadyAt"
 		local remaining=math.max(0,math.ceil((Players.LocalPlayer:GetAttribute(attribute) or 0)-workspace:GetServerTimeNow()))

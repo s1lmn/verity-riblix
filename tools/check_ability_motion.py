@@ -6,7 +6,7 @@ h='''
 local now=100;local delayed={}
 local function signal()
  local callbacks={}
- return {Connect=function(_,fn)table.insert(callbacks,fn);return {Disconnect=function()end}end,Fire=function(_,...)for _,fn in callbacks do fn(...)end end}
+ return {Connect=function(_,fn)local r={fn=fn};table.insert(callbacks,r);return {Disconnect=function()r.off=true end}end,Fire=function(_,...)for _,r in table.clone(callbacks) do if not r.off then r.fn(...)end end end}
 end
 local V={}
 function V.__index(v,k)
@@ -40,11 +40,24 @@ end}
 local Catalog=(function() CATALOG end)()
 local Forms=(function() FORMS end)()
 local Numeric=(function() NUMERIC end)()
-local RS={Shared={VerityAbilities='forms',AbilityCatalog='catalog',Numeric='numeric'}}
+local Levels=(function() LEVELCONFIG end)()
+local Ride=(function() RIDECONFIG end)()
+local RS={Shared={VerityAbilities='forms',AbilityCatalog='catalog',Numeric='numeric',LevelConfig='levels',VerityRideConfig='ride'}}
 local PlayerList={}
 local ServerPlayers={GetPlayers=function()return PlayerList end}
-local game={GetService=function(_,n)return if n=='ReplicatedStorage' then RS elseif n=='Players' then ServerPlayers else {}end}
-local function require(k)return ({forms=Forms,catalog=Catalog,numeric=Numeric})[k]end
+local physicsHeart=signal()
+local game={GetService=function(_,n)return if n=='ReplicatedStorage' then RS elseif n=='Players' then ServerPlayers elseif n=='RunService' then {Heartbeat=physicsHeart} else {}end}
+local function require(k)return ({forms=Forms,catalog=Catalog,numeric=Numeric,levels=Levels,ride=Ride})[k]end
+local CF={}
+function CF.__index(c,k)if k=='Rotation' then return c end return CF[k]end
+function CF.__add(c,v)return setmetatable({Position=c.Position+v},CF)end
+function CF.__mul(a,b)return setmetatable({Position=a.Position+b.Position},CF)end
+local CFrame={new=function(a,b,c)return setmetatable({Position=if type(a)=='table' then a else vec(a or 0,b or 0,c or 0)},CF)end}
+local OverlapParams={new=function()return {}end}
+Enum.PartType={Ball=1}
+function workspace:GetPartBoundsInRadius()return self.overlaps or {}end
+function workspace:GetPartBoundsInBox()return self.overlaps or {}end
+
 local Service=(function() SERVICE end)()
 local function fixture(id)
  now=100;delayed={};workspace.hit=nil;workspace.solidHit=nil;workspace.bodyHit=nil
@@ -115,6 +128,50 @@ local function shoot(covered)
 end
 assert(shoot(false)==18,'actual team attack/result path failed')
 assert(shoot(true)==0,'attack damaged through cover after merge')
+local function rideFixture(level)
+ local service,player,root,hum,profile=fixture('dash')
+ profile.Data.VerityLevel=level;profile.Data.AbilitiesOwned={}
+ root.CFrame=CFrame.new(root.Position);hum.HipHeight=2
+ workspace.overlaps=nil
+ workspace.Raycast=function()return {Position=vec(0,0,0),Normal=Vector3.yAxis}end
+ return service,player,root,hum,profile
+end
+s,p,r,h,profile=rideFixture(49);s:Activate(p,'Ride');assert(not s.active[p],'ride unlocked too early')
+s,p,r,h,profile=rideFixture(50);p:SetAttribute('VerityParkourStep',1);s:Activate(p,'Ride');assert(not s.active[p],'mounted during course')
+s,p,r,h,profile=rideFixture(50);workspace.hit={Distance=4};s:Activate(p,'Ride');assert(not s.active[p],'mounted into ceiling')
+s,p,r,h,profile=rideFixture(50);workspace.overlaps={{}};s:Activate(p,'Ride');assert(not s.active[p],'mounted inside wall')
+s,p,r,h,profile=rideFixture(50);s:Activate(p,'Ride')
+assert(s.active[p].phase=='Takeoff' and not s.active[p].hull.CanCollide,'takeoff did not gate collision/input')
+assert(s.active[p].ride and p:GetAttribute('VerityRiding') and r.serverOwned,'unpaid progression ride failed')
+local mounted=s.active[p];assert(mounted.hull.Size.X>10 and mounted.hull.Massless)
+s:Refresh(p,p.Character,profile.Data);assert(s.active[p]==mounted and h.WalkSpeed==0,'snapshot cancelled takeoff')
+s:Activate(p,'Steer',vec(1,0,0));assert(mounted.velocity.VectorVelocity.Magnitude==0,'takeoff steering bypassed')
+r.Position=mounted.launch+vec(0,mounted.hull.Size.X+Ride.SeatOffset,0);physicsHeart:Fire(.1)
+assert(not mounted.phase and mounted.hull.CanCollide and p:GetAttribute('VerityRidePhase')=='Cruise','takeoff did not finish')
+advance(.2);s:Activate(p,'Steer',vec(1,0,0));assert(mounted.velocity.VectorVelocity.X==36)
+advance(.36);assert(mounted.velocity.VectorVelocity.Magnitude==0,'stale rider input kept moving')
+local hull=mounted.hull
+s:Activate(p,'Ride');assert(mounted.phase=='Landing' and not mounted.hull and hull.destroyed,'dismount did not start smooth landing')
+r.Position=vec(0,3,0);physicsHeart:Fire(.1)
+assert(not s.active[p] and not p:GetAttribute('VerityRiding') and r.restored,'dismount leaked hull/ownership')
+s,p,r,h,profile=rideFixture(50);s:Activate(p,'Ride');mounted=s.active[p]
+r.Position=mounted.launch+vec(0,mounted.hull.Size.X+Ride.SeatOffset,0);physicsHeart:Fire(.1)
+advance(60);assert(mounted.phase=='Landing','timer skipped smooth landing')
+r.Position=vec(0,3,0);physicsHeart:Fire(.1)
+assert(not s.active[p] and mounted.attachment.destroyed,'timed ride leaked')
+s,p,r,h,profile=rideFixture(50);s:Activate(p,'Ride');mounted=s.active[p]
+s:Stop(p);physicsHeart:Fire(.1);assert(not s.active[p] and mounted.transition==nil,'cancelled transition survived Stop')
+s,p,r,h,profile=rideFixture(50);s:Activate(p,'Ride');mounted=s.active[p]
+r.Position=mounted.launch+vec(0,mounted.hull.Size.X+Ride.SeatOffset,0);physicsHeart:Fire(.1)
+workspace.Raycast=function()return nil end
+s:Dismount(p,mounted);local queued=#delayed;s:Dismount(p,mounted)
+assert(#delayed==queued and mounted.landingRetry and s.active[p]==mounted,'missing ground created retry flood or dropped rider')
+assert(mounted.untilTime>now,'missing ground expired steering')
+s:Stop(p)
+s,p,r,h,profile=rideFixture(50);s:Activate(p,'Ride');mounted=s.active[p]
+advance(7);physicsHeart:Fire(.1)
+assert(not s.active[p] and mounted.transition==nil and mounted.hull.destroyed,'stalled takeoff leaked transition')
+print('Ride: level/session gate, no purchase, parkour/ceiling/wall guards, snapshot, steering watchdog and timed/dismount cleanup passed; mocked geometry only')
 print('Ability server: dash/ownership, leap,12/18s flight, steering/cleanup and real attack feedback/cover passed; no Play')
 '''
 h += "\n" + r'''
@@ -123,12 +180,13 @@ s,p,r,h,profile=fixture('flight');s:Activate(p,'Mobility')
 local heart=signal();local jump=signal();local held={};local sent={}
 local clientRemote={FireServer=function(_,slot,direction)table.insert(sent,{slot=slot,direction=direction})end}
 function RS:WaitForChild()return clientRemote end
-Enum.KeyCode={F='F',G='G',ButtonL1='L1',ButtonR1='R1',LeftControl='Ctrl',Space='Space'}
+Enum.KeyCode={F='F',G='G',ButtonL1='L1',ButtonR1='R1',ButtonL3='L3',R='R',LeftControl='Ctrl',Space='Space'}
 Enum.PreferredInput={KeyboardAndMouse=1,Touch=2,Gamepad=3}
 Enum.UserInputState={Begin=1};Enum.ContextActionResult={Sink=1,Pass=2};Enum.TextXAlignment={Center=1}
 local Input={PreferredInput=1,JumpRequest=jump,GetFocusedTextBox=function()return nil end,IsKeyDown=function(_,key)return held[key]==true end}
 local Gui={MenuIsOpen=false}
-local Actions={BindAction=function()end,UnbindAction=function()end}
+local bindings={}
+local Actions={BindAction=function(_,name,fn,_,a,b)bindings[name]={fn=fn,a=a,b=b}end,UnbindAction=function()end}
 local PlayerService={LocalPlayer=p}
 local game={GetService=function(_,name)return ({Players=PlayerService,ReplicatedStorage=RS,UserInputService=Input,ContextActionService=Actions,GuiService=Gui,RunService={Heartbeat=heart}})[name]end}
 local Color3={fromHex=function()return {}end}
@@ -136,11 +194,12 @@ local UDim2={fromScale=function()return {}end,fromOffset=function()return {}end}
 local W={Text=function()return {Destroy=function()end}end,SetButton=function(b,text,enabled)b.Text=text;b.Interactable=enabled end}
 local Cleanup={new=function()return {Add=function(_,v)return v end,Destroy=function()end}end}
 local script={Parent={Cleanup='cleanup',Locale='locale',UIWidgets='widgets'}}
-local function require(k)return ({catalog=Catalog,cleanup=Cleanup,locale={Text=function(t)return t end},widgets=W})[k]end
+local function require(k)return ({catalog=Catalog,ride=Ride,cleanup=Cleanup,locale={Text=function(t)return t end},widgets=W})[k]end
 local Client=(function() CLIENT end)()
 local state=profile.Data
-local ctx={refs={Safe={},AbilityButton={Activated=signal()},AttackButton={Activated=signal()}},net={state=state,connected=true}}
+local ctx={refs={Safe={},AbilityButton={Activated=signal()},AttackButton={Activated=signal()},RideButton={Activated=signal()}},net={state=state,connected=true}}
 local client=Client.new(ctx)
+assert(bindings.VerityRide.b=='L3','ride conflicts with Y menu binding')
 assert(ctx.refs.AbilityButton.Visible and ctx.refs.AbilityButton.Text=='ПОЛЁТ • 12 с')
 jump:Fire();heart:Fire(.1)
 assert(#sent==1 and sent[1].slot=='Steer' and sent[1].direction.Y>.7,'short jump was lost')
@@ -148,9 +207,17 @@ now+=.31;heart:Fire(.1);assert(sent[#sent].direction.Y==0,'idle flight climbs wi
 ctx.active='PHONE';held.Space=true;heart:Fire(.1);assert(sent[#sent].direction.Magnitude==0,'menu did not suspend steering')
 ctx.active=nil;held.Space=false;Gui.MenuIsOpen=true;heart:Fire(.1);assert(sent[#sent].direction.Magnitude==0)
 Gui.MenuIsOpen=false;now=104;client:Render();assert(ctx.refs.AbilityButton.Text=='ПОЛЁТ • 8 с','button shows cooldown instead of flight time')
+profile.Data.AbilitiesOwned={};profile.Data.AbilitiesEquipped.Mobility=nil
+p:SetAttribute('VerityRiding',true);p:SetAttribute('VerityMobilityUntil',now+60)
+heart:Fire(.1)
+assert(not ctx.refs.AbilityButton.Visible and ctx.refs.RideButton.Visible,'riding requires a purchased flight')
+assert(sent[#sent].slot=='Steer','unpaid rider steering was skipped')
+client:Activate('Ride',true);assert(sent[#sent].slot=='Ride','dismount button did not route to server')
+p:SetAttribute('VerityRidePhase','Takeoff');client:Render()
+assert(not ctx.refs.RideButton.Interactable and ctx.refs.RideButton.Text:find('Взлетаем!'),'takeoff button did not lock/show phase')
 client:Destroy()
 print('Ability client: actual constructor,10Hz steering, short jump latch, hover/menu guards and active12s countdown passed; no Play')
 '''
-for a,p in [('CATALOG','src/shared/AbilityCatalog.luau'),('FORMS','src/shared/VerityAbilities.luau'),('NUMERIC','src/shared/Numeric.luau'),('SERVICE','src/server/VerityAbilityService.luau'),('CLIENT','src/client/AbilityController.luau')]:h=h.replace(a,(R/p).read_text())
+for a,p in [('LEVELCONFIG','src/shared/LevelConfig.luau'),('RIDECONFIG','src/shared/VerityRideConfig.luau'),('CATALOG','src/shared/AbilityCatalog.luau'),('FORMS','src/shared/VerityAbilities.luau'),('NUMERIC','src/shared/Numeric.luau'),('SERVICE','src/server/VerityAbilityService.luau'),('CLIENT','src/client/AbilityController.luau')]:h=h.replace(a,(R/p).read_text())
 with tempfile.TemporaryDirectory(prefix='verity-abilities-') as t:
  p=Path(t)/'check.luau';p.write_text(h);subprocess.run([sys.argv[1],str(p)],check=True)

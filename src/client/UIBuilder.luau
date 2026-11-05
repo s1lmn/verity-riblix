@@ -76,6 +76,9 @@ function Builder.Build(playerGui)
  refs.AttackButton=W.Button(safe,"VerityAttack","",T.Pink:Lerp(T.Paper,.55))
  refs.AttackButton.AnchorPoint=Vector2.new(1,0);refs.AttackButton.Position=UDim2.new(1,-12,0,192)
  refs.AttackButton.Size=UDim2.fromOffset(124,44);refs.AttackButton.TextSize=11;refs.AttackButton.Visible=false
+ refs.RideButton=W.Button(safe,"VerityRide","",T.Mint)
+ refs.RideButton.AnchorPoint=Vector2.new(1,0);refs.RideButton.Position=UDim2.new(1,-12,0,244)
+ refs.RideButton.Size=UDim2.fromOffset(124,44);refs.RideButton.TextSize=11;refs.RideButton.TextWrapped=true;refs.RideButton.Visible=false
  local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
   Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
   ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
@@ -143,6 +146,10 @@ function Builder.Build(playerGui)
 
  refs.Layout=function(open)
   local size=safe.AbsoluteSize
+  local actionY=math.max(52,math.min(140,size.Y-168))
+  refs.AbilityButton.Position=UDim2.new(1,-12,0,actionY)
+  refs.AttackButton.Position=UDim2.new(1,-12,0,actionY+52)
+  refs.RideButton.Position=UDim2.new(1,-12,0,actionY+104)
   local short=size.Y<360
   local columns=if size.Y<520 then 2 else 1
   local side=if short then 44 elseif columns==2 then 48 else 52

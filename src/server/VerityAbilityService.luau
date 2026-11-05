@@ -1,10 +1,13 @@
 --!nonstrict
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Players=game:GetService("Players")
+local RunService=game:GetService("RunService")
 local Shared=ReplicatedStorage.Shared
 local Forms=require(Shared.VerityAbilities)
 local Catalog=require(Shared.AbilityCatalog)
 local Numeric=require(Shared.Numeric)
+local Levels=require(Shared.LevelConfig)
+local Ride=require(Shared.VerityRideConfig)
 local Service={};Service.__index=Service
 
 function Service.new(data,state,world,targets)
@@ -44,17 +47,30 @@ function Service:Refresh(player,character,snapshot)
 	local profile=self.data:Get(player.UserId)
 	local equipped=profile and profile.Data.AbilitiesEquipped.Mobility
 	if profile and not Catalog.Equipped(profile.Data,"Mobility",profile.HeroPassOwned) then equipped=nil end
-	if current and (current.character~=character or current.id~=equipped or humanoid.Health<=0) then self:Stop(player);current=nil end
+	if current and (current.character~=character or (not current.ride and current.id~=equipped) or (current.ride and (not snapshot.VerityUnlocked or snapshot.VerityLevel<Ride.MinLevel or snapshot.VerityLevel~=current.level)) or humanoid.Health<=0) then self:Stop(player);current=nil end
 	if humanoid.Health<=0 then return end
 	local form=if snapshot.VerityUnlocked then Forms.Get(snapshot.VerityLevel) else nil
-	humanoid.WalkSpeed=if current and current.speed then current.speed elseif form then form.speed else 16
+	humanoid.WalkSpeed=if current and current.phase then 0 elseif current and current.speed then current.speed elseif form then form.speed else 16
 	humanoid.UseJumpPower=true;humanoid.JumpPower=if form then form.jump else 50
 end
 function Service:Stop(player,stopAttacks)
 	if stopAttacks~=false then self.attacks[player]=nil end
 	local current=self.active[player]
 	if not current then return end
-	self.active[player]=nil
+	if current.transition then current.transition:Disconnect();current.transition=nil end
+ if current.ride then
+  local _,root,humanoid=self:Character(player)
+  if root and player.Character==current.character then
+   local landing=self:RideLanding(current,root.Position) or self:RideLanding(current,current.launch)
+   if landing then root.CFrame=CFrame.new(landing)*root.CFrame.Rotation end
+   root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
+  end
+  if current.hull then current.hull:Destroy() end
+  player:SetAttribute("VerityRiding",nil)
+  player:SetAttribute("VerityRidePhase",nil)
+  player:SetAttribute("VerityRideY0",nil);player:SetAttribute("VerityRideY1",nil)
+ end
+ self.active[player]=nil
 	if current.attachment then current.attachment:Destroy() end
 	if current.ownsPhysics and current.root:IsDescendantOf(workspace) and current.root:CanSetNetworkOwnership() then
 		if current.dash then current.root.AssemblyLinearVelocity=Vector3.yAxis*current.root.AssemblyLinearVelocity.Y end
@@ -252,13 +268,116 @@ function Service:WatchFlightInput(player,current)
   end
  end)
 end
+-- Landing considers physical surfaces only; visual companion parts never support the rider.
+function Service:RideLanding(current,position)
+ local ray=RaycastParams.new();ray.FilterDescendantsInstances={current.character};ray.RespectCanCollide=true
+ local overlap=OverlapParams.new();overlap.FilterDescendantsInstances={current.character};overlap.RespectCanCollide=true
+ for _,offset in {Vector3.zero,Vector3.new(6,0,0),Vector3.new(-6,0,0),Vector3.new(0,0,6),Vector3.new(0,0,-6)} do
+  local hit=workspace:Raycast(position+offset+Vector3.new(0,2,0),Vector3.new(0,-220,0),ray)
+  if hit and hit.Normal.Y>.65 then
+   local target=hit.Position+Vector3.new(0,current.groundOffset,0)
+   if #workspace:GetPartBoundsInBox(CFrame.new(target),Vector3.new(4,current.groundOffset*2-.2,4),overlap)==0 then return target end
+  end
+ end
+ return nil
+end
+-- One cancellable transition uses the existing force controller, never a CFrame tween.
+function Service:RideTransition(player,current,target,phase,complete)
+ if current.transition then current.transition:Disconnect() end
+ current.phase=phase;current.velocity.VectorVelocity=Vector3.zero
+ local hum=current.character:FindFirstChildOfClass("Humanoid");if hum then hum.WalkSpeed=0 end
+ player:SetAttribute("VerityRideY0",current.root.Position.Y);player:SetAttribute("VerityRideY1",target.Y)
+ player:SetAttribute("VerityRidePhase",phase)
+ local started=workspace:GetServerTimeNow()
+ current.transition=RunService.Heartbeat:Connect(function(dt)
+  if self.active[player]~=current then if current.transition then current.transition:Disconnect();current.transition=nil end;return end
+  local character,root=self:Character(player)
+  if character~=current.character then self:Stop(player);return end
+  local delta=target-root.Position
+  if delta.Magnitude<.45 then
+   current.transition:Disconnect();current.transition=nil;current.phase=nil
+   current.velocity.VectorVelocity=Vector3.zero
+   complete();return
+  end
+  if workspace:GetServerTimeNow()-started>Ride.TransitionTimeout then self:Stop(player);return end
+  local speed=if phase=="Takeoff" then Ride.TakeoffSpeed else Ride.LandingSpeed
+  local desired=delta.Unit*math.min(speed,delta.Magnitude*6)
+  current.velocity.VectorVelocity=current.velocity.VectorVelocity:Lerp(desired,1-math.exp(-10*math.min(dt,.1)))
+ end)
+end
+function Service:Dismount(player,current)
+ if self.active[player]~=current or current.phase=="Landing" then return end
+ local _,root=self:Character(player);if not root then self:Stop(player);return end
+ local target=self:RideLanding(current,root.Position) or self:RideLanding(current,current.launch)
+ if not target then
+  self.remote:FireClient(player,{kind="Blocked",code="RIDE_LANDING"})
+  current.untilTime=workspace:GetServerTimeNow()+10;player:SetAttribute("VerityMobilityUntil",current.untilTime)
+  if not current.landingRetry then
+   current.landingRetry=true
+   task.delay(10,function()
+    current.landingRetry=nil
+    if self.active[player]==current then self:Dismount(player,current) end
+   end)
+  end
+  return
+ end
+ -- Remove the orb collider before descending; otherwise it holds the rider above the ground.
+ if current.hull then current.hull:Destroy();current.hull=nil end
+ local ray=RaycastParams.new();ray.FilterDescendantsInstances={current.character};ray.RespectCanCollide=true
+ local delta=target-root.Position
+ if delta.Magnitude>120 or delta.Magnitude<.45 or workspace:Blockcast(root.CFrame,Vector3.new(4,5,4),delta,ray) then
+  -- Obstructed paths use the validated emergency return, never a tween through a wall.
+  self:Stop(player);return
+ end
+ current.untilTime=workspace:GetServerTimeNow()+Ride.TransitionTimeout
+ player:SetAttribute("VerityMobilityUntil",current.untilTime)
+ self:RideTransition(player,current,target,"Landing",function() self:Stop(player) end)
+end
+function Service:Ride(player,profile,now)
+ local current=self.active[player]
+ if current and current.ride then
+  if not current.phase then self:Dismount(player,current) end;return
+ end
+ if profile.Data.VerityLevel<Ride.MinLevel then return end
+ if player:GetAttribute("VerityParkourStep") then self.remote:FireClient(player,{kind="Blocked",code="RIDE_PARKOUR"});return end
+ local character,root,humanoid=self:Character(player)
+ if not root or not root:CanSetNetworkOwnership() then return end
+ local scale=Levels.getVerityScale(profile.Data.VerityLevel)
+ local diameter=1.7*scale
+ local height=diameter+Ride.SeatOffset
+ local ray=RaycastParams.new();ray.FilterDescendantsInstances={character};ray.RespectCanCollide=true
+ -- Check the full takeoff corridor as well as the future ball volume.
+ if workspace:Blockcast(root.CFrame,Vector3.new(4,5,4),Vector3.new(0,height,0),ray) then self.remote:FireClient(player,{kind="Blocked",code="RIDE_SPACE"});return end
+ local overlap=OverlapParams.new();overlap.FilterDescendantsInstances={character};overlap.RespectCanCollide=true
+ local centre=root.Position+Vector3.new(0,diameter/2,0)
+ if #workspace:GetPartBoundsInRadius(centre,diameter/2+.2,overlap)>0 then self.remote:FireClient(player,{kind="Blocked",code="RIDE_SPACE"});return end
+ self:Stop(player,false)
+ root:SetNetworkOwner(nil)
+ current={character=character,root=root,id="verity_ride",ride=true,flight=true,ownsPhysics=true,
+  level=profile.Data.VerityLevel,speed=Ride.Speed,untilTime=now+Ride.Duration,launch=root.Position,groundOffset=math.max(3,humanoid.HipHeight+root.Size.Y/2)}
+ self.active[player]=current
+ local hull=Instance.new("Part");hull.Name="VerityRideHull";hull.Shape=Enum.PartType.Ball
+ hull.Size=Vector3.one*diameter;hull.Transparency=1;hull.Massless=true;hull.CanTouch=false;hull.CanQuery=false;hull.CanCollide=false
+ hull.CFrame=root.CFrame*CFrame.new(0,-diameter/2-Ride.SeatOffset,0);hull.Parent=character
+ local weld=Instance.new("WeldConstraint");weld.Part0=root;weld.Part1=hull;weld.Parent=hull;current.hull=hull
+ root.AssemblyLinearVelocity=Vector3.zero
+ humanoid.WalkSpeed=Ride.Speed;humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+ player:SetAttribute("VerityRiding",true);player:SetAttribute("VerityMobilityUntil",current.untilTime)
+ self:Drive(current,root,Vector3.zero,false)
+ self:RideTransition(player,current,current.launch+Vector3.new(0,height,0),"Takeoff",function()
+  if current.hull then current.hull.CanCollide=true end
+  humanoid.WalkSpeed=Ride.Speed;player:SetAttribute("VerityRidePhase","Cruise")
+  self:WatchFlightInput(player,current)
+ end)
+ task.delay(Ride.Duration,function() if self.active[player]==current then self:Dismount(player,current) end end)
+end
 function Service:Activate(player,slot,direction)
 	local now=workspace:GetServerTimeNow()
 	if slot=="Steer" then
 		if now-(self.steering[player] or -math.huge)<.08 then return end
 		self.steering[player]=now
 		local current=self.active[player]
-		if not current or not current.flight or not current.velocity or now>=current.untilTime or player.Character~=current.character then return end
+		if not current or current.phase or not current.flight or not current.velocity or now>=current.untilTime or player.Character~=current.character then return end
 		if typeof(direction)~="Vector3" or not Numeric.isFinite(direction.X) or not Numeric.isFinite(direction.Y)
 			or not Numeric.isFinite(direction.Z) or direction.Magnitude>1.1 then return end
 		local _,root=self:Character(player);if not root then return end
@@ -269,10 +388,12 @@ function Service:Activate(player,slot,direction)
 	end
 	if now-(self.requests[player] or -math.huge)<.15 then return end
 	self.requests[player]=now
-	if slot~="Mobility" and slot~="Attack" then return end
+	if slot~="Mobility" and slot~="Attack" and slot~="Ride" then return end
 	local profile=self.data:Get(player.UserId)
 	if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked then return end
-	local item,id=Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
+	if slot=="Ride" then self:Ride(player,profile,now);return end
+ if self.active[player] and self.active[player].ride and slot=="Mobility" then return end
+ local item,id=Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
 	if not item then return end
 	local character,root,humanoid=self:Character(player)
 	if not root then return end
