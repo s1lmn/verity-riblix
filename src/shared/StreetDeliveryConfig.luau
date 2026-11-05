@@ -2,6 +2,20 @@
 local Layout=require(script.Parent.WorldLayout)
 local Config={FirstDelay=45,Interval=240,DriveSeconds=24,ThrowSeconds=.8,PickupSeconds=35,RewardSeconds=15,Reach=8,
  RoadX=6,StartZ=-302-Layout.EndShift,EndZ=302+Layout.EndShift,SidewalkX=20,ParcelY=1.65,DropZ={-144,0,144},Colors={"FFB72D","55DCC9","AE7AF5"}}
+-- Rolls are independent of Robux/boosts. Missing cosmetics are chosen uniformly.
+Config.Rewards=table.freeze({
+ table.freeze({id="Cash",weight=70,multiplier=1}),
+ table.freeze({id="DoubleCash",weight=22,multiplier=2}),
+ table.freeze({id="JackpotCash",weight=6,multiplier=5}),
+ table.freeze({id="Cosmetic",weight=2,multiplier=0}),
+})
+Config.Cosmetics=table.freeze({"delivery_cap","delivery_goggles","delivery_wings"})
+Config.CosmeticCompensationMultiplier=5
+function Config.PickReward(unit:number)
+ local roll=math.clamp(unit,0,1)*100;local sum=0
+ for _,reward in Config.Rewards do sum+=reward.weight;if roll<sum then return reward end end
+ return Config.Rewards[#Config.Rewards]
+end
 function Config.Round(cycle:number,started:number)
  local z=Config.DropZ[(cycle-1)%#Config.DropZ+1]
  local side=if cycle%2==1 then 1 else -1

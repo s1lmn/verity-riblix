@@ -34,6 +34,31 @@ function Service:Equipped(player,slot,profile)
  if slot=="Attack" and self.arena and self.arena:IsParticipant(player) then return Battle.Basic,"battle_pulse" end
  return nil
 end
+function Service:BlockReason(player,slot)
+ if player:GetAttribute("VerityRaceSlot") then return "RACE_POWER" end
+ if player:GetAttribute("VerityParkourStep") then return "PARKOUR_POWER" end
+ if slot=="Ride" and player:GetAttribute("VerityBattleActive") then return "BATTLE_OTHER_ACTIVITY" end
+ if slot=="Mobility" and player:GetAttribute("VerityRiding") then return "RIDING_POWER" end
+ return nil
+end
+function Service:SlotSnapshot(player)
+ local result={};local profile=self.data:Get(player.UserId);if not profile then return result end
+ local now=workspace:GetServerTimeNow();local character,root=self:Character(player)
+ for _,slot in {"Mobility","Attack"} do
+  local item,id=self:Equipped(player,slot,profile)
+  local ready=(self.cooldowns[player] or {})[slot] or 0
+  local untilTime=player:GetAttribute(if slot=="Mobility" then "VerityMobilityUntil" else "VerityAttackUntil") or 0
+  local reason=self:BlockReason(player,slot)
+  if not profile.Data.VerityUnlocked then reason="BOX_NOT_OPENED" elseif not character then reason="CHARACTER_UNAVAILABLE"
+  elseif slot=="Attack" and not reason and self:IsSafe(player,root) then reason="SAFE_ZONE" end
+  result[slot]={slot=slot,itemId=id,name=item and item.Name,key=if slot=="Mobility" then "F" else "G",
+   gamepadKey=if slot=="Mobility" then "ButtonL1" else "ButtonR1",icon=item and Catalog.Icons[id] or (if slot=="Mobility" then "◇" else "✦"),empty=item==nil,
+   duration=item and (if slot=="Mobility" and item.MobilityAction then item.FlightDuration else item.Duration) or 0,
+   emptyAction="OpenAbilityCollection",temporary=id=="battle_pulse",blockedReason=reason,
+   readyAt=ready,activeUntil=untilTime,active=untilTime>now,canUse=item~=nil and reason==nil and ready<=now and untilTime<=now}
+ end
+ return result
+end
 function Service:IsSafe(player,root)
  if player:GetAttribute("VerityParkourStep") then return true end
  if player:GetAttribute("VerityRaceSlot") then return true end
@@ -63,7 +88,7 @@ function Service:Refresh(player,character,snapshot)
 	humanoid.UseJumpPower=true;humanoid.JumpPower=if form then form.jump else 50
 end
 function Service:Stop(player,stopAttacks)
-	if stopAttacks~=false then self.attacks[player]=nil end
+	if stopAttacks~=false then self.attacks[player]=nil;player:SetAttribute("VerityAttackUntil",nil) end
 	local current=self.active[player]
 	if not current then return end
 	if current.transition then current.transition:Disconnect();current.transition=nil end
@@ -116,6 +141,7 @@ local function rayParams(filter,kind,physical)
 end
 
 function Service:CombatRays(character,ignoredCharacter)
+ if self.arena then self.arena:UpdateMotion(workspace:GetServerTimeNow()) end
 	local exclude,include={character},{}
 	local caster=Players:GetPlayerFromCharacter(character)
 	local arenaShot=caster and self.arena and self.arena:IsParticipant(caster)
@@ -237,7 +263,7 @@ function Service:Attack(player,item,id,character,root,direction)
 				end
 			end
 			if tick==ticks and self.attacks[player]==token then
-				self.attacks[player]=nil
+				self.attacks[player]=nil;player:SetAttribute("VerityAttackUntil",nil)
 				self.remote:FireClient(player,{kind="CombatResult",damage=dealt})
 			end
 		end)
@@ -393,7 +419,9 @@ function Service:Ride(player,profile,now)
 end
 function Service:Activate(player,slot,direction)
 	local now=workspace:GetServerTimeNow()
-	if slot=="Steer" then
+ if slot=="Steer" then
+  local reason=self:BlockReason(player,"Mobility")
+  if reason and reason~="RIDING_POWER" then self:Stop(player);return end
 		if now-(self.steering[player] or -math.huge)<.08 then return end
 		self.steering[player]=now
 		local current=self.active[player]
@@ -409,10 +437,10 @@ function Service:Activate(player,slot,direction)
 	if now-(self.requests[player] or -math.huge)<.15 then return end
 	self.requests[player]=now
 	if slot~="Mobility" and slot~="Attack" and slot~="Ride" then return end
-	if player:GetAttribute("VerityRaceSlot") then return end
+	local reason=self:BlockReason(player,slot)
+ if reason then self.remote:FireClient(player,{kind="Blocked",code=reason});return end
  local profile=self.data:Get(player.UserId)
 	if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked then return end
-	if player:GetAttribute("VerityParkourStep") and slot~="Attack" then self.remote:FireClient(player,{kind="Blocked",code="PARKOUR_POWER"});return end
  if slot=="Ride" and player:GetAttribute("VerityBattleActive") then return end
  if slot=="Ride" then self:Ride(player,profile,now);return end
  if self.active[player] and self.active[player].ride and slot=="Mobility" then return end
@@ -426,7 +454,8 @@ function Service:Activate(player,slot,direction)
 		if typeof(direction)~="Vector3" or not Numeric.isFinite(direction.X) or not Numeric.isFinite(direction.Y)
 			or not Numeric.isFinite(direction.Z) or direction.Magnitude<.1 or direction.Magnitude>2 then return end
 		if not self:Attack(player,item,id,character,root,direction.Unit) then return end
-		cooldowns[slot]=now+item.Cooldown;player:SetAttribute("VerityAttackReadyAt",cooldowns[slot]);return
+		cooldowns[slot]=now+item.Cooldown;player:SetAttribute("VerityAttackReadyAt",cooldowns[slot])
+  player:SetAttribute("VerityAttackUntil",now+(if item.Action=="laser" then .56 else .16));return
 	end
 	local action=item.MobilityAction or item.Action
 	local duration=if item.MobilityAction then item.FlightDuration else item.Duration

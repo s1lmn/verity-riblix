@@ -2,6 +2,7 @@
 -- Shared presentation definitions; purchases and hits are owned by the server.
 local Catalog = {}
 Catalog.Order = {"dash","leap","sprint","shield","flight","repulsor","eye_laser","lightning","gravity","nova","homelander"}
+Catalog.Icons=table.freeze({dash="➜",leap="↑",sprint="»",shield="◇",flight="✧",repulsor="✦",eye_laser="◎",lightning="ϟ",gravity="◉",nova="☀",homelander="★",battle_pulse="✦"})
 Catalog.Items = {
 	dash={Name="Квантовый рывок",Description="Мощный рывок вперёд со световым следом.",Slot="Mobility",Level=1,Cost=75,Action="dash",Cooldown=5,Duration=.3,Power=65,Color="79E8FF"},
 	leap={Name="Прыжок титана",Description="Взлети над районом одним прыжком.",Slot="Mobility",Level=3,Cost=300,Action="leap",Cooldown=8,Duration=.8,Power=115,Color="A5FF80"},
@@ -18,6 +19,28 @@ Catalog.Items = {
 for _,item in Catalog.Items do table.freeze(item) end
 table.freeze(Catalog.Order);table.freeze(Catalog.Items)
 
+function Catalog.Collection(data,heroOwned,passConfigured)
+ local result={}
+ for _,id in Catalog.Order do
+  local item=Catalog.Items[id];local owned=Catalog.Owns(data,id,heroOwned)
+  local unlocked=data.VerityUnlocked==true
+  local levelMet=data.VerityLevel>=item.Level;local slots={item.Slot};local equipped={}
+  if item.MobilityAction then table.insert(slots,"Mobility") end
+  for _,slot in slots do
+   local _,equippedId=Catalog.Equipped(data,slot,heroOwned)
+   if equippedId==id then table.insert(equipped,slot) end
+  end
+  local status=if #equipped>0 then "Equipped" elseif owned then "Owned" elseif not levelMet then "LockedLevel"
+   elseif item.Premium then (if passConfigured then "PassRequired" else "Unavailable") else "Purchasable"
+  table.insert(result,{id=id,icon=Catalog.Icons[id],name=item.Name,description=item.Description,slot=item.Slot,availableSlots=slots,
+   requiredLevel=item.Level,cost=item.Cost,premium=item.Premium==true,owned=owned,levelMet=levelMet,
+   state=status,equippedSlots=equipped,canEquip=unlocked and owned and levelMet,canBuy=unlocked and not item.Premium and not owned and levelMet,
+   blockedReason=if not unlocked then "BOX_NOT_OPENED" elseif not levelMet then "ABILITY_LEVEL_REQUIRED" else nil,
+   affordable=not item.Premium and data.Cash>=(item.Cost or 0),color=item.Color,
+   cooldown=item.Cooldown,duration=item.Duration or 0})
+ end
+ return result
+end
 function Catalog.Owns(data,id,heroOwned)
 	local item=Catalog.Items[id]
 	return item~=nil and (if item.Premium then heroOwned==true else data.AbilitiesOwned[id]==true)

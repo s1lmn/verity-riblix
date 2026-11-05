@@ -69,6 +69,10 @@ function Model.Resolve(state,panel,selectedTaskId,now)
   return goal
  end
  if panel=="TASKS" then
+  if state.Progression and state.Progression.stage=="FirstActivity" then
+   local entry=entries.PRESS_BUTTON
+   if entry and entry.status=="Ready" then return ui("first-activity","Task.PRESS_BUTTON","Попробуй первое задание","Нажми «Начать» у жёлтой кнопки — появятся стрелки") end
+  end
   for _,id in order do local entry=entries[id]
    if entry and (entry.status=="Ready" or (entry.status=="Cooldown" and entry.cooldownEndsAt<=now)) then
     return ui("start:"..id,"Task."..id,"Выбери задание","Нажми «Начать» — появятся стрелки")

@@ -669,6 +669,17 @@ local activityEnglish={
 }
 for source,target in activityEnglish do en[source]=target end
 
+local releaseEnglish={
+ ["Кепка Verity Express"]="Verity Express cap",["Очки экспресс-курьера"]="Express courier goggles",["Крылья доставки"]="Delivery wings",
+ ["Попробуй первое задание"]="Try your first task",["Нажми «Начать» у жёлтой кнопки — появятся стрелки"]="Start the yellow-button task to follow the arrows",
+ ["Из посылки: %s!"]="Your parcel: %s!",["Коллекция доставки собрана! Компенсация ×5."]="Delivery collection complete! Cash compensation x5.",
+ ["Награда доставки ×%d: $%s"]="Delivery reward x%d: $%s",
+ ["Способности недоступны во время гонки."]="Abilities are disabled during a race.",
+ ["Сначала спешься с Verity."]="Dismount Verity first.",["Сначала выйди с арены."]="Leave the arena first.",
+ ["Обычная награда 70% • ×2 22% • ×5 6% • украшение 2%. Все украшения собраны — компенсация ×5."]="Normal 70% • x2 22% • x5 6% • cosmetic 2%. Collection complete: x5 compensation.",
+}
+for source,target in releaseEnglish do en[source]=target end
+
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source
 end

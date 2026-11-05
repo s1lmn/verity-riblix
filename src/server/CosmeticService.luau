@@ -7,6 +7,7 @@ function Service.new(data,state,products,clock)
  local self=setmetatable({data=data,state=state,products=products,clock=clock,byItem={}},Service)
  for product,id in products do
   assert(type(product)=="number" and product>0 and product%1==0 and Catalog.Items[id],"Invalid cosmetic product")
+  assert(not Catalog.Items[id].exclusive,"Activity exclusives cannot be sold")
   assert(not self.byItem[id],"Duplicate cosmetic product mapping")
   self.byItem[id]=product
  end

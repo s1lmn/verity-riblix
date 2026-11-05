@@ -2,7 +2,8 @@
 -- Only authoritative position/ordered touches advance a run; no completion remote.
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Config=require(Shared.ParkourConfig)
-local Income=require(Shared.EconomyConfig)
+local Numeric=require(Shared.Numeric)
+local Rewards=require(Shared.ActivityRewards)
 local Service={};Service.__index=Service
 function Service.new(data,state,economy,clock,notify,resetMovement)
  return setmetatable({data=data,state=state,economy=economy,clock=clock,notify=notify,resetMovement=resetMovement,runs={},ready={},links={}},Service)
@@ -12,11 +13,13 @@ function Service:Character(player)
  return if r and h and h.Health>0 and not r.Anchored and not h.SeatPart then c else nil,r
 end
 function Service:SetRun(player,run)
+ local changed=(self.runs[player]~=nil)~=(run~=nil)
  self.runs[player]=run
  player:SetAttribute("VerityParkourStep",if run then run.index else nil)
  player:SetAttribute("VerityParkourCheckpoint",if run then run.checkpoint else nil)
  player:SetAttribute("VerityParkourStartedAt",if run then run.started else nil)
  player:SetAttribute("VerityParkourFaults",if run then run.faults else nil)
+ if changed then self.state:Publish(player.UserId,true) end
 end
 function Service:Touch(player,index)
  if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive") then return false end
@@ -25,7 +28,11 @@ function Service:Touch(player,index)
  local pad=Config.Pads[index]
  if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked or not character or not pad then return false end
  local p=root.Position
- if math.abs(p.X-pad.x)>pad.w/2+3 or math.abs(p.Z-pad.z)>pad.d/2+3 or p.Y<pad.y or p.Y>pad.y+7 then return false end
+ local hum=character:FindFirstChildOfClass("Humanoid")
+ local feetOffset=math.max(2.5,hum.HipHeight+root.Size.Y/2)
+ if not Numeric.isFinite(p.X) or not Numeric.isFinite(p.Y) or not Numeric.isFinite(p.Z)
+  or math.abs(p.X-pad.x)>pad.w/2+.8 or math.abs(p.Z-pad.z)>pad.d/2+.8
+  or math.abs(p.Y-feetOffset-(pad.y+.5))>1.25 or root.AssemblyLinearVelocity.Y>9 then return false end
  local now=self.clock();local run=self.runs[player]
  if index==1 then
   if run then return false end
@@ -47,9 +54,9 @@ function Service:Touch(player,index)
   player:SetAttribute("VerityParkourMedal",medal);player:SetAttribute("VerityParkourFinishTime",seconds)
   local best=player:GetAttribute("VerityParkourBest")
   if not best or seconds<best then player:SetAttribute("VerityParkourBest",seconds) end
-  local amount=Income.getIncome(profile.Data.VerityLevel)*Config.RewardSeconds*bonus*self.economy:GetMultiplier(profile)
+  local amount=Rewards.Base(profile.Data.VerityLevel,"Parkour")*bonus*self.economy:GetMultiplier(profile)
   local ok,reward=self.economy:AddCash(player.UserId,amount)
-  if ok then self.state:Publish(player.UserId,true);self.notify(player.UserId,"PARKOUR_FINISH",reward) end
+  if ok then self.state:CompleteActivity(profile,"Parkour");self.state:Publish(player.UserId,true);self.notify(player.UserId,"PARKOUR_FINISH",reward) end
   return ok
  end
  run.index=index;run.lastStep=now
@@ -80,12 +87,7 @@ function Service:Tick()
    for index=math.max(1,run.index-1),math.min(#Config.Pads,run.index+1) do
     local p=Config.Pads[index]
     if not p.hazard then continue end
-    local pos=r.Position;local active,angle=Config.Hazard(index,self.clock())
-    if active~=2 or pos.Y<p.y or pos.Y>p.y+4.6 then continue end
-    local delta=pos-Vector3.new(p.x,p.y,p.z)
-    local hit=if p.hazard=="Pulse" then math.abs(delta.X)<p.w/2 and math.abs(delta.Z)<p.d/2
-     else math.abs(delta.X*math.cos(angle)+delta.Z*math.sin(angle))<p.w/2 and math.abs(-delta.X*math.sin(angle)+delta.Z*math.cos(angle))<1.2
-    if hit then self:Return(player,false);self.notify(player.UserId,"PARKOUR_RETRY",0);break end
+    if Config.HazardHits(index,r.Position,self.clock()) then self:Return(player,false);self.notify(player.UserId,"PARKOUR_RETRY",0);break end
    end
   end
  end
@@ -107,5 +109,9 @@ function Service:Bind(model,players)
  end
 end
 function Service:Remove(player)self:SetRun(player,nil);self.ready[player]=nil end
-function Service:Destroy()for _,link in self.links do link:Disconnect()end;self.links={} end
+function Service:Destroy()
+ for _,link in self.links do link:Disconnect()end;self.links={}
+ for player in self.runs do self:SetRun(player,nil) end
+ table.clear(self.ready)
+end
 return Service

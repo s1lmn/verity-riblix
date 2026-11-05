@@ -1,7 +1,7 @@
 --!nonstrict
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Config=require(Shared.VerityRaceConfig)
-local Income=require(Shared.EconomyConfig)
+local Rewards=require(Shared.ActivityRewards)
 local Numeric=require(Shared.Numeric)
 local Locale=require(Shared.LocaleText)
 local Service={};Service.__index=Service
@@ -27,6 +27,7 @@ function Service:Render()
   local entry=self.entries[slot]
   pad:SetAttribute("RaceOwner",entry and entry.player.UserId or nil);pad:SetAttribute("RaceLevel",entry and entry.level or nil)
   pad.JoinRace.Enabled=(self.phase=="Waiting" or self.phase=="Countdown") and not entry
+  if entry then self.state:Publish(entry.player.UserId,true) end
   local text=pad.RaceLabel.Text
   if entry then Locale.SetWorld(text,"Text","%s • LVL %d",entry.player.DisplayName,entry.level)
   else Locale.SetWorld(text,"Text","МЕСТО %d • ЗАНЯТЬ",slot)end
@@ -34,6 +35,7 @@ function Service:Render()
 end
 function Service:ClearPlayer(player)
  for _,name in attributes do player:SetAttribute(name,nil)end
+ self.state:Publish(player.UserId,true)
 end
 function Service:Join(player,slot)
  local now=self.clock()
@@ -78,7 +80,7 @@ function Service:Start()
   self.endsAt=math.max(self.endsAt,self.started+entry.finish+.5)
   entry.player:SetAttribute("VerityRaceLevel",entry.level);entry.player:SetAttribute("VerityRaceSeed",entry.seed)
   entry.player:SetAttribute("VerityRaceFinishSeconds",entry.finish);entry.player:SetAttribute("VerityRaceStartedAt",self.started)
-  self.notify(entry.player.UserId,"RACE_STARTED",0)
+  self.state:Publish(entry.player.UserId,true);self.notify(entry.player.UserId,"RACE_STARTED",0)
  end
  self:Render()
 end
@@ -96,9 +98,9 @@ function Service:Finish(cancelled)
  for _,entry in self.entries do self:ClearPlayer(entry.player)end
  if winner then
   local profile=self.data:Get(winner.player.UserId)
-  local amount=Income.getIncome(winner.level)*Config.RewardSeconds*self.economy:GetMultiplier(profile)
+  local amount=Rewards.Base(winner.level,"Race")*self.economy:GetMultiplier(profile)
   local ok,reward=self.economy:AddCash(winner.player.UserId,amount)
-  if ok then self.state:Publish(winner.player.UserId,true);self.notify(winner.player.UserId,"RACE_WIN",reward)end
+  if ok then self.state:CompleteActivity(profile,"Race");self.state:Publish(winner.player.UserId,true);self.notify(winner.player.UserId,"RACE_WIN",reward)end
  end
  for _,entry in self.entries do if entry~=winner then self.notify(entry.player.UserId,if winner then "RACE_FINISH" else "RACE_CANCELLED",0)end end
  self:Render()

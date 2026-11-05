@@ -111,12 +111,15 @@ local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Econom
  send(id,"NotificationEvent",{protocolVersion=1,code="COMBAT_REWARD",reward=reward,eventId=guid(),source="Combat"})
 end)
 local Abilities = require(script.Parent.VerityAbilityService).new(Data, State, World, CombatTargets)
+State.AbilitySlots=function(id)
+ local player=Players:GetPlayerByUserId(id);return if player then Abilities:SlotSnapshot(player) else {}
+end
 local Parkour=require(script.Parent.ParkourService).new(Data,State,Economy,clock,function(id,code,reward)
  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Parkour",reward=reward,eventId=guid()})
 end,function(player)Abilities:Stop(player)end)
 if generatedWorld and generatedWorld:FindFirstChild("VerityParkour") then Parkour:Bind(generatedWorld.VerityParkour,Players) end
-local StreetDelivery=require(script.Parent.StreetDeliveryService).new(Data,State,Economy,Players,clock,function(id,code,reward)
- send(id,"NotificationEvent",{protocolVersion=1,code=code,source="StreetDelivery",reward=reward,eventId=guid()})
+local StreetDelivery=require(script.Parent.StreetDeliveryService).new(Data,State,Economy,Players,clock,function(id,code,reward,result)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="StreetDelivery",reward=reward,deliveryReward=result,eventId=guid()})
 end,workspace)
 local Race=require(script.Parent.VerityRaceService).new(Data,State,Economy,Players,clock,function(id,code,reward)
  if code=="RACE_WIN" then World:React(id,"Stars",4)end
@@ -163,7 +166,7 @@ end
 local Remote = require(script.Parent.RemoteService).new(Data, State, clock,
 	function(userId, result) send(userId, "ActionResult", result) end)
 Remote:Register("RequestBuyAbility",function(id,payload) return AbilityShop:Buy(id,payload.itemId) end)
-Remote:Register("RequestEquipAbility",function(id,payload) return AbilityShop:Equip(id,payload.itemId) end)
+Remote:Register("RequestEquipAbility",function(id,payload) return AbilityShop:Equip(id,payload.itemId,payload.slot) end)
 Remote:Register("RequestUpgradeHouse",function(id)
  local plotId=Plots.owners[id]
  if not plotId or not World:IsNearWorkshop(id,plotId) then return "TOO_FAR" end
@@ -404,7 +407,9 @@ for _, player in Players:GetPlayers() do task.spawn(onPlayer, player) end
 local incomeElapsed, stateElapsed, taskElapsed, houseElapsed = 0, 0, 0, 0
 RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
-	incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
+	-- Single server mover every Heartbeat; target decisions remain on the shared .15s tick.
+ Battle:UpdateMotion(clock())
+ incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
 	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval) end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end

@@ -1,6 +1,7 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.TaskConfig)
+local Rewards = require(Shared.ActivityRewards)
 local TaskService = {}
 TaskService.__index = TaskService
 function TaskService.new(data, state, economy, clock, isNear)
@@ -33,7 +34,8 @@ function TaskService:_reward(userId, taskId, state, profile)
 	local definition = Config[taskId]
 	state.CooldownUntil = self.clock() + definition.Cooldown
 	profile.Data[definition.CooldownField][taskId] = state.CooldownUntil
-	local _, actual = self.economy:AddCash(userId, definition.Reward * self.economy:GetMultiplier(profile))
+	local _, actual = self.economy:AddCash(userId, Rewards.Task(profile.Data.VerityLevel,taskId,definition.Reward) * self.economy:GetMultiplier(profile))
+	self.state:CompleteActivity(profile,taskId)
 	self.data:Touch(profile)
 	if self.onReward then self.onReward(userId, actual) end
 	return "OK", actual

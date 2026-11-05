@@ -1,32 +1,53 @@
 --!nonstrict
 local Shared=game:GetService("ReplicatedStorage").Shared
 local C=require(Shared.VerityBattleConfig)
-local Income=require(Shared.EconomyConfig)
+local Rewards=require(Shared.ActivityRewards)
 local Catalog=require(Shared.AbilityCatalog)
 local Locale=require(Shared.LocaleText)
+local Motion=require(Shared.EnemyMotion)
+local Numeric=require(Shared.Numeric)
 local Factory=require(game:GetService("ReplicatedStorage").World.VerityFactory)
 local Service={};Service.__index=Service
 function Service.new(model,data,state,economy,players,clock,targets,abilities,notify)
  local self=setmetatable({model=model,data=data,state=state,economy=economy,players=players,clock=clock,targets=targets,abilities=abilities,notify=notify,members={},enemies={},ready={},phase="Idle",sequence=0,links={}},Service)
+ local remote=Instance.new("RemoteEvent");remote.Name="VerityEnemyMotion";remote.Parent=game:GetService("ReplicatedStorage");self.motionRemote=remote
  table.insert(self.links,model.Entry.JoinBattle.Triggered:Connect(function(player) self:Join(player) end))
  return self
+end
+function Service:PlanMotion(r,to,now)
+ local from=r.model:GetPivot()
+ r.motionSequence=(r.motionSequence or 0)+1
+ r.motion=Motion.Plan(r.model:GetAttribute("EnemyId"),r.motionSequence,from,to,now)
+ -- One reliable, coherent packet. No separate property/attribute ordering assumptions.
+ for _,player in self.players:GetPlayers() do
+  local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+  if self.members[player] or root and (root.Position-C.Center).Magnitude<=260 then self.motionRemote:FireClient(player,r.motion) end
+ end
+end
+function Service:UpdateMotion(now)
+ for _,r in self.enemies do
+  if r.motion and r.part.Parent then r.model:PivotTo(Motion.Sample(r.motion,now)) end
+ end
 end
 function Service:Valid(player)
  local member=self.members[player];local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart");local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not member or member.character~=char or not root or not hum or hum.Health<=0 or not self.data:Get(player.UserId) or not self.state.sessions[player.UserId] then return nil end
+ local p=root.Position
+ if not Numeric.isFinite(p.X) or not Numeric.isFinite(p.Y) or not Numeric.isFinite(p.Z) then return nil end
  return root,hum
 end
 function Service:IsParticipant(player) local root=self:Valid(player);return self.phase=="Fighting" and root~=nil and C.Contains(root.Position) end
 function Service:SetPhase(phase,seconds)
  self.phase=phase;self.at=self.clock()+(seconds or 0)
  self.model:SetAttribute("Phase",phase);self.model:SetAttribute("Deadline",self.at)
- for player in self.members do player:SetAttribute("VerityBattleFighting",phase=="Fighting") end
+ for player in self.members do player:SetAttribute("VerityBattleFighting",phase=="Fighting");self.state:Publish(player.UserId,true) end
 end
 function Service:Join(player)
  local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart");local hum=char and char:FindFirstChildOfClass("Humanoid")
  local profile=self.data:Get(player.UserId)
  if self.members[player] or not root or not hum or hum.Health<=0 or root.Anchored or hum.SeatPart or not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked then return end
- if (root.Position-self.model.Entry.Position).Magnitude>12 then return end
+ local p=root.Position
+ if not Numeric.isFinite(p.X) or not Numeric.isFinite(p.Y) or not Numeric.isFinite(p.Z) or (p-self.model.Entry.Position).Magnitude>12 then return end
  if player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRiding") then self.notify(player.UserId,"BATTLE_OTHER_ACTIVITY",0);return end
  if self.phase~="Idle" and self.phase~="Countdown" then self.notify(player.UserId,"BATTLE_BUSY",0);return end
  if self.clock()<(self.ready[player] or 0) then self.notify(player.UserId,"BATTLE_COOLDOWN",0);return end
@@ -39,6 +60,7 @@ function Service:Join(player)
  char:PivotTo(CFrame.new(C.Center+Vector3.new((seat-2.5)*9,4,-18)))
  root.AssemblyLinearVelocity=Vector3.zero
  if self.phase=="Idle" then self.wave=0;self:SetPhase("Countdown",C.Countdown) end
+ self.state:Publish(player.UserId,true)
  self.notify(player.UserId,"BATTLE_JOINED",0)
 end
 function Service:ClearEnemies()
@@ -53,21 +75,26 @@ function Service:Remove(player,move)
   local root=member.character:FindFirstChild("HumanoidRootPart");local hum=member.character:FindFirstChildOfClass("Humanoid")
   if root and hum and hum.Health>0 then member.character:PivotTo(CFrame.new(C.Exit+Vector3.new((member.seat-2.5)*4,0,0)));root.AssemblyLinearVelocity=Vector3.zero end
  end
+ self.state:Publish(player.UserId,true)
 end
 function Service:Finish(won)
+ if self.phase=="Idle" then self:ClearEnemies();return end
+ -- End the round before any notification/publish or reward processing.
+ self:SetPhase("Results")
  self:ClearEnemies()
  for player in self.members do
   local root=self:Valid(player);local profile=self.data:Get(player.UserId)
   if won and root and profile then
    self.ready[player]=self.clock()+C.Cooldown;player:SetAttribute("VerityBattleReadyAt",self.ready[player])
-   local ok,reward=self.economy:AddCash(player.UserId,Income.getIncome(profile.Data.VerityLevel)*C.RewardSeconds*self.economy:GetMultiplier(profile))
-   if ok then self.state:Publish(player.UserId,true);self.notify(player.UserId,"BATTLE_WIN",reward) end
+   local ok,reward=self.economy:AddCash(player.UserId,Rewards.Base(profile.Data.VerityLevel,"Battle")*self.economy:GetMultiplier(profile))
+   if ok then self.state:CompleteActivity(profile,"Battle");self.state:Publish(player.UserId,true);self.notify(player.UserId,"BATTLE_WIN",reward) end
   else self.notify(player.UserId,"BATTLE_FAILED",0) end
   self:Remove(player,true)
  end
  self.model:SetAttribute("Wave",0);self:SetPhase("Idle")
 end
 function Service:Damage(r,amount,userId)
+ if not Numeric.isFinite(amount) or amount<=0 then return 0 end
  local player=self.players:GetPlayerByUserId(userId);local root=player and self:Valid(player)
  if self.phase~="Fighting" or not root or not C.Contains(root.Position) or self.enemies[r.part]~=r or r.health<=0 then return 0 end
  local profile=self.data:Get(userId)
@@ -98,6 +125,7 @@ function Service:Wave()
   r.onDamage=function(amount,userId)return self:Damage(r,amount,userId)end
   self.enemies[body]=r;self.targets.records[body]=r
   model:SetAttribute("EnemyHealth",health);model:SetAttribute("EnemyMaximum",health)
+  self:PlanMotion(r,model:GetPivot(),self.clock())
   Locale.SetWorld(label,"Text","%s • %d / %d",Locale.Get("ru",d.Name),health,health)
   label:SetAttribute("Text_locale_en",string.format("%s • %d / %d",Locale.Get("en",d.Name),health,health))
  end
@@ -142,22 +170,25 @@ function Service:Tick(dt)
   for player in self.members do local root=self:Valid(player);if root then local delta=root.Position-r.part.Position;local n=Vector3.new(delta.X,0,delta.Z).Magnitude;if n<best then best=n;nearest=root end end end
   if not nearest then continue end
   local d=r.definition
-  if best>d.Range*.7 then
-   local delta=nearest.Position-r.part.Position;delta=Vector3.new(delta.X,0,delta.Z)
-   if delta.Magnitude>.1 then
-    local pivot=r.model:GetPivot();local pos=pivot.Position+delta.Unit*math.min(delta.Magnitude,d.Speed*math.min(dt,.25))
-    r.model:PivotTo(CFrame.lookAt(pos,Vector3.new(nearest.Position.X,pos.Y,nearest.Position.Z)))
-   end
+  local pivot=r.model:GetPivot();local to=pivot
+  local delta=nearest.Position-r.part.Position;delta=Vector3.new(delta.X,0,delta.Z)
+  if delta.Magnitude>.1 then
+   local pos=pivot.Position
+   if best>d.Range*.7 then pos+=delta.Unit*math.min(math.max(0,best-d.Range*.7),d.Speed*Motion.Step) end
+   local rotation=pivot.Rotation:Lerp(CFrame.lookAt(Vector3.zero,delta).Rotation,Motion.TurnFraction)
+   to=CFrame.new(pos)*rotation
   end
   if now>=r.nextAt and best<=d.Range then
    r.target=nearest.Position;r.strikeAt=now+d.Windup
+   to=pivot -- Freeze for the whole warning; damage stays at the advertised target.
    r.model:SetAttribute("StrikeTarget",r.target);r.model:SetAttribute("StrikeAt",r.strikeAt)
   end
+  self:PlanMotion(r,to,now)
  end
 end
 function Service:Forget(player) self:Remove(player,false);self.ready[player]=nil end
 function Service:Destroy()
  for _,link in self.links do link:Disconnect() end
- self:Finish(false);table.clear(self.links)
+ self:Finish(false);self.motionRemote:Destroy();table.clear(self.links)
 end
 return Service

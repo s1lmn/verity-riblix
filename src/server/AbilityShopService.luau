@@ -6,7 +6,7 @@ local Shop={};Shop.__index=Shop
 function Shop.new(data,state,economy,market)
 	return setmetatable({data=data,state=state,economy=economy,market=market,passId=Config.HeroPassId},Shop)
 end
-function Shop:Equip(userId,id)
+function Shop:Equip(userId,id,slot)
 	local profile=self.data:Get(userId)
 	local item=Catalog.Items[id]
 	if not profile or not self.state.sessions[userId] then return "NOT_READY" end
@@ -15,8 +15,10 @@ function Shop:Equip(userId,id)
 	if not data.VerityUnlocked then return "BOX_NOT_OPENED" end
 	if data.VerityLevel<item.Level then return "ABILITY_LEVEL_REQUIRED" end
 	if not Catalog.Owns(data,id,profile.HeroPassOwned) then return "ABILITY_NOT_OWNED" end
-	data.AbilitiesEquipped[item.Slot]=id
-	if item.MobilityAction then data.AbilitiesEquipped.Mobility=id end
+	if slot~=nil and slot~=item.Slot and not (slot=="Mobility" and item.MobilityAction) then return "INVALID_EQUIPMENT" end
+ data.AbilitiesEquipped[slot or item.Slot]=id
+ -- Legacy callers equip the bundle to both slots; new UI can explicitly choose one.
+ if not slot and item.MobilityAction then data.AbilitiesEquipped.Mobility=id end
 	self.data:Touch(profile)
 	return "OK"
 end

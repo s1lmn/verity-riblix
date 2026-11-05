@@ -5,6 +5,9 @@ local Houses = require(Shared.HouseConfig)
 local Economy = require(Shared.EconomyConfig)
 local TaskConfig = require(Shared.TaskConfig)
 local Config = require(Shared.GameConfig)
+local Abilities = require(Shared.AbilityCatalog)
+local Rewards = require(Shared.ActivityRewards)
+local Goals = require(Shared.ProgressionGoals)
 local PlayerStateService = {}
 PlayerStateService.__index = PlayerStateService
 function PlayerStateService.new(data, clock)
@@ -16,6 +19,9 @@ function PlayerStateService:Attach(userId, plotId)
 		ReceiptBusy = false}
 end
 function PlayerStateService:Remove(userId) self.sessions[userId] = nil end
+function PlayerStateService:CompleteActivity(profile, activityId)
+ if not profile.Data.FirstActivityCompleted then profile.Data.FirstActivityCompleted=true;self.data:Touch(profile) end
+end
 function PlayerStateService:AdvanceTutorial(profile, step)
 	if step > profile.Data.TutorialStep then
 		profile.Data.TutorialStep = step
@@ -51,7 +57,7 @@ function PlayerStateService:Snapshot(userId)
 	local tasks = {}
 	for id, config in TaskConfig do
 		local state = session.Tasks[id] or {Active = false, CooldownUntil = data[config.CooldownField][id] or 0}
-		tasks[id] = {taskId = id, reward = config.Reward * multiplier,
+		tasks[id] = {taskId = id, reward = Rewards.Task(level,id,config.Reward) * multiplier,
 			status = if state.Active then "Active" elseif state.CooldownUntil > self.clock() then "Cooldown" else "Ready",
 			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id) else nil,
 			Active = state.Active, CooldownUntil = state.CooldownUntil, HoldStartedAt = state.HoldStartedAt}
@@ -61,7 +67,14 @@ function PlayerStateService:Snapshot(userId)
 		Cash = data.Cash, TotalEarned = data.TotalEarned, VerityLevel = level,
 		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
 		SwipeUpgradeLevel = data.SwipeUpgradeLevel, TutorialStep = data.TutorialStep,
-		TutorialCompleted = data.TutorialCompleted, HouseTier = Houses.getHouseTier(level),
+		TutorialCompleted = data.TutorialCompleted,
+        FirstActivityCompleted = data.FirstActivityCompleted,
+        Progression = Goals.Build(data), NextUnlock = Goals.NextUnlock(data,profile.HeroPassOwned),
+        AbilityCollection = Abilities.Collection(data,profile.HeroPassOwned,Config.HeroPassId~=nil),
+        AbilitySlots = if self.AbilitySlots then self.AbilitySlots(userId) else {},
+        ActivityRewardQuotes = {Parkour=Rewards.Base(level,"Parkour")*multiplier,
+         Battle=Rewards.Base(level,"Battle")*multiplier,Race=Rewards.Base(level,"Race")*multiplier},
+        HouseTier = Houses.getHouseTier(level),
 		VerityScale = Levels.getVerityScale(level),
 		NextVerityScale = if level < 100 then Levels.getVerityScale(level + 1) else nil,
 		NextMilestoneLevel = Levels.getNextMilestone(level),

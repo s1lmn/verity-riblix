@@ -6,6 +6,8 @@ local Cleanup=require(script.Parent.Cleanup)
 local Model=require(script.Parent.UIModel)
 local Tracker=require(script.Parent.RequestTracker)
 local Protocol=require(script.Parent.CoreProtocol)
+local Locale=require(script.Parent.Locale)
+local Cosmetics=require(ReplicatedStorage.Shared.CosmeticCatalog)
 local Adapter={};Adapter.__index=Adapter
 function Adapter.new()
 	local self=setmetatable({cleanup=Cleanup.new(),remoteCleanup=Cleanup.new(),tracker=Tracker.new(),state=nil,
@@ -83,7 +85,14 @@ function Adapter:Attach(folder)
 								}
 							end
 							local message=messages[payload.code]
-							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source}) end
+       local drop=payload.deliveryReward
+       if payload.code=="STREET_DELIVERY_REWARD" and type(drop)=="table" then
+        if drop.itemId and Cosmetics.Items[drop.itemId] then
+         message=string.format(Locale.Text("Из посылки: %s!"),Locale.Text(Cosmetics.Items[drop.itemId].name))
+        elseif drop.compensation then message=Locale.Text("Коллекция доставки собрана! Компенсация ×5.")
+        else message=string.format(Locale.Text("Награда доставки ×%d: $%s"),drop.multiplier or 1,Locale.Number(payload.reward)) end
+       end
+							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
 					end
 				end)

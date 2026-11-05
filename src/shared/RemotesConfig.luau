@@ -33,6 +33,10 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 	elseif name == "RequestEquipCosmetic" or name == "RequestCosmeticPurchase" or name == "RequestBuyAbility" or name == "RequestEquipAbility" then
   allowed.itemId = true
   if type(payload.itemId)~="string" or #payload.itemId<1 or #payload.itemId>64 or not string.match(payload.itemId,"^[%w_%-]+$") then return false,"INVALID_ITEM" end
+  if name == "RequestEquipAbility" then
+   allowed.slot=true
+   if payload.slot~=nil and payload.slot~="Mobility" and payload.slot~="Attack" then return false,"INVALID_EQUIPMENT" end
+  end
   if name == "RequestEquipCosmetic" then
    allowed.equipped=true
    if type(payload.equipped)~="boolean" then return false,"INVALID_EQUIPMENT" end

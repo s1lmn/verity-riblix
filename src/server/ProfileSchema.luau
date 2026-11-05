@@ -11,7 +11,7 @@ local Schema = {}
 function Schema.new()
 	return {DataVersion = 2, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
-		TutorialCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
+		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end
 -- Missing v1 fields are reconciled. Corrupt/future profiles fail closed, not reset.
 function Schema.validate(raw)
@@ -33,6 +33,7 @@ function Schema.validate(raw)
 		or not Numeric.isInteger(data.SwipeUpgradeLevel, 0, 40)
 		or not Numeric.isInteger(data.HouseIncomeLevel, 0, #Houses.IncomeUpgrades)
 		or not Numeric.isInteger(data.TutorialStep, 1, 7) then return nil, "INVALID_LEVEL" end
+	if type(data.FirstActivityCompleted) ~= "boolean" then return nil, "INVALID_FIRST_ACTIVITY" end
 	if type(data.VerityUnlocked) ~= "boolean" or type(data.TutorialCompleted) ~= "boolean"
 		or type(data.HouseDoorOwned) ~= "boolean" or type(data.HouseSecondFloorOwned) ~= "boolean" then
 		return nil, "INVALID_BOOLEAN"

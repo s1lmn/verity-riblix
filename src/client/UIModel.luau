@@ -81,7 +81,7 @@ function Model.ValidateSnapshot(raw: any): (any?, string?)
 		end
 	end
 	state.TutorialCompleted = raw.TutorialCompleted == true
-	state.TutorialStep = if Model.IsInteger(raw.TutorialStep, 1, 6) then raw.TutorialStep else nil
+	state.TutorialStep = if Model.IsInteger(raw.TutorialStep, 1, 7) then raw.TutorialStep else nil
 	return state, nil
 end
 
