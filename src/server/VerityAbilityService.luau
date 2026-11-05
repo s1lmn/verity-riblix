@@ -182,18 +182,56 @@ function Service:Attack(player,item,id,character,root,direction)
 	end
 	return true
 end
+-- Sustain the short dash against humanoid ground friction; use a body sweep,
+-- not the attack ray, so a wall limits travel instead of cancelling every dash.
+function Service:DashVelocity(character,root,item)
+ local facing=root.CFrame.LookVector
+ local direction=Vector3.new(facing.X,0,facing.Z)
+ if direction.Magnitude<.01 then return nil end
+ direction=direction.Unit
+ local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
+ params.FilterDescendantsInstances={character};params.RespectCanCollide=true;params.IgnoreWater=true
+ local distance=item.Power*item.Duration
+ local size=Vector3.new(root.Size.X*.9,root.Size.Y*.8,root.Size.Z*.9)
+ local hit=workspace:Blockcast(root.CFrame,size,direction*distance,params)
+ if hit then distance=math.min(distance,math.max(0,hit.Distance-.4)) end
+ if distance<=.05 then return nil end
+ return direction*math.min(item.Power,distance/item.Duration)
+end
+function Service:Drive(current,root,velocity,plane)
+ local attachment=Instance.new("Attachment");attachment.Name=if plane then "VerityDash" else "VerityFlight"
+ attachment.Parent=root;current.attachment=attachment
+ local drive=Instance.new("LinearVelocity");drive.Attachment0=attachment;drive.RelativeTo=Enum.ActuatorRelativeTo.World
+ if plane then
+  drive.VelocityConstraintMode=Enum.VelocityConstraintMode.Plane
+  drive.PrimaryTangentAxis=Vector3.xAxis;drive.SecondaryTangentAxis=Vector3.zAxis
+  drive.PlaneVelocity=Vector2.new(velocity.X,velocity.Z)
+ else
+  drive.VelocityConstraintMode=Enum.VelocityConstraintMode.Vector;drive.VectorVelocity=velocity
+ end
+ drive.ForceLimitsEnabled=false;drive.Parent=attachment;current.velocity=drive
+end
+function Service:WatchFlightInput(player,current)
+ local token={};current.steerToken=token
+ task.delay(.35,function()
+  if self.active[player]==current and current.steerToken==token and current.velocity then
+   current.velocity.VectorVelocity=Vector3.zero
+  end
+ end)
+end
 function Service:Activate(player,slot,direction)
 	local now=workspace:GetServerTimeNow()
 	if slot=="Steer" then
-		if now-(self.steering[player] or -math.huge)<.15 then return end
+		if now-(self.steering[player] or -math.huge)<.08 then return end
 		self.steering[player]=now
 		local current=self.active[player]
-		if not current or not current.velocity or now>=current.untilTime or player.Character~=current.character then return end
+		if not current or not current.flight or not current.velocity or now>=current.untilTime or player.Character~=current.character then return end
 		if typeof(direction)~="Vector3" or not Numeric.isFinite(direction.X) or not Numeric.isFinite(direction.Y)
 			or not Numeric.isFinite(direction.Z) or direction.Magnitude>1.1 then return end
 		local _,root=self:Character(player);if not root then return end
 		local vertical=if root.Position.Y>80 then math.min(0,direction.Y) else direction.Y
 		current.velocity.VectorVelocity=Vector3.new(direction.X*current.speed,vertical*22,direction.Z*current.speed)
+  self:WatchFlightInput(player,current)
 		return
 	end
 	if now-(self.requests[player] or -math.huge)<.15 then return end
@@ -213,9 +251,16 @@ function Service:Activate(player,slot,direction)
 		if not self:Attack(player,item,id,character,root,direction.Unit) then return end
 		cooldowns[slot]=now+item.Cooldown;player:SetAttribute("VerityAttackReadyAt",cooldowns[slot]);return
 	end
-	self:Stop(player,false)
 	local action=item.MobilityAction or item.Action
 	local duration=if item.MobilityAction then item.FlightDuration else item.Duration
+ local dashVelocity=if action=="dash" then self:DashVelocity(character,root,item) else nil
+ if action=="dash" and not dashVelocity then
+  self.remote:FireClient(player,{kind="Blocked",code="OBSTACLE"});return
+ end
+ if action=="flight" and not root:CanSetNetworkOwnership() then
+  self.remote:FireClient(player,{kind="Blocked",code="FLIGHT_UNAVAILABLE"});return
+ end
+ self:Stop(player,false)
 	cooldowns[slot]=now+(item.FlightCooldown or item.Cooldown)
 	player:SetAttribute("VerityAbilityReadyAt",cooldowns[slot])
 	player:SetAttribute("VerityMobilityUntil",now+duration)
@@ -223,20 +268,17 @@ function Service:Activate(player,slot,direction)
 	local current={character=character,id=id,root=root,untilTime=now+duration};self.active[player]=current
 	if action=="shield" then player:SetAttribute("VerityShieldUntil",now+duration)
 	elseif action=="dash" then
-		local facing=root.CFrame.LookVector;local delta=Vector3.new(facing.X,0,facing.Z)
-		local hit=self:Cast(character,root.Position,root.Position+delta*10)
-		if not hit then root:ApplyImpulse(delta*root.AssemblyMass*item.Power) end
+  current.speed=dashVelocity.Magnitude;humanoid.WalkSpeed=current.speed
+  self:Drive(current,root,dashVelocity,true)
 	elseif action=="leap" then
 		root:ApplyImpulse(Vector3.yAxis*root.AssemblyMass*item.Power);humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 	elseif action=="sprint" then current.speed=item.Power;humanoid.WalkSpeed=current.speed
 	elseif action=="flight" then
-		if not root:CanSetNetworkOwnership() then self:Stop(player);return end
 		root:SetNetworkOwner(nil);current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
+  current.flight=true
 		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-		local attachment=Instance.new("Attachment");attachment.Name="VerityFlight";attachment.Parent=root;current.attachment=attachment
-		local lift=Instance.new("LinearVelocity");lift.Attachment0=attachment;lift.RelativeTo=Enum.ActuatorRelativeTo.World
-		lift.VelocityConstraintMode=Enum.VelocityConstraintMode.Vector;lift.VectorVelocity=Vector3.new(0,8,0)
-		lift.ForceLimitsEnabled=false;lift.Parent=attachment;current.velocity=lift
+  self:Drive(current,root,Vector3.new(0,8,0),false)
+  self:WatchFlightInput(player,current)
 	end
 	self.remote:FireAllClients({kind="Mobility",ownerUserId=player.UserId,itemId=id,origin=root.Position,duration=duration,endsAt=now+duration})
 	task.delay(duration,function() if self.active[player]==current then self:Stop(player,false) end end)

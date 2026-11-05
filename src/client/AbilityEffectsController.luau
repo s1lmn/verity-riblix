@@ -64,7 +64,10 @@ function Controller:Eye(owner,side,fallback)
 end
 function Controller:Event(event)
 	if type(event)~="table" then return end
-	if event.kind=="Blocked" then self.ctx.notifications:Show("Дома и после возрождения действует защита.");return end
+	if event.kind=="Blocked" then
+  local messages={SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления."}
+  self.ctx.notifications:Show(messages[event.code] or messages.SAFE_ZONE);return
+ end
 	local item=Catalog.Items[event.itemId]
 	local player=Players:GetPlayerByUserId(event.ownerUserId)
 	if not item or not player or not player.Character then return end

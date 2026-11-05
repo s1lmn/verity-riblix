@@ -253,3 +253,12 @@ Controller.Apply сохраняет командное прицеливание/
 защиту VerityTint. Стройка/двери/витрина/способности/сохранения команды сохранены.
 Детали и проверки без Play:docs/ELEMENTAL_TEAM_MERGE.md. Старые Play-отчёты команды
 не выдавать за приёмку merge. Пользователь разрешил push, не Roblox Publish.
+
+## Рывок и полёт: исправление по отчёту пользователя
+
+Пользователь уточнил: dash не двигает, flight короткий. Dash удерживает plane-speed
+0.3s после server Blockcast, препятствие сокращает путь; отказ не расходует cooldown.
+Flight12s/cooldown18s, геройский18s/24s. Steer10Hz, короткий JumpRequest сохраняется,
+без ввода hover, stale direction обнуляется через0.35s. Серверная авторизация и
+ограничения сохранены. Документация/проверки:docs/ABILITY_MOTION_FIX.md,
+tools/check_ability_motion.py. Mock checks не подтверждают реальную физику; без Play.

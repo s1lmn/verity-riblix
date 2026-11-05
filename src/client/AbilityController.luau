@@ -26,17 +26,24 @@ function Controller.new(ctx)
 	reticle.AnchorPoint,reticle.Position,reticle.Size=Vector2.new(.5,.5),UDim2.fromScale(.5,.5),UDim2.fromOffset(24,24)
 	reticle.TextXAlignment=Enum.TextXAlignment.Center;reticle.TextStrokeTransparency=.35;reticle.Visible=false
 	self.reticle=reticle
-	local elapsed=0
+	self.cleanup:Add(Input.JumpRequest:Connect(function()
+  if not ctx.active and not ctx.presenting and not GuiService.MenuIsOpen and not Input:GetFocusedTextBox() then
+   self.ascendUntil=workspace:GetServerTimeNow()+.3
+  end
+ end))
+ local elapsed=0
 	self.cleanup:Add(RunService.Heartbeat:Connect(function(dt)
 		self:Render();elapsed+=dt
-		if elapsed<.2 then return end;elapsed=0
+		if elapsed<.1 then return end;elapsed=0
 		local item=self:Item("Mobility")
 		if not self.remote or not item or (item.Action~="flight" and not item.MobilityAction)
 			or (Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)<workspace:GetServerTimeNow() then return end
 		local char=Players.LocalPlayer.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health<=0 then return end
-		local movement=if ctx.active or ctx.presenting or Input:GetFocusedTextBox() then Vector3.zero else hum.MoveDirection
-		local vertical=if Input:IsKeyDown(Enum.KeyCode.LeftControl) then -.65 elseif hum.Jump or Input:IsKeyDown(Enum.KeyCode.Space) then 1 else .12
+		local blocked=ctx.active or ctx.presenting or GuiService.MenuIsOpen or Input:GetFocusedTextBox()
+  local movement=if blocked then Vector3.zero else hum.MoveDirection
+  local vertical=if blocked then 0 elseif Input:IsKeyDown(Enum.KeyCode.LeftControl) then -.65
+   elseif hum.Jump or Input:IsKeyDown(Enum.KeyCode.Space) or (self.ascendUntil or 0)>workspace:GetServerTimeNow() then 1 else 0
 		local direction=Vector3.new(movement.X,vertical,movement.Z)
 		if direction.Magnitude>1 then direction=direction.Unit end
 		self.remote:FireServer("Steer",direction)
@@ -80,7 +87,11 @@ function Controller:Render()
 		local remaining=math.max(0,math.ceil((Players.LocalPlayer:GetAttribute(attribute) or 0)-workspace:GetServerTimeNow()))
 		local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then (if slot=="Mobility" then "L1 " else "R1 ") else (if slot=="Mobility" then "F " else "G ")
 		local name=if slot=="Mobility" and item.MobilityAction then "Полёт героя" else item.Name
-		W.SetButton(button,key..Locale.Text(name)..(if remaining>0 then " · "..remaining..Locale.Text(" с") else ""),remaining==0 and ctx.net.connected,false)
+		local flightRemaining=if slot=="Mobility" and (item.Action=="flight" or item.MobilityAction)
+   then math.max(0,math.ceil((Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)-workspace:GetServerTimeNow())) else 0
+  local text=if flightRemaining>0 then string.format(Locale.Text("ПОЛЁТ • %d с"),flightRemaining)
+   else key..Locale.Text(name)..(if remaining>0 then " · "..remaining..Locale.Text(" с") else "")
+  W.SetButton(button,text,remaining==0 and flightRemaining==0 and ctx.net.connected,false)
 	end
 	self.reticle.Visible=ctx.refs.AttackButton.Visible
 end

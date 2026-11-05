@@ -249,6 +249,11 @@ local ru = {
 	[" m"] = " м",
 }
 local en = {
+	["ПОЛЁТ • %d с"] = "FLIGHT • %ds",
+	["Перед тобой препятствие — отойди от стены."] = "An obstacle is too close. Step away from the wall.",
+	["Сейчас полёт недоступен. Попробуй после приземления."] = "Flight is unavailable right now. Try again after landing.",
+	["12 секунд управляемого полёта. Движение и прыжок — подъём."] = "12 seconds of controlled flight. Move and use jump to ascend.",
+
 	["СТИЛЬ VERITY"] = "VERITY STYLE",
 	["Примерь новый образ для своего шарика"] = "Try a fresh look for your companion",
 	["ТВОЯ ПРИМЕРОЧНАЯ"] = "YOUR DRESSING ROOM",
