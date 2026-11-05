@@ -12,6 +12,7 @@ local FaceUI=require(script.Parent.VerityFaceUI)
 local Personality=require(Shared.VerityPersonality)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
+local Ride=require(Shared.VerityRideConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
 local Players=game:GetService("Players")
@@ -94,7 +95,7 @@ function Controller:Register(model,attempt)
 	local anchor=model:GetAttribute("VerityOrigin")
 	local record={model=model,owner=owner,plot=plot,key=identity,origin=if typeof(anchor)=="CFrame" then anchor else model:GetPivot(),level=level,revision=revision,
 		ledger=Ledger.new(),tints={},cleanup=Cleanup.new(),idleStart=os.clock(),baseYaw=0,lastYaw=0,lastLift=0,completed=0}
-	for _,p in model:GetDescendants() do if p:IsA("BasePart") and p:GetAttribute("VerityTint") then table.insert(record.tints,p) end end
+	for _,p in model:GetDescendants() do if p:IsA("BasePart") and p:GetAttribute("VerityTint")~=nil then table.insert(record.tints,p) end end
 	record.ledger:Seed(revision,level)
 	self.records[model],self.byOwner[identity]=record,record
 	self:Apply(record,Levels.getVerityScale(level),0,0,Factory.Color(level),level)
@@ -136,7 +137,8 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
 	local lifted=record.origin*CFrame.new(0,lift+(record.lifeLift or 0)*scale,0)
  local pose=lifted*CFrame.Angles(0,yaw,0)*CFrame.Angles(record.lifePitch or 0,0,record.lifeRoll or 0)
  local camera=workspace.CurrentCamera
- if model:GetAttribute("FollowOwner") and camera then
+ if record.riding then pose=record.origin end
+ if model:GetAttribute("FollowOwner") and camera and not record.riding then
   -- Rotate around the ball's centre, not its bottom pivot. Giant forms can
   -- look down toward a ground-level camera without shifting into that camera.
   local center=lifted.Position+Vector3.new(0,.85*scale,0)
@@ -154,7 +156,7 @@ function Controller:Apply(record,scale,lift,yaw,color,level)
   end
  end
  model:PivotTo(pose)
-	for _,p in record.tints do if p.Parent then p.Color=color end end
+	for _,p in record.tints do if p.Parent and p:GetAttribute("VerityTint")~=false then p.Color=color end end
 	if record.stageLevel~=level then
 		Factory.SetStage(model,level)
 		local label=model.PrimaryPart:FindFirstChild("LevelLabel")
@@ -309,7 +311,19 @@ function Controller:Follow(record,now,dt)
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model);return false end
- local scale=Levels.getVerityScale(record.adminLevel or record.model:GetAttribute("VerityLevel"))
+ record.riding=owner:GetAttribute("VerityRiding")==true
+ local scale=Levels.getVerityScale(if record.riding then record.model:GetAttribute("VerityLevel") else record.adminLevel or record.model:GetAttribute("VerityLevel"))
+ if record.riding then
+  record.origin=CFrame.new(root.Position-Vector3.new(0,1.7*scale+Ride.SeatOffset,0))*root.CFrame.Rotation
+  record.lastRoot=root.Position;record.mode="Riding";record.followStarted=false
+  local phase=owner:GetAttribute("VerityRidePhase")
+  local y0,y1=owner:GetAttribute("VerityRideY0"),owner:GetAttribute("VerityRideY1")
+  local progress=if y0 and y1 and math.abs(y1-y0)>.01 then math.clamp((root.Position.Y-y0)/(y1-y0),0,1) else 1
+  progress=progress*progress*(3-2*progress)
+  local alpha=if phase=="Takeoff" then 1-progress elseif phase=="Landing" then progress else 0
+  record.model:SetAttribute("CompanionMode","Riding");visibility(record,alpha)
+  return true
+ end
  local x,y,z=Follow.Offset(scale,record.plot)
  local heading=root.CFrame.Rotation
  local teleport=record.lastRoot and (record.lastRoot-root.Position).Magnitude>Follow.TeleportDistance
@@ -442,7 +456,7 @@ function Controller:Tick(now,dt)
 			local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
 			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,self.settings.values.ReducedEffects or not near)
 		end
-		local renderLevel=record.adminLevel or record.level
+		local renderLevel=if record.riding then record.level else record.adminLevel or record.level
   local scale=Levels.getVerityScale(renderLevel)
 		local stage=Profile.Stage(renderLevel)
 		if active then
@@ -455,12 +469,14 @@ function Controller:Tick(now,dt)
 			if ownGrowth then
 				showingGrowth=true
 				record.growthCover=Profile.Conceal(alpha)
-				self.effects:Growth(model:GetPivot(),model:GetScale(),alpha,Profile.Bloom,
-					newColor,Profile.IsMilestone(event.newLevel),model)
 			end
 			local targetLift=if pose.stage>=2 and not reduced then event.newScale*0.05 else 0
 			local lift=active.lift+(targetLift-active.lift)*pose.blend+pose.lift
 			self:Apply(record,pose.scale,lift,active.yaw+pose.yaw,oldColor:Lerp(newColor,pose.blend),if alpha>=0.58 then event.newLevel else event.oldLevel)
+			if ownGrowth then
+				self.effects:Growth(model:GetPivot(),pose.scale,alpha,Profile.Bloom,
+					newColor,Profile.IsMilestone(event.newLevel),model)
+			end
 			scale,stage=pose.scale,pose.stage
 			if alpha>=Profile.Bloom and not active.burst then
 				active.burst=true

@@ -108,6 +108,16 @@ function Presentation:Start(event,model)
  local camera=workspace.CurrentCamera
  if camera and not self.ctx.settings.values.ReducedMotion and not game:GetService("VRService").VREnabled and camera.CameraType==Enum.CameraType.Custom then
   self.camera={instance=camera,kind=camera.CameraType,subject=camera.CameraSubject,cf=camera.CFrame,fov=camera.FieldOfView}
+  -- The companion already faces the camera. Use a fixed world-space heading for the reveal.
+  local toCamera=camera.CFrame.Position-model:GetPivot().Position
+  local heading=Vector3.new(toCamera.X,0,toCamera.Z)
+  self.active.viewBasis=if heading.Magnitude>.01 then CFrame.lookAt(Vector3.zero,heading) else CFrame.identity
+  self.active.body=model:FindFirstChild("Body")
+  local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
+  local ignore={model,char}
+  local effects=workspace:FindFirstChild("VerityPresentationFX");if effects then table.insert(ignore,effects) end
+  params.FilterDescendantsInstances=ignore
+  self.active.raycast=params
   camera.CameraType=Enum.CameraType.Scriptable
   -- Front facing candidates, with an elevated fallback for large rooftop companions.
   self.active.angle=self:ChooseAngle(camera,model,event.newScale)
@@ -117,8 +127,8 @@ function Presentation:Start(event,model)
 end
 
 function Presentation:CameraPose(camera,model,scale,angle,progress)
- local pivot=model:GetPivot()
- local center=pivot:PointToWorldSpace(Vector3.new(0,.85*model:GetScale(),0))
+ local a=self.active
+ local center=if a.body then a.body.Position else model:GetPivot():PointToWorldSpace(Vector3.new(0,.85*model:GetScale(),0))
  local aspect=math.max(.3,camera.ViewportSize.X/math.max(1,camera.ViewportSize.Y))
  local fov=50
  local half=math.min(math.rad(fov/2),math.atan(math.tan(math.rad(fov/2))*aspect))
@@ -127,12 +137,8 @@ function Presentation:CameraPose(camera,model,scale,angle,progress)
  local height=math.max(1,camera.ViewportSize.Y)
  distance*=1+.25*math.clamp((500-height)/250,0,1)
  local arc=angle+(smooth(progress)-.5)*.22
- local direction=pivot:VectorToWorldSpace(Vector3.new(math.sin(arc),if angle==math.pi then 1.6 else .22,-math.cos(arc))).Unit
- local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
- local ignore={model};local char=Players.LocalPlayer.Character;if char then table.insert(ignore,char)end
- local effects=workspace:FindFirstChild("VerityEffects");if effects then table.insert(ignore,effects)end
- params.FilterDescendantsInstances=ignore
- local hit=workspace:Raycast(center,direction*distance,params)
+ local direction=a.viewBasis:VectorToWorldSpace(Vector3.new(math.sin(arc),if angle==math.pi then 1.6 else .22,-math.cos(arc))).Unit
+ local hit=workspace:Raycast(center,direction*distance,a.raycast)
  local clearance=if hit then math.max(.25,hit.Distance-.4) else distance
  local position=center+direction*math.min(distance,clearance)
  -- Keep the face above the caption, including on short landscape viewports.

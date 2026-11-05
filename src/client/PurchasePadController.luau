@@ -110,6 +110,7 @@ end
 function Controller:Render()
 	local camera=workspace.CurrentCamera;local now=os.clock()
 	local character=Players.LocalPlayer.Character
+	local root=character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid=character and character:FindFirstChildOfClass("Humanoid")
 	for model,r in self.pads do
 		if not model.Parent then continue end
@@ -121,7 +122,9 @@ function Controller:Render()
 		r.visible=visible;r.canBuy=(ready or kind=="Ability") and visible and uiAllowed
 			and humanoid~=nil and humanoid.Health>0 or false
 		if prompt then
-			local enabled=r.canBuy
+			local minZ=prompt:GetAttribute("ExteriorMinZ")
+			local enabled=r.canBuy and (not minZ or (root and prompt.Parent
+				and prompt.Parent.CFrame:PointToObjectSpace(root.Position).Z>=minZ)) or false
 			if prompt.Enabled~=enabled then prompt.Enabled=enabled end
 		end
 		r.gui.Enabled=visible and uiAllowed

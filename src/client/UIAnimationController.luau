@@ -9,19 +9,24 @@ function Animation.new(settings)
 	local self=setmetatable({ settings = settings, cleanup = Cleanup.new(), tweens = {}, goals = {}, dead = false }, Animation)
 	self.cleanup:Add(settings.Changed.Event:Connect(function(values)
 		if not values.ReducedMotion then return end
-		for instance,tween in table.clone(self.tweens) do
-			local goal=self.goals[instance]
-			tween:Cancel()
-			if goal and instance.Parent then for key,value in goal do instance[key]=value end end
-			self.tweens[instance],self.goals[instance]=nil,nil
-		end
+		for instance in self.tweens do self:Cancel(instance, true) end
 	end))
 	return self
 end
 
+function Animation:Cancel(instance, settle)
+	local tween, goal = self.tweens[instance], self.goals[instance]
+	if not tween then return end
+	self.tweens[instance], self.goals[instance] = nil, nil
+	tween:Cancel()
+	tween:Destroy()
+	if settle and goal and instance.Parent then
+		for key, value in goal do instance[key] = value end
+	end
+end
+
 function Animation:Tween(instance, duration, properties)
-	local previous = self.tweens[instance]
-	if previous then previous:Cancel(); previous:Destroy() end
+	self:Cancel(instance)
 	if self.settings.values.ReducedMotion then
 		for key, value in properties do instance[key] = value end
 		self.tweens[instance] = nil
@@ -32,7 +37,8 @@ function Animation:Tween(instance, duration, properties)
 	self.tweens[instance] = tween
 	self.goals[instance] = properties
 	tween.Completed:Once(function()
-		if self.tweens[instance] == tween then self.tweens[instance] = nil;self.goals[instance]=nil end
+		if self.tweens[instance] ~= tween then return end
+		self.tweens[instance], self.goals[instance] = nil, nil
 		tween:Destroy()
 	end)
 	tween:Play()
@@ -77,7 +83,7 @@ end
 function Animation:Destroy()
 	self.dead = true
 	self.cleanup:Destroy()
-	for _, tween in self.tweens do tween:Cancel(); tween:Destroy() end
+	for instance in self.tweens do self:Cancel(instance) end
 	table.clear(self.tweens)
 	table.clear(self.goals)
 end

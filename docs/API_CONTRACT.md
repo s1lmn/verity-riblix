@@ -51,6 +51,7 @@ UI сериализует запросы и повторяет неизвест�
 | RequestUpgradeSwipe | нет; деньги, предел40 |
 | RequestPhoneSession | open:boolean |
 | RequestSwipe | нет; открытая сессия, интервал0.75s |
+| RequestSetShowcaseCard | slot: 1..3, cardId: 0..40; 0 освобождает слот, сервер проверяет коллекцию владельца |
 | RequestTaskStart / RequestTaskComplete | taskId: PRESS_BUTTON / REACH_POINT / STAND_ON_PLATFORM |
 
 Чужие суммы, координаты, уровни, PlotId, owner и неизвестные поля не принимаются.
@@ -78,6 +79,9 @@ CoreProtocol преобразует wire-формат во внутренний 
 ## Мировая презентация
 
 WorldEvent wire: {protocolVersion=1,type,eventId,ownerUserId,plotId,stateRevision,...}.
+WorldSnapshot.plots и PlotAssigned.state содержат публичную проекцию участка и спутника.
+Полный профиль отправляется владельцу через PlayerStateUpdated.
+Выбранные карточки приходят владельцу в `ShowcaseCards`. Гости получают только идентификаторы выставленных карточек через атрибуты рамок.
 VerityLevelChanged содержит oldLevel/newLevel/oldScale/newScale/milestoneLevel?.
 Одна покупка = один переход; события HouseTierChanged/MilestoneReached с purchaseEventId
 не создают вторую презентацию. WorldSnapshot/PlotAssigned применяют baseline без истории.

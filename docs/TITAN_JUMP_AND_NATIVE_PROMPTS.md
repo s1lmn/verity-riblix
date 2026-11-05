@@ -9,3 +9,7 @@ All circular purchase stations now use Roblox ProximityPromptStyle.Default and i
 Source edits and Rojo packaging only. No automated tests, Luau compilation, Studio Play or runtime confirmation under the user restriction. Jump behaviour still requires a player check in the newly opened build.
 
 API reference: https://create.roblox.com/docs/reference/engine/classes/Humanoid#ChangeState
+
+## Pull integration
+
+Merged origin/main through c21872e, preserving the team's sustained dash, extended flight and steering timeout, flight ride/takeoff/landing, physical owner doors, parkour, card showcase, delivery event and full 100-level appearance progression. Leap uses the shared server-ownership preflight with our delayed launch, falling compensation and short ownership return; flight keeps the flight flag/Drive/watchdog required for steering. The native prompt controller preserves the team's exterior door-side restriction with a local root lookup; custom E buttons remain removed. No Play/tests performed during integration.

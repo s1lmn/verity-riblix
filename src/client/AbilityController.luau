@@ -6,6 +6,7 @@ local Actions=game:GetService("ContextActionService")
 local GuiService=game:GetService("GuiService")
 local RunService=game:GetService("RunService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
+local Ride=require(ReplicatedStorage.Shared.VerityRideConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
@@ -22,21 +23,34 @@ function Controller.new(ctx)
 		end,false,if slot=="Mobility" then Enum.KeyCode.F else Enum.KeyCode.G,if slot=="Mobility" then Enum.KeyCode.ButtonL1 else Enum.KeyCode.ButtonR1)
 		self.cleanup:Add(function() Actions:UnbindAction(action) end)
 	end
-	local reticle=W.Text(ctx.refs.Safe,"CombatReticle","+",22,true,Color3.fromHex("FFE7BD"))
+	self.cleanup:Add(ctx.refs.RideButton.Activated:Connect(function() self:Activate("Ride",true) end))
+ Actions:BindAction("VerityRide",function(_,state)
+  if state==Enum.UserInputState.Begin and self:Activate("Ride",false) then return Enum.ContextActionResult.Sink end
+  return Enum.ContextActionResult.Pass
+ end,false,Enum.KeyCode.R,Enum.KeyCode.ButtonL3)
+ self.cleanup:Add(function() Actions:UnbindAction("VerityRide") end)
+ local reticle=W.Text(ctx.refs.Safe,"CombatReticle","+",22,true,Color3.fromHex("FFE7BD"))
 	reticle.AnchorPoint,reticle.Position,reticle.Size=Vector2.new(.5,.5),UDim2.fromScale(.5,.5),UDim2.fromOffset(24,24)
 	reticle.TextXAlignment=Enum.TextXAlignment.Center;reticle.TextStrokeTransparency=.35;reticle.Visible=false
 	self.reticle=reticle
-	local elapsed=0
+	self.cleanup:Add(Input.JumpRequest:Connect(function()
+  if not ctx.active and not ctx.presenting and not GuiService.MenuIsOpen and not Input:GetFocusedTextBox() then
+   self.ascendUntil=workspace:GetServerTimeNow()+.3
+  end
+ end))
+ local elapsed=0
 	self.cleanup:Add(RunService.Heartbeat:Connect(function(dt)
 		self:Render();elapsed+=dt
-		if elapsed<.2 then return end;elapsed=0
+		if elapsed<.1 then return end;elapsed=0
 		local item=self:Item("Mobility")
-		if not self.remote or not item or (item.Action~="flight" and not item.MobilityAction)
+		if not self.remote or (not Players.LocalPlayer:GetAttribute("VerityRiding") and (not item or (item.Action~="flight" and not item.MobilityAction)))
 			or (Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)<workspace:GetServerTimeNow() then return end
 		local char=Players.LocalPlayer.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health<=0 then return end
-		local movement=if ctx.active or ctx.presenting or Input:GetFocusedTextBox() then Vector3.zero else hum.MoveDirection
-		local vertical=if Input:IsKeyDown(Enum.KeyCode.LeftControl) then -.65 elseif hum.Jump or Input:IsKeyDown(Enum.KeyCode.Space) then 1 else .12
+		local blocked=ctx.active or ctx.presenting or GuiService.MenuIsOpen or Input:GetFocusedTextBox()
+  local movement=if blocked then Vector3.zero else hum.MoveDirection
+  local vertical=if blocked then 0 elseif Input:IsKeyDown(Enum.KeyCode.LeftControl) then -.65
+   elseif hum.Jump or Input:IsKeyDown(Enum.KeyCode.Space) or (self.ascendUntil or 0)>workspace:GetServerTimeNow() then 1 else 0
 		local direction=Vector3.new(movement.X,vertical,movement.Z)
 		if direction.Magnitude>1 then direction=direction.Unit end
 		self.remote:FireServer("Steer",direction)
@@ -49,7 +63,7 @@ function Controller:Item(slot)
 	return Catalog.Equipped(state,slot,state.HeroPassOwned)
 end
 function Controller:Activate(slot,fromButton)
-	local ctx=self.ctx;local button=if slot=="Mobility" then ctx.refs.AbilityButton else ctx.refs.AttackButton
+	local ctx=self.ctx;local button=if slot=="Ride" then ctx.refs.RideButton elseif slot=="Mobility" then ctx.refs.AbilityButton else ctx.refs.AttackButton
 	if not self.remote or ctx.active or ctx.presenting or GuiService.MenuIsOpen or Input:GetFocusedTextBox()
 		or not button.Visible or not button.Interactable then return false end
 	local direction
@@ -61,8 +75,19 @@ function Controller:Activate(slot,fromButton)
 		if fromButton or Input.PreferredInput~=Enum.PreferredInput.KeyboardAndMouse then
 			ray=camera:ViewportPointToRay(camera.ViewportSize.X/2,camera.ViewportSize.Y/2)
 		else local pos=Input:GetMouseLocation();ray=camera:ScreenPointToRay(pos.X,pos.Y) end
-		local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude;params.FilterDescendantsInstances={char}
+		local exclude,bodies={char},{}
+		for _,player in Players:GetPlayers() do
+			if player.Character and player.Character~=char then
+				table.insert(exclude,player.Character);table.insert(bodies,player.Character)
+			end
+		end
+		local params=RaycastParams.new();params.FilterDescendantsInstances=exclude;params.RespectCanCollide=true
 		local hit=workspace:Raycast(ray.Origin,ray.Direction*400,params)
+		if #bodies>0 then
+			params.FilterType,params.FilterDescendantsInstances,params.RespectCanCollide=Enum.RaycastFilterType.Include,bodies,false
+			local body=workspace:Raycast(ray.Origin,ray.Direction*400,params)
+			if body and (not hit or body.Distance<hit.Distance) then hit=body end
+		end
 		local target=if hit then hit.Position else ray.Origin+ray.Direction*400
 		local delta=target-root.Position;if delta.Magnitude<.1 then return false end;direction=delta.Unit
 	end
@@ -71,16 +96,30 @@ end
 function Controller:Render()
 	local ctx=self.ctx;local char=Players.LocalPlayer.Character
 	local humanoid=char and char:FindFirstChildOfClass("Humanoid")
-	local visible=not ctx.active and not ctx.presenting and humanoid and humanoid.Health>0
-	for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
+	local riding=Players.LocalPlayer:GetAttribute("VerityRiding")==true
+ local state=ctx.net.state
+ local visible=not ctx.active and not ctx.presenting and humanoid and humanoid.Health>0
+	local rideButton=ctx.refs.RideButton
+ rideButton.Visible=visible and state and state.VerityUnlocked and state.VerityLevel>=Ride.MinLevel or false
+ local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "L3 " else "R "
+ local remaining=math.max(0,math.ceil((Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)-workspace:GetServerTimeNow()))
+ local phase=Players.LocalPlayer:GetAttribute("VerityRidePhase")
+ local transitioning=riding and (phase=="Takeoff" or phase=="Landing")
+ local caption=if phase=="Takeoff" then "Взлетаем!" elseif phase=="Landing" then "Приземляемся" elseif riding then "Спешиться" else "Верхом на Verity"
+ W.SetButton(rideButton,key..Locale.Text(caption)..(if riding and not transitioning then " · "..remaining else ""),ctx.net.connected and not transitioning,false)
+ for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
 		local item=self:Item(slot)
-		button.Visible=visible and item~=nil or false
+		button.Visible=visible and item~=nil and not (riding and slot=="Mobility") or false
 		if not button.Visible then continue end
 		local attribute=if slot=="Mobility" then "VerityAbilityReadyAt" else "VerityAttackReadyAt"
 		local remaining=math.max(0,math.ceil((Players.LocalPlayer:GetAttribute(attribute) or 0)-workspace:GetServerTimeNow()))
 		local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then (if slot=="Mobility" then "L1 " else "R1 ") else (if slot=="Mobility" then "F " else "G ")
 		local name=if slot=="Mobility" and item.MobilityAction then "Полёт героя" else item.Name
-		W.SetButton(button,key..Locale.Text(name)..(if remaining>0 then " · "..remaining..Locale.Text(" с") else ""),remaining==0 and ctx.net.connected,false)
+		local flightRemaining=if slot=="Mobility" and (item.Action=="flight" or item.MobilityAction)
+   then math.max(0,math.ceil((Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)-workspace:GetServerTimeNow())) else 0
+  local text=if flightRemaining>0 then string.format(Locale.Text("ПОЛЁТ • %d с"),flightRemaining)
+   else key..Locale.Text(name)..(if remaining>0 then " · "..remaining..Locale.Text(" с") else "")
+  W.SetButton(button,text,remaining==0 and flightRemaining==0 and ctx.net.connected,false)
 	end
 	self.reticle.Visible=ctx.refs.AttackButton.Visible
 end

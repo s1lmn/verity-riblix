@@ -1,0 +1,15 @@
+{
+  "mesh": "rbxassetid://98969698787830",
+  "textures": {
+    "Aqua": "rbxassetid://71775648259419",
+    "Frost": "rbxassetid://131856364653320",
+    "Magma": "rbxassetid://123521799338149",
+    "Cyber": "rbxassetid://99085075088493",
+    "Cosmic": "rbxassetid://90153269297708",
+    "Rainbow": "rbxassetid://89209678660281"
+  },
+  "source": "Studio upload_image readback, 2026-11-05; UVs verified against existing mesh (6624 corners, max error5.3e-7)",
+  "meshNativeDiameter": 2.8,
+  "bodyBaseDiameter": 1.7,
+  "uvConvention": "u=atan2(x,-z)/(2*pi), v=acos(y/r)/pi; roblox-skins re-baked from procedural recipes"
+}

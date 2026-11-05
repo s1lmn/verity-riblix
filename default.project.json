@@ -16,6 +16,9 @@
       },
       "$attributes": {
         "VerityRuntimeMode": "Core"
+      },
+      "VerityElementalModels": {
+        "$path": "assets/verity-elemental/all-levels/Verity_All_100_Models.rbxmx"
       }
     },
     "ServerScriptService": {
@@ -86,6 +89,9 @@
         "HouseProgression": {
           "$path": "src/server/HouseProgression.luau"
         },
+        "HouseDoor": {
+          "$path": "src/server/HouseDoor.luau"
+        },
         "MoneyPassService": {
           "$path": "src/server/MoneyPassService.luau"
         },
@@ -103,6 +109,12 @@
         },
         "AdminAccess": {
           "$path": "src/server/AdminAccess.luau"
+        },
+        "ParkourService": {
+          "$path": "src/server/ParkourService.luau"
+        },
+        "StreetDeliveryService": {
+          "$path": "src/server/StreetDeliveryService.luau"
         }
       }
     },
@@ -115,6 +127,12 @@
           "$className": "Folder",
           "VerityVisualBootstrap": {
             "$path": "src/world-client/VerityVisualBootstrap.client.luau"
+          },
+          "HouseBuildEffects": {
+            "$path": "src/world-client/HouseBuildEffects.client.luau"
+          },
+          "CardShowcase": {
+            "$path": "src/world-client/CardShowcase.client.luau"
           }
         }
       }

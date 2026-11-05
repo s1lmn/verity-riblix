@@ -142,6 +142,7 @@ function Visuals.Tick(r,age,root,humanoid,settings)
 			radius*=if motion then 1 else .15+.85*(1-(1-t)^3)
 		end
 		local fade=if sustained then math.clamp((t-.8)/.2,0,1) else t*t
+		local appearance=math.clamp(elapsed/.065,0,1)
 		for index,p in ringData.parts do
 			local a=(index-1)*math.pi*2/#ringData.parts;local b=index*math.pi*2/#ringData.parts
 			local start=cf:PointToWorldSpace(Vector3.new(math.cos(a)*radius,math.sin(a)*radius,0))
@@ -150,7 +151,8 @@ function Visuals.Tick(r,age,root,humanoid,settings)
 			local direction=(finish-start).Unit
 			local up=if math.abs(direction:Dot(Vector3.yAxis))>.98 then Vector3.zAxis else Vector3.yAxis
 			p.CFrame=CFrame.lookAt((start+finish)/2,finish,up)
-			p.Transparency=if elapsed<0 or t>=1 then 1 else math.clamp(.15+fade*.85,0,1)
+			local opacity=(1-fade)*appearance*(if reduced then .44 else .85)
+			p.Transparency=1-opacity
 		end
 	end
 	local action=r.item.MobilityAction or r.item.Action
@@ -166,19 +168,20 @@ function Visuals.Tick(r,age,root,humanoid,settings)
 			local time=if motion then 0 else age
 			local radius=if motion then 2 else (1-progress)*(r.item.Radius or 8)*.7
 			p.Position=r.target+Vector3.new(math.cos(m.angle+time*7)*radius,math.sin(time*5+index)*2,math.sin(m.angle+time*7)*radius)
-			p.Transparency=progress
+			p.Transparency=if reduced or motion then 1 else progress
 		else
 			local time=if motion then 0 else age
 			local y=if action=="leap" then math.sin(time*3+index)*2 else math.sin(m.angle)*1.8
 			p.CFrame=root.CFrame*CFrame.new(math.cos(m.angle+time*3)*1.6,y,2+index*.2)
-			p.Transparency=.25+.45*math.clamp(age/r.duration,0,1)
+			p.Transparency=if reduced or motion then 1 else .25+.45*math.clamp(age/r.duration,0,1)
 		end
 	end
 	if r.bolt then
 		local t=math.clamp(age/.15,0,1);r.bolt.Position=r.origin:Lerp(r.target,t);r.bolt.Transparency=if t>=1 then 1 else .08
 	end
 	if r.impactLight then
-		local t=age-.13;r.impactLight.Brightness=if reduced or t<0 then 0 else 1.8*math.exp(-t*7)
+		local t=age-.13
+		r.impactLight.Brightness=if reduced or motion or t<0 then 0 else 1.8*math.clamp(t/.045,0,1)*math.exp(-t*7)
 	end
 	if r.shield then
 		local fade=if r.stoppedAt then math.clamp((os.clock()-r.stoppedAt)/.35,0,1) else 0

@@ -1,5 +1,17 @@
 # VERITY release handoff
 
+## House construction animation, 5 November
+
+Confirmed construction purchases now play a short neon outline and rising bricks at the floor, door, roof or production module. `HouseProgression` marks progress increases for the current owner and the World client consumes fresh cues. Two effects can run at once on each client. Existing house reveals, collision handling and accessibility settings retain their roles. This pass was packaged without automated tests or Studio Play.
+
+Door toggles now use a short local slide. The server applies access and collision when it confirms the toggle. Nearby clients display a temporary copy of the panel for 0.34 seconds. Rapid toggles continue from the panel's current position. This follow-up was packaged under the same test restriction.
+
+## Save reliability and milestone motion, 5 November
+
+Core uses the Roblox `UpdateAsync` callback to return the key value, associated user IDs and metadata. Each profile load has a unique lock token. Final saves wait for an active write, recognize a previously committed release on retry, and leave profiles closed for an autosave retry after a transport failure. The existing player data schema and store name are preserved. [Roblox UpdateAsync reference](https://create.roblox.com/docs/reference/engine/classes/GlobalDataStore#UpdateAsync).
+
+The existing Verity upgrade renderer uses distinct milestone poses for hops, hover, impulse and spins. Reduced Motion still applies. See [ANIMATIONS.md](ANIMATIONS.md). No automated tests or Studio Play were run for this pass.
+
 ## Latest local expansion — powers and construction
 
 The current local sources supersede the release below with cash-purchased, saved/equipped superhero powers, PvP/PvE, physical ability stands and staged house construction with increasing income. Homelander is a separate planned 99-Robux pass; the user explicitly deferred the real pass ID. See [POWERS_AND_CONSTRUCTION.md](POWERS_AND_CONSTRUCTION.md) for exact ownership, pricing, controls and unverified portions. These new sources have not been Play-tested or run through automated tests, according to the user's current restriction. The user requested a Git push on 5 November. The integration merges the team toy UI/admin preview commits 9b83404 and 81213b1 with the powers, construction, level-100 face correction and neon purchase pads. Roblox publishing remains deferred.

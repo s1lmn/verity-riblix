@@ -12,10 +12,12 @@ function Service.new(data,state,products,clock)
  end
  return self
 end
-function Service:Catalog()
+function Service:Catalog(purchasesEnabled)
  local result={}
  for _,id in Catalog.Order do
-  local item=table.clone(Catalog.Items[id]);item.productId=self.byItem[id];item.available=item.productId~=nil
+  local item=table.clone(Catalog.Items[id])
+  item.productId=if purchasesEnabled==false then nil else self.byItem[id]
+  item.available=item.productId~=nil
   table.insert(result,item)
  end
  return result

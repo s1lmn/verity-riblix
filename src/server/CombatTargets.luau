@@ -49,8 +49,9 @@ function Targets:Render(record)
 end
 function Targets:Damage(part,amount,userId)
 	local r=self.records[part]
-	if not r or r.health<=0 then return false end
-	r.health=math.max(0,r.health-amount);self:Render(r)
+	if not r or r.health<=0 then return 0 end
+	local dealt=math.min(r.health,amount)
+	r.health-=dealt;self:Render(r)
 	if r.health<=0 then
 		r.part.Transparency=1;r.part.CanCollide=false;r.part.CanQuery=false;r.gui.Enabled=false
 		for _,p in r.extras do p.Transparency=1 end
@@ -66,6 +67,6 @@ function Targets:Damage(part,amount,userId)
 			for _,p in r.extras do p.Transparency=0 end
 		end)
 	end
-	return true
+	return dealt
 end
 return Targets
