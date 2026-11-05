@@ -6,11 +6,12 @@ local Houses = require(Shared.HouseConfig)
 local Catalog = require(Shared.CosmeticCatalog)
 local Drops = require(Shared.FeedDrops)
 local Abilities = require(Shared.AbilityCatalog)
+local Tasks = require(Shared.TaskConfig)
 local Schema = {}
 function Schema.new()
 	return {DataVersion = 2, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
-		TutorialCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}}
+		TutorialCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end
 -- Missing v1 fields are reconciled. Corrupt/future profiles fail closed, not reset.
 function Schema.validate(raw)
@@ -54,7 +55,7 @@ function Schema.validate(raw)
 		receipts[id] = true
 	end
 
- for _,key in {"CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do
+ for _,key in {"CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do
   if type(data[key])~="table" then return nil,"INVALID_"..key end
   data[key]=table.clone(data[key])
  end
@@ -66,8 +67,11 @@ function Schema.validate(raw)
  for slot,id in data.CosmeticsEquipped do
   if not Catalog.Slots[slot] or not Catalog.Items[id] or Catalog.Items[id].slot~=slot or not data.CosmeticsOwned[id] then return nil,"INVALID_EQUIPMENT" end
  end
- for id,endsAt in data.TaskCooldowns do
-  if (id~="PRESS_BUTTON" and id~="REACH_POINT" and id~="STAND_ON_PLATFORM") or not Numeric.isFinite(endsAt) or endsAt<0 or endsAt>Config.MaxMoney then return nil,"INVALID_COOLDOWN" end
+ for _,field in {"TaskCooldowns","NeighborhoodTaskCooldowns"} do
+  for id,endsAt in data[field] do
+   local definition=if type(id)=="string" then Tasks[id] else nil
+   if not definition or definition.CooldownField~=field or not Numeric.isFinite(endsAt) or endsAt<0 or endsAt>Config.MaxMoney then return nil,"INVALID_COOLDOWN" end
+  end
  end
  for cardId,count in data.FeedCollection do
   local index=if type(cardId)=="string" then tonumber(cardId) else nil
@@ -103,7 +107,7 @@ function Schema.validate(raw)
 end
 function Schema.copy(data)
 	local copy = table.clone(data)
-	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do copy[key]=table.clone(data[key]) end
+	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do copy[key]=table.clone(data[key]) end
 	copy.ShowcaseCards = table.clone(data.ShowcaseCards or {})
 	return copy
 end

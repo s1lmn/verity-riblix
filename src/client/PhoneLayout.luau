@@ -13,7 +13,7 @@ function Layout.Measure(width: number,height: number)
  local controlsH=218
  local artH=if landscape then math.max(bodyH,controlsH) else math.max(150,bodyH-controlsH-8)
  local contentH=if landscape then math.max(artH,controlsH) else artH+8+controlsH
- return {width=w,height=h,x=if width>=640 then width-w-18 else (width-w)/2,y=12,
+ return {width=w,height=h,x=math.floor((width-w)/2),y=math.floor((height-h)/2),
   landscape=landscape,hardware=hardware,bodyTop=bodyTop,bodyH=bodyH,bodyW=bodyW,
   artH=artH,contentH=contentH,controlsH=controlsH,
   artW=if landscape then math.floor((bodyW-12)*.53) else bodyW,

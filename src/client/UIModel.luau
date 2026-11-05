@@ -2,6 +2,7 @@
 -- Pure presentation logic. No prices, rewards or player progress are generated here.
 local Model = {}
 local LevelConfig = if game then require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LevelConfig")) else require("../shared/LevelConfig")
+local TaskConfig = if game then require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("TaskConfig")) else require("../shared/TaskConfig")
 Model.Milestones = LevelConfig.Milestones
 
 function Model.IsFinite(value: any): boolean
@@ -68,10 +69,9 @@ function Model.ValidateSnapshot(raw: any): (any?, string?)
 	local state = table.clone(raw)
 	state.Tasks = {}
 	if type(raw.Tasks) == "table" then
-		local known = { PRESS_BUTTON = true, REACH_POINT = true, STAND_ON_PLATFORM = true }
 		local seen = {}
 		for _, entry in raw.Tasks do
-			if type(entry) ~= "table" or not known[entry.taskId] or seen[entry.taskId]
+			if type(entry) ~= "table" or type(entry.taskId) ~= "string" or not TaskConfig[entry.taskId] or seen[entry.taskId]
 				or not Model.IsFinite(entry.reward) or entry.reward < 0
 				or not Model.IsFinite(entry.cooldownEndsAt)
 				or (entry.status ~= "Ready" and entry.status ~= "Active" and entry.status ~= "Cooldown")

@@ -1,11 +1,14 @@
 --!nonstrict
 -- Presentation choices only; every milestone is read from confirmed Core state.
 local Model={}
-local order={"PRESS_BUTTON","REACH_POINT","STAND_ON_PLATFORM"}
+local order={"PRESS_BUTTON","REACH_POINT","STAND_ON_PLATFORM","POSTBOX","CHECKPOINT","CHARGE_PAD"}
 local tasks={
- PRESS_BUTTON={title="Нажми кнопку",detail="Иди по стрелкам к жёлтой кнопке",near="Нажми %s у кнопки",radius=7},
+ PRESS_BUTTON={title="Нажми кнопку",detail="Иди по стрелкам к жёлтой кнопке",near="Нажми %s у кнопки",touch="Коснись «Нажать» у кнопки",prompt=true,radius=7},
  REACH_POINT={title="Дойди до метки",detail="Иди по стрелкам к розовой площадке",near="Шагни в центр метки",radius=3},
  STAND_ON_PLATFORM={title="Встань на платформу",detail="Иди по стрелкам к голубой площадке",near="Не сходи с платформы 1 секунду",radius=2.2},
+ POSTBOX={title="Районная почта",detail="Иди к оранжевому почтовому ящику",near="Нажми %s и отправь письмо",touch="Коснись «Отправить» у ящика",prompt=true,radius=5},
+ CHECKPOINT={title="Сиреневый маршрут",detail="Иди по стрелкам к сиреневой метке",near="Шагни в центр метки",radius=2.2},
+ CHARGE_PAD={title="Зарядка Verity",detail="Иди по стрелкам к зелёной площадке",near="Не сходи с площадки три секунды",radius=2.2},
 }
 local function ui(id,target,title,detail)
  return {id=id,kind="UI",target=target,title=title,detail=detail}

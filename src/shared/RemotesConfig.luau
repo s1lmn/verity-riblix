@@ -1,6 +1,7 @@
 --!strict
 local Numeric = require(script.Parent.Numeric)
 local Drops = require(script.Parent.FeedDrops)
+local Tasks = require(script.Parent.TaskConfig)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
 	"RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
@@ -38,8 +39,7 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
   end
  elseif name == "RequestTaskStart" or name == "RequestTaskComplete" then
 		allowed.taskId = true
-		if payload.taskId ~= "PRESS_BUTTON" and payload.taskId ~= "REACH_POINT"
-			and payload.taskId ~= "STAND_ON_PLATFORM" then return false, "INVALID_TASK" end
+		if type(payload.taskId) ~= "string" or not Tasks[payload.taskId] then return false, "INVALID_TASK" end
 	end
 	for key in payload do
 		if not allowed[key] then return false, "UNEXPECTED_FIELD" end

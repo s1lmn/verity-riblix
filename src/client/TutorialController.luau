@@ -113,7 +113,7 @@ function Tutorial:ComputeRoute(root,position,now)
  local height=math.clamp(math.ceil((humanoid and humanoid.HipHeight or 2)+root.Size.Y+2),5,8)
  local job={generation=self.generation,start=root.Position};self.job=job
  local target=position
- if self.goal.target=="Delivery" or self.goal.target=="PRESS_BUTTON" then
+ if self.goal.target=="Delivery" or self.goal.prompt then
   local approach=flat(root.Position-position);if approach.Magnitude>.1 then target+=approach.Unit*3 end
  end
  target+=Vector3.new(0,3,0);self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","Computing")
@@ -236,7 +236,7 @@ function Tutorial:Update(now)
   self:ClearRoute();self.targetKey=goal.id;self.targetPosition=position;self.generation+=1
  end
  local delta=position-root.Position;local near=flat(delta).Magnitude<=goal.radius and math.abs(delta.Y)<6
- if near and (goal.target=="Delivery" or goal.target=="PRESS_BUTTON") then
+ if near and (goal.target=="Delivery" or goal.prompt) then
   local ray=RaycastParams.new();ray.FilterType=Enum.RaycastFilterType.Include;ray.RespectCanCollide=true
   local world=workspace:FindFirstChild("GeneratedWorld")
   ray.FilterDescendantsInstances=if world then {world} else {}
@@ -248,7 +248,7 @@ function Tutorial:Update(now)
   self:HintText(string.format(Locale.Text(goal.near or goal.detail),key))
   if Input.PreferredInput==Enum.PreferredInput.Touch then
    if goal.target=="Delivery" and ctx.net.state.DeliveryState=="Delivered" then self:HintText("Коснись «Распаковать» у коробки")
-   elseif goal.target=="PRESS_BUTTON" then self:HintText("Коснись «Нажать» у кнопки") end
+   elseif goal.touch then self:HintText(goal.touch) end
   end
  else self:HintText(Locale.Text("Следуй стрелкам · ")..math.max(1,math.round(delta.Magnitude*.28))..Locale.Text(" м")) end
  local camera=workspace.CurrentCamera

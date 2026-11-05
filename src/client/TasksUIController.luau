@@ -4,7 +4,6 @@ local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local Tasks={}
 Tasks.__index=Tasks
-local Titles={PRESS_BUTTON="НАЖМИ КНОПКУ",REACH_POINT="ДОЙДИ ДО МЕТКИ",STAND_ON_PLATFORM="ПОСТОЙ НА ПЛАТФОРМЕ"}
 
 function Tasks.new(ctx)
 	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),target=nil},Tasks)
@@ -47,7 +46,7 @@ function Tasks:Render()
 		W.SetButton(row.Button,if cooldown then Locale.Text("СКОРО СНОВА") elseif busy then Locale.Text("WAITING…")
 			elseif entry.status=="Active" then Locale.Text("ПОКАЗАТЬ ПУТЬ →") else Locale.Text("НАЧАТЬ ЗАДАНИЕ →"),net.connected and not cooldown and not busy,busy)
 		if entry.status=="Active" and typeof(entry.targetPosition)=="Vector3" and (not self.target or taskId==self.selectedTaskId) then
-			self.target,self.targetName=entry.targetPosition,Titles[taskId]
+			self.target,self.targetName=entry.targetPosition,row.Title.Text
 		end
 	end
 end

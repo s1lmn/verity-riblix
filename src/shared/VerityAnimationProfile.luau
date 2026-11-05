@@ -24,8 +24,8 @@ end
 function Profile.Aura(level: number)
 	local progress = (math.clamp(level,1,100)-1)/99
 	return {
-		brightness = .18+1.32*progress,
-		outline = .88-.55*progress,
+		brightness = .44+1.06*progress,
+		outline = .68-.35*progress,
 		fire = level>=10,
 		fireStrength = .65+1.35*progress,
 		trails = if level>=100 then 3 elseif level>=75 then 2 elseif level>=50 then 1 else 0,

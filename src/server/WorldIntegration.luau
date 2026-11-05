@@ -290,7 +290,7 @@ function WorldIntegration:IsNearTask(userId, taskId)
 	if not root then return false, false end
 	if not target or not target:IsDescendantOf(self.workspace) then return false, true end
 	local localPosition = target.CFrame:PointToObjectSpace(root.Position)
-	if taskId == "STAND_ON_PLATFORM" then
+	if Tasks[taskId].Mode == "Hold" then
 		return math.abs(localPosition.X) <= target.Size.X / 2
 			and math.abs(localPosition.Z) <= target.Size.Z / 2
 			and localPosition.Y >= target.Size.Y / 2

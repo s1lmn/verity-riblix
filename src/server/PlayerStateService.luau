@@ -50,7 +50,7 @@ function PlayerStateService:Snapshot(userId)
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
 	local tasks = {}
 	for id, config in TaskConfig do
-		local state = session.Tasks[id] or {Active = false, CooldownUntil = data.TaskCooldowns[id] or 0}
+		local state = session.Tasks[id] or {Active = false, CooldownUntil = data[config.CooldownField][id] or 0}
 		tasks[id] = {taskId = id, reward = config.Reward * multiplier,
 			status = if state.Active then "Active" elseif state.CooldownUntil > self.clock() then "Cooldown" else "Ready",
 			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id) else nil,

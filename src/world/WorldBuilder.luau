@@ -3,6 +3,7 @@ local InteriorFactory = require(script.Parent.InteriorFactory)
 local ParkourBuilder = require(script.Parent.ParkourBuilder)
 local RaceBuilder = require(script.Parent.VerityRaceBuilder)
 local SurfaceTiles = require(script.Parent.WorldSurfaceTiles)
+local Boundary = require(script.Parent.WorldBoundary)
 local WorldBuilder = {}
 local VERSION = "open-neighborhood-6-compact"
 local ROW_SPACING = 72
@@ -43,6 +44,7 @@ function WorldBuilder.Build(parent, plotCount)
             ParkourBuilder.Build(existing)
             RaceBuilder.Build(existing)
             SurfaceTiles.Build(existing)
+            Boundary.Build(existing)
             parkTemplateFloor(target, existing)
             return existing
         end
@@ -118,6 +120,7 @@ function WorldBuilder.Build(parent, plotCount)
     ParkourBuilder.Build(root)
     RaceBuilder.Build(root)
     SurfaceTiles.Build(root)
+    Boundary.Build(root)
     parkTemplateFloor(target, root)
     root.Parent = target
     return root

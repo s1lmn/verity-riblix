@@ -30,7 +30,7 @@ function Controller.new(ctx)
 		self.pending[model]=nil
 		local gui=Instance.new("BillboardGui");gui.Name="Purchase_"..model.Name;gui.Adornee=anchor
 		gui.Size=UDim2.fromOffset(218,84);gui.StudsOffsetWorldSpace=Vector3.new(0,model:GetAttribute("LabelHeight") or 3.4,0)
-		gui.MaxDistance=48;gui.AlwaysOnTop=false;gui.Active=false;gui.Enabled=false;gui.Parent=folder
+		gui.MaxDistance=model:GetAttribute("LabelDistance") or 48;gui.AlwaysOnTop=false;gui.Active=false;gui.Enabled=false;gui.Parent=folder
 		local function text(name,y,size,bold)
 			local label=W.Text(gui,name,"",size,bold,Color3.fromHex("F2FAFF"))
 			label.Position=UDim2.fromOffset(4,y);label.Size=UDim2.new(1,-8,0,20)

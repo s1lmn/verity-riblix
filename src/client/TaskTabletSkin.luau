@@ -9,17 +9,25 @@ local orders={
  {"PRESS_BUTTON","НАЖМИ КНОПКУ","Найди отмеченную кнопку и нажми её.",T.Pink},
  {"REACH_POINT","ПРОГУЛКА ПО РАЙОНУ","Доберись до точки, которую покажет стрелка.",T.Blue},
  {"STAND_ON_PLATFORM","ПОСТОЙ НА ПЛАТФОРМЕ","Встань на отмеченную платформу на одну секунду.",T.Mint},
+ {"POSTBOX","РАЙОННАЯ ПОЧТА","Дойди до оранжевого ящика и отправь письмо.",T.Gold},
+ {"CHECKPOINT","СИРЕНЕВЫЙ МАРШРУТ","Доберись до сиреневой метки на другой стороне улицы.",T.Purple},
+ {"CHARGE_PAD","ЗАРЯДКА VERITY","Останься на зелёной площадке три секунды.",T.Mint},
 }
+local cardHeight, gap = 176, 10
+local contentHeight = #orders * (cardHeight + gap) - gap
 local function shape(parent,name,x,y,w,h,color,radius)
  local f=W.Round(W.Frame(parent,name,UDim2.fromOffset(w,h),color),radius or 4)
  f.Position=UDim2.fromOffset(x,y);return f
 end
 local function actionIcon(parent,kind,color)
  local tile=shape(parent,"ActionIcon",12,12,36,36,color,10)
- if kind=="PRESS_BUTTON" then
+ if kind=="POSTBOX" then
+  shape(tile,"Envelope",6,10,24,17,T.White,4)
+  local flap=shape(tile,"Fold",12,9,12,12,T.Ink,3);flap.Rotation=45
+ elseif kind=="PRESS_BUTTON" then
   shape(tile,"Base",7,22,22,7,T.Ink,3)
   shape(tile,"Button",10,10,16,15,T.White,7)
- elseif kind=="REACH_POINT" then
+ elseif kind=="REACH_POINT" or kind=="CHECKPOINT" then
   shape(tile,"Pin",10,5,16,20,T.Ink,9)
   shape(tile,"Center",15,10,6,6,T.White,6)
   shape(tile,"Shadow",7,28,22,3,T.White,3)
@@ -46,13 +54,13 @@ function Skin.Build(parent)
  local close=W.Button(root,"Close","×",T.Gold)
  close.Size=UDim2.fromOffset(44,44);close.Position=UDim2.new(1,-62,0,24);close.TextSize=26
  local body=W.New("ScrollingFrame",{Name="Orders",BackgroundTransparency=1,BorderSizePixel=0,
-  Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-144),CanvasSize=UDim2.fromOffset(0,548),
+  Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-144),CanvasSize=UDim2.fromOffset(0,contentHeight),
   AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.Y,
   ScrollBarThickness=3,ScrollBarImageColor3=violet},root)
- W.List(body,10)
+ W.List(body,gap)
  local rows={}
  for index,info in orders do
-  local card=W.Round(W.Frame(body,info[1],UDim2.new(1,-6,0,176),T.White),16)
+  local card=W.Round(W.Frame(body,info[1],UDim2.new(1,-6,0,cardHeight),T.White),16)
   card.LayoutOrder=index;W.Stroke(card,info[4],2).Transparency=.45
   actionIcon(card,info[1],info[4])
   local heading=W.Text(card,"Title",info[2],14,true)
@@ -80,6 +88,6 @@ function Skin.Layout(p,size,panelX)
  p.Root.Position=UDim2.fromOffset(panelX or 12,12)
  p.Root.Size=UDim2.fromOffset(width,height)
  p.Title.TextSize=if width<360 then 16 else 20
- return {width=width,height=height,contentHeight=548,bodyHeight=height-144}
+ return {width=width,height=height,contentHeight=contentHeight,bodyHeight=height-144}
 end
 return Skin

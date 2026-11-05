@@ -23,32 +23,33 @@ local function label(parent,source,size,y)
 	local corner=Instance.new("UICorner");corner.CornerRadius=UDim.new(0,12);corner.Parent=text
 	return text
 end
-function Stands.Build(world,open)
+function Stands.Build(map,open)
 	local folder=Instance.new("Folder");folder.Name="VerityAbilityMarket";folder.Parent=workspace
-	-- The map's welcome plaza is at Z=-326 on the 340x740 ground.
-	local center=Vector3.new(0,0,-326)
-	for index,id in Catalog.Order do
+	local promenade=map.Environment:FindFirstChild("EndPath-1")
+	local surface=promenade.CFrame*CFrame.new(0,promenade.Size.Y/2,0)
+	local columns={30,49,72,91,110}
+	local regular=0
+	for _,id in Catalog.Order do
 		local item=Catalog.Items[id]
 		local model=Instance.new("Model");model.Name=id;model:SetAttribute("AbilityId",id)
 		model.ModelStreamingMode=Enum.ModelStreamingMode.Atomic
 		local premium=item.Premium==true
-		local column=(index-1)%5
-		local row=math.floor((index-1)/5)
-		local pos=if premium then center+Vector3.new(0,0,-28)
-			else center+Vector3.new((column-2)*45,0,if row==0 then 26 else -18)
-		-- Leave the central welcome spawn and road clear.
-		if not premium and column==2 then pos+=Vector3.new(if row==0 then -125 else 125,0,0) end
-		local pivot=CFrame.new(pos)
+		local side=if regular<#columns then -1 else 1
+		local pivot=if premium then surface*CFrame.new(128,0,-2)
+			else surface*CFrame.new(side*columns[regular%#columns+1],0,6)
+		if not premium then regular+=1 end
   if premium then
    local base=piece(model,"Pedestal",pivot*CFrame.new(0,.6,0)*CFrame.Angles(0,0,math.pi/2),Vector3.new(1.2,18,18),"28203E",false,Enum.PartType.Cylinder)
    base.CanCollide=true;base.CanQuery=true
    piece(model,"LightRim",pivot*CFrame.new(0,1.25,0)*CFrame.Angles(0,0,math.pi/2),Vector3.new(.18,18.2,18.2),"FFD369",true,Enum.PartType.Cylinder)
+  else
+   piece(model,"Pedestal",pivot*CFrame.new(0,.18,0)*CFrame.Angles(0,0,math.pi/2),Vector3.new(.36,7.2,7.2),"28203E",false,Enum.PartType.Cylinder)
   end
 		local orb=piece(model,"FloatingEmblem",pivot*CFrame.new(0,if premium then 7 else 4,0),Vector3.one*(if premium then 3.8 else 2.2),item.Color,true,Enum.PartType.Ball)
 		orb:SetAttribute("AbilityFloat",true);orb:SetAttribute("PremiumStand",premium)
 		local light=Instance.new("PointLight");light.Color=orb.Color;light.Range=if premium then 34 else 10
 		light.Brightness=if premium then 2.5 else .5;light.Shadows=false;light.Parent=orb
-		local source=piece(model,"PromptAnchor",pivot*CFrame.new(0,2,5),Vector3.one*.2,"FFFFFF")
+		local source=piece(model,"PromptAnchor",pivot*CFrame.new(0,2,0),Vector3.one*.2,"FFFFFF")
 		source.Transparency=1
 		local prompt=Instance.new("ProximityPrompt");prompt.MaxActivationDistance=10
 		prompt.RequiresLineOfSight=false;prompt.HoldDuration=.2;prompt:SetAttribute("AbilityId",id)
@@ -58,8 +59,9 @@ function Stands.Build(world,open)
 			local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if root and (root.Position-source.Position).Magnitude<=11 then open(player,id) end
 		end)
-		local circle=PadFactory.Create(model,pivot*CFrame.new(0,if premium then 1.5 else .14,0),if premium then "Hero" else "Ability",0,prompt)
-  circle:SetAttribute("AbilityId",id);circle:SetAttribute("LabelHeight",if premium then 12 else 6)
+		local circle=PadFactory.Create(model,pivot*CFrame.new(0,if premium then 1.5 else .42,0),if premium then "Hero" else "Ability",0,prompt)
+  circle:SetAttribute("AbilityId",id);circle:SetAttribute("LabelHeight",if premium then 9 else 4.8)
+  circle:SetAttribute("LabelDistance",26)
   circle:SetAttribute("OfferPrice",Config.HeroPassPrice)
   local text=label(orb,item.Name,if premium then 260 else 180,if premium then 5 else 3)
   text.Parent.Enabled=false -- The circle owns one compact, consistent label.

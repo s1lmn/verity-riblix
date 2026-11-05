@@ -105,7 +105,7 @@ Tasks.onReward = function(id, reward)
 	World:React(id,"Confident",2)
 	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
 end
-if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State, send, guid) end
+if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State) end
 local AbilityShop = require(script.Parent.AbilityShopService).new(Data,State,Economy,MarketplaceService)
 local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Economy,function(id,reward)
  send(id,"NotificationEvent",{protocolVersion=1,code="COMBAT_REWARD",reward=reward,eventId=guid(),source="Combat"})
@@ -125,7 +125,9 @@ end)
 if generatedWorld and generatedWorld:FindFirstChild("VerityRaceTrack") then Race:Bind(generatedWorld.VerityRaceTrack)end
 local abilityShopRemote=Instance.new("RemoteEvent")
 abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
-require(script.Parent.AbilityStands).Build(World,function(player,id) abilityShopRemote:FireClient(player,id) end)
+if generatedWorld then
+	require(script.Parent.AbilityStands).Build(generatedWorld,function(player,id) abilityShopRemote:FireClient(player,id) end)
+end
 local function refreshHeroPass(player)
  task.spawn(function()
   for attempt=1,3 do

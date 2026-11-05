@@ -143,35 +143,43 @@ function VFX:Update(model, origin, scale, stage, now, reducedEffects, near, leve
 	local body=if model:IsA("BasePart") then model else model:FindFirstChild("Body")
 	local color=tint or (if body then body.Color else Color3.fromHex("59C9FF"))
 	self:UpdateAura(group,origin,scale,level or model:GetAttribute("VerityLevel") or 1,now,color,reducedMotion,reset)
-	if stage<2 or reducedMotion then hideGeometry(group);return end
+	if reducedMotion then hideGeometry(group);return end
 	local center=origin.Position+Vector3.new(0,scale*.85,0)
+	local highlight=color:Lerp(Color3.fromRGB(255,246,225),.62)
+	local contrast=color:Lerp(Color3.fromRGB(194,164,255),.54)
+	local pulse=self.pulses[model]
+	local wave=if pulse and pulse.level==50 then math.clamp((now-pulse.started)/0.8,0,1) else nil
 	for index,ring in group.rings do
-		local visible=stage>=2 and (index==1 or stage>=4)
 		local radius=VFX.Radius(scale,index)
-		local pulse=self.pulses[model]
-		local wave=if pulse and pulse.level==50 then math.clamp((now-pulse.started)/0.8,0,1) else nil
 		if wave and index==1 then radius=scale*(.94+.14*wave)+.15 end
-		local height=scale*(if index==1 then 0 else .3)
-		local spin=now*(if index==1 then 0.24 else -0.18)
-		local tilt=if index==2 then 0.25 else 0
+		local height=scale*(if index==1 then -.18 else .3)
+		local spin=now*(if index==1 then .62 else -.30)
+		local tilt=if index==2 then .40 else .10
+		local cf=CFrame.new(center+Vector3.new(0,height,0))*CFrame.Angles(tilt,0,tilt)
+		local width=math.clamp(scale*.035,.065,.22)
+		local length=radius*2*math.sin(math.pi/SEGMENTS)*1.02
 		for i,p in ring do
-			p.Transparency=if visible then (if stage==5 then 0.43 else 0.68) else 1
-			if wave and index==1 then p.Transparency=0.20+wave*0.75 end
-			if not visible then continue end
+			local visible=if index==1 then stage>=1 or i%2==0 else stage>=4
+			if not visible then
+				if p.Transparency~=1 then p.Transparency=1 end
+				continue
+			end
 			local angle=i*math.pi*2/SEGMENTS+spin
-			local cf=CFrame.new(center+Vector3.new(0,height,0))*CFrame.Angles(tilt,0,tilt)
+			local shimmer=.5+.5*math.sin(now*3-i*.7)
+			p.Transparency=if wave and index==1 then .20+wave*.75 else .33+shimmer*.21
 			p.CFrame=cf*CFrame.new(math.cos(angle)*radius,0,math.sin(angle)*radius)*CFrame.Angles(0,-angle,0)
-			p.Size=Vector3.new(math.clamp(scale*0.018,0.035,0.16),0.035,radius*2*math.sin(math.pi/SEGMENTS)*1.04)
-			p.Color=color
+			p.Size=Vector3.new(width,width*.8,length)
+			p.Color=if index==2 then contrast elseif i%3==0 then highlight else color
 		end
 	end
 	if self.pulses[model] and now-self.pulses[model].started>0.8 then self.pulses[model]=nil end
 	for i,p in group.stars do
-		local angle=now*0.9-i*0.28
+		local angle=now*1.2-i*math.pi*2/3
 		local radius=VFX.Radius(scale,3)
-		p.CFrame=CFrame.new(center+Vector3.new(math.cos(angle)*radius,scale*(.06+.08*math.sin(angle*2)),math.sin(angle)*radius))*CFrame.Angles(0,angle,math.pi/4)
-		p.Size=Vector3.one*math.clamp(scale*0.045,0.045,0.42)
-		p.Color,p.Transparency=color,0.18+i*0.12
+		p.CFrame=CFrame.new(center+Vector3.new(math.cos(angle)*radius,scale*(.12+.26*math.sin(angle*2)),math.sin(angle)*radius))*CFrame.Angles(0,angle,math.pi/4)
+		local size=math.clamp(scale*.075,.095,.48)
+		p.Size=Vector3.new(size,size*1.65,size)
+		p.Color,p.Transparency=highlight,.12+i*.08
 	end
 end
 
