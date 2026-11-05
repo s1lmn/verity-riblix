@@ -1,5 +1,5 @@
 --!nonstrict
-local FeedDrops = {}
+local FeedDrops = {ShowcaseSlots = 3}
 
 local tiers = {
 	{label = "Common", chance = 58, multiplier = 1, color = "77F8CF"},
@@ -17,6 +17,7 @@ local assignments = {
 	2, 1,  2, 4,  4, 4,  1, 1,  5, 5,
 }
 local groups = {}
+FeedDrops.CardCount = #assignments
 for tier in tiers do groups[tier] = {} end
 for card, tier in assignments do table.insert(groups[tier], card) end
 

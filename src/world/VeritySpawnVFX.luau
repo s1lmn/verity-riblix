@@ -70,7 +70,7 @@ function Spawn:Tick(now)
  local reduced=self.settings.values.ReducedMotion
  local subtle=reduced or self.settings.values.ReducedEffects
  local pose=Profile.Sample(age,reduced);a.pose=pose
- local cf=a.origin*CFrame.Angles(0,0,pose.shake)
+ local cf=a.origin*CFrame.new(0,pose.boxLift,0)*CFrame.Angles(0,0,pose.shake)
  local boxFade=math.clamp((age-2.5)/.9,0,1)
  for _,item in a.parts do item.p.CFrame=cf*CFrame.new(item.offset);item.p.Transparency=boxFade end
  for i,p in a.flaps do

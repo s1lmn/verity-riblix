@@ -118,6 +118,9 @@
           },
           "HouseBuildEffects": {
             "$path": "src/world-client/HouseBuildEffects.client.luau"
+          },
+          "CardShowcase": {
+            "$path": "src/world-client/CardShowcase.client.luau"
           }
         }
       }

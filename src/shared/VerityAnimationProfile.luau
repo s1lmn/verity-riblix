@@ -84,7 +84,11 @@ function Profile.Sample(oldLevel: number, newLevel: number, alpha: number, reduc
 	if reducedMotion then scale = old + (target - old) * smooth(t)
 	elseif t < 0.15 then scale = old * (1 - 0.06 * smooth(t / 0.15))
 	elseif t < 0.58 then scale = old * 0.94 + (target * Profile.MaxExpansion - old * 0.94) * smooth((t - 0.15) / 0.43)
-	else scale = target * (Profile.MaxExpansion - (Profile.MaxExpansion - 1) * smooth((t - 0.58) / 0.42)) end
+	else
+		local settle = (t - 0.58) / 0.42
+		local recoil = 0.009 * math.sin(math.pi * settle)^2 * smooth(settle)
+		scale = target * (1 + (Profile.MaxExpansion - 1) * (1 - smooth(settle)) - recoil)
+	end
 	if t == 1 then scale = target end
 	local stage = Profile.Stage(newLevel)
 	local lift, yaw = 0, 0

@@ -391,6 +391,16 @@ local reveals = {
 }
 
 function Feed:FinishReveal()
+	local slide = self.slide
+	if slide then
+		self.slide, self.busy = nil, false
+		self.animation:Cancel(slide.old)
+		slide.old:Destroy()
+		self.animation:Cancel(self.card)
+		self.card.Position, self.card.Rotation = UDim2.new(), 0
+		if not self.dead then self.onReady() end
+		return
+	end
 	local reveal = self.reveal
 	if not reveal then return end
 	self.reveal = nil
@@ -537,12 +547,13 @@ function Feed:Reveal(index, reward, animate, onImpact, isNew)
 	end
 	onImpact(nil)
 	self.busy=true
-	card.Position=UDim2.fromScale(0,1)
-	self.animation:Tween(old,0.26,{Position=UDim2.fromScale(0,-1)})
-	self.animation:Tween(card,0.26,{Position=UDim2.new()})
-	task.delay(0.28,function()
-		old:Destroy()
-		if not self.dead then self.busy=false;self.onReady() end
+	card.Position, card.Rotation = UDim2.fromScale(0, 1), 3
+	self.animation:Tween(old, 0.25, {Position = UDim2.fromScale(0, -1), Rotation = -2})
+	self.animation:Tween(card, 0.28, {Position = UDim2.new(), Rotation = 0})
+	local slide = {old = old}
+	self.slide = slide
+	task.delay(0.3, function()
+		if self.slide == slide then self:FinishReveal() end
 	end)
 end
 

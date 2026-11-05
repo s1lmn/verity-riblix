@@ -82,6 +82,7 @@ function PlayerStateService:Snapshot(userId)
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
   CosmeticsEquipped = table.clone(data.CosmeticsEquipped),
   FeedCollection = table.clone(data.FeedCollection),
+  ShowcaseCards = table.clone(data.ShowcaseCards or {}),
   AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = table.clone(data.AbilitiesEquipped),
   HeroPassOwned = profile.HeroPassOwned==true, HeroPassId = Config.HeroPassId,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},

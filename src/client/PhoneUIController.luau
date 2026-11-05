@@ -10,7 +10,7 @@ Phone.__index=Phone
 
 function Phone.new(ctx)
 	local self=setmetatable({ctx=ctx,refs=ctx.refs.Panels.PHONE,cleanup=Cleanup.new(),open=false,lastSwipe=-math.huge,retryAt=0},Phone)
-	self.collection=self.cleanup:Add(Collection.new(self.refs))
+	self.collection=self.cleanup:Add(Collection.new(self.refs, ctx))
 	self.feed=self.cleanup:Add(Feed.new(self.refs.Viewport,ctx.animation,ctx.settings,function() self:Render() end,function() ctx.sound:Play("BoxAnticipation") end))
 	self.input=self.cleanup:Add(Swipe.new(self.refs.Viewport,function() return self:Swipe() end,function()
 		return self.open and not self.collection.open and not self.feed.busy and not self.feed.waiting and not ctx.net:IsBusy()
@@ -24,7 +24,10 @@ function Phone.new(ctx)
 				if result.isNewCard and self.open then ctx.notifications:Show("Новая карта в коллекции!") end
 			end,result.isNewCard)
 			self:Render()
-		elseif result.action=="Swipe" then self.feed:RejectSwipe() end
+		elseif result.action=="Swipe" then self.feed:RejectSwipe()
+		elseif result.action=="SetShowcaseCard" and result.success then
+			ctx.notifications:Show("Витрина обновлена")
+		end
 	end))
 	self.cleanup:Add(self.refs.CollectionButton.Activated:Connect(function()
 		if not self.feed.busy and not ctx.net:IsBusy() then

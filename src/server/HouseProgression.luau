@@ -2,6 +2,7 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Houses = require(Shared.HouseConfig)
+local Drops = require(Shared.FeedDrops)
 local Locale = require(Shared.LocaleText)
 local Construction = require(script.Parent.HouseConstruction)
 local PadFactory = require(game:GetService("ReplicatedStorage").World.PurchasePadFactory)
@@ -38,6 +39,24 @@ function HouseProgression.new(world, players, activate)
 		local construction = Construction.Create(house)
 		local folder = Instance.new("Folder")
 		folder.Name,folder.Parent = "HouseProgression",house
+		local showcase = {}
+		local showcaseStand = {}
+		for _, x in {-11.8, -6.2} do
+			local leg = part(folder, pivot, "ShowcaseLeg", Vector3.new(x, 0.9, 15.72), Vector3.new(0.32, 1.8, 0.48), "6B55A2")
+			leg.Transparency, leg.CanQuery = 1, false
+			table.insert(showcaseStand, leg)
+		end
+		local rail = part(folder, pivot, "ShowcaseRail", Vector3.new(-9, 1.55, 15.72), Vector3.new(7.95, 0.3, 0.48), "B99AF3")
+		rail.Transparency, rail.CanQuery = 1, false
+		table.insert(showcaseStand, rail)
+		for slot = 1, Drops.ShowcaseSlots do
+			local frame = part(folder, pivot, "CardFrame" .. slot,
+				Vector3.new(-9 + (slot - 2) * 2.65, 3.2, 15.8), Vector3.new(2.45, 3.25, 0.18), "53408F")
+			frame.Transparency, frame.CanQuery, frame.CastShadow = 1, false, false
+			frame:SetAttribute("ShowcaseSlot", slot)
+			frame:AddTag("VerityCardFrame")
+			showcase[slot] = frame
+		end
 		local door = part(folder,pivot,"OwnerDoor",Vector3.new(0,4.4,14.5),Vector3.new(7.8,8.8,.55),"53408F")
 		door.Material = Enum.Material.SmoothPlastic
 		local control = part(folder,pivot,"DoorControl",Vector3.new(8,1.5,10),Vector3.new(.2,.2,.2),"72F4CF")
@@ -64,7 +83,7 @@ function HouseProgression.new(world, players, activate)
 		constraints.Name,constraints.Parent="OwnerDoorPassage",folder
 		local record={doorPad=doorPad,floorPad=floorPad,construction=construction,house=house,pivot=pivot,door=door,doorPrompt=doorPrompt,control=control,
 			gate=gate,floorPrompt=floorPrompt,floorControl=floorControl,decor=decor,
-			constraints=constraints,closed=door.CFrame,open=pivot*CFrame.new(9,4.4,14.5)}
+			constraints=constraints,closed=door.CFrame,open=pivot*CFrame.new(9,4.4,14.5),showcase=showcase,showcaseStand=showcaseStand}
 		door:SetAttribute("ClosedPose", record.closed)
 		door:SetAttribute("OpenPose", record.open)
 		self.plots[plotId]=record
@@ -88,10 +107,24 @@ function HouseProgression:Update(plotId,state)
 	if not record then return end
 	local previous=record.state
 	record.state=state
+	local sameOwner = previous and state and previous.ownerUserId == state.ownerUserId
+	local cards = state and state.ShowcaseCards or {}
+	local before = sameOwner and previous.ShowcaseCards or {}
+	if not sameOwner then
+		for _, support in record.showcaseStand do support.Transparency = if state then 0 else 1 end
+	end
+	for slot, frame in record.showcase do
+		local key = tostring(slot)
+		if not sameOwner or cards[key] ~= before[key] then
+			local changeAt = if sameOwner then workspace:GetServerTimeNow() else 0
+			frame.Transparency = if state then 0 else 1
+			frame:SetAttribute("DisplayCard", if state then string.format("%d:%.3f", cards[key] or 0, changeAt) else nil)
+		end
+	end
 	record.doorPad:SetAttribute("OwnerUserId",state and state.ownerUserId or 0)
 	record.floorPad:SetAttribute("OwnerUserId",state and state.ownerUserId or 0)
 	Construction.Apply(record.construction,state)
-	if previous and state and previous.ownerUserId == state.ownerUserId then
+	if sameOwner then
 		local stage
 		if state.HouseIncomeLevel > previous.HouseIncomeLevel then
 			stage = state.HouseIncomeLevel

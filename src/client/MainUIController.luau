@@ -31,6 +31,7 @@ local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualCon
 local Main={}
 Main.__index=Main
 local Errors={
+ CARD_NOT_OWNED="Этой карточки пока нет в коллекции.",
  ABILITY_LEVEL_REQUIRED="Сначала повысь уровень Verity.",ABILITY_NOT_OWNED="Сначала купи эту способность.",TOO_FAR="Подойди к станции строительства внутри своего дома.",
  NOT_OWNED="You do not own this accessory.",PRODUCT_UNAVAILABLE="This item is not on sale yet.",
  ALREADY_OWNED="You already own this item.",BUSY="Finish the previous purchase first.",

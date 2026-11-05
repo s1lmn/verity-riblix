@@ -160,7 +160,8 @@ function Feedback:TickButton(now)
  local b=self.button;if not b then return end
  local age=now-b.started
  if age>=Profile.ButtonDuration or not b.source.Parent or not root() then self:StopButton();return end
- local press=math.sin(math.pi*math.clamp(age/Profile.ButtonDuration,0,1))*.22
+ local progress=math.clamp(age/Profile.ButtonDuration,0,1)
+ local press=.22*Profile.Smooth(progress/.28)*(1-Profile.Smooth((progress-.45)/.55))
  b.part.Size=Vector3.new(b.size.X,b.size.Y*(1-press),b.size.Z)
  b.part.CFrame=b.origin*CFrame.new(0,-b.size.Y*press*.5,0)
 end

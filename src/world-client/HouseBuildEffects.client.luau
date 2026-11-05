@@ -84,7 +84,9 @@ local function slideDoor(house, record)
 	proxy.TopSurface, proxy.BottomSurface = door.TopSurface, door.BottomSurface
 	proxy.CFrame = if from and previous.door == door then from elseif locked == "1" then open else closed
 	proxy.Anchored, proxy.CanCollide, proxy.CanTouch, proxy.CanQuery, proxy.CastShadow = true, false, false, false, false
-	local tween = TweenService:Create(proxy, TweenInfo.new(DOOR_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+	local fullTravel = math.max(0.01, (closed.Position - open.Position).Magnitude)
+	local duration = DOOR_DURATION * math.clamp((target.Position - proxy.Position).Magnitude / fullTravel, 0.35, 1)
+	local tween = TweenService:Create(proxy, TweenInfo.new(duration, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut),
 		{CFrame = target})
 	local motion = {door = door, originalVisibility = door.LocalTransparencyModifier, proxy = proxy, tween = tween}
 	record.doorMotion = motion
@@ -92,7 +94,7 @@ local function slideDoor(house, record)
 	door.LocalTransparencyModifier = 1
 	proxy.Parent = workspace
 	tween:Play()
-	task.delay(DOOR_DURATION + 0.03, function()
+	task.delay(duration + 0.03, function()
 		if record.doorMotion == motion then stopDoor(record) end
 	end)
 end
@@ -175,7 +177,8 @@ local function playCue(house, record)
 			local x, z = side * halfWidth * 0.82, depthSide * halfDepth * 0.82
 			local brick = piece(folder, "BuildBrick", color, Vector3.new(0.8, 0.48, 0.8),
 				origin * CFrame.new(x, 0.45, z), 0.22)
-			animate(brick, 0.68, 0.12, {Size = Vector3.new(0.22, 0.14, 0.22),
+			local delayTime = if depthSide == side then 0.08 else 0.18
+			animate(brick, 0.66, delayTime, {Size = Vector3.new(0.22, 0.14, 0.22),
 				CFrame = origin * CFrame.new(x, 3.2, z) * CFrame.Angles(0, side * math.pi / 2, 0.35), Transparency = 1})
 		end
 	end

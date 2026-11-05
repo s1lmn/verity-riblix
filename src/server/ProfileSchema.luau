@@ -10,7 +10,7 @@ local Schema = {}
 function Schema.new()
 	return {DataVersion = 2, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
-		TutorialCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}}
+		TutorialCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}}
 end
 -- Missing v1 fields are reconciled. Corrupt/future profiles fail closed, not reset.
 function Schema.validate(raw)
@@ -74,6 +74,18 @@ function Schema.validate(raw)
   if not index or tostring(index)~=cardId or not Drops.Get(index)
    or not Numeric.isInteger(count,1,1000000) then return nil,"INVALID_FEED_COLLECTION" end
  end
+ -- Reconcile display preferences independently of inventory and progression.
+ local showcase, used = {}, {}
+ if type(data.ShowcaseCards) == "table" then
+  for slot = 1, Drops.ShowcaseSlots do
+   local key = tostring(slot)
+   local cardId = data.ShowcaseCards[key]
+   if Numeric.isInteger(cardId, 1, Drops.CardCount) and data.FeedCollection[tostring(cardId)] and not used[cardId] then
+    showcase[key], used[cardId] = cardId, true
+   end
+  end
+ end
+ data.ShowcaseCards = showcase
  local abilityCount=0
  for id,owned in data.AbilitiesOwned do
   abilityCount+=1
@@ -92,6 +104,7 @@ end
 function Schema.copy(data)
 	local copy = table.clone(data)
 	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do copy[key]=table.clone(data[key]) end
+	copy.ShowcaseCards = table.clone(data.ShowcaseCards or {})
 	return copy
 end
 return Schema
