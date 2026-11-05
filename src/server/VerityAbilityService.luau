@@ -8,6 +8,7 @@ local Catalog=require(Shared.AbilityCatalog)
 local Numeric=require(Shared.Numeric)
 local Levels=require(Shared.LevelConfig)
 local Ride=require(Shared.VerityRideConfig)
+local Battle=require(Shared.VerityBattleConfig)
 local Service={};Service.__index=Service
 
 function Service.new(data,state,world,targets)
@@ -27,7 +28,14 @@ function Service:Character(player)
 	if not root or not humanoid or humanoid.Health<=0 or humanoid.SeatPart or root.Anchored then return nil end
 	return character,root,humanoid
 end
+function Service:Equipped(player,slot,profile)
+ local item,id=Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
+ if item then return item,id end
+ if slot=="Attack" and self.arena and self.arena:IsParticipant(player) then return Battle.Basic,"battle_pulse" end
+ return nil
+end
 function Service:IsSafe(player,root)
+ if player:GetAttribute("VerityParkourStep") then return true end
  if player:GetAttribute("VerityRaceSlot") then return true end
 	if workspace:GetServerTimeNow()<(player:GetAttribute("VerityProtectedUntil") or 0) then return true end
 	if player.Character and player.Character:FindFirstChildOfClass("ForceField") then return true end
@@ -86,17 +94,17 @@ end
 function Service:Remove(player)
 	self:Stop(player);self.requests[player]=nil;self.steering[player]=nil;self.cooldowns[player]=nil
 end
-function Service:Candidates()
+function Service:Candidates(attacker)
 	local candidates={}
 	for _,player in Players:GetPlayers() do
 		local character,root,humanoid=self:Character(player)
 		local profile=self.data:Get(player.UserId)
-		if root and profile and profile.Data.VerityUnlocked and self.state.sessions[player.UserId] and not self:IsSafe(player,root) then
+		if root and profile and profile.Data.VerityUnlocked and self.state.sessions[player.UserId] and not self:IsSafe(player,root) and not player:GetAttribute("VerityBattleActive") and not (attacker and attacker:GetAttribute("VerityBattleActive")) then
 			table.insert(candidates,{part=root,humanoid=humanoid,player=player,character=character})
 		end
 	end
 	for part,r in self.targets.records do
-		if r.health>0 and part.Parent then table.insert(candidates,{part=part}) end
+		if r.health>0 and part.Parent and (not r.arenaOnly or attacker and self.arena and self.arena:IsParticipant(attacker)) then table.insert(candidates,{part=part}) end
 	end
 	return candidates
 end
@@ -109,13 +117,18 @@ end
 
 function Service:CombatRays(character,ignoredCharacter)
 	local exclude,include={character},{}
+	local caster=Players:GetPlayerFromCharacter(character)
+	local arenaShot=caster and self.arena and self.arena:IsParticipant(caster)
 	if ignoredCharacter then table.insert(exclude,ignoredCharacter) end
 	for _,player in Players:GetPlayers() do
 		local other=player.Character
 		if other and other~=character then
 			table.insert(exclude,other)
-			if other~=ignoredCharacter then table.insert(include,other) end
+			if other~=ignoredCharacter and not arenaShot then table.insert(include,other) end
 		end
+	end
+	for part,r in self.targets.records do
+		if r.arenaOnly and arenaShot and r.health>0 and part.Parent then table.insert(include,part) end
 	end
 	return rayParams(exclude,Enum.RaycastFilterType.Exclude,true), rayParams(include,Enum.RaycastFilterType.Include,false)
 end
@@ -133,7 +146,7 @@ function Service:Matches(candidate,instance)
 end
 function Service:Hit(player,candidate,damage)
 	if candidate.player then
-		if candidate.player==player then return 0 end
+		if candidate.player==player or candidate.player:GetAttribute("VerityBattleActive") or player:GetAttribute("VerityBattleActive") then return 0 end
 		local character,root,humanoid=self:Character(candidate.player)
 		if not root or character~=candidate.character or self:IsSafe(candidate.player,root) then return 0 end
 		local shield=(candidate.player:GetAttribute("VerityShieldUntil") or 0)>workspace:GetServerTimeNow()
@@ -152,7 +165,7 @@ function Service:Attack(player,item,id,character,root,direction)
 	local cover,bodies=self:CombatRays(character)
 	local result=cast(origin,origin+direction*item.Range,cover,bodies)
 	local endpoint=if result then result.Position else origin+direction*item.Range
-	local candidates=self:Candidates();local primary
+	local candidates=self:Candidates(player);local primary
 	for _,candidate in candidates do
 		if candidate.player~=player and result and self:Matches(candidate,result.Instance) then primary=candidate;break end
 	end
@@ -207,8 +220,8 @@ function Service:Attack(player,item,id,character,root,direction)
 		task.delay(.16+(tick-1)*.2,function()
 			local profile=self.data:Get(player.UserId)
 			local liveCharacter,liveRoot=self:Character(player)
-			local equipped=profile and profile.Data.AbilitiesEquipped.Attack
-			if profile and not Catalog.Equipped(profile.Data,"Attack",profile.HeroPassOwned) then equipped=nil end
+			local equipped
+			if profile then local _;_,equipped=self:Equipped(player,"Attack",profile) end
 			if self.attacks[player]~=token or liveCharacter~=character or not liveRoot or equipped~=id or self:IsSafe(player,liveRoot) then return end
 			local liveHead=liveCharacter:FindFirstChild("Head")
 			local currentOrigin=if liveHead then liveHead.Position else liveRoot.Position+Vector3.new(0,2,0)
@@ -399,9 +412,11 @@ function Service:Activate(player,slot,direction)
 	if player:GetAttribute("VerityRaceSlot") then return end
  local profile=self.data:Get(player.UserId)
 	if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked then return end
-	if slot=="Ride" then self:Ride(player,profile,now);return end
+	if player:GetAttribute("VerityParkourStep") and slot~="Attack" then self.remote:FireClient(player,{kind="Blocked",code="PARKOUR_POWER"});return end
+ if slot=="Ride" and player:GetAttribute("VerityBattleActive") then return end
+ if slot=="Ride" then self:Ride(player,profile,now);return end
  if self.active[player] and self.active[player].ride and slot=="Mobility" then return end
- local item,id=Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
+ local item,id=self:Equipped(player,slot,profile)
 	if not item then return end
 	local character,root,humanoid=self:Character(player)
 	if not root then return end

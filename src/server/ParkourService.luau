@@ -15,9 +15,11 @@ function Service:SetRun(player,run)
  self.runs[player]=run
  player:SetAttribute("VerityParkourStep",if run then run.index else nil)
  player:SetAttribute("VerityParkourCheckpoint",if run then run.checkpoint else nil)
+ player:SetAttribute("VerityParkourStartedAt",if run then run.started else nil)
+ player:SetAttribute("VerityParkourFaults",if run then run.faults else nil)
 end
 function Service:Touch(player,index)
- if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") then return false end
+ if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive") then return false end
  local profile=self.data:Get(player.UserId)
  local character,root=self:Character(player)
  local pad=Config.Pads[index]
@@ -27,9 +29,11 @@ function Service:Touch(player,index)
  local now=self.clock();local run=self.runs[player]
  if index==1 then
   if run then return false end
-  self:SetRun(player,{character=character,index=1,checkpoint=1,started=now});return true
+  if self.resetMovement then self.resetMovement(player) end
+  self:SetRun(player,{character=character,index=1,checkpoint=1,started=now,faults=0,lastStep=now});return true
  end
  if not run or run.character~=character or index~=run.index+1 or now-run.started>Config.MaximumRunSeconds then return false end
+ if now-(run.lastStep or run.started)<Config.MinStepSeconds then return false end
  if pad.finish then
   if now-run.started<Config.MinimumRunSeconds then return false end
   if now<(self.ready[player] or 0) then
@@ -38,24 +42,29 @@ function Service:Touch(player,index)
   -- Lock before granting: repeated/multiple limb touches cannot pay twice.
   self.ready[player]=now+Config.Cooldown;self:SetRun(player,nil)
   player:SetAttribute("VerityParkourReadyAt",self.ready[player])
-  local amount=Income.getIncome(profile.Data.VerityLevel)*Config.RewardSeconds*self.economy:GetMultiplier(profile)
+  local seconds=now-run.started
+  local medal,bonus=Config.Medal(seconds,run.faults or 0)
+  player:SetAttribute("VerityParkourMedal",medal);player:SetAttribute("VerityParkourFinishTime",seconds)
+  local best=player:GetAttribute("VerityParkourBest")
+  if not best or seconds<best then player:SetAttribute("VerityParkourBest",seconds) end
+  local amount=Income.getIncome(profile.Data.VerityLevel)*Config.RewardSeconds*bonus*self.economy:GetMultiplier(profile)
   local ok,reward=self.economy:AddCash(player.UserId,amount)
   if ok then self.state:Publish(player.UserId,true);self.notify(player.UserId,"PARKOUR_FINISH",reward) end
   return ok
  end
- run.index=index
+ run.index=index;run.lastStep=now
  if pad.checkpoint then run.checkpoint=index;self.notify(player.UserId,"PARKOUR_CHECKPOINT",0) end
  self:SetRun(player,run);return true
 end
 function Service:Return(player,exit)
  local c,r=self:Character(player);local run=self.runs[player]
- if not c then self:SetRun(player,nil);return end
+ if not c or (run and run.character~=c) then self:SetRun(player,nil);return end
  if self.resetMovement then self.resetMovement(player) end
  r.AssemblyLinearVelocity=Vector3.zero;r.AssemblyAngularVelocity=Vector3.zero
  if exit then
-  self:SetRun(player,nil);c:PivotTo(CFrame.new(164,4,300+Config.ZOffset))
+  self:SetRun(player,nil);c:PivotTo(CFrame.new(Config.ExitPosition))
  elseif run then
-  local p=Config.Pads[run.checkpoint];run.index=run.checkpoint
+  local p=Config.Pads[run.checkpoint];run.index=run.checkpoint;run.faults=(run.faults or 0)+1;run.lastStep=self.clock();run.hazardUntil=self.clock()+1.5
   c:PivotTo(CFrame.new(p.x,p.y+4,p.z));self:SetRun(player,run)
  end
 end
@@ -64,7 +73,21 @@ function Service:Tick()
   local c,r=self:Character(player)
   if not c or c~=run.character or not self.state.sessions[player.UserId] or self.clock()-run.started>Config.MaximumRunSeconds then self:SetRun(player,nil)
   elseif not Config.Contains(r.Position.X,r.Position.Z) then self:SetRun(player,nil)
-  elseif r.Position.Y<Config.ResetBelow then self:Return(player,false) end
+  elseif r.Position.Y<Config.ResetBelow then self:Return(player,false)
+  elseif self.clock()>=(run.hazardUntil or 0) then
+   self:Touch(player,run.index+1)
+   if self.runs[player]~=run then continue end
+   for index=math.max(1,run.index-1),math.min(#Config.Pads,run.index+1) do
+    local p=Config.Pads[index]
+    if not p.hazard then continue end
+    local pos=r.Position;local active,angle=Config.Hazard(index,self.clock())
+    if active~=2 or pos.Y<p.y or pos.Y>p.y+4.6 then continue end
+    local delta=pos-Vector3.new(p.x,p.y,p.z)
+    local hit=if p.hazard=="Pulse" then math.abs(delta.X)<p.w/2 and math.abs(delta.Z)<p.d/2
+     else math.abs(delta.X*math.cos(angle)+delta.Z*math.sin(angle))<p.w/2 and math.abs(-delta.X*math.sin(angle)+delta.Z*math.cos(angle))<1.2
+    if hit then self:Return(player,false);self.notify(player.UserId,"PARKOUR_RETRY",0);break end
+   end
+  end
  end
 end
 function Service:Bind(model,players)

@@ -5,6 +5,7 @@ local Collection=game:GetService("CollectionService")
 local RunService=game:GetService("RunService")
 local Tween=game:GetService("TweenService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
+local Battle=require(ReplicatedStorage.Shared.VerityBattleConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local Visuals=require(script.Parent.AbilityVisuals)
@@ -68,7 +69,7 @@ end
 function Controller:Event(event)
 	if type(event)~="table" then return end
 	if event.kind=="Blocked" then
-  local messages={RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
+  local messages={PARKOUR_POWER="На маршруте используй прыжки. Способности доступны после выхода.",RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
   self.ctx.notifications:Show(Locale.Text(messages[event.code] or messages.SAFE_ZONE));return
  end
 	if event.kind=="CombatResult" then
@@ -76,7 +77,7 @@ function Controller:Event(event)
 		else self.ctx.notifications:Show(Locale.Text("Промах. Наведи прицел на цель без укрытия.")) end
 		return
 	end
-	local item=Catalog.Items[event.itemId]
+	local item=Catalog.Items[event.itemId] or (if event.itemId=="battle_pulse" then Battle.Basic else nil)
 	local player=Players:GetPlayerByUserId(event.ownerUserId)
 	if not item or not player or not player.Character then return end
  local humanoid=player.Character:FindFirstChildOfClass("Humanoid")
@@ -90,6 +91,7 @@ function Controller:Event(event)
 	local duration=if reduced and event.kind=="Attack" then math.min(event.duration,.4) else event.duration
 	local r={folder=folder,character=player.Character,owner=event.ownerUserId,started=os.clock(),duration=duration,lines={},item=item,kind=event.kind,origin=event.origin}
 	r.serverEndsAt=event.endsAt or (workspace:GetServerTimeNow()+event.duration)
+	if event.itemId=="battle_pulse" then r.origin=self:Eye(event.ownerUserId,0,event.origin) end
 	Visuals.Prepare(r,reduced,graphics and graphics.ParticleScale or 1)
 	table.insert(self.effects,r)
 	if event.kind=="Attack" then
@@ -104,7 +106,7 @@ function Controller:Event(event)
 				local light=Instance.new("PointLight");light.Color=color;light.Brightness=if reduced then .4 else 1.5;light.Range=10;light.Parent=eye
 			end
 		else
-			local from=event.origin
+			local from=r.origin
 			for _,point in event.points do
 				if item.Action=="lightning" and not reduced then
 					for segment=1,6 do
@@ -142,7 +144,7 @@ function Controller:Event(event)
 		Visuals.Mobility(r,root,player.Character:FindFirstChildOfClass("Humanoid"))
 	end
 	if event.ownerUserId==Players.LocalPlayer.UserId then
-		self.ctx.sound:Play(if event.kind=="Mobility" then "SwipeWhoosh" elseif item.Action=="nova" then "Milestone100" elseif item.Action=="lightning" then "Milestone50" else "Milestone25")
+		self.ctx.sound:Play(if event.kind=="Mobility" or event.itemId=="battle_pulse" then "SwipeWhoosh" elseif item.Action=="nova" then "Milestone100" elseif item.Action=="lightning" then "Milestone50" else "Milestone25")
 	end
 end
 function Controller:Tick(dt)

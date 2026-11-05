@@ -68,6 +68,7 @@ function Adapter:Attach(folder)
 								PARKOUR_FINISH="Паркур пройден! Награда получена.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
         STREET_DELIVERY_STARTED="Фургон Verity Express в районе! Следи за посылкой на главной дороге.",STREET_DELIVERY_DROPPED="Посылка выпала! Успей первым подобрать её на тротуаре.",STREET_DELIVERY_REWARD="Посылка твоя! Награда получена.",
         RACE_JOINED="Ты в заезде! Дождись второго участника у своего места.",RACE_STARTED="Старт! Болей за своего Verity!",RACE_WIN="Твой Verity победил! Награда получена.",RACE_FINISH="Заезд завершён! Можно попробовать ещё раз.",RACE_CANCELLED="Недостаточно участников. Verity вернулся к тебе.",
+        BATTLE_JOINED="Ты на арене! Готовься к пяти волнам.",BATTLE_BUSY="Арена занята. Дождись конца битвы.",BATTLE_COOLDOWN="Награда арены скоро обновится.",BATTLE_OTHER_ACTIVITY="Сначала заверши текущую активность.",BATTLE_WAVE="Новая волна! Выходи из красных кругов.",BATTLE_BOSS="Появился Неоновый титан!",BATTLE_WIN="Пять волн пройдены! Награда получена.",BATTLE_FAILED="Битва завершена. Попробуй ещё раз!",PARKOUR_RETRY="Ловушка! Ты вернулся на контрольную точку.",
         COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
 							if payload.source=="HouseFeature" then
 								messages={OK="Дом улучшен!",INSUFFICIENT_CASH="Не хватает денег",

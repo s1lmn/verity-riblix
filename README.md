@@ -51,3 +51,5 @@ python tools/build_project.py --rojo C:/path/to/rojo.exe
 Текущая оптимизация исходников и фактические ограничения: [OPTIMIZATION_2026_11_05.md](docs/OPTIMIZATION_2026_11_05.md).
 
 Дополнительные исправления очистки, магазина и финального сохранения: [OPTIMIZATION_FOLLOWUP_2026_11_05.md](docs/OPTIMIZATION_FOLLOWUP_2026_11_05.md).
+
+Расширенный паркур и PvE-битвы Verity: [EXPANDED_ACTIVITIES.md](docs/EXPANDED_ACTIVITIES.md). Без новой игровой приёмки/Play.

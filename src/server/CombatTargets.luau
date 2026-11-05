@@ -12,9 +12,9 @@ function Targets.new(data,state,economy,notify)
 		p.Color=Color3.fromHex(color);p.Material=Enum.Material.SmoothPlastic;p.CanTouch=false;p.Parent=folder
 		return p
 	end
-	part("ArenaFloor",Vector3.new(0,.35,333+Layout.EndShift),Vector3.new(84,.7,34),"665A99")
+	part("ArenaFloor",Vector3.new(112,.35,333+Layout.EndShift),Vector3.new(84,.7,34),"665A99")
 	for index,definition in {{"Энергокристалл",60,"78EEDB",3},{"Большой кристалл",140,"B594FF",5},{"Тренировочный страж",240,"FFD46D",8}} do
-		local pos=Vector3.new((index-2)*26,4,333+Layout.EndShift)
+		local pos=Vector3.new(112+(index-2)*26,4,333+Layout.EndShift)
 		local target=part("Target"..index,pos,Vector3.new(4,6,4),definition[3])
 		target.Material=Enum.Material.Neon
 		if index<3 then target.CFrame*=CFrame.Angles(0,0,math.pi/4) end
@@ -51,6 +51,7 @@ end
 function Targets:Damage(part,amount,userId)
 	local r=self.records[part]
 	if not r or r.health<=0 then return 0 end
+	if r.onDamage then return r.onDamage(amount,userId) end
 	local dealt=math.min(r.health,amount)
 	r.health-=dealt;self:Render(r)
 	if r.health<=0 then
