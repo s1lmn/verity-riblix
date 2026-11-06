@@ -6,7 +6,21 @@ local Skins=require(game:GetService("ReplicatedStorage").Shared.VerityElementalS
 local VFX = {}
 VFX.__index = VFX
 local MAX_BURST_PARTS = Celebration.MaxParticles
-local SEGMENTS = 12
+local TAU = 2 * math.pi
+local WHITE = Color3.fromHex("FFF7FF")
+local SPECTRUM = {
+	Color3.fromHex("FF75C5"), Color3.fromHex("FFCF66"), Color3.fromHex("99FFD9"),
+	Color3.fromHex("77DBFF"), Color3.fromHex("BA98FF"),
+}
+local ELEMENTS = {
+	Candy = {accent = Color3.fromHex("FFF2BD"), tilt = .18, speed = .56},
+	Aqua = {accent = Color3.fromHex("9DFFE1"), tilt = .32, speed = .64},
+	Frost = {accent = Color3.fromHex("C3EEFF"), tilt = .45, speed = .48},
+	Magma = {accent = Color3.fromHex("FFD66C"), tilt = .29, speed = .79},
+	Cyber = {accent = Color3.fromHex("FF86EE"), tilt = .36, speed = .88},
+	Cosmic = {accent = Color3.fromHex("B4A4FF"), tilt = .52, speed = .45},
+	Rainbow = {accent = Color3.fromHex("FFC6FD"), tilt = .44, speed = .69},
+}
 
 function VFX.Radius(scale, index)
  return scale*(if index==1 then .98 elseif index==2 then 1.08 else 1.02)+.15
@@ -27,164 +41,251 @@ function VFX.new()
 	return setmetatable({folder=folder,groups={},free={},active={},created=0,pulses={}},VFX)
 end
 
+local function arc(source)
+	local first, last = Instance.new("Attachment"), Instance.new("Attachment")
+	first.Parent, last.Parent = source, source
+	local core = Instance.new("Beam")
+	core.Name = "AuraRibbon"
+	core.Attachment0, core.Attachment1 = first, last
+	core.Enabled, core.FaceCamera = false, true
+	core.LightEmission, core.LightInfluence, core.Brightness = .85, 0, 1.4
+	core.Segments = 16
+	core.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0,.83),
+		NumberSequenceKeypoint.new(.24,.23),
+		NumberSequenceKeypoint.new(.64,.12),
+		NumberSequenceKeypoint.new(1,.83),
+	})
+	core.Parent = source
+
+	local halo = core:Clone()
+	halo.Name = "AuraSoftEdge"
+	halo.Brightness = .8
+	halo.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0,1),
+		NumberSequenceKeypoint.new(.34,.70),
+		NumberSequenceKeypoint.new(.68,.62),
+		NumberSequenceKeypoint.new(1,1),
+	})
+	halo.Parent = source
+	return {first=first,last=last,core=core,halo=halo}
+end
+
+local function arcEndpoint(frame, radius, angle)
+	local x, z = math.cos(angle), math.sin(angle)
+	local position = frame:PointToWorldSpace(Vector3.new(radius*x,0,radius*z))
+	local tangent = frame:VectorToWorldSpace(Vector3.new(-z,0,x))
+	return CFrame.fromMatrix(position,tangent,frame.UpVector)
+end
+
+local function poseArc(ribbon, frame, radius, startAngle, sweep, width)
+	ribbon.first.CFrame = arcEndpoint(frame,radius,startAngle)
+	ribbon.last.CFrame = arcEndpoint(frame,radius,startAngle+sweep)
+	local handle = (4/3)*math.tan(sweep/4)*radius
+	ribbon.core.CurveSize0, ribbon.core.CurveSize1 = handle, handle
+	ribbon.core.Width0, ribbon.core.Width1 = width*.78, width
+	if ribbon.halo.Enabled then
+		ribbon.halo.CurveSize0, ribbon.halo.CurveSize1 = handle, handle
+		ribbon.halo.Width0, ribbon.halo.Width1 = width*2.1, width*2.6
+	end
+end
+
+local function makeTrail(source, index)
+	local first, last = Instance.new("Attachment"), Instance.new("Attachment")
+	first.Parent, last.Parent = source, source
+	local trail = Instance.new("Trail")
+	trail.Name = "NeonTrail"..index
+	trail.Attachment0, trail.Attachment1 = first, last
+	trail.Enabled, trail.FaceCamera = false, true
+	trail.LightEmission, trail.LightInfluence = 1, 0
+	trail.MinLength = .08
+	trail.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0,.14),
+		NumberSequenceKeypoint.new(.48,.43),
+		NumberSequenceKeypoint.new(1,1),
+	})
+	trail.WidthScale = NumberSequence.new({
+		NumberSequenceKeypoint.new(0,1),
+		NumberSequenceKeypoint.new(.62,.56),
+		NumberSequenceKeypoint.new(1,0),
+	})
+	trail.Parent = source
+	return trail
+end
+
 function VFX:Group(model)
-	if self.groups[model] then return self.groups[model] end
-	local root=Instance.new("Folder")
-	root.Name,root.Parent="StageEffects",self.folder
-	local source=piece(root,"AuraLightSource")
-	local light=Instance.new("PointLight")
-	light.Enabled,light.Shadows=false,false
-	light.Parent=source
-	local highlight=Instance.new("Highlight")
-	highlight.Adornee,highlight.Enabled=model,false
-	highlight.DepthMode=Enum.HighlightDepthMode.Occluded
-	highlight.FillTransparency=1
-	highlight.Parent=root
-	local fire=Instance.new("Fire")
-	fire.Name,fire.Enabled="VerityFlame",false
-	fire.Parent=root
-	local group={root=root,rings={},stars={},source=source,light=light,highlight=highlight,fire=fire,trails={}}
-	for index=1,3 do
-		local first,second=Instance.new("Attachment"),Instance.new("Attachment")
-		first.Name,second.Name="TrailLeft"..index,"TrailRight"..index
-		first.Parent,second.Parent=source,source
-		local trail=Instance.new("Trail")
-		trail.Name="NeonTrail"..index
-		trail.Attachment0,trail.Attachment1=first,second
-		trail.Enabled,trail.FaceCamera=false,true
-		trail.LightEmission,trail.LightInfluence=1,0
-		trail.MinLength=.05
-		trail.Transparency=NumberSequence.new({
-			NumberSequenceKeypoint.new(0,.12),
-			NumberSequenceKeypoint.new(.55,.4),
-			NumberSequenceKeypoint.new(1,1),
-		})
-		trail.WidthScale=NumberSequence.new({
-			NumberSequenceKeypoint.new(0,1),
-			NumberSequenceKeypoint.new(.65,.68),
-			NumberSequenceKeypoint.new(1,0),
-		})
-		trail.Parent=source
-		group.trails[index]=trail
-	end
-	for ring=1,2 do
-		group.rings[ring]={}
-		for i=1,SEGMENTS do table.insert(group.rings[ring],piece(root,"AuraSegment")) end
-	end
-	for i=1,3 do table.insert(group.stars,piece(root,"StarTrail")) end
-	self.groups[model]=group
+	local group = self.groups[model]
+	if group then return group end
+	local root = Instance.new("Folder")
+	root.Name, root.Parent = "StageEffects", self.folder
+	local source = piece(root,"AuraLightSource")
+	local light = Instance.new("PointLight")
+	light.Enabled, light.Shadows = false, false
+	light.Parent = source
+	local highlight = Instance.new("Highlight")
+	highlight.Adornee, highlight.Enabled = model, false
+	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+	highlight.Parent = root
+	group = {
+		root=root,source=source,light=light,highlight=highlight,
+		arcs={arc(source),arc(source)},motes={},trails={},hidden=true,
+	}
+	self.groups[model] = group
 	return group
 end
 
-local function hideGeometry(group)
-	for _,list in {group.rings[1],group.rings[2],group.stars} do
-		for _,p in list do p.Transparency=1 end
-	end
-end
-
 function VFX:Hide(model)
-	local group=self.groups[model]
+	local group = self.groups[model]
 	if not group or group.hidden then return end
-	group.hidden=true
-	hideGeometry(group)
-	group.light.Enabled,group.highlight.Enabled=false,false
-	group.fire.Enabled=false
-	group.fire.Parent=group.root
-	for _,trail in group.trails do trail.Enabled=false;trail:Clear() end
-	group.lastPosition,group.lastTime=nil,nil
+	group.hidden = true
+	group.light.Enabled, group.highlight.Enabled = false, false
+	for _,ribbon in group.arcs do
+		ribbon.core.Enabled, ribbon.halo.Enabled = false, false
+	end
+	for _,mote in group.motes do mote.Transparency = 1 end
+	for _,trail in group.trails do
+		trail.Enabled = false
+		trail:Clear()
+	end
+	group.lastPosition, group.lastTime = nil, nil
 end
 
-function VFX:UpdateAura(group,origin,scale,level,now,color,reducedMotion,reset)
-	local look=Profile.Aura(level)
-	local position=origin.Position
-	local elapsed=if group.lastTime then now-group.lastTime else 0
-	local distance=if group.lastPosition then (position-group.lastPosition).Magnitude else 0
-	local discontinuity=reset or elapsed<=0 or elapsed>.25 or distance>math.max(20,scale*4)
-	local moving=not discontinuity and distance/elapsed>2
-	if discontinuity then
-		for _,trail in group.trails do trail:Clear() end
-		group.fire.Parent=group.root
-	end
-	group.source.CFrame=origin*CFrame.new(0,.85*scale,.35*scale)
-	group.light.Enabled,group.highlight.Enabled=true,true
-	group.light.Color,group.light.Brightness=color,look.brightness
-	group.light.Range=math.clamp(scale*3+3,5,40)
-	group.highlight.OutlineColor=color
-	group.highlight.OutlineTransparency=look.outline
+local function styleAura(group, level, tint, detail)
+	local skin = Skins.Get(level)
+	local family = if skin then skin.Family else "Candy"
+	local style = ELEMENTS[family]
+	local look = Profile.Aura(level)
+	local progress = (level-1)/99
+	local accent = tint:Lerp(style.accent,.62)
+	local extraArcs = if detail==0 or level<10 then 0 elseif detail==2 and level>=25 then 2 else 1
+	local moteCount = if detail==0 then 0 elseif detail==1 or level<10 then 3 elseif level>=50 then 7 else 5
+	local trailCount = if detail==2 then look.trails elseif detail==1 then math.min(1,look.trails) else 0
+	group.family, group.style, group.look = family, style, look
+	group.progress = progress
+	group.arcCount, group.moteCount, group.trailCount = 2+extraArcs, moteCount, trailCount
 
-	if group.level~=level or group.color~=color or group.scale~=scale then
-		group.fire.Color,group.fire.SecondaryColor=color,color:Lerp(Color3.new(1,1,1),.35)
-		group.fire.Size=math.clamp(scale*look.fireStrength,2,30)
-		group.fire.Heat=2+5*(level/100)
-		for index,trail in group.trails do
-			local y=(index-2)*scale*.3
-			local halfWidth=math.min(3,scale*look.width)
-			trail.Attachment0.Position=Vector3.new(-halfWidth,y,0)
-			trail.Attachment1.Position=Vector3.new(halfWidth,y,0)
-			trail.Color=ColorSequence.new(color:Lerp(Color3.new(1,1,1),.35),color)
-			trail.Lifetime=look.lifetime
-			trail.MaxLength=math.min(65,scale*(2+2*level/100))
-			trail.Brightness=1+level/100
-		end
-		group.level,group.color,group.scale=level,color,scale
+	for index=#group.arcs+1,group.arcCount do group.arcs[index] = arc(group.source) end
+	for index=#group.motes+1,moteCount do group.motes[index] = piece(group.root,"AuraMote") end
+	for index=#group.trails+1,trailCount do group.trails[index] = makeTrail(group.source,index) end
+
+	for index,ribbon in group.arcs do
+		local primary = if family=="Rainbow" then SPECTRUM[index] else tint
+		local secondary = if family=="Rainbow" then SPECTRUM[index+1] else accent
+		ribbon.core.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0,primary),
+			ColorSequenceKeypoint.new(.44,primary:Lerp(WHITE,.46)),
+			ColorSequenceKeypoint.new(1,secondary),
+		})
+		ribbon.halo.Color = ColorSequence.new(primary,secondary)
+		ribbon.core.Enabled = index<=group.arcCount
+		ribbon.halo.Enabled = index<=group.arcCount and detail>0
 	end
-	group.fire.Enabled=look.fire and not reducedMotion
-	group.fire.Parent=if group.fire.Enabled then group.source else group.root
+	for index,mote in group.motes do
+		mote.Shape = if family=="Frost" or family=="Cyber" then Enum.PartType.Block else Enum.PartType.Ball
+		mote.Color = if family=="Rainbow" then SPECTRUM[(index-1)%#SPECTRUM+1]
+			elseif index%2==0 then accent:Lerp(WHITE,.28) else tint:Lerp(WHITE,.23)
+		if index>moteCount then mote.Transparency = 1 end
+	end
 	for index,trail in group.trails do
-		trail.Enabled=not reducedMotion and index<=look.trails and moving
-		if reducedMotion or index>look.trails then trail:Clear() end
+		local color = if family=="Rainbow" then SPECTRUM[index+1] elseif index%2==0 then accent else tint
+		trail.Color = ColorSequence.new(color:Lerp(WHITE,.44),color)
+		trail.Lifetime = look.lifetime
+		trail.Brightness = 1.2+progress*.8
+		if index>trailCount then trail.Enabled = false;trail:Clear() end
 	end
-	group.lastPosition,group.lastTime=position,now
+	group.light.Color = tint
+	group.light.Brightness = .48+look.brightness*.72
+	group.highlight.FillColor = tint
+	group.highlight.FillTransparency = .96-progress*.06
+	group.highlight.OutlineColor = tint:Lerp(accent,.35)
+	group.highlight.OutlineTransparency = .46-progress*.22
+	group.highlight.Enabled = true
+	group.level, group.color, group.detail, group.hidden = level, tint, detail, false
 end
 
-function VFX:Update(model, origin, scale, stage, now, reducedEffects, near, level, reducedMotion, reset, tint)
-	if reducedEffects or not near then self:Hide(model);return end
-	local group=self:Group(model)
-	group.hidden=false
-	local body=if model:IsA("BasePart") then model else model:FindFirstChild("Body")
-	local color=tint or (if body then body.Color else Color3.fromHex("59C9FF"))
-	self:UpdateAura(group,origin,scale,level or model:GetAttribute("VerityLevel") or 1,now,color,reducedMotion,reset)
-	if reducedMotion then hideGeometry(group);return end
-	local center=origin.Position+Vector3.new(0,scale*.85,0)
-	local highlight=color:Lerp(Color3.fromRGB(255,246,225),.62)
-	local contrast=color:Lerp(Color3.fromRGB(194,164,255),.54)
-	local pulse=self.pulses[model]
-	local wave=if pulse and pulse.level==50 then math.clamp((now-pulse.started)/0.8,0,1) else nil
-	for index,ring in group.rings do
-		local radius=VFX.Radius(scale,index)
-		if wave and index==1 then radius=scale*(.94+.14*wave)+.15 end
-		local height=scale*(if index==1 then -.18 else .3)
-		local spin=now*(if index==1 then .62 else -.30)
-		local tilt=if index==2 then .40 else .10
-		local cf=CFrame.new(center+Vector3.new(0,height,0))*CFrame.Angles(tilt,0,tilt)
-		local width=math.clamp(scale*.035,.065,.22)
-		local length=radius*2*math.sin(math.pi/SEGMENTS)*1.02
-		for i,p in ring do
-			local visible=if index==1 then stage>=1 or i%2==0 else stage>=4
-			if not visible then
-				if p.Transparency~=1 then p.Transparency=1 end
-				continue
-			end
-			local angle=i*math.pi*2/SEGMENTS+spin
-			local shimmer=.5+.5*math.sin(now*3-i*.7)
-			p.Transparency=if wave and index==1 then .20+wave*.75 else .33+shimmer*.21
-			p.CFrame=cf*CFrame.new(math.cos(angle)*radius,0,math.sin(angle)*radius)*CFrame.Angles(0,-angle,0)
-			p.Size=Vector3.new(width,width*.8,length)
-			p.Color=if index==2 then contrast elseif i%3==0 then highlight else color
+local function poseAura(group, center, scale, now, reducedMotion, wave)
+	local style, progress = group.style, group.progress
+	local spin = if reducedMotion or group.detail==0 then 0 else now*style.speed
+	local radius = VFX.Radius(scale,1)
+	local width = math.clamp(scale*(.076+.027*progress),.105,.94)
+	local base = CFrame.new(0,-.50*scale,0)*CFrame.Angles(.06,spin,0)
+	for index=1,2 do
+		poseArc(group.arcs[index],base,radius*(1+wave*.17),(index-1)*math.pi,math.pi-.13,width)
+	end
+	for index=3,group.arcCount do
+		local direction = if index==3 then 1 else -1
+		local orbit = CFrame.new(0,scale*(if index==3 then -.21 else .18),0)
+			* CFrame.Angles(0,spin*.67*direction+index,0)
+			* CFrame.Angles(style.tilt*direction,0,.12*direction)
+		poseArc(group.arcs[index],orbit,VFX.Radius(scale,2),direction*spin*.33,2.2,width*.77)
+	end
+
+	local family = group.family
+	local size = math.clamp(scale*(.105+.045*progress),.14,1)
+	for index=1,group.moteCount do
+		local mote = group.motes[index]
+		local phase = (now*(if family=="Magma" then .58 else .32)+index/group.moteCount)%1
+		local angle = spin+index*2.399963
+		local height = if family=="Magma" or family=="Aqua" then -.62+1.48*phase
+			else -.24+.49*math.sin(angle*.8+index)
+		local orbit = VFX.Radius(scale,3)*(1.08+.11*math.sin(index+phase*TAU))
+		local point = center+Vector3.new(math.cos(angle)*orbit,scale*height,math.sin(angle)*orbit)
+		local diameter = size*(.66+(index%3)*.23)
+		mote.Size = if family=="Frost" then Vector3.new(diameter*.62,diameter*1.6,diameter*.62)
+			elseif family=="Magma" then Vector3.new(diameter*.74,diameter*1.5,diameter*.74)
+			else Vector3.one*diameter
+		mote.CFrame = CFrame.new(point)*CFrame.Angles(angle*.4,angle,.65+index*.12)
+		mote.Transparency = 1-.88*math.sin(math.pi*phase)^.65
+	end
+end
+
+-- The base halo follows the exact body centre even when the camera-facing pivot tilts.
+-- Low quality and reduced effects keep the silhouette and arc without extra layers.
+function VFX:Update(model, origin, scale, _stage, now, simplified, near, level, reducedMotion, reset, tint, graphics, distance, own)
+	local pulse = self.pulses[model]
+	if pulse and now-pulse.started>=.8 then self.pulses[model]=nil;pulse=nil end
+	if not near then self:Hide(model);return end
+
+	local group = self:Group(model)
+	local body = if model:IsA("BasePart") then model else model:FindFirstChild("Body")
+	local center = if body and body:IsA("BasePart") then body.Position else origin:PointToWorldSpace(Vector3.new(0,.85*scale,0))
+	local color = tint or (if body and body:IsA("BasePart") then body.Color else Color3.fromHex("59C9FF"))
+	level = level or model:GetAttribute("VerityLevel") or 1
+	distance = distance or 0
+	local detail = if simplified or reducedMotion or distance>105 then 0 elseif graphics and graphics.Tier==2 then 1 else 2
+	local restyle = group.hidden or group.level~=level or group.color~=color or group.detail~=detail
+	if restyle then styleAura(group,level,color,detail) end
+
+	local elapsed = if group.lastTime then now-group.lastTime else 0
+	local delta = if group.lastPosition then center-group.lastPosition else Vector3.zero
+	local jumped = restyle or reset or elapsed<=0 or elapsed>.3 or delta.Magnitude>math.max(14,scale*2.5)
+	local moving = not jumped and delta.Magnitude/elapsed>2.5
+	local right = Vector3.yAxis:Cross(delta)
+	right = if right.Magnitude>.015 then right.Unit else Vector3.xAxis
+	for index,trail in group.trails do
+		local enabled = index<=group.trailCount and moving
+		if jumped then trail:Clear() end
+		if enabled then
+			local offset = Vector3.yAxis*((index-1)*.20*scale-.3*scale)
+			local width = right*math.clamp(scale*group.look.width,.12,3.4)
+			trail.Attachment0.Position, trail.Attachment1.Position = offset-width, offset+width
+			trail.MaxLength = math.min(60,scale*(2.3+group.progress*1.9))
 		end
+		trail.Enabled = enabled
 	end
-	if self.pulses[model] and now-self.pulses[model].started>0.8 then self.pulses[model]=nil end
-	for i,p in group.stars do
-		local angle=now*1.2-i*math.pi*2/3
-		local radius=VFX.Radius(scale,3)
-		p.CFrame=CFrame.new(center+Vector3.new(math.cos(angle)*radius,scale*(.12+.26*math.sin(angle*2)),math.sin(angle)*radius))*CFrame.Angles(0,angle,math.pi/4)
-		local size=math.clamp(scale*.075,.095,.48)
-		p.Size=Vector3.new(size,size*1.65,size)
-		p.Color,p.Transparency=highlight,.12+i*.08
+	if group.source.Position~=center then group.source.Position = center end
+	group.light.Enabled = detail>0 and own~=false and distance<60
+
+	if restyle or jumped or group.scale~=scale or now>=(group.poseAt or 0) then
+		local wave = if pulse and pulse.level==50 then math.sin(math.pi*math.clamp((now-pulse.started)/.8,0,1)) else 0
+		poseAura(group,center,scale,now,reducedMotion,wave)
+		if group.scale~=scale then group.light.Range = math.clamp(scale*3+3,6,40) end
+		group.scale = scale
+		group.poseAt = now+(if detail==0 then .1 else (graphics and graphics.VFXInterval or 0))
 	end
+	group.lastPosition, group.lastTime = center, now
 end
 
-local TAU = 2 * math.pi
 local STRANDS,STRAND_SEGMENTS = 4,12
 local RIBBONS = STRANDS*STRAND_SEGMENTS
 local WAVE_SEGMENTS = 10

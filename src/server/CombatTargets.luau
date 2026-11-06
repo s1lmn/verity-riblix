@@ -13,34 +13,16 @@ function Targets.new(data,state,economy,notify)
 		return p
 	end
 	part("ArenaFloor",Vector3.new(112,.35,333+Layout.EndShift),Vector3.new(84,.7,34),"665A99")
-	for index,definition in {{"Энергокристалл",60,"78EEDB",3},{"Большой кристалл",140,"B594FF",5},{"Тренировочный страж",240,"FFD46D",8}} do
-		local pos=Vector3.new(112+(index-2)*26,4,333+Layout.EndShift)
-		local target=part("Target"..index,pos,Vector3.new(4,6,4),definition[3])
-		target.Material=Enum.Material.Neon
-		if index<3 then target.CFrame*=CFrame.Angles(0,0,math.pi/4) end
-		target:SetAttribute("CombatTarget",true)
-		local gui=Instance.new("BillboardGui");gui.Size=UDim2.fromOffset(210,58);gui.StudsOffsetWorldSpace=Vector3.new(0,6,0);gui.MaxDistance=110;gui.Parent=target
-		local label=Instance.new("TextLabel");label.Size=UDim2.fromScale(1,1);label.BackgroundTransparency=.15
-		label.BackgroundColor3=Color3.fromHex("292340");label.TextColor3=Color3.new(1,1,1);label.Font=Enum.Font.GothamBold
-		label.TextSize=14;label.TextWrapped=true;label.Parent=gui
-		local extras={}
-		if index==3 then
-			for _,definitionPart in {
-				{"SentinelHead",Vector3.new(0,4.3,0),Vector3.new(3,2,3),"3A3557"},
-				{"SentinelEyeLeft",Vector3.new(-.7,4.5,-1.55),Vector3.new(.45,.45,.15),"FF667F"},
-				{"SentinelEyeRight",Vector3.new(.7,4.5,-1.55),Vector3.new(.45,.45,.15),"FF667F"},
-				{"SentinelArmLeft",Vector3.new(-3,0,0),Vector3.new(1.5,4,2),"666091"},
-				{"SentinelArmRight",Vector3.new(3,0,0),Vector3.new(1.5,4,2),"666091"},
-			} do
-				local p=part(definitionPart[1],pos+definitionPart[2],definitionPart[3],definitionPart[4])
-				p.CanCollide=false;p.CanQuery=false
-				if p.Name:find("Eye") then p.Material=Enum.Material.Neon end
-				table.insert(extras,p)
-			end
-		end
-		local record={extras=extras,part=target,health=definition[2],maximum=definition[2],name=definition[1],seconds=definition[4],label=label,gui=gui}
-		self.records[target]=record;self:Render(record)
-	end
+	local target=part("Target1",Vector3.new(86,4,333+Layout.EndShift),Vector3.new(4,6,4),"78EEDB")
+	target.Material=Enum.Material.Neon
+	target.CFrame*=CFrame.Angles(0,0,math.pi/4)
+	target:SetAttribute("CombatTarget",true)
+	local gui=Instance.new("BillboardGui");gui.Size=UDim2.fromOffset(210,58);gui.StudsOffsetWorldSpace=Vector3.new(0,6,0);gui.MaxDistance=110;gui.Parent=target
+	local label=Instance.new("TextLabel");label.Size=UDim2.fromScale(1,1);label.BackgroundTransparency=.15
+	label.BackgroundColor3=Color3.fromHex("292340");label.TextColor3=Color3.new(1,1,1);label.Font=Enum.Font.GothamBold
+	label.TextSize=14;label.TextWrapped=true;label.Parent=gui
+	local record={part=target,health=60,maximum=60,name="Энергокристалл",seconds=3,label=label,gui=gui}
+	self.records[target]=record;self:Render(record)
 	return self
 end
 function Targets:Render(record)
@@ -56,7 +38,6 @@ function Targets:Damage(part,amount,userId)
 	r.health-=dealt;self:Render(r)
 	if r.health<=0 then
 		r.part.Transparency=1;r.part.CanCollide=false;r.part.CanQuery=false;r.gui.Enabled=false
-		for _,p in r.extras do p.Transparency=1 end
 		local profile=self.data:Get(userId)
 		if profile and self.state.sessions[userId] then
 			local _,reward=self.economy:AddCash(userId,EconomyConfig.getIncome(profile.Data.VerityLevel)*r.seconds*self.economy:GetMultiplier(profile))
@@ -66,7 +47,6 @@ function Targets:Damage(part,amount,userId)
 		task.delay(18,function()
 			if not r.part.Parent then return end
 			r.health=r.maximum;r.part.Transparency=0;r.part.CanCollide=true;r.part.CanQuery=true;r.gui.Enabled=true;self:Render(r)
-			for _,p in r.extras do p.Transparency=0 end
 		end)
 	end
 	return dealt
