@@ -1,88 +1,120 @@
 --!nonstrict
 -- Presentation choices only; every milestone is read from confirmed Core state.
+local Houses=require(game:GetService("ReplicatedStorage").Shared.HouseConfig)
+local Locale=require(script.Parent.Locale)
 local Model={}
-local order={"PRESS_BUTTON","REACH_POINT","STAND_ON_PLATFORM","POSTBOX","CHECKPOINT","CHARGE_PAD"}
-local tasks={
- PRESS_BUTTON={title="Нажми кнопку",detail="Иди по стрелкам к жёлтой кнопке",near="Нажми %s у кнопки",touch="Коснись «Нажать» у кнопки",prompt=true,radius=7},
- REACH_POINT={title="Дойди до метки",detail="Иди по стрелкам к розовой площадке",near="Шагни в центр метки",radius=3},
- STAND_ON_PLATFORM={title="Встань на платформу",detail="Иди по стрелкам к голубой площадке",near="Не сходи с платформы 1 секунду",radius=2.2},
- POSTBOX={title="Районная почта",detail="Иди к оранжевому почтовому ящику",near="Нажми %s и отправь письмо",touch="Коснись «Отправить» у ящика",prompt=true,radius=5},
- CHECKPOINT={title="Сиреневый маршрут",detail="Иди по стрелкам к сиреневой метке",near="Шагни в центр метки",radius=2.2},
- CHARGE_PAD={title="Зарядка Verity",detail="Иди по стрелкам к зелёной площадке",near="Не сходи с площадки три секунды",radius=2.2},
-}
+local Config=require(game:GetService("ReplicatedStorage").Shared.TaskConfig)
+local order={}
+for id in Config do table.insert(order,id) end
+table.sort(order,function(a,b)return Config[a].Order<Config[b].Order end)
 local function ui(id,target,title,detail)
- return {id=id,kind="UI",target=target,title=title,detail=detail}
+ return {id=id,kind="UI",target=target,title=title,detail=detail or ""}
 end
+
 local function phone(panel,title)
- if panel=="PHONE" then return ui("earn","Phone.Next",title or "3/4 · Заработай деньги","Листай вверх или нажми «ЛИСТАТЬ»") end
- return ui("phone","Nav.PHONE",title or "2/4 · Открой телефон","Нажми кнопку с телефоном слева")
+ if panel=="PHONE" then return ui("earn","Phone.Next",title or "Листай → зарабатывай","ЛИСТАТЬ ↑") end
+ return ui("phone","Nav.PHONE",title or "Открой телефон")
 end
-function Model.Resolve(state,panel,selectedTaskId,now)
+
+function Model.ReadyAbility(state)
+ if not state or not state.VerityUnlocked then return nil end
+ for _,item in state.AbilityCollection or {} do
+  local slot=(state.AbilitySlots or {})[item.slot]
+  if (not item.premium and item.canBuy and item.affordable) or
+   (item.owned and item.canEquip and slot and slot.empty) then return item.id,item.owned end
+ end
+ return nil
+end
+
+function Model.ReadyHomeUpgrade(state)
+ if not state or not state.VerityUnlocked then return nil end
+ local nextBuild=Houses.IncomeUpgrades[(state.HouseIncomeLevel or 0)+1]
+ if nextBuild and state.VerityLevel>=nextBuild.Level and state.Cash>=nextBuild.Cost then return "Income" end
+ if not state.HouseDoorOwned and state.Cash>=Houses.Features.Door.Cost then return "Door" end
+ if not state.HouseSecondFloorOwned and state.Cash>=Houses.Features.SecondFloor.Cost then return "Floor" end
+ return nil
+end
+
+local function taskGoal(id,entry,panel,now)
+ if panel then return ui("close-task","Close","Задание выбрано","Закрой окно") end
+ local definition=Config[id]
+ local index=entry.step or 1
+ local stage=definition.Steps[index]
+ local goal={title=stage.Title,detail="",near=stage.Action,touch=stage.Action,
+  prompt=stage.Mode=="Prompt",radius=if stage.Mode=="Hold" then 2.2 else 5}
+ goal.detail=string.format(Locale.Text("Этап %d/%d"),index,#definition.Steps)
+ if goal.prompt then goal.near="%s · "..Locale.Text(stage.Action) end
+ if stage.Mode=="Hold" and entry.holdStartedAt then
+  goal.near=string.format(Locale.Text("Удерживай позицию: %d%%"),math.clamp(math.floor((now-entry.holdStartedAt)/stage.HoldSeconds*100),0,100))
+  goal.touch=goal.near
+ end
+ goal.id="task:"..id..":"..index;goal.kind="World";goal.target=id..":"..index
+ goal.taskId=id;goal.position=entry.targetPosition
+ return goal
+end
+
+function Model.Resolve(state,panel,selectedTaskId,now,nearestTaskId)
  if type(state)~="table" then return nil end
  if not state.VerityUnlocked then
-  if panel then return ui("close-delivery","Close","1/4 · Забери коробку","Закрой окно и иди по стрелкам") end
-  return {id="delivery",kind="World",target="Delivery",title="1/4 · Забери коробку",
-   detail=if state.DeliveryState=="Delivered" then "Иди по стрелкам к своей коробке" else "Доставка уже в пути — иди к метке",
-   near=if state.DeliveryState=="Delivered" then "Нажми %s и распакуй Verity" else "Коробка появится через пару секунд",radius=10}
+  if panel then return ui("close-delivery","Close","Забери Verity","Закрой окно") end
+  return {id="delivery",kind="World",target="Delivery",title="Забери Verity",
+   detail="",near=if state.DeliveryState=="Delivered" then "%s · Распаковать" else "Жди коробку",radius=10}
  end
- if selectedTaskId and (not panel or panel=="TASKS") then
-  for _,entry in state.Tasks or {} do
-   if entry.taskId==selectedTaskId and entry.status=="Active" and tasks[selectedTaskId] then
-    if panel then return ui("close-task","Close","Задание выбрано","Закрой окно и иди по стрелкам") end
-    local goal=table.clone(tasks[selectedTaskId]);goal.id="task:"..selectedTaskId;goal.kind="World"
-    goal.target=selectedTaskId;goal.taskId=selectedTaskId;goal.position=entry.targetPosition;return goal
-   end
-  end
- end
- if not state.TutorialCompleted then
-  local step=state.TutorialStep or 4
-  if step<6 then
-   if panel=="PHONE" and not state.PhoneSessionOpen then
-    return {id="phone-wait",kind="Wait",title="2/4 · Открываем телефон",detail="Подожди подключения…"}
-   end
-   return phone(panel)
-  end
-  local cost=state.NextVerityUpgradeCost
-  if type(cost)=="number" and state.Cash>=cost then
-   return ui("first-upgrade",if panel=="VERITY" then "Verity.Buy" else "Nav.VERITY",
-    "4/4 · Улучши Verity",if panel=="VERITY" then "Нажми зелёную кнопку улучшения" else "Нажми кнопку с Verity слева")
-  end
-  return phone(panel,"3/4 · Накопи на улучшение")
- end
- if panel=="PHONE" then return phone(panel,"Свайпай и зарабатывай") end
- if panel=="VERITY" then
-  if state.VerityLevel>=100 then return {id="max",kind="Wait",title="Verity выросла до максимума!",detail="Все 100 уровней открыты"} end
-  if state.NextVerityUpgradeCost and state.Cash>=state.NextVerityUpgradeCost then
-   return ui("upgrade","Verity.Buy","Улучши Verity","Нажми зелёную кнопку улучшения")
-  end
-  return {id="save",kind="Wait",title="Нужно немного больше денег",detail="Телефон и задания помогут накопить"}
- end
- if panel=="WORKSHOP" or panel=="COSMETICS" or panel=="SETTINGS" then return nil end
- local entries={};for _,entry in state.Tasks or {} do entries[entry.taskId]=entry end
+
+ local entries={}
+ for _,entry in state.Tasks or {} do entries[entry.taskId]=entry end
  local active
  if selectedTaskId and entries[selectedTaskId] and entries[selectedTaskId].status=="Active" then active=selectedTaskId end
  for _,id in order do if not active and entries[id] and entries[id].status=="Active" then active=id end end
- if active then
-  if panel then return ui("close-task","Close","Задание выбрано","Закрой окно и иди по стрелкам") end
-  local goal=table.clone(tasks[active]);goal.id="task:"..active;goal.kind="World";goal.target=active;goal.taskId=active
-  goal.position=entries[active].targetPosition
-  return goal
+ if active then return taskGoal(active,entries[active],panel,now) end
+
+ local cost=state.NextVerityUpgradeCost
+ if state.VerityLevel<100 and type(cost)=="number" and state.Cash>=cost
+  and (panel==nil or panel=="PHONE" or panel=="VERITY") then
+  local target=if panel=="PHONE" then "Phone.Grow" elseif panel=="VERITY" then "Verity.Buy" else "Nav.VERITY"
+  return ui("upgrade-ready",target,"Улучши Verity!","↑")
  end
- if panel=="TASKS" then
-  if state.Progression and state.Progression.stage=="FirstActivity" then
-   local entry=entries.PRESS_BUTTON
-   if entry and entry.status=="Ready" then return ui("first-activity","Task.PRESS_BUTTON","Попробуй первое задание","Нажми «Начать» у жёлтой кнопки — появятся стрелки") end
+
+ if not state.TutorialCompleted then
+  if panel=="PHONE" and not state.PhoneSessionOpen then return {id="phone-wait",kind="Wait",title="Открываем телефон",detail="Подожди…"} end
+  return phone(panel,"Заработай на улучшение")
+ end
+
+ local first=state.Progression and state.Progression.stage=="FirstActivity"
+ if not first then
+  local abilityId,owned=Model.ReadyAbility(state)
+  if abilityId and (panel==nil or panel=="ABILITIES") then
+   return ui("ability:"..abilityId,if panel=="ABILITIES" then "Ability."..abilityId else "Nav.ABILITIES",
+    if owned then "Выбери способность!" else "Купи способность!","!")
   end
-  for _,id in order do local entry=entries[id]
-   if entry and (entry.status=="Ready" or (entry.status=="Cooldown" and entry.cooldownEndsAt<=now)) then
-    return ui("start:"..id,"Task."..id,"Выбери задание","Нажми «Начать» — появятся стрелки")
-   end
+  local home=Model.ReadyHomeUpgrade(state)
+  if home and (panel==nil or panel=="WORKSHOP") then
+   if panel then return ui("close-workshop","Close","Улучши дом","Закрой окно") end
+   return {id="home:"..home,kind="World",target="HousePurchase",purchaseKind=home,title="Улучши дом",
+    detail="",near="%s · Улучшить",touch="Улучшить",prompt=true,radius=6}
   end
-  return {id="cooldowns",kind="Wait",title="Задания скоро обновятся",detail="Пока можно заработать в телефоне"}
  end
- if state.Progression and state.Progression.stage=="FirstActivity" and entries.PRESS_BUTTON and entries.PRESS_BUTTON.status=="Ready" then
-  return ui("first-activity-menu","Nav.TASKS","Попробуй первое задание","Нажми кнопку с заданиями слева")
+
+ if panel=="PHONE" then return phone(panel) end
+ if panel=="VERITY" then
+  if state.VerityLevel>=100 then return nil end
+  return phone(panel,"Заработай на улучшение")
  end
- return ui("tasks","Nav.TASKS","Хочешь больше денег?","Нажми кнопку с заданиями слева")
+ if panel and panel~="TASKS" then return nil end
+
+ local ready
+ if first and entries.PRESS_BUTTON and entries.PRESS_BUTTON.status=="Ready" then ready="PRESS_BUTTON" end
+ for _,id in order do
+  local entry=entries[id]
+  if not ready and entry and not entry.completedThisVisit and (entry.status=="Ready" or entry.status=="Cooldown" and entry.cooldownEndsAt<=now) then ready=id end
+ end
+ if not ready and nearestTaskId and entries[nearestTaskId] and entries[nearestTaskId].status=="Ready" then ready=nearestTaskId end
+ for _,id in order do
+  local entry=entries[id]
+  if not ready and entry and (entry.status=="Ready" or entry.status=="Cooldown" and entry.cooldownEndsAt<=now) then ready=id end
+ end
+ if ready then return ui("start:"..ready,if panel=="TASKS" then "Task."..ready else "Nav.TASKS",
+  if first then "Первое задание" else "Заработай на задании","НАЧАТЬ") end
+ return phone(panel)
 end
 return Model

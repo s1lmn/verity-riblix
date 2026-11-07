@@ -43,7 +43,7 @@ function Service:Join(player,slot)
  if self.phase~="Waiting" and self.phase~="Countdown" or not self.pads[slot] or self.entries[slot] then return false end
  for _,entry in self.entries do if entry.player==player then return false end end
  local profile,root,char=self:Profile(player)
- if not profile or player:GetAttribute("VerityRiding") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive")
+ if not profile or (player:GetAttribute("VerityRiding") or player:GetAttribute("VerityDiversionKind")) or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive")
   or (player:GetAttribute("VerityMobilityUntil") or 0)>now or (player:GetAttribute("VerityAttackReadyAt") or 0)>now then return false end
  if (root.Position-self.pads[slot].Position).Magnitude>Config.JoinReach then return false end
  local level=profile.Data.VerityLevel

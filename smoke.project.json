@@ -97,6 +97,9 @@
         },
         "ActivityRewardService": {
           "$path": "src/server/ActivityRewardService.luau"
+        },
+        "DiversionsService": {
+          "$path": "src/server/DiversionsService.luau"
         }
       },
       "FinalSmoke": {

@@ -12,7 +12,8 @@ local Controller={};Controller.__index=Controller
 function Controller.new(ctx)
 	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),rows={}},Controller)
 	local body=ctx.refs.Panels.ABILITIES.Body
-	W.Line(body,"HowTo","Покупай способности, затем выбери одну для F и одну для G.",56,13,false,T.Muted).LayoutOrder=-2
+ ctx.refs.Panels.ABILITIES.Rows=self.rows
+	W.Line(body,"HowTo","Покупай способности, затем выбери одну для F и одну для G.",56,13,false,T.Muted).Visible=false
 	for index,id in Catalog.Order do
 		local item=Catalog.Items[id]
 		local color=Color3.fromHex(item.Color)

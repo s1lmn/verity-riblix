@@ -97,7 +97,15 @@ local Delivery = require(script.Parent.DeliveryService).new(Data, State, Plots, 
 local Upgrade = require(script.Parent.UpgradeService).new(Data, State, Economy, Income, Verity)
 local Phone = require(script.Parent.PhoneService).new(Data, State, Economy, clock)
 local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock,
-	function(userId, taskId) return World:IsNearTask(userId, taskId) end)
+	function(userId,taskId,step) return World:IsNearTask(userId,taskId,step) end,
+ function(userId)
+  local player=Players:GetPlayerByUserId(userId)
+  if not player or not World:GetCharacter(userId) then return false end
+  for _,name in {"VerityRiding","VerityRaceSlot","VerityParkourStep","VerityBattleActive","VerityFusionSlot","VerityDiversionKind"} do
+   if player:GetAttribute(name) then return false end
+  end
+  return true
+ end)
 local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, require(script.Parent.CosmeticProducts), clock)
 Delivery.onUnlocked=function(id) Cosmetics:GrantStarter(id) end
 State.CosmeticsCatalog = function() return Cosmetics:Catalog(not usingStudioMemory) end
@@ -105,9 +113,9 @@ local ActivityRewards=require(script.Parent.ActivityRewardService).new(Data,Stat
  send(id,"NotificationEvent",{protocolVersion=1,code="ACTIVITY_REWARD_UNLOCKED",source="ActivityReward",achievementId=rewardId,itemId=itemId,eventId=guid()})
 end)
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
-Tasks.onReward = function(id, reward)
+Tasks.onReward = function(id, reward, taskId)
 	World:React(id,"Confident",2)
-	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task"})
+	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task",taskId=taskId})
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State) end
 local AbilityShop = require(script.Parent.AbilityShopService).new(Data,State,Economy,MarketplaceService)
@@ -155,6 +163,11 @@ if generatedWorld then
   warn("[Verity Fusion] Initialization failed",result)
  end
 end
+local DiversionsModel=require(ReplicatedStorage.World.DiversionsBuilder).Build(generatedWorld or workspace)
+local Diversions=require(script.Parent.DiversionsService).new(DiversionsModel,Data,State,Economy,Players,clock,
+ function(player) Abilities:Stop(player) end,function(id,code,reward)
+  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Diversions",reward=reward,eventId=guid()})
+ end)
 local activitiesRemote=Instance.new("RemoteEvent");activitiesRemote.Name="VerityActivities";activitiesRemote.Parent=ReplicatedStorage
 local activityLimits={}
 activitiesRemote.OnServerEvent:Connect(function(player,action,...)
@@ -292,7 +305,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -346,6 +359,7 @@ local function onCharacter(player, character)
   Battle:Remove(player,false)
   Race:Remove(player)
   if Fusion then Fusion:Remove(player) end
+  Diversions:End(player,false)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -403,6 +417,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+ Diversions:Remove(player)
  if Fusion then Fusion:Remove(player,true) end
  Battle:Forget(player);activityLimits[player]=nil
  Parkour:Remove(player)
@@ -439,7 +454,7 @@ RunService.Heartbeat:Connect(function(dt)
  Parkour:UpdateMotion(clock())
  Parkour:Tick()
  incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval) end
+	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval);Diversions:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then

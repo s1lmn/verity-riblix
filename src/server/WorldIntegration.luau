@@ -279,24 +279,25 @@ function WorldIntegration:IsNearWorkshop(userId, plotId)
 	return math.abs(position.X) < 16 and position.Z > -14 and position.Z < 14
 		and position.Y > 0 and position.Y < 12
 end
-function WorldIntegration:RegisterTaskTarget(taskId, part)
-	assert(Tasks[taskId] and typeof(part) == "Instance" and part:IsA("BasePart"), "Invalid task target")
-	assert(part.Anchored and part:IsDescendantOf(self.workspace), "Target must be anchored in Workspace")
-	assert(part:GetAttribute("TaskId") == taskId, "TaskId attribute required")
-	self.targets[taskId] = part
+function WorldIntegration:RegisterTaskTarget(taskId,part,step)
+ assert(Tasks[taskId] and typeof(part)=="Instance" and part:IsA("BasePart"),"Invalid task target")
+ assert(part.Anchored and part:IsDescendantOf(self.workspace),"Target must be anchored in Workspace")
+ assert(part:GetAttribute("TaskId")==taskId,"TaskId attribute required")
+ self.targets[taskId..":"..tostring(step or 1)]=part
+ if (step or 1)==1 then self.targets[taskId]=part end
 end
-function WorldIntegration:IsNearTask(userId, taskId)
-	local root, target = self:GetCharacter(userId), self.targets[taskId]
-	if not root then return false, false end
-	if not target or not target:IsDescendantOf(self.workspace) then return false, true end
-	local localPosition = target.CFrame:PointToObjectSpace(root.Position)
-	if Tasks[taskId].Mode == "Hold" then
-		return math.abs(localPosition.X) <= target.Size.X / 2
-			and math.abs(localPosition.Z) <= target.Size.Z / 2
-			and localPosition.Y >= target.Size.Y / 2
-			and localPosition.Y <= target.Size.Y / 2 + 6, true
-	end
-	return (root.Position - target.Position).Magnitude <= Tasks[taskId].Radius, true
+function WorldIntegration:IsNearTask(userId,taskId,step)
+ local root=self:GetCharacter(userId)
+ local target=self.targets[taskId..":"..tostring(step or 1)]
+ if not root then return false,false end
+ if not target or not target:IsDescendantOf(self.workspace) then return false,true end
+ local stage=Tasks[taskId].Steps[step or 1]
+ local position=target.CFrame:PointToObjectSpace(root.Position)
+ if stage.Mode=="Hold" then
+  return math.abs(position.X)<=target.Size.X/2 and math.abs(position.Z)<=target.Size.Z/2
+   and position.Y>=target.Size.Y/2 and position.Y<=target.Size.Y/2+6,true
+ end
+ return (root.Position-target.Position).Magnitude<=Tasks[taskId].Radius,true
 end
 function WorldIntegration:UpdatePlot(userId, state)
 	local plotId = self.plots.owners[userId]

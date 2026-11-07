@@ -114,7 +114,7 @@ function Phone:Render()
  self.refs.Reward.Text=if self.lastReward then "+$"..Locale.Number(self.lastReward) elseif state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за обычную карту") else "$ —"
 	self.refs.Session.Text=if not state then Locale.Text("Загружаем прогресс…") elseif not ready then Locale.Text("Подключаем телефон…") elseif busy then Locale.Text("Получаем награду…") else (if found==40 then Locale.Text("Коллекция собрана!") else string.format(Locale.Text("Найди все карты • осталось %d"),40-found))
 	for _,entry in {{self.refs.Power,"UpgradeSwipe","СИЛА СВАЙПА",40,"SwipeUpgradeLevel","NextSwipeUpgradeCost"},
-		{self.refs.Grow,"UpgradeVerity","ВЫРАСТИТЬ",100,"VerityLevel","NextVerityUpgradeCost"}} do
+		{self.refs.Grow,"UpgradeVerity","УЛУЧШИТЬ ↑",100,"VerityLevel","NextVerityUpgradeCost"}} do
 		local maxed=state and state[entry[5]] >= entry[4]
 		local cost=state and state[entry[6]]
 		local pending=net:IsBusy(entry[2])

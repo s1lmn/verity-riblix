@@ -3,18 +3,20 @@
 local Economy=require(script.Parent.EconomyConfig)
 local Rewards={Version=1}
 Rewards.Definitions=table.freeze({
+ Hunt=table.freeze({Seconds=45,TargetFraction=.05,MaximumSeconds=150}),
+ Rhythm=table.freeze({Seconds=25,TargetFraction=.025,MaximumSeconds=90}),
  Parkour=table.freeze({Seconds=60,TargetFraction=.08,MaximumSeconds=240}),
  Battle=table.freeze({Seconds=55,TargetFraction=.10,MaximumSeconds=300}),
  Race=table.freeze({Seconds=12,TargetFraction=.015,MaximumSeconds=60}),
 })
-local taskSeconds={PRESS_BUTTON=4,REACH_POINT=8,STAND_ON_PLATFORM=5,POSTBOX=11,CHECKPOINT=13,CHARGE_PAD=15}
+local Tasks=require(script.Parent.TaskConfig)
 function Rewards.Base(level,id)
  local d=Rewards.Definitions[id];if not d then return 0 end
  local income=Economy.getIncome(level);local cost=Economy.LevelCost[level] or 0
  return math.max(income*d.Seconds,math.min(cost*d.TargetFraction,income*d.MaximumSeconds))
 end
 function Rewards.Task(level,id,minimum)
- return math.max(minimum,Economy.getIncome(level)*(taskSeconds[id] or 4))
+ return math.max(minimum,Economy.getIncome(level)*(if Tasks[id] then Tasks[id].RewardSeconds else 4))
 end
 
 -- Exclusive achievement inventory and house trophies from the team.

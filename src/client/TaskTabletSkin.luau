@@ -5,15 +5,11 @@ local T=require(script.Parent.UITheme)
 local Skin={}
 local violet=Color3.fromHex("9960DC")
 local cream=Color3.fromHex("FFF6ED")
-local orders={
- {"PRESS_BUTTON","НАЖМИ КНОПКУ","Найди отмеченную кнопку и нажми её.",T.Pink},
- {"REACH_POINT","ПРОГУЛКА ПО РАЙОНУ","Доберись до точки, которую покажет стрелка.",T.Blue},
- {"STAND_ON_PLATFORM","ПОСТОЙ НА ПЛАТФОРМЕ","Встань на отмеченную платформу на одну секунду.",T.Mint},
- {"POSTBOX","РАЙОННАЯ ПОЧТА","Дойди до оранжевого ящика и отправь письмо.",T.Gold},
- {"CHECKPOINT","СИРЕНЕВЫЙ МАРШРУТ","Доберись до сиреневой метки на другой стороне улицы.",T.Purple},
- {"CHARGE_PAD","ЗАРЯДКА VERITY","Останься на зелёной площадке три секунды.",T.Mint},
-}
-local cardHeight, gap = 176, 10
+local Config=require(game:GetService("ReplicatedStorage").Shared.TaskConfig)
+local orders={}
+for id,definition in Config do table.insert(orders,{id,definition.Title,definition.Description,Color3.fromHex(definition.Color),definition.Order}) end
+table.sort(orders,function(a,b)return a[5]<b[5] end)
+local cardHeight, gap = 210, 10
 local contentHeight = #orders * (cardHeight + gap) - gap
 local function shape(parent,name,x,y,w,h,color,radius)
  local f=W.Round(W.Frame(parent,name,UDim2.fromOffset(w,h),color),radius or 4)
@@ -54,7 +50,7 @@ function Skin.Build(parent)
  local close=W.Button(root,"Close","×",T.Gold)
  close.Size=UDim2.fromOffset(44,44);close.Position=UDim2.new(1,-62,0,24);close.TextSize=26
  local body=W.New("ScrollingFrame",{Name="Orders",BackgroundTransparency=1,BorderSizePixel=0,
-  Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-144),CanvasSize=UDim2.fromOffset(0,contentHeight),
+  Position=UDim2.fromOffset(16,80),Size=UDim2.new(1,-32,1,-96),CanvasSize=UDim2.fromOffset(0,contentHeight),
   AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.Y,
   ScrollBarThickness=3,ScrollBarImageColor3=violet},root)
  W.List(body,gap)
@@ -66,20 +62,22 @@ function Skin.Build(parent)
   local heading=W.Text(card,"Title",info[2],14,true)
   heading.Position=UDim2.fromOffset(58,10);heading.Size=UDim2.new(1,-70,0,40)
   local description=W.Text(card,"Description",info[3],12,false,T.Muted)
-  description.Position=UDim2.fromOffset(12,53);description.Size=UDim2.new(1,-24,0,34)
-  local rewardBadge=shape(card,"RewardBadge",12,92,94,24,T.Gold,8)
+  description.Position=UDim2.fromOffset(12,53);description.Size=UDim2.new(1,-24,0,40)
+  local progress=W.Text(card,"Progress","",11,true,T.Purple)
+  progress.Position=UDim2.fromOffset(12,96);progress.Size=UDim2.new(1,-24,0,28)
+  local rewardBadge=shape(card,"RewardBadge",12,128,94,24,T.Gold,8)
   local reward=W.Text(rewardBadge,"Reward","$—",15,true)
   reward.TextXAlignment=Enum.TextXAlignment.Center;reward.Size=UDim2.fromScale(1,1)
   local status=W.Text(card,"Status","Загрузка…",11,true,T.Muted)
-  status.Position=UDim2.fromOffset(116,92);status.Size=UDim2.new(1,-128,0,24)
+  status.Position=UDim2.fromOffset(116,128);status.Size=UDim2.new(1,-128,0,24)
   status.TextXAlignment=Enum.TextXAlignment.Right
   local button=W.Button(card,"Start","ЗАГРУЗКА…",info[4])
-  button.Position=UDim2.fromOffset(12,120);button.Size=UDim2.new(1,-24,0,44)
-  rows[info[1]]={Root=card,Title=heading,Description=description,Reward=reward,Status=status,Button=button}
+  button.Position=UDim2.fromOffset(12,160);button.Size=UDim2.new(1,-24,0,44)
+  rows[info[1]]={Root=card,Title=heading,Description=description,Reward=reward,Status=status,Button=button,Progress=progress}
  end
  local footer=W.Text(root,"Footer","Выбери заказ — стрелка покажет путь",11,false,T.Muted)
  footer.Position=UDim2.new(0,16,1,-31);footer.Size=UDim2.new(1,-32,0,20)
- footer.TextXAlignment=Enum.TextXAlignment.Center
+ footer.TextXAlignment=Enum.TextXAlignment.Center;footer.Visible=false
  return {Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Rows=rows,Footer=footer}
 end
 function Skin.Layout(p,size,panelX)

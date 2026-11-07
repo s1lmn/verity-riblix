@@ -67,6 +67,7 @@ function Adapter:Attach(folder)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
 							local messages={
+        TASK_OTHER_ACTIVITY="Заверши текущую активность, затем возьми поручение.",DIVERSION_COOLDOWN="Награда скоро обновится. Попробуй соседнюю активность.",DIVERSION_REWARD="Испытание завершено! Награда получена.",
         FUSION_PRIZE="Заезд завершён! Парные подвески в меню стиля Verity.",FUSION_WIN="Заезд слияния завершён!",
         FUSION_ENDED="Заезд завершён. Ваши Verity вернулись.",FUSION_FAILED="Попытки закончились. Можно повторить заезд у установки.",
         FUSION_TIME="Время вышло. Ваши Verity вернулись.",ACTIVITY_REWARD_UNLOCKED="Новая награда за приключение!",OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
@@ -95,6 +96,10 @@ function Adapter:Attach(folder)
 								}
 							end
 							local message=messages[payload.code]
+       if payload.code=="TASK_REWARD" then
+        local outcomes={PRESS_BUTTON="Свет на улице восстановлен!",REACH_POINT="Посылка доставлена получателю!",STAND_ON_PLATFORM="Все три клумбы расцвели!",POSTBOX="Все письма доставлены!",CHECKPOINT="Фонари снова работают!",CHARGE_PAD="Зарядная станция запущена!",CLEAN_PARK="Сквер стал чистым!",SIGNAL_REPAIR="Сигналы перехода работают!",DRONE_RESCUE="Дрон спасён и заряжен!",FESTIVAL="Звезда Verity зажжена!"}
+        message=outcomes[payload.taskId] or message
+       end
        local drop=payload.deliveryReward
        if payload.code=="STREET_DELIVERY_REWARD" and type(drop)=="table" and drop.version==1 and type(drop.cycle)=="number" then
         if self.lastDeliveryCycle and drop.cycle<=self.lastDeliveryCycle then return end

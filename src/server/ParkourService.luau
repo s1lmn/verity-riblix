@@ -40,7 +40,7 @@ function Service:GroundedIndex(character, root)
 end
 function Service:Start(player,fromPrompt)
  if self.runs[player] then return false end
- if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive") then return false end
+ if (player:GetAttribute("VerityRiding") or player:GetAttribute("VerityDiversionKind")) or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive") then return false end
  local profile=self.data:Get(player.UserId);local c,root=self:Character(player)
  if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked or not c then return false end
  if not fromPrompt and self:GroundedIndex(c, root) ~= 1 then return false end
@@ -57,7 +57,7 @@ function Service:Start(player,fromPrompt)
  return true
 end
 function Service:Advance(player,index)
- if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive") then return false end
+ if (player:GetAttribute("VerityRiding") or player:GetAttribute("VerityDiversionKind")) or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive") then return false end
  local profile=self.data:Get(player.UserId)
  local character=self:Character(player)
  local pad=Config.Pads[index]

@@ -32,6 +32,7 @@ local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualCon
 local Main={}
 Main.__index=Main
 local Errors={
+ TASK_OTHER_ACTIVITY="Заверши текущую активность, затем возьми поручение.",
  CARD_NOT_OWNED="Этой карточки пока нет в коллекции.",
  ABILITY_LEVEL_REQUIRED="Сначала повысь уровень Verity.",ABILITY_NOT_OWNED="Сначала купи эту способность.",TOO_FAR="Подойди к станции строительства внутри своего дома.",
  NOT_OWNED="You do not own this accessory.",PRODUCT_UNAVAILABLE="This item is not on sale yet.",
@@ -98,6 +99,7 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.StreetDeliveryController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityRaceController).new(ctx))
  ctx.activities=self.cleanup:Add(require(script.Parent.ActivitiesController).new(ctx))
+ ctx.diversions=self.cleanup:Add(require(script.Parent.DiversionsController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityFusionController).new(ctx))
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
@@ -165,7 +167,7 @@ function Main.new()
 			self.notificationIds[payload.eventId]=true
 			table.insert(self.notificationOrder,payload.eventId)
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
-			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" then ctx.sound:Play("Reward") end end
+			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" and payload.code~="DIVERSION_REWARD" then ctx.sound:Play("Reward") end end
 		end
 		if (payload.code=="STREET_DELIVERY_STARTED" or payload.code=="STREET_DELIVERY_DROPPED")
 			and (ActivityCard.Blocked(ctx) or ActivityCard.ActivityRunning()) then return end
@@ -223,7 +225,7 @@ end
 function Main:Open(name)
 	local ctx=self.ctx
 	if name and name~="SETTINGS" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
-	if name and (ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive")) then return end
+	if name and (ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
 	ctx.active=name
@@ -283,6 +285,7 @@ function Main:Tick(dt)
 	ctx.rewards:Tick(now)
  ctx.sound:Tick(now,dt)
 	if ctx.active=="TASKS" then self.tasks:Render() end
+ self.tasks:Tick()
 	self.tutorial:Render()
 	self.phone:ReconcileSession()
 	if ctx.active=="VERITY" then self.verity:Render() end

@@ -74,6 +74,9 @@ function Model.ValidateSnapshot(raw: any): (any?, string?)
 			if type(entry) ~= "table" or type(entry.taskId) ~= "string" or not TaskConfig[entry.taskId] or seen[entry.taskId]
 				or not Model.IsFinite(entry.reward) or entry.reward < 0
 				or not Model.IsFinite(entry.cooldownEndsAt)
+                or (entry.step ~= nil and not Model.IsInteger(entry.step,1,#TaskConfig[entry.taskId].Steps))
+                or (entry.stepCount ~= nil and entry.stepCount ~= #TaskConfig[entry.taskId].Steps)
+                or (entry.holdStartedAt ~= nil and not Model.IsFinite(entry.holdStartedAt))
 				or (entry.status ~= "Ready" and entry.status ~= "Active" and entry.status ~= "Cooldown")
 			then return nil, "Invalid task state" end
 			seen[entry.taskId] = true

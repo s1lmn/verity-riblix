@@ -25,7 +25,7 @@ function Controller.new(ctx)
  self.cleanup:Add(self.card)
  self.cleanup:Add(self.leave.Activated:Connect(function()self:Leave()end))
  self.next=Instance.new("Highlight");self.next.Name="NextParkourPlatform";self.next.FillTransparency=.82;self.next.OutlineTransparency=.1
- self.next.FillColor=T.Gold;self.next.OutlineColor=T.Gold;self.next.Enabled=false;self.next.DepthMode=Enum.HighlightDepthMode.Occluded;self.next.Parent=self.folder
+ self.next.FillColor=Color3.fromHex("FFEB00");self.next.OutlineColor=Color3.fromHex("FFEB00");self.next.Enabled=false;self.next.DepthMode=Enum.HighlightDepthMode.Occluded;self.next.Parent=self.folder
  self.saved=Instance.new("Highlight");self.saved.Name="SavedFactoryCheckpoint";self.saved.FillTransparency=1;self.saved.OutlineTransparency=.1
  self.saved.OutlineColor=T.Mint;self.saved.DepthMode=Enum.HighlightDepthMode.Occluded;self.saved.Enabled=false;self.saved.Parent=self.folder
  Actions:BindAction("VerityActivityLeave",function(_,state)

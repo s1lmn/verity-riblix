@@ -63,7 +63,7 @@ function Verity:Render()
 	local affordable=not maxed and state.NextVerityUpgradeCost~=nil and state.Cash>=state.NextVerityUpgradeCost
 	local text=if maxed then Locale.Text("MAX LEVEL • 15×") elseif not state.VerityUnlocked then Locale.Text("OPEN YOUR DELIVERY BOX FIRST")
 		elseif busy then Locale.Text("WAITING FOR CONFIRMATION…") elseif not affordable then Locale.Text("NEED $")..Locale.Number(state.NextVerityUpgradeCost)
-		else Locale.Text("UPGRADE • $")..Locale.Number(state.NextVerityUpgradeCost)
+		else Locale.Text("УЛУЧШИТЬ ↑ • $")..Locale.Number(state.NextVerityUpgradeCost)
 	W.SetButton(r.Buy,text,net.connected and state.VerityUnlocked and not maxed and affordable and not busy,busy)
 	r.Boost.Visible=false
 	local boost=state.Boost

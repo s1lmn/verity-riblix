@@ -3,7 +3,7 @@ local Shared=game:GetService("ReplicatedStorage").Shared
 local Config=require(Shared.ParkourConfig)
 local Locale=require(Shared.LocaleText)
 local Builder={}
-local VISUAL_VERSION=7
+local VISUAL_VERSION=8
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityParkour")
  if old and old:GetAttribute("ParkourVersion")==Config.Version and old:GetAttribute("ParkourVisualVersion")==VISUAL_VERSION then return old end
@@ -54,7 +54,7 @@ function Builder.Build(parent)
    if nextPad and not pad.finish then
     local aim=CFrame.lookAt(pos,pos+pad.direction)
     for _,side in {-1,1} do
-     local arrow=part("TrackArrow",pos,Vector3.new(.28,.05,1.8),"FFF2CF",false)
+     local arrow=part("TrackArrow",pos,Vector3.new(.5,.10,2.4),"FFEB00",false,true)
      arrow.CFrame=aim*CFrame.new(side*.5,.54,-math.min(pad.w,pad.d)*.25)*CFrame.Angles(0,side*math.rad(35),0)
     end
    end

@@ -37,7 +37,7 @@ function Service:Eligible(player)
  local root=char and char:FindFirstChild("HumanoidRootPart");local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked
   or not root or not hum or hum.Health<=0 or root.Anchored or hum.SeatPart or not finitePosition(root.Position) then return nil end
- if player:GetAttribute("VerityRiding") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep")
+ if (player:GetAttribute("VerityRiding") or player:GetAttribute("VerityDiversionKind")) or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep")
   or player:GetAttribute("VerityBattleActive") then return nil end
  return char,root,hum
 end

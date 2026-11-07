@@ -4,6 +4,9 @@ local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local Input=game:GetService("UserInputService")
 local Pathfinding=game:GetService("PathfindingService")
+local CollectionService=game:GetService("CollectionService")
+local ActivityCard=require(script.Parent.ActivityCard)
+local GUIDE_COLOR=Color3.fromHex("FFEB00")
 local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
@@ -15,7 +18,7 @@ local function validPosition(v)
 end
 local function piece(parent,name)
  local p=Instance.new("Part");p.Name=name;p.Anchored=true;p.CanCollide=false;p.CanTouch=false;p.CanQuery=false;p.CastShadow=false
- p.Material=Enum.Material.Neon;p.Color=T.Mint;p.Transparency=1;p.Size=Vector3.new(.2,.07,1.3);p.Parent=parent;return p
+ p.Material=Enum.Material.Neon;p.Color=GUIDE_COLOR;p.Transparency=1;p.Size=Vector3.new(.2,.07,1.3);p.Parent=parent;return p
 end
 local function visible(object,ignoreClip)
  local node=object
@@ -31,22 +34,46 @@ local function visible(object,ignoreClip)
  return object:IsDescendantOf(Players.LocalPlayer.PlayerGui)
 end
 function Tutorial.new(ctx)
- local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),arrows={},subtitles={},nextPathAt=0,generation=0,dead=false},Tutorial)
- for name,panel in ctx.refs.Panels do self.subtitles[name]=Locale.Source(panel.Subtitle) end
+ local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),arrows={},indicators={},nextPathAt=0,generation=0,dead=false},Tutorial)
+ for _,panel in ctx.refs.Panels do panel.Subtitle.Visible=false end
  self.folder=self.cleanup:Add(Instance.new("Folder"));self.folder.Name="VerityGuidance";self.folder.Parent=workspace
  self.anchor=piece(self.folder,"GoalMarker");self.anchor.Size=Vector3.one*.1
- self.pin=Instance.new("BillboardGui");self.pin.Name="GoalPin";self.pin.Size=UDim2.fromOffset(210,84)
+ self.pin=Instance.new("BillboardGui");self.pin.Name="GoalPin";self.pin.Size=UDim2.fromOffset(200,104)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4,0);self.pin.AlwaysOnTop=true;self.pin.MaxDistance=1500;self.pin.Enabled=false;self.pin.Parent=self.anchor
  self.pinTitle=W.Text(self.pin,"Target","",13,true,T.Ink);self.pinTitle.Size=UDim2.new(1,0,0,27)
  self.pinTitle.TextXAlignment=Enum.TextXAlignment.Center;self.pinTitle.TextStrokeColor3=T.White;self.pinTitle.TextStrokeTransparency=.1
- local down=W.Text(self.pin,"Arrow","▼",42,true,T.Mint);down.Position=UDim2.fromOffset(0,28);down.Size=UDim2.new(1,0,0,52)
+ local down=W.Text(self.pin,"Arrow","▼",66,true,GUIDE_COLOR);down.Position=UDim2.fromOffset(0,25);down.Size=UDim2.new(1,0,0,76)
  down.TextXAlignment=Enum.TextXAlignment.Center;down.TextStrokeColor3=T.Ink;down.TextStrokeTransparency=.25
- self.highlight=Instance.new("Highlight");self.highlight.Name="CurrentGoal";self.highlight.FillColor=T.Mint;self.highlight.OutlineColor=T.Mint
- self.highlight.FillTransparency=.82;self.highlight.OutlineTransparency=.15;self.highlight.Enabled=false;self.highlight.Parent=self.folder
- self.compass=W.Text(ctx.refs.Tutorial,"Compass","↑",28,true,T.Purple)
+ self.highlight=Instance.new("Highlight");self.highlight.Name="CurrentGoal";self.highlight.FillColor=GUIDE_COLOR;self.highlight.OutlineColor=GUIDE_COLOR
+ self.highlight.FillTransparency=.78;self.highlight.OutlineTransparency=0;self.highlight.Enabled=false;self.highlight.Parent=self.folder
+ self.compass=W.Text(ctx.refs.Tutorial,"Compass","↑",34,true,GUIDE_COLOR)
  self.compass.AnchorPoint=Vector2.new(.5,.5);self.compass.Position=UDim2.new(1,-22,.5,0);self.compass.Size=UDim2.fromOffset(32,32);self.compass.Visible=false
- self.pointer=ctx.refs.Direction;self.pointer.Size=UDim2.fromOffset(32,32);self.pointer.AnchorPoint=Vector2.new(.5,.5)
- self.pointer.TextSize=28;self.pointer.TextColor3=T.Purple;self.pointer.TextStrokeColor3=T.White;self.pointer.TextStrokeTransparency=.15;self.pointer.ZIndex=40
+ ctx.refs.Direction.Visible=false
+ self.pointer=self.cleanup:Add(W.Frame(ctx.refs.Safe,"ButtonGuide"))
+ self.pointer.BackgroundTransparency=1;self.pointer.ZIndex=40;self.pointer.Visible=false
+ self.focusGlow=W.Round(W.Frame(self.pointer,"SoftFocus"),17)
+ self.focusGlow.BackgroundTransparency=1;self.focusGlow.AnchorPoint=Vector2.new(.5,.5)
+ self.focusGlow.ZIndex=1
+ self.focusGlowStroke=W.Stroke(self.focusGlow,T.Gold,5);self.focusGlowStroke.Transparency=.78
+ self.focus=W.Round(W.Frame(self.pointer,"Focus"),14)
+ self.focus.BackgroundTransparency=1;self.focus.AnchorPoint=Vector2.new(.5,.5);self.focus.ZIndex=2
+ self.focusStroke=W.Stroke(self.focus,T.Gold,2.5);self.focusStroke.Transparency=.05
+
+ self.markerShadow=W.Round(W.Frame(self.pointer,"MarkerShadow",UDim2.fromOffset(34,28),T.Purple),14)
+ self.markerShadow.AnchorPoint=Vector2.new(.5,.5);self.markerShadow.BackgroundTransparency=.82;self.markerShadow.ZIndex=3
+ self.marker=W.Round(W.Frame(self.pointer,"Marker",UDim2.fromOffset(34,28),T.Paper),14)
+ self.marker.AnchorPoint=Vector2.new(.5,.5);self.marker.ZIndex=4
+ W.Stroke(self.marker,T.Gold,1.5).Transparency=.08
+ W.New("UIGradient",{Color=ColorSequence.new(T.White,Color3.fromHex("FFE89A")),Rotation=95},self.marker)
+ self.markerScale=W.New("UIScale",{Scale=1},self.marker)
+ self.chevron=W.Frame(self.marker,"Chevron",UDim2.fromOffset(14,14))
+ self.chevron.AnchorPoint=Vector2.new(.5,.5);self.chevron.Position=UDim2.fromScale(.5,.5)
+ self.chevron.BackgroundTransparency=1;self.chevron.ZIndex=5
+ for index,angle in {-45,45} do
+  local arm=W.Round(W.Frame(self.chevron,"Arm",UDim2.fromOffset(10,3),T.Ink),2)
+  arm.AnchorPoint=Vector2.new(.5,.5);arm.Position=UDim2.fromOffset(7,if index==1 then 4 else 10)
+  arm.Rotation=angle;arm.ZIndex=6
+ end
  local elapsed=0
  self.cleanup:Add(RunService.RenderStepped:Connect(function(dt)
   elapsed+=dt;if elapsed<1/30 then return end;elapsed=0;self:Update(os.clock())
@@ -55,11 +82,8 @@ function Tutorial.new(ctx)
 end
 function Tutorial:SetButton(button)
  if self.button==button then return end
- if self.stroke then self.stroke:Destroy();self.stroke=nil end
  self.button=button
  if button then
-  self.stroke=Instance.new("UIStroke");self.stroke.Name="GuidanceGlow";self.stroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-  self.stroke.Color=T.Gold;self.stroke.Thickness=3;self.stroke.Transparency=0;self.stroke.Parent=button
   local node=button.Parent
   while node and node~=self.ctx.refs.Gui do
    if node:IsA("ScrollingFrame") then
@@ -73,15 +97,131 @@ function Tutorial:SetButton(button)
   end
  end
 end
+function Tutorial:ShowButtonGuide(button,now)
+ local safe=self.ctx.refs.Safe
+ local position=button.AbsolutePosition-safe.AbsolutePosition
+ local size=button.AbsoluteSize
+ local center=position+size/2
+ local reduced=self.ctx.settings.values.ReducedMotion
+ local pulse=if reduced then 0 else .5+.5*math.sin(now*3)
+
+ self.focus.Position=UDim2.fromOffset(center.X,center.Y)
+ self.focus.Size=UDim2.fromOffset(size.X+6,size.Y+6)
+ self.focusGlow.Position=self.focus.Position
+ self.focusGlow.Size=UDim2.fromOffset(size.X+14+pulse*2,size.Y+14+pulse*2)
+ self.focusGlowStroke.Transparency=.82-pulse*.09
+
+ local x,y,rotation
+ if size.X<=64 then
+  self.marker.Size=UDim2.fromOffset(24,24)
+  x,y=position.X+size.X-4,position.Y+size.Y-4
+  rotation=45
+ else
+  self.marker.Size=UDim2.fromOffset(34,28)
+  y=center.Y
+  if position.X+size.X+42<safe.AbsoluteSize.X then
+   x=position.X+size.X+24;rotation=0
+  elseif position.X>=42 then
+   x=position.X-24;rotation=180
+  else
+   x=position.X+size.X-16;y=position.Y+size.Y-8;rotation=45
+  end
+  x+=if reduced then 0 elseif rotation==180 then -pulse*2 else pulse*2
+ end
+ self.marker.Position=UDim2.fromOffset(x,y)
+ self.markerShadow.Position=UDim2.fromOffset(x,y+2)
+ self.markerShadow.Size=self.marker.Size
+ self.markerScale.Scale=1+pulse*.035
+ self.chevron.Rotation=rotation
+ self.pointer.Visible=true
+end
+
 function Tutorial:UIButton(key)
  local refs=self.ctx.refs;local group,name=key:match("^([^%.]+)%.(.+)$")
  if group=="Nav" then return refs.Nav[name] end
- if group=="Phone" then return refs.Panels.PHONE.Next end
+ if group=="Phone" then return refs.Panels.PHONE[name] end
  if group=="Verity" then return refs.Panels.VERITY.Buy end
  if group=="Task" then return refs.Panels.TASKS.Rows[name].Button end
+ if group=="Ability" then
+  local rows=refs.Panels.ABILITIES.Rows
+  return rows and rows[name] and rows[name].button
+ end
  if key=="Close" and self.ctx.active then return refs.Panels[self.ctx.active].Close end
 end
+function Tutorial:ClosestHouse(root,now)
+ local cached=self.houseGoal
+ local available=cached and cached.object.Parent and (cached.object:GetAttribute("OwnerUserId") or 0)==0
+  and cached.prompt.Parent and cached.prompt.Enabled
+ if available and now<(self.houseScanAt or 0) then return cached end
+ self.houseScanAt=now+.5
+ local nearest,best=nil,math.huge
+ for _,pad in CollectionService:GetTagged("VerityPurchasePad") do
+  if pad:IsA("Model") and pad:GetAttribute("PurchaseKind")=="Claim" and pad.PrimaryPart
+   and pad:IsDescendantOf(workspace) and (pad:GetAttribute("OwnerUserId") or 0)==0 then
+   local reference=pad:FindFirstChild("Prompt")
+   local prompt=reference and reference.Value
+   if prompt and prompt:IsA("ProximityPrompt") and prompt.Enabled then
+    local position=pad.PrimaryPart.Position
+    local distance=flat(position-root.Position).Magnitude
+    if distance<best then
+     best=distance
+     nearest={id="house:"..tostring(pad:GetAttribute("PlotId")),kind="World",target="House",
+      title="Займи дом",detail="",near="%s · Занять дом",touch="Занять дом",
+      radius=7,prompt=prompt,position=position,object=pad}
+    end
+   end
+  end
+ end
+ self.houseGoal=nearest
+ return nearest
+end
+
+function Tutorial:Attention(button,enabled,symbol,now)
+ local indicator=self.indicators[button]
+ if not indicator and not enabled then return end
+ if not indicator then
+  local badge=W.Text(button,"ActionReady",symbol,15,true,T.Ink)
+  badge.AnchorPoint=Vector2.new(1,0);badge.Position=UDim2.new(1,-2,0,2)
+  badge.Size=UDim2.fromOffset(20,20);badge.TextXAlignment=Enum.TextXAlignment.Center
+  badge.BackgroundColor3=GUIDE_COLOR;badge.BackgroundTransparency=0
+  badge.ZIndex=button.ZIndex+3;W.Round(badge,10)
+  local stroke=W.Stroke(button,GUIDE_COLOR,3);stroke.Transparency=0
+  self.cleanup:Add(badge);self.cleanup:Add(stroke)
+  indicator={badge=badge,stroke=stroke};self.indicators[button]=indicator
+ end
+ indicator.badge.Visible=enabled
+ indicator.stroke.Enabled=enabled
+ if enabled then
+  indicator.badge.Text=symbol
+  indicator.stroke.Thickness=if self.ctx.settings.values.ReducedMotion then 3.5 else 3.5+.7*math.sin(now*3)
+ end
+end
+
+function Tutorial:RefreshAttention(now,blocked)
+ local ctx=self.ctx;local state=ctx.net.state
+ local ready=not blocked and state and state.VerityUnlocked and ctx.net.connected and not ctx.net:IsBusy()
+ local canGrow=ready and state.VerityLevel<100 and state.NextVerityUpgradeCost and state.Cash>=state.NextVerityUpgradeCost or false
+ self:Attention(ctx.refs.Nav.VERITY,canGrow,"↑",now)
+ self:Attention(ctx.refs.Panels.VERITY.Buy,canGrow,"↑",now)
+ self:Attention(ctx.refs.Panels.PHONE.Grow,canGrow,"↑",now)
+
+ local canBuild=ready and state.TutorialCompleted and Goals.ReadyHomeUpgrade(state)~=nil or false
+ local canChoose=ready and state.TutorialCompleted and Goals.ReadyAbility(state)~=nil or false
+ self:Attention(ctx.refs.Nav.WORKSHOP,canBuild,"↑",now)
+ self:Attention(ctx.refs.Nav.ABILITIES,canChoose,"!",now)
+end
+
 function Tutorial:Target(goal)
+ if goal.target=="HousePurchase" then
+  local state=self.ctx.net.state
+  for _,pad in CollectionService:GetTagged("VerityPurchasePad") do
+   if pad:GetAttribute("PlotId")==state.PlotId and pad:GetAttribute("PurchaseKind")==goal.purchaseKind and pad.PrimaryPart then
+    return pad.PrimaryPart.Position,pad
+   end
+  end
+  return nil
+ end
+ if goal.object and goal.object.Parent then return goal.position,goal.object end
  if goal.target=="StreetParcel" then
   local folder=workspace:FindFirstChild("VerityStreetDelivery")
   local anchor=folder and folder:FindFirstChild("ParcelClaim")
@@ -142,19 +282,29 @@ end
 function Tutorial:DrawRoute(root,now)
  if self.lastDrawAt and now-self.lastDrawAt<.1 then return end
  self.lastDrawAt=now
- self:HideArrows();if not self.route or #self.route<2 then return end
- while self.routeIndex<#self.route do
-  local p=self.route[self.routeIndex].Position
-  if flat(p-root.Position).Magnitude>3.5 or math.abs(p.Y-root.Position.Y)>6 then break end
-  self.routeIndex+=1
- end
- local points={root.Position};for i=self.routeIndex,#self.route do table.insert(points,self.route[i].Position) end
+ self:HideArrows()
  local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Include;params.RespectCanCollide=true
  local objects={workspace.Terrain}
  for _,name in {"GeneratedWorld","GameplayInteractions"}do local object=workspace:FindFirstChild(name);if object then table.insert(objects,object) end end
  params.FilterDescendantsInstances=objects
- local segment,distance=1,3
- for i=1,8 do
+ local route=self.route
+ if not route or #route<2 then
+  local target=self.targetPosition
+  if not validPosition(target) then return end
+  local aim=Vector3.new(target.X,root.Position.Y,target.Z)
+  if workspace:Raycast(root.Position,aim-root.Position,params) then return end
+  route={{Position=root.Position},{Position=target}}
+ end
+ local index=self.routeIndex or 2
+ while index<#route do
+  local p=route[index].Position
+  if flat(p-root.Position).Magnitude>3.5 or math.abs(p.Y-root.Position.Y)>6 then break end
+  index+=1
+ end
+ self.routeIndex=index
+ local points={root.Position};for i=index,#route do table.insert(points,route[i].Position) end
+ local segment,distance=1,4
+ for i=1,10 do
   while segment<#points and flat(points[segment+1]-points[segment]).Magnitude<distance do
    distance-=flat(points[segment+1]-points[segment]).Magnitude;segment+=1
   end
@@ -165,54 +315,98 @@ function Tutorial:DrawRoute(root,now)
   if hit and hit.Position.Y<=point.Y+1.5 then
    local arrow=self.arrows[i]
    if not arrow then arrow={piece(self.folder,"RouteStem"),piece(self.folder,"RouteHead"),piece(self.folder,"RouteHead")};self.arrows[i]=arrow end
-   local cf=CFrame.lookAt(hit.Position+Vector3.new(0,.11,0),hit.Position+Vector3.new(0,.11,0)+delta.Unit)
-   arrow[1].Size=Vector3.new(.42,.12,1.65)
-   arrow[1].CFrame=cf*CFrame.new(0,0,.45)
-   arrow[2].Size=Vector3.new(.38,.12,1.48)
-   arrow[2].CFrame=cf*CFrame.new(-.45,0,-.57)*CFrame.Angles(0,-math.pi/4,0)
+   local cf=CFrame.lookAt(hit.Position+Vector3.new(0,.22,0),hit.Position+Vector3.new(0,.22,0)+delta.Unit)
+   arrow[1].Size=Vector3.new(.95,.18,3.1)
+   arrow[1].CFrame=cf*CFrame.new(0,0,.65)
+   arrow[2].Size=Vector3.new(.82,.18,2.6)
+   arrow[2].CFrame=cf*CFrame.new(-.84,0,-.95)*CFrame.Angles(0,-math.pi/4,0)
    arrow[3].Size=arrow[2].Size
-   arrow[3].CFrame=cf*CFrame.new(.45,0,-.57)*CFrame.Angles(0,math.pi/4,0)
-   for _,p in arrow do p.Transparency=.04 end
+   arrow[3].CFrame=cf*CFrame.new(.84,0,-.95)*CFrame.Angles(0,math.pi/4,0)
+   for _,p in arrow do p.Transparency=0 end
   end
-  distance+=5
+  distance+=6.5
  end
- local waypoint=self.route[self.routeIndex]
+ local waypoint=route[self.routeIndex]
  if waypoint and waypoint.Action==Enum.PathWaypointAction.Jump and flat(waypoint.Position-root.Position).Magnitude<6 then
-  self:HintText(if Input.PreferredInput==Enum.PreferredInput.Touch then "Нажми кнопку прыжка" else "Прыгни: нажми ПРОБЕЛ")
+  self:HintText(if Input.PreferredInput==Enum.PreferredInput.Touch then "Прыжок ↑"
+   elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "A · Прыжок" else "ПРОБЕЛ · Прыжок")
  end
 end
 function Tutorial:Render()
- local ctx=self.ctx
- self.goal=Goals.Resolve(ctx.net.state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow())
- local delivery=workspace:FindFirstChild("VerityStreetDelivery")
- if not ctx.active and self.goal and self.goal.id=="tasks" and delivery and delivery:GetAttribute("Phase")=="Collect" then
-  self.goal={id="street-parcel",kind="World",target="StreetParcel",title="Посылка Verity Express",detail="Следуй к посылке",near="Нажми %s и подбери посылку",touch="Коснись «Подобрать» у посылки",prompt=true,radius=7}
+ local ctx=self.ctx;local player=Players.LocalPlayer
+ local now=os.clock()
+ local diversion=ctx.diversions and ctx.diversions.run
+ if diversion and diversion.kind=="Hunt" and diversion.phase=="Playing" then
+  local target=ctx.diversions.target
+  self.goal={id="spark:"..diversion.round..":"..diversion.count,kind="World",target="Spark",
+   object=target,position=target.Position,title="Собери искру",detail="",near="Коснись искры",radius=2.5}
+  self:Update(now);return
  end
- if not self.goal and not ctx.active and Players.LocalPlayer:GetAttribute("HouseSelectionReady")
-  and not Players.LocalPlayer:GetAttribute("HousePlotId") then
-  self.goal={id="claim-house",kind="Wait",title="Выбери дом",detail="Подойди к свободному дому и нажми «Занять дом»"}
+ if player:GetAttribute("HouseSelectionReady") and not player:GetAttribute("HousePlotId") and not ctx.active then
+  local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart")
+  self.goal=if root then self:ClosestHouse(root,now) else nil
+  self.goal=self.goal or {id="house-loading",kind="Wait",title="Ищем свободный дом",detail=""}
+ else
+  local state=ctx.net.state
+  local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+  local nearestTask,best=nil,math.huge
+  if state and root then
+   for _,entry in state.Tasks or {} do
+    if entry.status=="Ready" and validPosition(entry.targetPosition) then
+     local distance=flat(entry.targetPosition-root.Position).Magnitude
+     if distance<best then nearestTask,best=entry.taskId,distance end
+    end
+   end
+  end
+  self.goal=Goals.Resolve(state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow(),nearestTask)
+  local delivery=workspace:FindFirstChild("VerityStreetDelivery")
+  if state and state.TutorialCompleted and self.goal and self.goal.id:match("^start:")
+   and (state.TaskCompletedCount or 0)>0 and state.TaskCompletedCount%3==0
+   and not ctx.active and not (state.Progression and state.Progression.stage=="FirstActivity") then
+   local kinds=if player:GetAttribute("VerityLastDiversionKind")=="Hunt" then {"Rhythm","Hunt"} else {"Hunt","Rhythm"}
+   local world=workspace:FindFirstChild("GeneratedWorld")
+   local stations=world and world:FindFirstChild("VerityDiversions")
+   for _,kind in kinds do
+    local station=stations and stations:FindFirstChild(kind.."Station")
+    if station and workspace:GetServerTimeNow()>=(player:GetAttribute("Verity"..kind.."ReadyAt") or 0) then
+     self.goal={id="diversion:"..kind,kind="World",target="Diversion",object=station,position=station.Position,
+      title=if kind=="Hunt" then "Охота за искрами" else "Реакторный ритм",detail="",near="%s · Начать",touch="Начать",prompt=true,radius=7}
+     break
+    end
+   end
+  end
+  if not ctx.active and self.goal and self.goal.id:match("^start:") and state and state.TutorialCompleted
+   and not (state.Progression and state.Progression.stage=="FirstActivity")
+   and delivery and delivery:GetAttribute("Phase")=="Collect" then
+   self.goal={id="street-parcel",kind="World",target="StreetParcel",title="Забери посылку",detail="",
+    near="%s · Подобрать",touch="Подобрать",prompt=true,radius=7}
+  end
  end
- self:Update(os.clock())
+ self:Update(now)
 end
+
 function Tutorial:HintText(text)
- text=Locale.Text(text)
- self.ctx.refs.TutorialText.Text=text
- local panel=self.ctx.active and self.ctx.refs.Panels[self.ctx.active]
- if panel then panel.Subtitle.Text=text end
+ self.ctx.refs.TutorialText.Text=Locale.Text(text)
 end
+
 function Tutorial:Update(now)
  if self.dead then return end
  local ctx,goal=self.ctx,self.goal
  local player=Players.LocalPlayer
- if ctx.presenting or ctx.rewardOverlay or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive") or player:GetAttribute("VerityParkourStep") then
+ local char=player.Character
+ local root=char and char:FindFirstChild("HumanoidRootPart")
+ local hum=char and char:FindFirstChildOfClass("Humanoid")
+ local alive=root and hum and hum.Health>0
+ local activity=ActivityCard.ActivityRunning()
+ local hunt=player:GetAttribute("VerityDiversionKind")=="Hunt"
+ local blocked=ctx.presenting or ctx.rewardOverlay or (activity and not hunt) or not alive
+ self:RefreshAttention(now,blocked or activity)
+ if blocked then
   ctx.refs.Tutorial.Visible=false;self.pointer.Visible=false;self.compass.Visible=false
   self:SetButton(nil);self:HideWorld();return
  end
- local char=Players.LocalPlayer.Character;local root=char and char:FindFirstChild("HumanoidRootPart");local hum=char and char:FindFirstChildOfClass("Humanoid")
- local alive=root and hum and hum.Health>0
  ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and not (ctx.active and ctx.refs.Safe.AbsoluteSize.X<640)
  self.pointer.Visible=false;self.compass.Visible=false
- for name,panel in ctx.refs.Panels do if name~=ctx.active or not goal then panel.Subtitle.Text=Locale.Text(self.subtitles[name]) end end
  if not goal or not alive then self.lastRootPosition=nil;self:SetButton(nil);self:ClearRoute();return end
  if self.lastRootPosition and (root.Position-self.lastRootPosition).Magnitude>16 then self:ClearRoute() end
  self.lastRootPosition=root.Position
@@ -222,29 +416,19 @@ function Tutorial:Update(now)
  if goal.kind=="UI" then
   self:ClearRoute();local button=self:UIButton(goal.target)
   if not button or not visible(button,true) then
-   if ctx.active then button=ctx.refs.Panels[ctx.active].Close;self:HintText("Закрой окно, затем нажми кнопку слева") end
+   if ctx.active then button=ctx.refs.Panels[ctx.active].Close;self:HintText("Закрой окно") end
   end
   if ctx.net:IsBusy() and not goal.target:match("^Nav%.") and goal.target~="Close" then
-   self:HintText("Подожди ответа игры…");self:SetButton(nil);return
+   self:HintText("Подожди…");self:SetButton(nil);return
   end
   self:SetButton(button)
   if not button then return end
-  if not visible(button) then self:HintText("Прокрути окно до подсвеченной кнопки");return end
-  local origin=ctx.refs.Safe.AbsolutePosition;local pos=button.AbsolutePosition-origin
-  if goal.target:match("^Nav%.") then
-   self.pointer.Text="↙";self.pointer.TextSize=20;self.pointer.Size=UDim2.fromOffset(20,20)
-   self.pointer.Position=UDim2.fromOffset(pos.X+button.AbsoluteSize.X-4,pos.Y+5)
-   self.pointer.Visible=true;return
-  end
-  self.pointer.TextSize=28;self.pointer.Size=UDim2.fromOffset(32,32)
-  local x=pos.X+button.AbsoluteSize.X+20;self.pointer.Text="←"
-  if x>ctx.refs.Safe.AbsoluteSize.X-18 then x=pos.X-20;self.pointer.Text="→" end
-  local pulse=if ctx.settings.values.ReducedMotion then 0 else math.sin(now*4)*3
-  self.pointer.Position=UDim2.fromOffset(x+pulse,pos.Y+button.AbsoluteSize.Y/2);self.pointer.Visible=true;return
+  if not visible(button) then self:HintText("Прокрути ↓");return end
+  self:ShowButtonGuide(button,now);return
  end
  self:SetButton(nil);if goal.kind~="World" then self:ClearRoute();return end
  local position,part=self:Target(goal)
- if not validPosition(position) then self:ClearRoute();self:HintText("Метка загружается…");return end
+ if not validPosition(position) then self:ClearRoute();self:HintText("Подожди…");return end
  if self.targetKey~=goal.id or not self.targetPosition or (self.targetPosition-position).Magnitude>1 then
   self:ClearRoute();self.targetKey=goal.id;self.targetPosition=position;self.generation+=1
  end
@@ -254,16 +438,17 @@ function Tutorial:Update(now)
   local world=workspace:FindFirstChild("GeneratedWorld")
   ray.FilterDescendantsInstances=if world then {world} else {}
   local from=root.Position+Vector3.new(0,1,0)
-  near=workspace:Raycast(from,position-from,ray)==nil
+  near=workspace:Raycast(from,position+Vector3.new(0,1.5,0)-from,ray)==nil
  end
  if near then
   local key=if Input.PreferredInput==Enum.PreferredInput.Gamepad then "X" else "E"
-  self:HintText(string.format(Locale.Text(goal.near or goal.detail),key))
+  local hint=Locale.Text(goal.near or goal.detail)
+  self:HintText(if hint:find("%s",1,true) then string.format(hint,key) else hint)
   if Input.PreferredInput==Enum.PreferredInput.Touch then
-   if goal.target=="Delivery" and ctx.net.state.DeliveryState=="Delivered" then self:HintText("Коснись «Распаковать» у коробки")
+   if goal.target=="Delivery" and ctx.net.state.DeliveryState=="Delivered" then self:HintText("Распаковать")
    elseif goal.touch then self:HintText(goal.touch) end
   end
- else self:HintText(Locale.Text("Следуй стрелкам · ")..math.max(1,math.round(delta.Magnitude*.28))..Locale.Text(" м")) end
+ else self:HintText("→ "..math.max(1,math.round(delta.Magnitude*.28))..Locale.Text(" м")) end
  local camera=workspace.CurrentCamera
  if camera and flat(delta).Magnitude>.1 then
   local forward=flat(camera.CFrame.LookVector)
@@ -272,7 +457,7 @@ function Tutorial:Update(now)
    self.compass.Rotation=math.deg(math.atan2(delta:Dot(right),delta:Dot(forward)));self.compass.Visible=true
   end
  end
- self.anchor.Position=position;self.pin.Enabled=goal.target~="StreetParcel";self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("ТВОЯ КОРОБКА") else Locale.Text(goal.title)
+ self.anchor.Position=position;self.pin.Enabled=goal.target~="StreetParcel";self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("Забери Verity") else Locale.Text(goal.title)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4+(if ctx.settings.values.ReducedMotion then 0 else math.sin(now*2)*.15),0)
  self.highlight.Adornee=part;self.highlight.Enabled=part~=nil
  if near then self:HideArrows() else self:ComputeRoute(root,position,now);self:DrawRoute(root,now) end

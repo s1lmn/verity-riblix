@@ -151,8 +151,8 @@ function Builder.Build(playerGui)
   refs.AttackButton.Position=UDim2.new(1,-12,0,actionY+52)
   refs.RideButton.Position=UDim2.new(1,-12,0,actionY+104)
   local short=size.Y<360
-  local columns=if size.Y<520 then 2 else 1
-  local side=if short then 44 elseif columns==2 then 48 else 52
+  local columns=2
+  local side=if short then 44 else 48
   local gap=6
   local hudHeight=if short then 54 else 64
   hud.Size=UDim2.fromOffset(150,hudHeight)

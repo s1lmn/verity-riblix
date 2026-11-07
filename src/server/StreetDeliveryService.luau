@@ -42,7 +42,7 @@ function Service:Claim(player)
  if not round or round.claimed or now<round.readyAt or now>=round.expiresAt then return false end
  local profile=self:Eligible(player);if not profile then return false end
  local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart");local hum=char and char:FindFirstChildOfClass("Humanoid")
- if not root or not hum or hum.Health<=0 or root.Anchored or hum.SeatPart or player:GetAttribute("VerityRiding")
+ if not root or not hum or hum.Health<=0 or root.Anchored or hum.SeatPart or (player:GetAttribute("VerityRiding") or player:GetAttribute("VerityDiversionKind"))
   or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityBattleActive") then return false end
  local p=root.Position
  if not Numeric.isFinite(p.X) or not Numeric.isFinite(p.Y) or not Numeric.isFinite(p.Z) or (p-self.anchor.Position).Magnitude>Config.Reach then return false end

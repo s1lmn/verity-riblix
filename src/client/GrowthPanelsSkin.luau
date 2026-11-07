@@ -25,7 +25,7 @@ local function shell(parent,name,title,subtitle,accent)
  local sub=place(W.Text(root,"Subtitle",subtitle,12,false,T.Muted),20,64,-40,34)
  local close=W.Button(root,"Close","×",T.Gold)
  close.Size=UDim2.fromOffset(44,44);close.Position=UDim2.new(1,-62,0,24);close.TextSize=26
- local body=W.New("ScrollingFrame",{Name="Cards",Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-124),
+ local body=W.New("ScrollingFrame",{Name="Cards",Position=UDim2.fromOffset(16,80),Size=UDim2.new(1,-32,1,-96),
   BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,
   ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=3,ScrollBarImageColor3=accent},root)
  W.List(body,10)
@@ -52,11 +52,11 @@ function Skin.BuildVerity(parent)
  track.Position=UDim2.fromOffset(12,55)
  r.NextUnlockFill=W.Round(W.Frame(track,"Fill",UDim2.fromScale(0,1),T.Purple),4)
  r.Buy=W.Button(r.Body,"UpgradeVerity","WAITING FOR SERVER",T.Mint)
- r.Buy.Size=UDim2.new(1,-6,0,52);r.Buy.TextWrapped=true;r.Buy.LayoutOrder=4
+ r.Buy.Size=UDim2.new(1,-6,0,52);r.Buy.TextWrapped=true;r.Buy.LayoutOrder=-1
  local ability=card(r.Body,"AbilityCard",152,5)
  place(W.Text(ability,"Title","YOUR ABILITY",12,true,T.Purple),12,8,-24,24)
  r.Ability=place(W.Text(ability,"Ability","",13,true),12,36,-24,104)
- r.Note=W.Line(r.Body,"Note","All 100 levels and all five discoveries are available for free.",50,12,false,T.Muted);r.Note.LayoutOrder=6
+ r.Note=W.Line(r.Body,"Note","All 100 levels and all five discoveries are available for free.",50,12,false,T.Muted);r.Note.LayoutOrder=6;r.Note.Visible=false
  r.Boost=W.Line(r.Body,"Boost","",68,13,false,T.Purple);r.Boost.Visible=false;r.Boost.LayoutOrder=7
  r.MoneyPass=W.Button(r.Body,"TripleMoney","×3 ДЕНЬГИ • СКОРО",T.Gold)
  r.MoneyPass.Size=UDim2.new(1,-6,0,48);r.MoneyPass.TextSize=13;r.MoneyPass.TextWrapped=true;r.MoneyPass.LayoutOrder=8

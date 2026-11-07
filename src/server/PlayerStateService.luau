@@ -55,11 +55,16 @@ function PlayerStateService:Snapshot(userId)
 	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
 	local tasks = {}
+ local completedJobs=0
 	for id, config in TaskConfig do
 		local state = session.Tasks[id] or {Active = false, CooldownUntil = data[config.CooldownField][id] or 0}
-		tasks[id] = {taskId = id, reward = Rewards.Task(level,id,config.Reward) * multiplier,
+		if state.CompletedThisVisit then completedJobs+=1 end
+        tasks[id] = {taskId = id,completedThisVisit=state.CompletedThisVisit==true, reward = Rewards.Task(level,id,config.Reward) * multiplier,
 			status = if state.Active then "Active" elseif state.CooldownUntil > self.clock() then "Cooldown" else "Ready",
-			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id) else nil,
+			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id,math.min(state.Step or 1,#config.Steps)) else nil,
+            step=math.min(state.Step or 1,#config.Steps),stepCount=#config.Steps,
+            holdStartedAt=state.HoldStartedAt,
+            holdSeconds=config.Steps[math.min(state.Step or 1,#config.Steps)].HoldSeconds,
 			Active = state.Active, CooldownUntil = state.CooldownUntil, HoldStartedAt = state.HoldStartedAt}
 	end
 	return {protocolVersion = 1, balanceVersion = Economy.BalanceVersion, stateRevision = profile.Revision,
@@ -90,7 +95,7 @@ function PlayerStateService:Snapshot(userId)
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
 		MoneyPassOwned = profile.MoneyPassOwned==true, MoneyPassId = Config.MoneyPassId,
 		BoostMultiplier = boostMultiplier, BoostExpiresAt = data.BoostExpiresAt,
-		PhoneOpen = session.PhoneOpen, Tasks = tasks,
+		PhoneOpen = session.PhoneOpen, Tasks = tasks, TaskCompletedCount=completedJobs,
   DeliveryPosition = if self.DeliveryPosition then self.DeliveryPosition(userId) else nil,
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
   CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),

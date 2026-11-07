@@ -104,9 +104,20 @@ function Feedback:State(state)
  self.tasks={}
  for _,entry in state.Tasks or {} do self.tasks[entry.taskId]=entry end
  local now=os.clock()
+ if self.previous then
+  local before={}
+  for _,old in self.previous.Tasks or {} do before[old.taskId]=old end
+  for id,entry in self.tasks do
+   local old=before[id]
+   if old and old.status=="Active" and entry.status=="Active" and (entry.step or 1)>(old.step or 1) then
+    if typeof(old.targetPosition)=="Vector3" then self:Burst(old.targetPosition+Vector3.new(0,1,0),now) end
+    self.ctx.sound:Play("TaskCheckpoint")
+   end
+  end
+ end
  for _,id in changes.completed do
   self.pulses[id]=now
-  if id=="PRESS_BUTTON" then self:PressButton(now) end
+  -- Narrative jobs use restored props instead of the old button depression.
  end
  if changes.delivery then
   self:Arrival(state,now)
@@ -119,7 +130,7 @@ function Feedback:TaskHighlights(now)
  local folder=workspace:FindFirstChild("GameplayInteractions")
  local r=root()
  for id,entry in self.tasks do
-  local target=folder and folder:FindFirstChild(id)
+  local target=folder and folder:FindFirstChild(id..":"..tostring(entry.step or 1))
   local pulse=self.pulses[id]
   local active=entry.status=="Active"
   local near=r and target and target:IsA("BasePart") and (r.Position-target.Position).Magnitude<55
@@ -139,34 +150,7 @@ function Feedback:TaskHighlights(now)
   if pulse and now-pulse>=.65 then self.pulses[id]=nil end
  end
 end
-function Feedback:StopButton()
- local b=self.button;if not b then return end
- self.button=nil
- if b.source.Parent then b.source.LocalTransparencyModifier=b.visibility end
- b.part:Destroy()
-end
-function Feedback:PressButton(now)
- self:StopButton()
- if self.ctx.settings.values.ReducedMotion or (self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics) then return end
- local folder=workspace:FindFirstChild("GameplayInteractions")
- local target=folder and folder:FindFirstChild("PRESS_BUTTON");local r=root()
- if not target or not target:IsA("BasePart") or not r or (r.Position-target.Position).Magnitude>30 then return end
- local p=part(self.folder,"ButtonPress",target.Size,target.Color)
- p.Material=target.Material;p.Transparency=target.Transparency
- self.button={part=p,source=target,visibility=target.LocalTransparencyModifier,origin=target.CFrame,size=target.Size,started=now}
- target.LocalTransparencyModifier=1;p.CFrame=target.CFrame
-end
-function Feedback:TickButton(now)
- local b=self.button;if not b then return end
- local age=now-b.started
- if age>=Profile.ButtonDuration or not b.source.Parent or not root() then self:StopButton();return end
- local progress=math.clamp(age/Profile.ButtonDuration,0,1)
- local press=.22*Profile.Smooth(progress/.28)*(1-Profile.Smooth((progress-.45)/.55))
- b.part.Size=Vector3.new(b.size.X,b.size.Y*(1-press),b.size.Z)
- b.part.CFrame=b.origin*CFrame.new(0,-b.size.Y*press*.5,0)
-end
 function Feedback:Tick(now)
- self:TickButton(now)
  self:TickArrival(now)
  if now>=(self.highlightAt or 0) then self.highlightAt=now+.1;self:TaskHighlights(now) end
  local reduced=self.ctx.settings.values.ReducedMotion
@@ -194,7 +178,7 @@ function Feedback:Tick(now)
  end
 end
 function Feedback:Reset()
- self:StopArrival();self:StopButton();table.clear(self.pulses)
+ self:StopArrival();table.clear(self.pulses)
  for _,burst in self.bursts do self:HideBurst(burst) end
  for _,glow in self.highlights do glow.Enabled=false end
 end

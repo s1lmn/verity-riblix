@@ -36,6 +36,7 @@ function Service:Equipped(player,slot,profile)
  return nil
 end
 function Service:BlockReason(player,slot)
+ if player:GetAttribute("VerityDiversionKind") then return "DIVERSION_POWER" end
  if player:GetAttribute("VerityFusionSlot") then return "FUSION_POWER" end
  if player:GetAttribute("VerityRaceSlot") then return "RACE_POWER" end
  local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -63,6 +64,7 @@ function Service:SlotSnapshot(player)
  return result
 end
 function Service:IsSafe(player,root)
+ if player:GetAttribute("VerityDiversionKind") then return true end
  if player:GetAttribute("VerityFusionSlot") then return true end
  if player:GetAttribute("VerityParkourStep") then return true end
  if player:GetAttribute("VerityRaceSlot") then return true end

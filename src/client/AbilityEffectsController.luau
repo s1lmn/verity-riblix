@@ -69,7 +69,7 @@ end
 function Controller:Event(event)
 	if type(event)~="table" then return end
 	if event.kind=="Blocked" then
-  local messages={RACE_POWER="Способности недоступны во время гонки.",RIDING_POWER="Сначала спешься с Verity.",BATTLE_OTHER_ACTIVITY="Сначала выйди с арены.",PARKOUR_POWER="На маршруте используй прыжки. Способности доступны после выхода.",RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
+  local messages={DIVERSION_POWER="Сначала заверши текущую активность.",RACE_POWER="Способности недоступны во время гонки.",RIDING_POWER="Сначала спешься с Verity.",BATTLE_OTHER_ACTIVITY="Сначала выйди с арены.",PARKOUR_POWER="На маршруте используй прыжки. Способности доступны после выхода.",RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
   self.ctx.notifications:Show(Locale.Text(messages[event.code] or messages.SAFE_ZONE));return
  end
 	if event.kind=="CombatResult" then
