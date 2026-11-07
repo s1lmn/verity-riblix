@@ -45,6 +45,7 @@ function UI.new(ctx)
     ctx.request("EquipCosmetic",{itemId=selected,equipped=(state.CosmeticsEquipped or {})[item.slot]~=selected})
    elseif item.achievement then ctx.notifications:Show(Locale.Text(Rewards.Items[item.achievement].condition))
    elseif item.source=="StreetDelivery" then ctx.notifications:Show(Locale.Text("Обычная награда 70% • ×2 22% • ×5 6% • украшение 2%. Все украшения собраны — компенсация ×5."))
+   elseif item.source=="Fusion" then ctx.notifications:Show(Locale.Text("Заверши заезд слияния, чтобы получить подвески."))
    elseif item.starter then return
    else ctx.request("CosmeticPurchase",{itemId=id}) end
   end))
@@ -97,14 +98,16 @@ function UI:Render()
    end)
   end
   local achievement=item.achievement and Rewards.Items[item.achievement]
-  local text=if owned then (if equipped then Locale.Text("REMOVE") else Locale.Text("EQUIP")) elseif achievement or item.source=="StreetDelivery" then Locale.Text("КАК ПОЛУЧИТЬ") elseif item.starter then Locale.Text("ОТКРОЙ VERITY") elseif available then (if price then Locale.Text("BUY · R$")..price else Locale.Text("BUY WITH ROBUX")) else Locale.Text("NOT ON SALE")
-  W.SetButton(row.buy,if busy then Locale.Text("WAIT…") else text,self.ctx.net.connected and state~=nil and state.VerityUnlocked and not busy and (owned or available or achievement~=nil or item.source=="StreetDelivery"),busy)
+  local text=if owned then (if equipped then Locale.Text("REMOVE") else Locale.Text("EQUIP")) elseif achievement or item.exclusive then Locale.Text("КАК ПОЛУЧИТЬ") elseif item.starter then Locale.Text("ОТКРОЙ VERITY") elseif available then (if price then Locale.Text("BUY · R$")..price else Locale.Text("BUY WITH ROBUX")) else Locale.Text("NOT ON SALE")
+  W.SetButton(row.buy,if busy then Locale.Text("WAIT…") else text,self.ctx.net.connected and state~=nil and state.VerityUnlocked and not busy and (owned or available or achievement~=nil or item.exclusive),busy)
   if achievement then
    if row.progress then row.progress.Size=UDim2.fromScale(if owned then 1 else 0,1) end
    local progress=string.format(Locale.Text(achievement.progress),if owned then 1 else 0)
    row.info.Text=if owned then Locale.Text("Награда получена").." • "..progress else Locale.Text(achievement.condition).." "..progress
   elseif item.source=="StreetDelivery" then
    row.info.Text=if owned then Locale.Text("Награда получена") else Locale.Text("Бесплатная доставка • шанс украшения 2%")
+  elseif item.source=="Fusion" then
+   row.info.Text=if owned then Locale.Text("Награда получена") else Locale.Text("Заверши заезд слияния, чтобы получить подвески.")
   elseif item.starter then
    row.info.Text=if equipped then Locale.Text("Equipped · saved with your progress") else Locale.Text("Бесплатно после открытия Verity. Выбери цвет и надень!")
   else

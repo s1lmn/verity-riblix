@@ -119,9 +119,10 @@ function Controller:Render()
  local state=ctx.net.state
  local player=Players.LocalPlayer
  local racing=player:GetAttribute("VerityRaceSlot")~=nil
- local visible=not ctx.active and not ctx.presenting and not ctx.rewardOverlay and humanoid and humanoid.Health>0
+ local fusion=player:GetAttribute("VerityFusionSlot")~=nil
+ local visible=not fusion and not ctx.active and not ctx.presenting and not ctx.rewardOverlay and humanoid and humanoid.Health>0
  local size=ctx.refs.Safe.AbsoluteSize
- local inActivity=racing or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityBattleActive")
+ local inActivity=fusion or racing or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityBattleActive")
  local actionY=math.max(if inActivity then 88 else 52,math.min(140,size.Y-168))
  ctx.refs.AbilityButton.Position=UDim2.new(1,-12,0,actionY)
  ctx.refs.AttackButton.Position=UDim2.new(1,-12,0,actionY+52)

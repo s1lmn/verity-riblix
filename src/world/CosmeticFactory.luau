@@ -52,6 +52,14 @@ function Factory.Apply(model,equipped)
      wing.CFrame*=CFrame.Angles(0,0,-side*.35)
     end
    end
+  elseif key=="fusion_charms" then
+   for _,side in {-1,1} do
+    local hue=if side<0 then "FFC338" else "69E3CB"
+    part(item,"FusionStud",Vector3.one*.12,Vector3.new(side*.85,.98,0),"FFF0CA",Enum.PartType.Ball)
+    part(item,"FusionLink",Vector3.new(.07,.18,.07),Vector3.new(side*.89,.84,0),"A58AD9")
+    part(item,"JellyCharm",Vector3.one*.27,Vector3.new(side*.91,.70,0),hue,Enum.PartType.Ball)
+    for _,dx in {-.04,.04} do part(item,"CharmEye",Vector3.new(.028,.055,.025),Vector3.new(side*.91+dx,.72,-.13),"302740",Enum.PartType.Ball) end
+   end
   elseif key=="star_earrings" then
    for _,side in {-1,1} do
     part(item,"Stud",Vector3.one*.10,Vector3.new(side*.85,.96,0),"FFDE23",Enum.PartType.Ball)

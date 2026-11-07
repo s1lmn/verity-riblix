@@ -9,6 +9,7 @@ local Numeric=require(Shared.Numeric)
 local Levels=require(Shared.LevelConfig)
 local Ride=require(Shared.VerityRideConfig)
 local Battle=require(Shared.VerityBattleConfig)
+local Parkour=require(Shared.ParkourConfig)
 local Service={};Service.__index=Service
 
 function Service.new(data,state,world,targets)
@@ -35,8 +36,10 @@ function Service:Equipped(player,slot,profile)
  return nil
 end
 function Service:BlockReason(player,slot)
+ if player:GetAttribute("VerityFusionSlot") then return "FUSION_POWER" end
  if player:GetAttribute("VerityRaceSlot") then return "RACE_POWER" end
- if player:GetAttribute("VerityParkourStep") then return "PARKOUR_POWER" end
+ local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+ if player:GetAttribute("VerityParkourStep") or root and Parkour.Contains(root.Position.X,root.Position.Z) then return "PARKOUR_POWER" end
  if slot=="Ride" and player:GetAttribute("VerityBattleActive") then return "BATTLE_OTHER_ACTIVITY" end
  if slot=="Mobility" and player:GetAttribute("VerityRiding") then return "RIDING_POWER" end
  return nil
@@ -60,6 +63,7 @@ function Service:SlotSnapshot(player)
  return result
 end
 function Service:IsSafe(player,root)
+ if player:GetAttribute("VerityFusionSlot") then return true end
  if player:GetAttribute("VerityParkourStep") then return true end
  if player:GetAttribute("VerityRaceSlot") then return true end
 	if workspace:GetServerTimeNow()<(player:GetAttribute("VerityProtectedUntil") or 0) then return true end
@@ -83,7 +87,12 @@ function Service:Refresh(player,character,snapshot)
 	if profile and not Catalog.Equipped(profile.Data,"Mobility",profile.HeroPassOwned) then equipped=nil end
 	if current and (current.character~=character or (not current.ride and current.id~=equipped) or (current.ride and (not snapshot.VerityUnlocked or snapshot.VerityLevel<Ride.MinLevel or snapshot.VerityLevel~=current.level)) or humanoid.Health<=0) then self:Stop(player);current=nil end
 	if humanoid.Health<=0 then return end
+ if player:GetAttribute("VerityFusionActive") then humanoid.WalkSpeed=0;humanoid.JumpPower=0;return end
 	local form=if snapshot.VerityUnlocked then Forms.Get(snapshot.VerityLevel) else nil
+ if player:GetAttribute("VerityParkourStep") then
+  humanoid.WalkSpeed=Parkour.WalkSpeed;humanoid.UseJumpPower=true;humanoid.JumpPower=Parkour.JumpPower
+  return
+ end
 	humanoid.WalkSpeed=if current and current.phase then 0 elseif current and current.speed then current.speed elseif form then form.speed else 16
 	humanoid.UseJumpPower=true;humanoid.JumpPower=if form then form.jump else 50
 end
@@ -112,7 +121,11 @@ function Service:Stop(player,stopAttacks)
 	end
 	local profile=self.data:Get(player.UserId)
 	local humanoid=current.character:FindFirstChildOfClass("Humanoid")
-	if humanoid and profile then humanoid.WalkSpeed=Forms.Get(profile.Data.VerityLevel).speed end
+	if humanoid and profile then
+  local inCourse=player:GetAttribute("VerityParkourStep")~=nil
+  humanoid.WalkSpeed=if inCourse then Parkour.WalkSpeed else Forms.Get(profile.Data.VerityLevel).speed
+  humanoid.UseJumpPower=true;humanoid.JumpPower=if inCourse then Parkour.JumpPower else Forms.Get(profile.Data.VerityLevel).jump
+ end
 	player:SetAttribute("VerityShieldUntil",nil)
 	player:SetAttribute("VerityMobilityUntil",nil)
 end

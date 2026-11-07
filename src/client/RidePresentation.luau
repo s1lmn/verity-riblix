@@ -55,7 +55,9 @@ function Presentation:Tick(dt)
   local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart")
   local hum=char and char:FindFirstChildOfClass("Humanoid")
   local nearby=root and camera and (root.Position-camera.CFrame.Position).Magnitude<(graphics and graphics.EffectDistance or 160)
-  local riding=root and hum and hum.Health>0 and nearby and player:GetAttribute("VerityRiding")==true
+  local fused=player:GetAttribute("VerityFusionActive")==true
+  local riding=root and hum and hum.Health>0 and nearby and (fused or player:GetAttribute("VerityRiding")==true)
+  local muted=effects or fused
   local record=self.records[player]
   if record and (record.character~=char or not root or not nearby or not hum or hum.Health<=0) then
    release(record);self.records[player]=nil;record=nil
@@ -76,18 +78,19 @@ function Presentation:Tick(dt)
   end
   local model=self.companions[player.UserId]
   local level=model and model:GetAttribute("VerityLevel") or 50
-  local color=Color3.fromHex(Skins.Get(level).Hex)
+  local skin=Skins.Get(level)
+  local color=Color3.fromHex(skin and skin.Hex or "FFC338")
   if record.color~=color then
    record.color=color;record.emitter.Color=ColorSequence.new(color,Color3.new(1,1,1));record.trail.Color=ColorSequence.new(color);record.light.Color=color
   end
   local moving=root.AssemblyLinearVelocity.Magnitude>5
-  record.emitter.Enabled=riding and not effects and (moving or phase=="Takeoff")
-  record.trail.Enabled=riding and moving and phase=="Cruise" and not effects and not reducedMotion
-  record.light.Enabled=riding and not effects
-  if effects and not record.effectsMuted then record.emitter:Clear();record.trail:Clear() end
-  record.effectsMuted=effects
+  record.emitter.Enabled=riding and not muted and (moving or phase=="Takeoff")
+  record.trail.Enabled=riding and moving and phase=="Cruise" and not muted and not reducedMotion
+  record.light.Enabled=riding and not muted
+  if muted and not record.effectsMuted then record.emitter:Clear();record.trail:Clear() end
+  record.effectsMuted=muted
   if phase~=record.phase then
-   if not effects and riding and (record.phase or phase=="Takeoff") then
+   if not muted and riding and (record.phase or phase=="Takeoff") then
     record.emitter:Emit(if phase=="Takeoff" then 24 elseif phase=="Landing" then 18 else 10)
    end
    record.phase=phase

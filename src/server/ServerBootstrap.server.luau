@@ -138,6 +138,23 @@ Parkour.onCompleted=function(id) ActivityRewards:Grant(id,"parkour_clear") end
 Race.onWinner=function(id) ActivityRewards:Grant(id,"race_champion") end
 Battle.onCompleted=function(id) ActivityRewards:Grant(id,"titan_victory") end
 Abilities.arena=Battle
+local Fusion
+if generatedWorld then
+ local model
+ local ok, result=pcall(function()
+  model=require(ReplicatedStorage.World.VerityFusionBuilder).Build(generatedWorld)
+  return require(script.Parent.VerityFusionService).new(model,Data,State,Players,clock,
+   function(player) Abilities:Stop(player) end,function(id,code)
+    send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Fusion",reward=0,eventId=guid()})
+   end)
+ end)
+ if ok then
+  Fusion=result
+ else
+  if model then model:Destroy() end
+  warn("[Verity Fusion] Initialization failed",result)
+ end
+end
 local activitiesRemote=Instance.new("RemoteEvent");activitiesRemote.Name="VerityActivities";activitiesRemote.Parent=ReplicatedStorage
 local activityLimits={}
 activitiesRemote.OnServerEvent:Connect(function(player,action,...)
@@ -275,7 +292,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 local playerConnections, closing = {}, false
 local languages = {}
@@ -328,6 +345,7 @@ local function onCharacter(player, character)
   Parkour:SetRun(player,nil)
   Battle:Remove(player,false)
   Race:Remove(player)
+  if Fusion then Fusion:Remove(player) end
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -385,6 +403,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+ if Fusion then Fusion:Remove(player,true) end
  Battle:Forget(player);activityLimits[player]=nil
  Parkour:Remove(player)
  Race:Remove(player,true)
@@ -417,8 +436,10 @@ RunService.Heartbeat:Connect(function(dt)
 	if closing then return end
 	-- Single server mover every Heartbeat; target decisions remain on the shared .15s tick.
  Battle:UpdateMotion(clock())
+ Parkour:UpdateMotion(clock())
+ Parkour:Tick()
  incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();Parkour:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval) end
+	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval) end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then
@@ -430,6 +451,7 @@ RunService.Heartbeat:Connect(function(dt)
 			else State:Publish(id, false) end
 		end
 	end
+ if Fusion then Fusion:Tick(dt) end
 end)
 task.spawn(function()
 	while not closing do
@@ -458,6 +480,7 @@ MarketplaceService.ProcessReceipt = function(receipt)
 end
 game:BindToClose(function()
 	closing = true
+ if Fusion then Fusion:Destroy() end
 	Data.closed = true
 	for id in State.sessions do Income:Settle(id) end
 	local deadline=clock()+25

@@ -28,7 +28,7 @@ end
 
 function Card.ActivityRunning()
  local player=Players.LocalPlayer
- return player:GetAttribute("VerityRaceSlot")~=nil or player:GetAttribute("VerityParkourStep")~=nil or player:GetAttribute("VerityBattleActive")==true
+ return player:GetAttribute("VerityFusionSlot")~=nil or player:GetAttribute("VerityRaceSlot")~=nil or player:GetAttribute("VerityParkourStep")~=nil or player:GetAttribute("VerityBattleActive")==true
 end
 
 function Card.Blocked(ctx)

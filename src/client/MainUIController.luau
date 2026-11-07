@@ -98,6 +98,7 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.StreetDeliveryController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityRaceController).new(ctx))
  ctx.activities=self.cleanup:Add(require(script.Parent.ActivitiesController).new(ctx))
+ self.cleanup:Add(require(script.Parent.VerityFusionController).new(ctx))
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
@@ -222,7 +223,7 @@ end
 function Main:Open(name)
 	local ctx=self.ctx
 	if name and name~="SETTINGS" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
-	if name and ctx.presenting then return end
+	if name and (ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive")) then return end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
 	ctx.active=name

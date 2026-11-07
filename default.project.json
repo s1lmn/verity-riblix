@@ -119,6 +119,9 @@
         "VerityBattleService": {
           "$path": "src/server/VerityBattleService.luau"
         },
+        "VerityFusionService": {
+          "$path": "src/server/VerityFusionService.luau"
+        },
         "ActivityRewardService": {
           "$path": "src/server/ActivityRewardService.luau"
         }

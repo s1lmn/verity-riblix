@@ -88,7 +88,7 @@ function Controller:Tick()
  local ctx=self.ctx;local player=Players.LocalPlayer
  local char=player.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
  local blocked=ctx.active or ctx.presenting or Gui.MenuIsOpen or not hum or hum.Health<=0
-  or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive")
+  or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive")
  if not self.current and not blocked and #self.queue>0 then
   local reward=Rewards.Items[self.queue[1]];local state=ctx.net.state
   if not state or not (state.CosmeticsOwned or {})[reward.itemId]then return end

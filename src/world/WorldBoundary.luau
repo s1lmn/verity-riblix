@@ -18,8 +18,13 @@ local function part(parent, name, frame, size, color, solid)
 end
 
 function Boundary.Build(world)
-	if world:FindFirstChild("MapBoundary") then return end
 	local floors = {world.Environment.Ground, world.VerityParkour.Island, world.VerityRaceTrack.RaceIsland}
+ local keys={}
+ for _,floor in floors do table.insert(keys,tostring(floor.Position)..":"..tostring(floor.Size)) end
+ local signature=table.concat(keys,"|")
+ local old=world:FindFirstChild("MapBoundary")
+ if old and old:GetAttribute("BoundsSignature")==signature then return end
+ if old then old:Destroy() end
 	local bounds = {}
 	for _, floor in floors do
 		local half = floor.Size / 2
@@ -27,6 +32,7 @@ function Boundary.Build(world)
 	end
 	local folder = Instance.new("Folder")
 	folder.Name = "MapBoundary"
+ folder:SetAttribute("BoundsSignature",signature)
 	local posts = {}
 	local function draw(from, to)
 		local length = (to - from).Magnitude

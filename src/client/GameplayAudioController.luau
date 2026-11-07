@@ -18,7 +18,7 @@ function Gameplay.new(ctx,visuals)
  end))
  self.cleanup:Add(ctx.net.Notification.Event:Connect(function(payload)
   if not self:Accept("note",payload.eventId) then return end
-  if payload.code=="TASK_REWARD" or payload.code=="PARKOUR_FINISH" or payload.code=="RACE_WIN" or payload.code=="BATTLE_WIN" then ctx.sound:Play("TaskCompleted")
+  if payload.code=="TASK_REWARD" or payload.code=="PARKOUR_FINISH" or payload.code=="RACE_WIN" or payload.code=="BATTLE_WIN" or payload.code=="FUSION_WIN" or payload.code=="FUSION_PRIZE" then ctx.sound:Play("TaskCompleted")
   elseif payload.code=="RACE_JOINED" then ctx.sound:Play("TaskAccepted")
   elseif payload.code=="RACE_STARTED" or payload.code=="RACE_FINISH" then ctx.sound:Play("TaskCheckpoint")
   elseif payload.code=="STREET_DELIVERY_DROPPED" then

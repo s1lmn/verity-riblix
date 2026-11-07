@@ -14,6 +14,7 @@ local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
 local Ride=require(Shared.VerityRideConfig)
 local Race=require(Shared.VerityRaceConfig)
+local Fusion=require(Shared.VerityFusionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
 local Players=game:GetService("Players")
@@ -322,6 +323,24 @@ function Controller:Follow(record,now,dt)
  local root=char and char:FindFirstChild("HumanoidRootPart")
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  if not root or not hum or hum.Health<=0 then record.lifeState=nil;record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model);return false end
+ record.fusing=owner:GetAttribute("VerityFusionActive")==true
+ if record.fusing then
+  record.racing=false;record.riding=false;record.followStarted=false;record.velocity=Vector3.zero
+  if record.active then self.effects:CancelUpgrade(record.model);self:Finish(record,now) end
+  local world=workspace:FindFirstChild("GeneratedWorld");local station=world and world:FindFirstChild("VerityFusion")
+  local started=station and station:GetAttribute("FusionMergeAt")
+  if station and station:GetAttribute("FusionPhase")=="Merging" and started then
+   local u=math.clamp((workspace:GetServerTimeNow()-started)/Fusion.MergeSeconds,0,1)
+   local slot=owner:GetAttribute("VerityFusionSlot") or 1
+   local side=if slot==1 then -1 else 1
+   local position=Fusion.Hub+Vector3.new(side*(1-u)*6,.4+math.sin(u*math.pi)*1.8,-1)
+   record.origin=CFrame.new(position)*CFrame.Angles(0,math.pi,0)
+   visibility(record,math.clamp((u-.38)*2.6,0,1))
+   return true
+  end
+  record.model:SetAttribute("CompanionMode","Hidden");visibility(record,1);self.effects:Hide(record.model);self.effects:CancelUpgrade(record.model)
+  return false
+ end
  record.racing=false
  local raceSlot=owner:GetAttribute("VerityRaceSlot")
  if type(raceSlot)=="number" and raceSlot%1==0 and raceSlot>=1 and raceSlot<=Race.MaxPlayers then
@@ -484,7 +503,7 @@ function Controller:Tick(now,dt)
 		local near=(record.visibility or 0)<.1 and camera~=nil and (camera.CFrame.Position-record.origin.Position).Magnitude<(if own then (graphics and graphics.EffectDistance or Profile.IdleDistance) else math.min(90,graphics and graphics.EffectDistance or 90))
 		local reduced=self.settings.values.ReducedMotion
 		if not record.active then
-			local event=if spawning or record.adminLevel or record.racing then nil else record.ledger:Pop()
+			local event=if spawning or record.adminLevel or record.racing or record.fusing then nil else record.ledger:Pop()
 			if event then
 				record.active={event=event,started=now,yaw=record.lastYaw,lift=record.lastLift,burst=false}
 				self.Started:Fire(event,model)
@@ -507,6 +526,7 @@ function Controller:Tick(now,dt)
 		end
 		local renderLevel=if record.racing then record.raceLevel elseif record.riding then record.level else record.adminLevel or record.level
   local scale=Levels.getVerityScale(renderLevel)
+  if record.fusing then scale=math.min(1.8,scale*.75) end
 		local stage=Profile.Stage(renderLevel)
 		if active then
 			local event=active.event
@@ -542,7 +562,7 @@ function Controller:Tick(now,dt)
 		visibility(record,record.visibility or 0)
   if record.pendingReaction then
    if now-record.pendingReaction<.6 and now>=(record.reactionAt or 0) and own and near and not active and not spawning
-    and not record.racing and not record.riding and not reduced and not self.settings.values.ReducedEffects and not self.settings.values.LowGraphics then
+    and not record.racing and not record.riding and not record.fusing and not reduced and not self.settings.values.ReducedEffects and not self.settings.values.LowGraphics then
     record.reactionAt=now+3
     self.effects:React(model,model:GetPivot(),scale,renderLevel,now)
    end
@@ -551,7 +571,7 @@ function Controller:Tick(now,dt)
 		if now>=(record.fxAt or 0) or not near then
 			record.fxAt=now+(graphics and graphics.VFXInterval or 0)
 			self.effects:Update(model,model:GetPivot(),scale,stage,now,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics),
-				near and not active and not spawning,renderLevel,reduced,record.teleported,Factory.Color(renderLevel))
+				near and not active and not spawning and not record.fusing,renderLevel,reduced,record.teleported,Factory.Color(renderLevel))
 		end
 	end
 	if not showingGrowth then self.effects:HideGrowth() end

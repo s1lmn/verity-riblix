@@ -19,13 +19,15 @@ local function disc(folder)
  p.Material=Enum.Material.Neon;p.Color=Color3.fromHex("FF547A");p.Transparency=1;p.Parent=folder;return p
 end
 function Controller.new(ctx)
- local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),enemyCleanup=Cleanup.new(),courseCleanup=Cleanup.new(),enemies={},motion={},hazards={},elapsed=0,lastLeave=-math.huge},Controller)
+ local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),enemyCleanup=Cleanup.new(),courseCleanup=Cleanup.new(),enemies={},motion={},hazards={},belts={},elapsed=0,lastLeave=-math.huge},Controller)
  self.folder=self.cleanup:Add(Instance.new("Folder"));self.folder.Name="VerityActivityVisuals";self.folder.Parent=workspace
  self.card,self.title,self.detail,self.leave=ActivityCard.Build(ctx.refs.Safe,"ActivityStatus","Leave")
  self.cleanup:Add(self.card)
  self.cleanup:Add(self.leave.Activated:Connect(function()self:Leave()end))
  self.next=Instance.new("Highlight");self.next.Name="NextParkourPlatform";self.next.FillTransparency=.82;self.next.OutlineTransparency=.1
  self.next.FillColor=T.Gold;self.next.OutlineColor=T.Gold;self.next.Enabled=false;self.next.DepthMode=Enum.HighlightDepthMode.Occluded;self.next.Parent=self.folder
+ self.saved=Instance.new("Highlight");self.saved.Name="SavedFactoryCheckpoint";self.saved.FillTransparency=1;self.saved.OutlineTransparency=.1
+ self.saved.OutlineColor=T.Mint;self.saved.DepthMode=Enum.HighlightDepthMode.Occluded;self.saved.Enabled=false;self.saved.Parent=self.folder
  Actions:BindAction("VerityActivityLeave",function(_,state)
   if state==Enum.UserInputState.Begin and self:Leave() then return Enum.ContextActionResult.Sink end
   return Enum.ContextActionResult.Pass
@@ -182,14 +184,15 @@ function Controller:Tick()
  if course~=self.course then
   self.courseCleanup:Destroy();self.courseCleanup=Cleanup.new()
   for _,r in self.hazards do if r.part.Parent then r.part.CFrame=r.base;r.part.Transparency=.8 end end
-  self.course=course;table.clear(self.hazards)
+  self.course=course;table.clear(self.hazards);table.clear(self.belts)
   if course then
    local function add(p)
+    if p:IsA("BasePart") and p:GetAttribute("FactoryBelt") then self.belts[p]={index=p:GetAttribute("FactoryBelt"),offset=p:GetAttribute("BeltOffset")} end
     local index=tonumber(p.Name:match("^Hazard(%d+)$"));local pad=index and P.Pads[index]
     if pad and pad.hazard and p:IsA("BasePart") then self.hazards[index]={part=p,base=p.CFrame} end
    end
    self.courseCleanup:Add(course.ChildAdded:Connect(add))
-   self.courseCleanup:Add(course.ChildRemoved:Connect(function(p)for index,r in self.hazards do if r.part==p then self.hazards[index]=nil end end end))
+   self.courseCleanup:Add(course.ChildRemoved:Connect(function(p)self.belts[p]=nil;for index,r in self.hazards do if r.part==p then self.hazards[index]=nil end end end))
    for _,p in course:GetChildren() do add(p) end
   end
  end
@@ -200,10 +203,36 @@ function Controller:Tick()
   if not r.part.Parent then continue end
   local near=camera and (r.base.Position-camera.CFrame.Position).Magnitude<math.max(distance,65)
   if not near then r.part.Transparency=1;continue end
-  local frame,size,phase=P.HazardGeometry(index,now)
+  local platform=course and course:FindFirstChild(string.format("Pad%02d",index))
+  local frame,size,phase=P.HazardGeometry(index,now,platform and platform.CFrame)
   r.part.CFrame=frame;r.part.Size=size
   r.part.Color=if phase==2 then Color3.fromHex("FF5277") elseif phase==1 then T.Gold else T.Mint
   r.part.Transparency=if phase==2 then .15 elseif phase==1 then .38 else .70
+ end
+ for part,belt in self.belts do
+  if not part.Parent then self.belts[part]=nil;continue end
+  local pad=P.Pads[belt.index]
+  local near=camera and (part.Position-camera.CFrame.Position).Magnitude<math.max(distance,65)
+  part.LocalTransparencyModifier=if near then 0 else 1
+  if near and not self.ctx.settings.values.ReducedMotion then
+   local z=(belt.offset-now*pad.belt+6)%12-6
+   local position=Vector3.new(pad.x,pad.y,pad.z)
+   part.CFrame=CFrame.lookAt(position,position+pad.direction)*CFrame.new(0,.55,z)
+  end
+ end
+ if course then
+  local activated=course:GetAttribute("CoreActivatedAt")
+  local elapsed=if activated then now-activated else math.huge
+  local final=P.Pads[#P.Pads]
+  local near=camera and (camera.CFrame.Position-Vector3.new(final.x,final.y,final.z)).Magnitude<distance
+  for i=1,3 do
+   local pulse=course:FindFirstChild("CorePulse"..i)
+   if not pulse then continue end
+   local t=elapsed-(i-1)*.22
+   local show=near and t>=0 and t<1.8 and not self.ctx.settings.values.ReducedEffects and not self.ctx.settings.values.LowGraphics and not self.ctx.settings.values.ReducedMotion
+   pulse.Transparency=if show then .55+.45*t/1.8 else 1
+   if show then pulse.Size=Vector3.one*(9+t*14) end
+  end
  end
  for model,r in self.enemies do
   local strike=model:GetAttribute("StrikeAt");local target=model:GetAttribute("StrikeTarget")
@@ -224,12 +253,17 @@ function Controller:Tick()
  self.card.Visible=(step~=nil or battle==true) and not ActivityCard.Blocked(self.ctx)
  self.next.Enabled=step~=nil and course~=nil and not ActivityCard.Blocked(self.ctx)
  if self.next.Enabled then self.next.Adornee=course:FindFirstChild(string.format("Pad%02d",math.min(#P.Pads,step+1))) end
+ self.saved.Enabled=step~=nil and course~=nil and not ActivityCard.Blocked(self.ctx)
+ if self.saved.Enabled then self.saved.Adornee=course:FindFirstChild(string.format("Pad%02d",player:GetAttribute("VerityParkourCheckpoint") or 1)) end
  if not self.card.Visible then return end
  ActivityCard.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
  if step then
   local p=P.Pads[step];local elapsed=math.max(0,now-(player:GetAttribute("VerityParkourStartedAt") or now))
-  self.title.Text=Locale.Text(P.Sections[p and p.section or 1])
-  self.detail.Text=string.format(Locale.Text("%d / %d • %d с • ошибок: %d"),step,#P.Pads,math.floor(elapsed),player:GetAttribute("VerityParkourFaults") or 0)
+  local section=p and p.section or 1
+  self.title.Text=string.format(Locale.Text("ЦЕХ %d / %d • %s"),section,P.SectionCount,Locale.Text(P.Sections[section]))
+  local tips={"Ленты и прессы • выбирай момент","Балки • перепрыгивай вращающиеся механизмы","Лазеры • жди безопасного окна","Лифты и платформы • дождись подъёма","Раскалённый пол • прыгай в безопасные окна","Узкие мосты • держи равновесие","Комбинации • доберись до пульта ядра"}
+  local progress=string.format(Locale.Text("%d / %d • %d с • ошибок: %d"),step,#P.Pads,math.floor(elapsed),player:GetAttribute("VerityParkourFaults") or 0)
+  self.detail.Text=if step==#P.Pads then Locale.Text("Маршрут пройден! Нажми «Запустить ядро» у пульта.") else progress.."\n"..Locale.Text(tips[section])
  elseif arena then
   local wave=arena:GetAttribute("Wave") or 0;local phase=arena:GetAttribute("Phase")
   local heading=if self.ctx.refs.Safe.AbsoluteSize.X<400 then "ВОЛНА %d / %d" else "АРЕНА • ВОЛНА %d / %d"

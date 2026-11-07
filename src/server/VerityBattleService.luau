@@ -48,7 +48,7 @@ function Service:Join(player)
  if self.members[player] or not root or not hum or hum.Health<=0 or root.Anchored or hum.SeatPart or not profile or not self.state.sessions[player.UserId] or not profile.Data.VerityUnlocked then return end
  local p=root.Position
  if not Numeric.isFinite(p.X) or not Numeric.isFinite(p.Y) or not Numeric.isFinite(p.Z) or (p-self.model.Entry.Position).Magnitude>12 then return end
- if player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRiding") then self.notify(player.UserId,"BATTLE_OTHER_ACTIVITY",0);return end
+ if player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityRiding") then self.notify(player.UserId,"BATTLE_OTHER_ACTIVITY",0);return end
  if self.phase~="Idle" and self.phase~="Countdown" then self.notify(player.UserId,"BATTLE_BUSY",0);return end
  if self.clock()<(self.ready[player] or 0) then self.notify(player.UserId,"BATTLE_COOLDOWN",0);return end
  local used={};for _,member in self.members do used[member.seat]=true end

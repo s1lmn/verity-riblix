@@ -2,8 +2,9 @@
 -- Stable inventory IDs. Prices and product IDs belong to Roblox/server configuration.
 local Catalog = {}
 Catalog.Slots = table.freeze({Face = true, Head = true, Ears = true})
-Catalog.Order = table.freeze({"parkour_star_band","champion_goggles","titan_charms","sun_cap","bubble_bow","beat_headphones","pixel_specs","round_glasses", "party_hat", "star_earrings","delivery_cap","delivery_goggles","delivery_wings"})
+Catalog.Order = table.freeze({"parkour_star_band","champion_goggles","titan_charms","sun_cap","bubble_bow","beat_headphones","pixel_specs","round_glasses", "party_hat", "star_earrings","delivery_cap","delivery_goggles","delivery_wings","fusion_charms"})
 local items: {[string]: any} = {
+ fusion_charms=table.freeze({id="fusion_charms",name="Парные подвески",slot="Ears",category="Награда слияния",source="Fusion",exclusive=true}),
  delivery_cap=table.freeze({id="delivery_cap",name="Кепка Verity Express",slot="Head",category="Награда доставки",source="StreetDelivery",exclusive=true}),
  delivery_goggles=table.freeze({id="delivery_goggles",name="Очки экспресс-курьера",slot="Face",category="Награда доставки",source="StreetDelivery",exclusive=true}),
  delivery_wings=table.freeze({id="delivery_wings",name="Крылья доставки",slot="Ears",category="Награда доставки",source="StreetDelivery",exclusive=true}),

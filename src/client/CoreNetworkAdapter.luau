@@ -66,8 +66,18 @@ function Adapter:Attach(folder)
 					elseif name=="WorldEvent" then self:AcceptWorld(payload)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
-							local messages={ACTIVITY_REWARD_UNLOCKED="Новая награда за приключение!",OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
-								PARKOUR_FINISH="Паркур пройден! Награда получена.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
+							local messages={
+        FUSION_PRIZE="Заезд завершён! Парные подвески в меню стиля Verity.",FUSION_WIN="Заезд слияния завершён!",
+        FUSION_ENDED="Заезд завершён. Ваши Verity вернулись.",FUSION_FAILED="Попытки закончились. Можно повторить заезд у установки.",
+        FUSION_TIME="Время вышло. Ваши Verity вернулись.",ACTIVITY_REWARD_UNLOCKED="Новая награда за приключение!",OK="Verity is ready!",ALREADY_OPENED="Your Verity is already unpacked.",
+								PARKOUR_FINISH="Паркур пройден! Награда получена.",
+        PARKOUR_STARTED="Фабрика запущена! Пройди семь цехов и включи ядро. Способности отключены.",
+        PARKOUR_CORE_READY="Маршрут пройден! Нажми «Запустить ядро» у пульта.",
+        PARKOUR_MISSED_STEP="Пропущен участок. Следующая площадка подсвечена — продолжи от неё.",
+        PARKOUR_GATE_MISSED="Пропущены контрольные ворота. Возвращаем к сохранённой точке.",
+        PARKOUR_START_REQUIRED="Начни у входа: награда выдаётся за все платформы по порядку.",
+        PARKOUR_TOO_FAST="Слишком быстро для зачётного прохождения. Подожди на финише.",
+        PARKOUR_REWARD_RETRY="Награда пока не выдана. Повтори запуск ядра у пульта.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
         STREET_DELIVERY_STARTED="Фургон Verity Express в районе! Следи за посылкой на главной дороге.",STREET_DELIVERY_DROPPED="Посылка выпала! Успей первым подобрать её на тротуаре.",STREET_DELIVERY_REWARD="Посылка твоя! Награда получена.",
         RACE_JOINED="Ты в заезде! Дождись второго участника у своего места.",RACE_STARTED="Старт! Болей за своего Verity!",RACE_WIN="Твой Verity победил! Награда получена.",RACE_FINISH="Заезд завершён! Можно попробовать ещё раз.",RACE_CANCELLED="Недостаточно участников. Verity вернулся к тебе.",
         BATTLE_JOINED="Ты на арене! Готовься к пяти волнам.",BATTLE_BUSY="Арена занята. Дождись конца битвы.",BATTLE_COOLDOWN="Награда арены скоро обновится.",BATTLE_OTHER_ACTIVITY="Сначала заверши текущую активность.",BATTLE_WAVE="Новая волна! Выходи из красных кругов.",BATTLE_BOSS="Появился Неоновый титан!",BATTLE_WIN="Пять волн пройдены! Награда получена.",BATTLE_FAILED="Битва завершена. Попробуй ещё раз!",PARKOUR_RETRY="Ловушка! Ты вернулся на контрольную точку.",
