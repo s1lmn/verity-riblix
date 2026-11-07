@@ -151,6 +151,7 @@ function Feedback:TaskHighlights(now)
  end
 end
 function Feedback:Tick(now)
+ if self.ctx.community then self.ctx.community:VisualTick(now) end
  self:TickArrival(now)
  if now>=(self.highlightAt or 0) then self.highlightAt=now+.1;self:TaskHighlights(now) end
  local reduced=self.ctx.settings.values.ReducedMotion

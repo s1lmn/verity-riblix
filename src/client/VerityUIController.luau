@@ -12,6 +12,22 @@ Verity.__index=Verity
 function Verity.new(ctx)
 	local self=setmetatable({ctx=ctx,refs=ctx.refs.Panels.VERITY,cleanup=Cleanup.new()},Verity)
 	self.cleanup:Add(self.refs.Buy.Activated:Connect(function() ctx.request("UpgradeVerity") end))
+ local RS=game:GetService("ReplicatedStorage")
+ for _,action in {"Pet","Play"} do self.cleanup:Add(self.refs[action].Activated:Connect(function()
+  if self.bond then self.bond:FireServer(action) end
+ end)) end
+ local function attach(remote)
+  if not remote or remote.Name~="VerityBond" or not remote:IsA("RemoteEvent") or self.bond==remote then return end
+  if self.bondLink then self.bondLink:Disconnect() end
+  self.bond=remote
+  self.bondLink=remote.OnClientEvent:Connect(function(status) if status=="OK" then ctx.close() end end)
+ end
+ self.cleanup:Add(RS.ChildAdded:Connect(attach))
+ self.cleanup:Add(RS.ChildRemoved:Connect(function(remote)
+  if self.bond==remote then self.bond=nil;if self.bondLink then self.bondLink:Disconnect();self.bondLink=nil end end
+ end))
+ self.cleanup:Add(function() if self.bondLink then self.bondLink:Disconnect() end end)
+ attach(RS:FindFirstChild("VerityBond"))
 	return self
 end
 
@@ -20,11 +36,19 @@ function Verity:Render()
 	local state=net.state
 	local r=self.refs
 	if not state then
+		r.Pet.Interactable=false;r.Play.Interactable=false
 		r.NextUnlockCard.Visible=false
 		W.SetButton(r.Buy,Locale.Text("WAITING FOR SERVER"),false,false)
 		return
 	end
 	local level=state.VerityLevel
+ local player=game:GetService("Players").LocalPlayer
+ for _,action in {"Pet","Play"} do
+  local remaining=math.max(0,math.ceil((player:GetAttribute("Verity"..action.."ReadyAt") or 0)-workspace:GetServerTimeNow()))
+  local label=if action=="Pet" then "ПОГЛАДИТЬ ♥" else "ПОИГРАТЬ"
+  W.SetButton(r[action],if remaining>0 then Locale.Text("ЕЩЁ ЧЕРЕЗ ")..remaining..Locale.Text("с") else Locale.Text(label),
+   self.bond~=nil and net.connected and state.VerityUnlocked and remaining==0,false)
+ end
 	if state.VerityUnlocked then
 		local ability=Abilities.Get(level)
 		r.Ability.Text=string.format(Locale.Text("Способность: %s\nСкорость %d • сила прыжка %d"),

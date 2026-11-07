@@ -24,4 +24,18 @@ function Life.Step(state,vx,vz,dt,now,disabled,reset)
     local settle=if age>=0 and age<.65 then math.sin(age*math.pi*4)*math.exp(-age*7) else 0
     return state.z*.045+settle*.035,-state.x*.065,settle*.075
 end
+-- Additive pose, evaluated only by the existing companion renderer.
+function Life.Gesture(kind,age,duration,scale,disabled)
+ if disabled or age<0 or age>duration or duration<=0 then return 0,0,0 end
+ local envelope=math.sin(math.pi*math.clamp(age/duration,0,1))^2
+ local pitch,roll,lift=0,0,0
+ if kind=="Pet" or kind=="Home" then
+  pitch=math.sin(age*5)*.09*envelope;roll=.11*envelope;lift=.08*envelope
+ elseif kind=="Play" then
+  pitch=math.sin(age*7)*.1*envelope;roll=math.sin(age*6)*.22*envelope
+  lift=math.abs(math.sin(age*5))*.22*envelope
+ elseif kind=="Curious" then roll=math.sin(age*2.5)*.16*envelope
+ else pitch=-.08*envelope;lift=.12*envelope end
+ return pitch,roll,math.min(lift,1.4/math.max(1,scale))
+end
 return table.freeze(Life)

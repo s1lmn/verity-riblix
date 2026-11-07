@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 -- Load after profile initialization. The player chooses a house before gameplay starts.
 Players.CharacterAutoLoads = false
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+ReplicatedStorage:SetAttribute("VerityCoreReady",false)
 local RunService = game:GetService("RunService")
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
@@ -168,6 +169,14 @@ local Diversions=require(script.Parent.DiversionsService).new(DiversionsModel,Da
  function(player) Abilities:Stop(player) end,function(id,code,reward)
   send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Diversions",reward=reward,eventId=guid()})
  end)
+local Bond=require(script.Parent.VerityBondService).new(World,Data,State,Players,clock)
+ Tasks.onStage=function(id,taskId,prop) Bond:Stage(id,taskId,prop) end
+ local HomeStyles
+ local CommunityModel=require(ReplicatedStorage.World.CommunityBuilder).Build(generatedWorld or workspace)
+ local Community=require(script.Parent.CommunityService).new(CommunityModel,Data,State,Economy,Players,clock,
+  function(p) Abilities:Stop(p) end,function(id,code,reward)
+   send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Community",reward=reward,eventId=guid()})
+  end,function(id,emotion,seconds) Bond:React(id,emotion,"Helping",seconds) end)
 local activitiesRemote=Instance.new("RemoteEvent");activitiesRemote.Name="VerityActivities";activitiesRemote.Parent=ReplicatedStorage
 local activityLimits={}
 activitiesRemote.OnServerEvent:Connect(function(player,action,...)
@@ -246,6 +255,15 @@ World.houseProgression = require(script.Parent.HouseProgression).new(World, Play
 	State:Publish(id, true)
 	send(id, "NotificationEvent", {protocolVersion=1,code=status,source="HouseFeature"})
 end)
+ HomeStyles=require(script.Parent.HomeStyleService).new(World,Data,State,Economy,clock,function(id,code)
+  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="HomeStyle",eventId=guid()})
+  if code=="HOME_STYLE_APPLIED" or code=="HOME_DECOR_PURCHASED" then Bond:React(id,"Love","Home",2.5) end
+ end)
+local SecretsModel=require(ReplicatedStorage.World.SecretsBuilder).Build(generatedWorld or workspace)
+ local Secrets=require(script.Parent.SecretsService).new(SecretsModel,Data,State,Players,clock,Abilities,ActivityRewards,
+  function(id,code) send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Secrets",eventId=guid()}) end,
+  function(id,emotion,seconds) Bond:React(id,emotion,"Helping",seconds) end)
+ Abilities.secrets=Secrets
 Remote:Register("RequestHouseDoor", function(id, payload)
 	if not Plots.owners[id] then return "NOT_READY" end
 	return Upgrade:SetHouseDoor(id,payload.locked)
@@ -305,8 +323,9 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, HomeStyleService=HomeStyles, CommunityService=Community, VerityBondService=Bond, SecretsService=Secrets, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
+ReplicatedStorage:SetAttribute("VerityCoreReady",true)
 local playerConnections, closing = {}, false
 local languages = {}
 local languagePreference = Instance.new("RemoteEvent")
@@ -360,6 +379,7 @@ local function onCharacter(player, character)
   Race:Remove(player)
   if Fusion then Fusion:Remove(player) end
   Diversions:End(player,false)
+  Community:Remove(player);Bond:Remove(player);Secrets:Remove(player)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -417,6 +437,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+ Community:Remove(player);Bond:Remove(player);HomeStyles:Remove(player);Secrets:Remove(player)
  Diversions:Remove(player)
  if Fusion then Fusion:Remove(player,true) end
  Battle:Forget(player);activityLimits[player]=nil
@@ -454,7 +475,7 @@ RunService.Heartbeat:Connect(function(dt)
  Parkour:UpdateMotion(clock())
  Parkour:Tick()
  incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval);Diversions:Tick() end
+	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval);Diversions:Tick();Community:Tick();Bond:Tick();Secrets:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then
@@ -495,6 +516,7 @@ MarketplaceService.ProcessReceipt = function(receipt)
 end
 game:BindToClose(function()
 	closing = true
+ Secrets:Destroy();Community:Destroy();HomeStyles:Destroy();Bond:Destroy()
  if Fusion then Fusion:Destroy() end
 	Data.closed = true
 	for id in State.sessions do Income:Settle(id) end

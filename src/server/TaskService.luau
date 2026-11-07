@@ -61,6 +61,7 @@ function TaskService:Complete(userId,taskId,trustedStep)
  if stage.Mode=="Hold" and (not progress.HoldStartedAt or self.clock()-progress.HoldStartedAt<stage.HoldSeconds) then return "HOLD_REQUIRED",0 end
  if progress.Step==#definition.Steps then return self:_reward(userId,taskId,progress,profile) end
  progress.Step+=1;progress.StepAt=self.clock();progress.HoldStartedAt=nil
+ if self.onStage then self.onStage(userId,taskId,stage.Prop) end
  self.data:Touch(profile)
  self.state:Publish(userId,true)
  return "OK",0

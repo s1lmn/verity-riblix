@@ -43,6 +43,9 @@ function UI.new(ctx)
    local selected=self:SelectedId(id)
    if Catalog.Owns(state.CosmeticsOwned,selected) then
     ctx.request("EquipCosmetic",{itemId=selected,equipped=(state.CosmeticsEquipped or {})[item.slot]~=selected})
+   elseif item.achievement and Rewards.Items[item.achievement].activity=="Secrets" and ctx.secrets then
+    local id=if item.achievement=="secret_solar" then "solar" elseif item.achievement=="secret_canopy" then "canopy" else "cloud"
+    ctx.secrets:Select(id)
    elseif item.achievement then ctx.notifications:Show(Locale.Text(Rewards.Items[item.achievement].condition))
    elseif item.source=="StreetDelivery" then ctx.notifications:Show(Locale.Text("Обычная награда 70% • ×2 22% • ×5 6% • украшение 2%. Все украшения собраны — компенсация ×5."))
    elseif item.source=="Fusion" then ctx.notifications:Show(Locale.Text("Заверши заезд слияния, чтобы получить подвески."))

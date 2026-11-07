@@ -7,6 +7,7 @@ local TaskConfig = require(Shared.TaskConfig)
 local Config = require(Shared.GameConfig)
 local Abilities = require(Shared.AbilityCatalog)
 local Rewards = require(Shared.ActivityRewards)
+local HomeStyle=require(Shared.HomeStyleConfig)
 local Goals = require(Shared.ProgressionGoals)
 local PlayerStateService = {}
 PlayerStateService.__index = PlayerStateService
@@ -40,7 +41,7 @@ function PlayerStateService:PublicPlotSnapshot(userId)
 		protocolVersion = 1, stateRevision = profile.Revision, ownerUserId = userId, PlotId = session.PlotId,
 		VerityLevel = data.VerityLevel, VerityScale = Levels.getVerityScale(data.VerityLevel),
 		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
-		HouseTier = Houses.getHouseTier(data.VerityLevel), HouseIncomeLevel = data.HouseIncomeLevel,
+		HomeStyle=HomeStyle.Project(data), HouseTier = Houses.getHouseTier(data.VerityLevel), HouseIncomeLevel = data.HouseIncomeLevel,
 		HouseBuildLevel = data.HouseIncomeLevel, HouseDoorOwned = data.HouseDoorOwned,
 		HouseDoorLocked = session.HouseDoorLocked == true, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
 		CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),
@@ -79,7 +80,7 @@ function PlayerStateService:Snapshot(userId)
         AbilitySlots = if self.AbilitySlots then self.AbilitySlots(userId) else {},
         ActivityRewardQuotes = {Parkour=Rewards.Base(level,"Parkour")*multiplier,
          Battle=Rewards.Base(level,"Battle")*multiplier,Race=Rewards.Base(level,"Race")*multiplier},
-        HouseTier = Houses.getHouseTier(level),
+        HomeStyle=HomeStyle.Project(data), HomeStylePosition=if self.HomeStylePosition then self.HomeStylePosition(userId) else nil, HouseTier = Houses.getHouseTier(level),
 		VerityScale = Levels.getVerityScale(level),
 		NextVerityScale = if level < 100 then Levels.getVerityScale(level + 1) else nil,
 		NextMilestoneLevel = Levels.getNextMilestone(level),

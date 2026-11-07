@@ -139,6 +139,7 @@ end
 function Tutorial:UIButton(key)
  local refs=self.ctx.refs;local group,name=key:match("^([^%.]+)%.(.+)$")
  if group=="Nav" then return refs.Nav[name] end
+ if group=="HUD" then return refs[name] end
  if group=="Phone" then return refs.Panels.PHONE[name] end
  if group=="Verity" then return refs.Panels.VERITY.Buy end
  if group=="Task" then return refs.Panels.TASKS.Rows[name].Button end
@@ -254,6 +255,9 @@ function Tutorial:ClearRoute()
  self.targetKey=nil;self.route=nil;self.routeStart=nil;self.nextPathAt=0;self:HideWorld()
 end
 function Tutorial:ComputeRoute(root,position,now)
+ if self.goal and self.goal.air then
+  self.route=nil;self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","AirRoute");return
+ end
  if self.job or now<self.nextPathAt then return end
  if self.route and self.routeStart and (root.Position-self.routeStart).Magnitude<8 then return end
  self.nextPathAt=now+1.5
@@ -283,6 +287,25 @@ function Tutorial:DrawRoute(root,now)
  if self.lastDrawAt and now-self.lastDrawAt<.1 then return end
  self.lastDrawAt=now
  self:HideArrows()
+ if self.goal and self.goal.air and validPosition(self.targetPosition) then
+  local from=root.Position+Vector3.yAxis
+  local delta=self.targetPosition-from
+  if delta.Magnitude<3 then return end
+  local direction=delta.Unit
+  local up=if math.abs(direction:Dot(Vector3.yAxis))>.95 then Vector3.zAxis else Vector3.yAxis
+  for i=1,5 do
+   local distance=3+(i-1)*5.5;if distance>delta.Magnitude-1 then break end
+   local arrow=self.arrows[i]
+   if not arrow then arrow={piece(self.folder,"RouteStem"),piece(self.folder,"RouteHead"),piece(self.folder,"RouteHead")};self.arrows[i]=arrow end
+   local position=from+direction*distance
+   local frame=CFrame.lookAt(position,position+direction,up)
+   arrow[1].Size=Vector3.new(.65,.22,2.5);arrow[1].CFrame=frame*CFrame.new(0,0,.5)
+   arrow[2].Size=Vector3.new(.65,.22,1.9);arrow[2].CFrame=frame*CFrame.new(-.62,0,-.7)*CFrame.Angles(0,-math.pi/4,0)
+   arrow[3].Size=arrow[2].Size;arrow[3].CFrame=frame*CFrame.new(.62,0,-.7)*CFrame.Angles(0,math.pi/4,0)
+   for _,p in arrow do p.Transparency=.08 end
+  end
+  return
+ end
  local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Include;params.RespectCanCollide=true
  local objects={workspace.Terrain}
  for _,name in {"GeneratedWorld","GameplayInteractions"}do local object=workspace:FindFirstChild(name);if object then table.insert(objects,object) end end
@@ -335,6 +358,23 @@ end
 function Tutorial:Render()
  local ctx=self.ctx;local player=Players.LocalPlayer
  local now=os.clock()
+ if ctx.homeRouteRequested and not ctx.active and not ActivityCard.ActivityRunning() then
+  local kiosk
+  for _,candidate in CollectionService:GetTagged("VerityHomeStyling") do
+   if candidate:GetAttribute("PlotId")==player:GetAttribute("HousePlotId") then kiosk=candidate;break end
+  end
+  local state=ctx.net.state
+  local position=if kiosk then kiosk.Position elseif state then state.HomeStylePosition else nil
+  if validPosition(position) then
+   self.goal={id="home-styling",kind="World",target="HomeStyle",object=kiosk,position=position,
+    title="Обустрой свой дом",detail="",near="%s · Применить стиль",touch="Применить стиль",prompt=true,radius=6}
+   self:Update(now);return
+  end
+ end
+ local communityGoal=ctx.community and ctx.community:Goal()
+ if communityGoal then self.goal=communityGoal;self:Update(now);return end
+ local secretGoal=ctx.secrets and ctx.secrets:Goal()
+ if secretGoal then self.goal=secretGoal;self:Update(now);return end
  local diversion=ctx.diversions and ctx.diversions.run
  if diversion and diversion.kind=="Hunt" and diversion.phase=="Playing" then
   local target=ctx.diversions.target
@@ -360,6 +400,15 @@ function Tutorial:Render()
   end
   self.goal=Goals.Resolve(state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow(),nearestTask)
   local delivery=workspace:FindFirstChild("VerityStreetDelivery")
+  local community=ctx.community and ctx.community.message
+  if state and state.TutorialCompleted and self.goal and self.goal.id:match("^start:") and not ctx.active
+   and community and community.joinable and not player:GetAttribute("VerityCommunityTried") and (state.TaskCompletedCount or 0)>=2 then
+   local model=ctx.community:Model();local join=model and model:FindFirstChild("Join")
+   if join then
+    self.goal={id="community-join",kind="World",target="CommunityJoin",object=join,position=join.Position,
+     title="Помоги вернуть свет району",detail="",near="%s · Помочь району",touch="Помочь району",prompt=true,radius=6}
+   end
+  end
   if state and state.TutorialCompleted and self.goal and self.goal.id:match("^start:")
    and (state.TaskCompletedCount or 0)>0 and state.TaskCompletedCount%3==0
    and not ctx.active and not (state.Progression and state.Progression.stage=="FirstActivity") then
@@ -398,7 +447,7 @@ function Tutorial:Update(now)
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  local alive=root and hum and hum.Health>0
  local activity=ActivityCard.ActivityRunning()
- local hunt=player:GetAttribute("VerityDiversionKind")=="Hunt"
+ local hunt=player:GetAttribute("VerityDiversionKind")=="Hunt" or player:GetAttribute("VerityDiversionKind")=="Community"
  local blocked=ctx.presenting or ctx.rewardOverlay or (activity and not hunt) or not alive
  self:RefreshAttention(now,blocked or activity)
  if blocked then

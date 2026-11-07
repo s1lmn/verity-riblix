@@ -18,7 +18,29 @@ function Factory.Apply(model,equipped)
   local key=Catalog.BaseId(id)
   local color,accent=definition.color or "FFB72D",definition.accent or "FFF0CE"
   local item=Instance.new("Model");item.Name=id;item.Parent=folder
-  if key=="round_glasses" then
+  if key=="prism_specs" then
+   local colors={"FFE18A","90F1F2"}
+   for index,side in {-1,1} do
+    local x=side*.3
+    for _,y in {.84,1.2} do part(item,"PrismFrame",Vector3.new(.47,.055,.065),Vector3.new(x,y,-.86),colors[index]) end
+    for _,dx in {-.235,.235} do part(item,"PrismFrame",Vector3.new(.055,.36,.065),Vector3.new(x+dx,1.02,-.86),colors[index]) end
+    local gem=part(item,"PrismGem",Vector3.new(.12,.12,.07),Vector3.new(side*.55,1.2,-.88),"D6B0FF");gem.CFrame*=CFrame.Angles(0,0,math.pi/4)
+   end
+   part(item,"Bridge",Vector3.new(.15,.055,.065),Vector3.new(0,1.12,-.86),"FFF2C6")
+  elseif key=="leaf_crown" then
+   part(item,"CrownBand",Vector3.new(1.2,.09,.85),Vector3.new(0,1.67,0),"7CC99C")
+   for index=-2,2 do
+    local leaf=part(item,"Leaf",Vector3.new(.18,.45,.14),Vector3.new(index*.24,1.91,-.3),if index%2==0 then "A2F4AF" else "5EC9A6")
+    leaf.CFrame*=CFrame.Angles(0,0,-index*.2)
+   end
+   part(item,"Dew",Vector3.one*.16,Vector3.new(0,2.12,-.32),"8EEAFF",Enum.PartType.Ball)
+  elseif key=="cloud_charms" then
+   for _,side in {-1,1} do
+    part(item,"Stud",Vector3.one*.11,Vector3.new(side*.85,.98,0),"8EEAFF",Enum.PartType.Ball)
+    part(item,"Link",Vector3.new(.05,.2,.05),Vector3.new(side*.88,.8,0),"FFE18A")
+    for n=-1,1 do part(item,"Cloud",Vector3.new(.15,.14,.12),Vector3.new(side*.9+n*.08,.63+(if n==0 then .04 else 0),0),"E4FAFF",Enum.PartType.Ball) end
+   end
+  elseif key=="round_glasses" then
    -- Open square frames leave the oval eyes fully visible.
    for _,side in {-1,1} do
     local x=side*0.29

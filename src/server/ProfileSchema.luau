@@ -7,9 +7,10 @@ local Catalog = require(Shared.CosmeticCatalog)
 local Drops = require(Shared.FeedDrops)
 local Abilities = require(Shared.AbilityCatalog)
 local Tasks = require(Shared.TaskConfig)
+local HomeStyle=require(Shared.HomeStyleConfig)
 local Schema = {}
 function Schema.new()
-	return {DataVersion = 2, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
+	return {DataVersion = 2, HouseTheme = "original", Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
 		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end
@@ -103,6 +104,8 @@ function Schema.validate(raw)
    or (item.Slot~=slot and not (slot=="Mobility" and item.MobilityAction))
    or (not item.Premium and not data.AbilitiesOwned[id]) then return nil,"INVALID_ABILITY_EQUIPMENT" end
  end
+ if type(data.HouseTheme)~="string" or not HomeStyle.Themes[data.HouseTheme]
+  or not HomeStyle.ThemeOwned(data.CosmeticsOwned,data.HouseTheme) then return nil,"INVALID_HOUSE_THEME" end
  data.Receipts = receipts
 	return data, nil
 end

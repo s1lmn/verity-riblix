@@ -10,6 +10,7 @@ local Profile=require(Shared.VerityAnimationProfile)
 local Art=require(Shared.VerityCompanionConfig)
 local FaceUI=require(script.Parent.VerityFaceUI)
 local Personality=require(Shared.VerityPersonality)
+local SecretsConfig=require(Shared.SecretsConfig)
 local Version=require(Shared.ProjectVersion)
 local Follow=require(Shared.CompanionConfig)
 local Ride=require(Shared.VerityRideConfig)
@@ -402,6 +403,10 @@ function Controller:Follow(record,now,dt)
      if math.abs(targetLocal.X)<=size.X/2+radius and math.abs(targetLocal.Z)<=size.Z/2+radius then height=math.max(height,top) end
     end
    end end
+   local shelter=root.Position-SecretsConfig.Solar
+   if math.abs(shelter.X)<14.5 and math.abs(shelter.Z)<12.5 and shelter.Y>0 and shelter.Y<10.3 then
+    ownerRoof=math.max(ownerRoof or -math.huge,SecretsConfig.Solar.Y+10.3)
+   end
    record.ownerRoof=ownerRoof
    for house in self.houseBounds do if not house:IsDescendantOf(workspace) then self.houseBounds[house]=nil end end
    local r=scale*Follow.EnvelopeRadius
@@ -516,6 +521,11 @@ function Controller:Tick(now,dt)
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
 		record.lifePitch,record.lifeRoll,record.lifeLift=Personality.Step(record.lifeState,velocity.X,velocity.Z,recordDt,now,reduced or not near or active~=nil or spawning==true or (record.abilityAimUntil or 0)>now,record.teleported)
+  local gestureAt=model:GetAttribute("LifeGestureAt") or 0
+  local gp,gr,gl=Personality.Gesture(model:GetAttribute("LifeGesture"),workspace:GetServerTimeNow()-gestureAt,
+   (model:GetAttribute("LifeGestureUntil") or 0)-gestureAt,model:GetScale(),
+   reduced or not near or active~=nil or spawning==true or record.riding or record.racing or record.fusing or (record.abilityAimUntil or 0)>now)
+  record.lifePitch+=gp;record.lifeRoll+=gr;record.lifeLift+=gl
 		local body=model:FindFirstChild("Body")
 		local face=body and body:FindFirstChild("FaceGui")
 		if face then

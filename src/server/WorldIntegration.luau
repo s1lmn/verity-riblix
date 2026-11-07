@@ -55,6 +55,7 @@ local function updateHouseSign(anchors, player, tier, buildLevel)
 	anchors.HouseSign.BackgroundColor3 = if player then houseColors[tier] else Color3.fromRGB(235, 241, 248)
 	for part, originalColor in anchors.FacadeColors do
 		part.Color = if tier and tier > 1 then houseColors[tier] else originalColor
+        part:SetAttribute("DefaultFacadeColor",part.Color)
 	end
 end
 

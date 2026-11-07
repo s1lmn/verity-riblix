@@ -18,7 +18,11 @@ function Gameplay.new(ctx,visuals)
  end))
  self.cleanup:Add(ctx.net.Notification.Event:Connect(function(payload)
   if not self:Accept("note",payload.eventId) then return end
-  if payload.code=="DIVERSION_REWARD" or payload.code=="TASK_REWARD" or payload.code=="PARKOUR_FINISH" or payload.code=="RACE_WIN" or payload.code=="BATTLE_WIN" or payload.code=="FUSION_WIN" or payload.code=="FUSION_PRIZE" then ctx.sound:Play("TaskCompleted")
+  if payload.code=="SECRET_POWERED" or payload.code=="SECRET_ARCHIVE_OPEN" then ctx.sound:Play("Success")
+  elseif payload.code=="SECRET_WRONG_ORDER" then ctx.sound:Play("NotEnoughCash")
+  elseif payload.code=="HOME_DECOR_PURCHASED" or payload.code=="HOME_STYLE_APPLIED" then ctx.sound:Play("DecorPurchased")
+  elseif payload.code=="COMMUNITY_FAILED" then ctx.sound:Play("NotEnoughCash")
+  elseif payload.code=="COMMUNITY_WIN" or payload.code=="DIVERSION_REWARD" or payload.code=="TASK_REWARD" or payload.code=="PARKOUR_FINISH" or payload.code=="RACE_WIN" or payload.code=="BATTLE_WIN" or payload.code=="FUSION_WIN" or payload.code=="FUSION_PRIZE" then ctx.sound:Play("TaskCompleted")
   elseif payload.code=="RACE_JOINED" then ctx.sound:Play("TaskAccepted")
   elseif payload.code=="RACE_STARTED" or payload.code=="RACE_FINISH" then ctx.sound:Play("TaskCheckpoint")
   elseif payload.code=="STREET_DELIVERY_DROPPED" then
@@ -60,7 +64,7 @@ function Gameplay:State(state)
   if state.MoneyPassOwned and not self.previous.moneyPass then self.ctx.sound:Play("DecorPurchased") end
   -- Ownership comes from the server snapshot, never the payment prompt closing.
   for id,owned in state.CosmeticsOwned or {} do
-   if owned and not self.previous.owned[id] and not (Cosmetics.Items[id] and (Cosmetics.Items[id].achievement or Cosmetics.Items[id].starter or Cosmetics.Items[id].exclusive)) then self.ctx.sound:Play("DecorPurchased");break end
+   if owned and not self.previous.owned[id] and id:sub(1,5)~="home_" and not (Cosmetics.Items[id] and (Cosmetics.Items[id].achievement or Cosmetics.Items[id].starter or Cosmetics.Items[id].exclusive)) then self.ctx.sound:Play("DecorPurchased");break end
   end
  end
  self.previous={delivery=state.DeliveryState,moneyPass=state.MoneyPassOwned,owned=table.clone(state.CosmeticsOwned or {})}

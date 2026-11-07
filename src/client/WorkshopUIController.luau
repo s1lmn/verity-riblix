@@ -11,7 +11,11 @@ Workshop.__index = Workshop
 function Workshop.new(ctx)
  local cards=Skin.WorkshopCards(ctx.refs.Panels.WORKSHOP,Houses)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),rows=cards.rows,features=cards.features,
-  summary=cards.summary,income=cards.income,fill=cards.fill,lock=cards.lock},Workshop)
+  summary=cards.summary,income=cards.income,fill=cards.fill,lock=cards.lock,style=cards.style},Workshop)
+ self.cleanup:Add(self.style.Activated:Connect(function() ctx.homeRouteRequested=true;ctx.close() end))
+ self.cleanup:Add(ctx.net.Notification.Event:Connect(function(payload)
+  if payload.source=="HomeStyle" and (payload.code=="HOME_STYLE_APPLIED" or payload.code=="HOME_DECOR_PURCHASED") then ctx.homeRouteRequested=nil end
+ end))
  for _,row in self.rows do
   self.cleanup:Add(row.buy.Activated:Connect(function() ctx.request("UpgradeHouse") end))
  end
@@ -27,6 +31,7 @@ end
 function Workshop:Render()
 	local state=self.ctx.net.state;local total=#Houses.IncomeUpgrades
 	local count=state and state.HouseIncomeLevel or 0
+ W.SetButton(self.style,Locale.Text("СТИЛЬ И ДЕКОР ДОМА →"),state~=nil and state.VerityUnlocked and count>=1 and self.ctx.net.connected,false)
 	local multiplier=Houses.getIncomeMultiplier(count,state and state.HouseDoorOwned,state and state.HouseSecondFloorOwned)
 	self.summary.Text=string.format(Locale.Text("Стройка %d / %d • доход дома ×%.2f"),count,total,multiplier)
 	self.income.Text=if state then Locale.Text("Пассивный доход: $")..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec") else Locale.Text("Строй и повышай заработок.")

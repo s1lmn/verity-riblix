@@ -6,6 +6,7 @@ local Shared=game:GetService("ReplicatedStorage").Shared
 local Houses=require(Shared.HouseConfig)
 local Catalog=require(Shared.AbilityCatalog)
 local Config=require(Shared.GameConfig)
+local ActivityCard=require(script.Parent.ActivityCard)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
@@ -17,7 +18,14 @@ local GOLD=Color3.fromHex("FFD877")
 
 function Controller.new(ctx)
 	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),pads={},pending={},elapsed=0,dead=false},Controller)
-	local folder=Instance.new("Folder");folder.Name="VerityPurchaseLabels";folder.Parent=Players.LocalPlayer.PlayerGui
+	self.homePrompts={}
+ local function homeAdd(p) self.homePrompts[p]=true end
+ local function homeRemove(p) self.homePrompts[p]=nil end
+ self.cleanup:Add(Collection:GetInstanceAddedSignal("VerityHomeDecorPrompt"):Connect(homeAdd))
+ self.cleanup:Add(Collection:GetInstanceRemovedSignal("VerityHomeDecorPrompt"):Connect(homeRemove))
+ for _,p in Collection:GetTagged("VerityHomeDecorPrompt") do homeAdd(p) end
+ self.cleanup:Add(function() for p in self.homePrompts do if p.Parent then p.Enabled=p:GetAttribute("HomeAvailable")==true end end end)
+ local folder=Instance.new("Folder");folder.Name="VerityPurchaseLabels";folder.Parent=Players.LocalPlayer.PlayerGui
 	self.folder=folder;self.cleanup:Add(folder)
 	local function add(model)
 		if self.dead or self.pads[model] then return end
@@ -108,6 +116,10 @@ function Controller:Offer(r)
 end
 
 function Controller:Render()
+ local ownPlot=Players.LocalPlayer:GetAttribute("HousePlotId")
+ for p in self.homePrompts do
+  if p.Parent then p.Enabled=p:GetAttribute("HomeDecorPlotId")==ownPlot and p:GetAttribute("HomeAvailable")==true and not ActivityCard.ActivityRunning() end
+ end
 	local camera=workspace.CurrentCamera;local now=os.clock()
 	local character=Players.LocalPlayer.Character
 	local root=character and character:FindFirstChild("HumanoidRootPart")

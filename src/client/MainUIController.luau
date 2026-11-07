@@ -100,6 +100,8 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.VerityRaceController).new(ctx))
  ctx.activities=self.cleanup:Add(require(script.Parent.ActivitiesController).new(ctx))
  ctx.diversions=self.cleanup:Add(require(script.Parent.DiversionsController).new(ctx))
+ ctx.community=self.cleanup:Add(require(script.Parent.CommunityController).new(ctx))
+ ctx.secrets=self.cleanup:Add(require(script.Parent.SecretsController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityFusionController).new(ctx))
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
@@ -167,7 +169,7 @@ function Main.new()
 			self.notificationIds[payload.eventId]=true
 			table.insert(self.notificationOrder,payload.eventId)
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
-			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" and payload.code~="DIVERSION_REWARD" then ctx.sound:Play("Reward") end end
+			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" and payload.code~="DIVERSION_REWARD" and payload.code~="COMMUNITY_WIN" then ctx.sound:Play("Reward") end end
 		end
 		if (payload.code=="STREET_DELIVERY_STARTED" or payload.code=="STREET_DELIVERY_DROPPED")
 			and (ActivityCard.Blocked(ctx) or ActivityCard.ActivityRunning()) then return end
@@ -192,7 +194,7 @@ function Main.new()
 		return Enum.ContextActionResult.Pass
 	end,false,3000,Enum.KeyCode.ButtonY)
 	self.cleanup:Add(function() ContextActionService:UnbindAction("VerityUIBack");ContextActionService:UnbindAction("VerityUIMenu") end)
-	self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function() self:Open(nil);self.phone.input:Cancel();ctx.sound:StopFeedback() end))
+	self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function() ctx.homeRouteRequested=nil;self:Open(nil);self.phone.input:Cancel();ctx.sound:StopFeedback() end))
 	self.cleanup:Add(UserInputService.WindowFocusReleased:Connect(function() self.phone.input:Cancel() end))
 	self.cleanup:Add(UserInputService:GetPropertyChangedSignal("PreferredInput"):Connect(function()
 		if UserInputService.PreferredInput==Enum.PreferredInput.Gamepad and ctx.active then self:SetFocus(ctx.active) end
@@ -286,6 +288,8 @@ function Main:Tick(dt)
  ctx.sound:Tick(now,dt)
 	if ctx.active=="TASKS" then self.tasks:Render() end
  self.tasks:Tick()
+ if ctx.community then ctx.community:Render() end
+ if ctx.secrets then ctx.secrets:Render() end
 	self.tutorial:Render()
 	self.phone:ReconcileSession()
 	if ctx.active=="VERITY" then self.verity:Render() end

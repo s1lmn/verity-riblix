@@ -10,6 +10,7 @@ local Levels=require(Shared.LevelConfig)
 local Ride=require(Shared.VerityRideConfig)
 local Battle=require(Shared.VerityBattleConfig)
 local Parkour=require(Shared.ParkourConfig)
+local SecretsConfig=require(Shared.SecretsConfig)
 local Service={};Service.__index=Service
 
 function Service.new(data,state,world,targets)
@@ -54,7 +55,7 @@ function Service:SlotSnapshot(player)
   local untilTime=player:GetAttribute(if slot=="Mobility" then "VerityMobilityUntil" else "VerityAttackUntil") or 0
   local reason=self:BlockReason(player,slot)
   if not profile.Data.VerityUnlocked then reason="BOX_NOT_OPENED" elseif not character then reason="CHARACTER_UNAVAILABLE"
-  elseif slot=="Attack" and not reason and self:IsSafe(player,root) then reason="SAFE_ZONE" end
+  elseif slot=="Attack" and not reason and self:IsSafe(player,root) and not (self.secrets and self.secrets:CanAimMechanism(player,item)) then reason="SAFE_ZONE" end
   result[slot]={slot=slot,itemId=id,name=item and item.Name,key=if slot=="Mobility" then "F" else "G",
    gamepadKey=if slot=="Mobility" then "ButtonL1" else "ButtonR1",icon=item and Catalog.Icons[id] or (if slot=="Mobility" then "◇" else "✦"),empty=item==nil,
    duration=item and (if slot=="Mobility" and item.MobilityAction then item.FlightDuration else item.Duration) or 0,
@@ -64,6 +65,7 @@ function Service:SlotSnapshot(player)
  return result
 end
 function Service:IsSafe(player,root)
+ if SecretsConfig.Sanctuary(root.Position) then return true end
  if player:GetAttribute("VerityDiversionKind") then return true end
  if player:GetAttribute("VerityFusionSlot") then return true end
  if player:GetAttribute("VerityParkourStep") then return true end
@@ -198,6 +200,15 @@ function Service:Hit(player,candidate,damage)
 	return self.targets:Damage(candidate.part,damage,player.UserId)
 end
 function Service:Attack(player,item,id,character,root,direction)
+ if self.secrets then
+  local target=self.secrets:TryLaser(player,item,character,root,direction)
+  if target then
+   local head=character:FindFirstChild("Head")
+   self.remote:FireAllClients({kind="Attack",ownerUserId=player.UserId,itemId=id,
+    origin=if head then head.Position else root.Position,points={target},duration=item.Duration or .8})
+   return true -- mechanism interaction emits no player damage or combat target reward
+  end
+ end
 	if self:IsSafe(player,root) then
 		self.remote:FireClient(player,{kind="Blocked",code="SAFE_ZONE"});return false
 	end

@@ -88,13 +88,14 @@ function Controller:Tick()
  local ctx=self.ctx;local player=Players.LocalPlayer
  local char=player.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
  local blocked=ctx.active or ctx.presenting or Gui.MenuIsOpen or not hum or hum.Health<=0
-  or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive")
+  or player:GetAttribute("VerityDiversionKind") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive")
  if not self.current and not blocked and #self.queue>0 then
   local reward=Rewards.Items[self.queue[1]];local state=ctx.net.state
   if not state or not (state.CosmeticsOwned or {})[reward.itemId]then return end
   table.remove(self.queue,1);self.current=reward
   Cosmetics.Apply(self.preview,{[Catalog.Items[reward.itemId].slot]=reward.itemId})
   Locale.Bind(self.title,reward.name);Locale.Bind(self.itemName,Catalog.Items[reward.itemId].name)
+  Locale.Bind(self.proof,reward.proof or "Трофей уже на полке дома")
   self.scale.Scale=if ctx.settings.values.ReducedMotion then 1 else .9
   ctx.animation:Tween(self.scale,.3,{Scale=1})
   if not ctx.settings.values.ReducedEffects and not ctx.settings.values.LowGraphics and not ctx.settings.values.ReducedMotion then

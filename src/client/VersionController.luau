@@ -6,6 +6,7 @@ local Expected = require(ReplicatedStorage.Shared.ProjectVersion)
 local Versions = {}
 Versions.__index = Versions
 function Versions:IssueText()
+	if self.startupIssue then return Locale.Text("Сервер не завершил запуск. Перезапусти игру.") end
 	return self.issue and (Locale.Text(self.issue)..Expected.Place)
 end
 
@@ -35,6 +36,18 @@ function Versions.new(ctx)
 			ctx.notifications:Show(self.issue,"Error",5,Expected.Place)
 		end
 	end)
+ local function startupReady()
+  if self.dead or not ReplicatedStorage:GetAttribute("VerityCoreReady") or not self.startupIssue then return end
+  self.startupIssue,self.issue=nil,nil
+  ctx.refs.Status.Visible=false
+ end
+ self.cleanup:Add(ReplicatedStorage:GetAttributeChangedSignal("VerityCoreReady"):Connect(startupReady))
+ task.delay(20,function()
+  if self.dead or ReplicatedStorage:GetAttribute("VerityCoreReady") or self.issue then return end
+  self.startupIssue=true;self.issue="STARTUP_DELAYED"
+  ctx.refs.Status.Text=self:IssueText();ctx.refs.Status.Visible=true
+  ctx.notifications:Show(self:IssueText(),"Error",6)
+ end)
 	return self
 end
 function Versions:Destroy() self.dead=true;self.cleanup:Destroy() end

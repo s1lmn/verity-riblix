@@ -3,6 +3,7 @@
 local Economy=require(script.Parent.EconomyConfig)
 local Rewards={Version=1}
 Rewards.Definitions=table.freeze({
+ Community=table.freeze({Seconds=75,TargetFraction=.12,MaximumSeconds=300}),
  Hunt=table.freeze({Seconds=45,TargetFraction=.05,MaximumSeconds=150}),
  Rhythm=table.freeze({Seconds=25,TargetFraction=.025,MaximumSeconds=90}),
  Parkour=table.freeze({Seconds=60,TargetFraction=.08,MaximumSeconds=240}),
@@ -22,6 +23,12 @@ end
 -- Exclusive achievement inventory and house trophies from the team.
 Rewards.Order=table.freeze({"parkour_clear","race_champion","titan_victory"})
 Rewards.Items=table.freeze({
+ secret_solar=table.freeze({id="secret_solar",itemId="prism_specs",name="Хранитель солнечного архива",condition="Запитай приёмник у архива и повтори порядок: день, ночь, звезда.",
+  progress="Тайник архива • %d/1",color="FFD875",activity="Secrets",proof="Украшение сохранено в коллекции"}),
+ secret_canopy=table.freeze({id="secret_canopy",itemId="leaf_crown",name="Тайна старой кроны",condition="Поднимись по ветвям или прыжком титана. Сыграй: лист, капля, солнце.",
+  progress="Тайник кроны • %d/1",color="9AF5A9",activity="Secrets",proof="Украшение сохранено в коллекции"}),
+ secret_cloud=table.freeze({id="secret_cloud",itemId="cloud_charms",name="Покоритель облаков",condition="Начни маршрут у взлётной площадки, пройди три кольца в полёте и открой тайник.",
+  progress="Облачный тайник • %d/1",color="8FEAFF",activity="Secrets",proof="Украшение сохранено в коллекции"}),
  parkour_clear=table.freeze({id="parkour_clear",itemId="parkour_star_band",name="Звезда паркура",condition="Пройди семь цехов фабрики и запусти ядро.",
   progress="Прохождение паркура • %d/1",trophy="Звёздная медаль",color="FFCE45",activity="Parkour"}),
  race_champion=table.freeze({id="race_champion",itemId="champion_goggles",name="Чемпион трассы",condition="Победи в одной бесплатной гонке Verity.",

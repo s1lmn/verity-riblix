@@ -37,15 +37,21 @@ function Skin.BuildVerity(parent)
  r.Level=place(W.Text(stats,"Level","Waiting for your Verity…",20,true),12,10,-24,48)
  r.Income=place(W.Text(stats,"Income","Current → next income: —",15,true,T.Purple),12,63,-24,38)
  r.Scale=place(W.Text(stats,"Scale","Current → next scale: —",14,true),12,108,-24,40)
- local house=card(r.Body,"HouseProgress",100,1)
+ local social=card(r.Body,"Friendship",86,1,T.Pink:Lerp(T.White,.85))
+ place(W.Text(social,"Title","Побудь с Verity",13,true,T.Purple),12,5,-24,24)
+ r.Pet=W.Button(social,"Pet","ПОГЛАДИТЬ ♥",T.Pink)
+ r.Play=W.Button(social,"Play","ПОИГРАТЬ",T.Gold)
+ r.Pet.Position=UDim2.fromOffset(10,34);r.Pet.Size=UDim2.new(.5,-15,0,44);r.Pet.TextSize=12
+ r.Play.Position=UDim2.new(.5,5,0,34);r.Play.Size=r.Pet.Size;r.Play.TextSize=12
+ local house=card(r.Body,"HouseProgress",100,2)
  r.House=place(W.Text(house,"House","House stage — / 6",13,true),12,10,-24,58)
  r.ProgressTrack=W.Round(W.Frame(house,"ProgressTrack",UDim2.new(1,-24,0,10),T.Soft),5)
  r.ProgressTrack.Position=UDim2.fromOffset(12,78)
  r.Progress=W.Round(W.Frame(r.ProgressTrack,"Fill",UDim2.fromScale(0,1),T.Pink),5)
- local discovery=card(r.Body,"NextDiscovery",124,2,T.Gold:Lerp(T.White,.78))
+ local discovery=card(r.Body,"NextDiscovery",124,3,T.Gold:Lerp(T.White,.78))
  place(W.Text(discovery,"Title","NEXT DISCOVERY",12,true),12,8,-24,24)
  r.Milestone=place(W.Text(discovery,"Milestone","Next discovery: —",14,true),12,37,-24,76)
- local unlock=card(r.Body,"NextUnlock",76,3,T.Purple:Lerp(T.White,.88))
+ local unlock=card(r.Body,"NextUnlock",76,4,T.Purple:Lerp(T.White,.88))
  unlock.Visible=false;r.NextUnlockCard=unlock
  r.NextUnlock=place(W.Text(unlock,"Caption","",13,true,T.Purple),12,6,-24,40)
  local track=W.Round(W.Frame(unlock,"ProgressTrack",UDim2.new(1,-24,0,7),T.Soft),4)
@@ -71,6 +77,8 @@ function Skin.BuildAbilities(parent)
 end
 function Skin.WorkshopCards(panel,houses)
  local r={rows={},features={}}
+ r.style=W.Button(panel.Body,"HomeStyleRoute","СТИЛЬ И ДЕКОР ДОМА →",T.Pink)
+ r.style.LayoutOrder=-1;r.style.Size=UDim2.new(1,-6,0,48);r.style.TextSize=13
  local summary=card(panel.Body,"WorkshopSummary",132,0,T.Mint:Lerp(T.White,.75))
  place(W.Text(summary,"Title","YOUR HOUSE COLLECTION",12,true),12,8,-24,24)
  r.summary=place(W.Text(summary,"Progress","",14,true),12,35,-24,40)
