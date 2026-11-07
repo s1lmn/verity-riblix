@@ -485,7 +485,6 @@ function Controller:Tick(now,dt)
   end
   record.pendingDt=(record.pendingDt or 0)+(dt or 1/60)
   if cadence>0 and now<(record.nextRenderAt or 0)then
-   if distance>90 or self.settings.values.ReducedEffects or self.settings.values.LowGraphics then self.effects:Hide(model)end
    continue
   end
   local recordDt=record.pendingDt;record.pendingDt=0;record.nextRenderAt=now+cadence
@@ -568,11 +567,17 @@ function Controller:Tick(now,dt)
    end
    record.pendingReaction=nil
   end
-		if now>=(record.fxAt or 0) or not near then
-			record.fxAt=now+(graphics and graphics.VFXInterval or 0)
-			self.effects:Update(model,model:GetPivot(),scale,stage,now,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics),
-				near and not active and not spawning and not record.fusing,renderLevel,reduced,record.teleported,Factory.Color(renderLevel))
-		end
+		local auraLevel=record.stageLevel or renderLevel
+		local auraScale=model:GetScale()
+		local auraCenter=if body then body.Position else model:GetPivot().Position
+		local auraDistance=if camera then math.max(0,(camera.CFrame.Position-auraCenter).Magnitude-.85*auraScale) else math.huge
+		local auraLimit=if own then (graphics and graphics.EffectDistance or Profile.IdleDistance)
+			else math.min(90,graphics and graphics.EffectDistance or 90)
+		local cover=math.max(record.visibility or 0,record.growthCover or 0,record.spawnCover or 0)
+		record.auraNear=not record.fusing and cover<.28 and auraDistance<auraLimit+(if record.auraNear then 8 else 0)
+		self.effects:Update(model,model:GetPivot(),auraScale,stage,now,
+			self.settings.values.ReducedEffects or self.settings.values.LowGraphics,record.auraNear,
+			auraLevel,reduced,record.teleported and not record.riding,Factory.Color(auraLevel),graphics,auraDistance,own)
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)
