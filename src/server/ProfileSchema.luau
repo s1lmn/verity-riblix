@@ -8,9 +8,10 @@ local Drops = require(Shared.FeedDrops)
 local Abilities = require(Shared.AbilityCatalog)
 local Tasks = require(Shared.TaskConfig)
 local HomeStyle=require(Shared.HomeStyleConfig)
+local Forge=require(Shared.WeatherForgeConfig)
 local Schema = {}
 function Schema.new()
-	return {DataVersion = 2, HouseTheme = "original", Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
+	return {DataVersion = 2, HouseTheme = "original", ArcadeBestScore=0, AdventureRecords={}, WeatherMaterials={Ember=0,Stardust=0,RainPearl=0}, WeatherLook="Auto", WeatherMaterialsSeeded=false, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
 		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end
@@ -29,6 +30,7 @@ function Schema.validate(raw)
 			return nil, "INVALID_" .. key
 		end
 	end
+	if not Numeric.isInteger(data.ArcadeBestScore,0,100000) then return nil,"INVALID_ARCADE_RECORD" end
 	if data.TotalEarned < data.Cash then return nil, "INVALID_TOTAL_EARNED" end
 	if not Numeric.isInteger(data.VerityLevel, 1, 100)
 		or not Numeric.isInteger(data.SwipeUpgradeLevel, 0, 40)
@@ -57,9 +59,21 @@ function Schema.validate(raw)
 		receipts[id] = true
 	end
 
- for _,key in {"CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do
+ for _,key in {"CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped","AdventureRecords","WeatherMaterials"} do
   if type(data[key])~="table" then return nil,"INVALID_"..key end
   data[key]=table.clone(data[key])
+ end
+ if type(data.WeatherMaterialsSeeded)~="boolean" then return nil,"INVALID_WEATHER_MIGRATION" end
+ for id,amount in data.WeatherMaterials do
+  if not Forge.Materials[id] or not Numeric.isInteger(amount,0,Forge.MaxMaterial) then return nil,"INVALID_WEATHER_MATERIALS" end
+ end
+ for _,id in Forge.MaterialOrder do if data.WeatherMaterials[id]==nil then data.WeatherMaterials[id]=0 end end
+ if data.WeatherLook~="Auto" and data.WeatherLook~="Original" then
+  local look=type(data.WeatherLook)=="string" and Forge.Looks[data.WeatherLook]
+  if not look or data.CosmeticsOwned[look.Item]~=true then return nil,"INVALID_WEATHER_LOOK" end
+ end
+ for id,time in data.AdventureRecords do
+  if not require(Shared.AdventureConfig).Trials[id] or not Numeric.isFinite(time) or time<.1 or time>600 then return nil,"INVALID_ADVENTURE_RECORD" end
  end
  local countOwned=0
  for id,owned in data.CosmeticsOwned do
@@ -111,7 +125,7 @@ function Schema.validate(raw)
 end
 function Schema.copy(data)
 	local copy = table.clone(data)
-	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped"} do copy[key]=table.clone(data[key]) end
+	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped","AdventureRecords","WeatherMaterials"} do copy[key]=table.clone(data[key]) end
 	copy.ShowcaseCards = table.clone(data.ShowcaseCards or {})
 	return copy
 end

@@ -108,7 +108,7 @@ function Phone:Render()
 	local busy=net:IsBusy("Swipe")
 	self.collection:Render(state)
 	local found=Collection.Count(state)
-	W.SetButton(self.refs.CollectionButton,string.format(Locale.Text("Коллекция • %d / 40"),found),
+	W.SetButton(self.refs.CollectionButton,string.format(Locale.Text("Альбом • %d / 40"),found),
 		state~=nil and not self.feed.busy and not net:IsBusy(),false)
 	self.refs.Cash.Text=if state then "$ "..Locale.Number(state.Cash) else "$ —"
  self.refs.Reward.Text=if self.lastReward then "+$"..Locale.Number(self.lastReward) elseif state then "$"..Locale.Number(state.SwipeIncome)..Locale.Text(" за обычную карту") else "$ —"

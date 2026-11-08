@@ -2,10 +2,12 @@
 local Numeric = require(script.Parent.Numeric)
 local Drops = require(script.Parent.FeedDrops)
 local Tasks = require(script.Parent.TaskConfig)
+local Album=require(script.Parent.AlbumConfig)
+local Forge=require(script.Parent.WeatherForgeConfig)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
 	"RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
-	"RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
+	"RequestCraftWeatherItem", "RequestSetWeatherLook", "RequestClaimAlbumSet", "RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
 function RemotesConfig.isOperationId(value: any): boolean
@@ -19,7 +21,16 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 		return false, "INVALID_OPERATION_ID"
 	end
 	local allowed = {operationId = true}
-	if name == "RequestHouseDoor" then
+	if name=="RequestCraftWeatherItem" or name=="RequestSetWeatherLook" then
+  allowed.itemId=true
+  if type(payload.itemId)~="string" then return false,"INVALID_ITEM" end
+  if name=="RequestCraftWeatherItem" then
+   if not Forge.Recipes[payload.itemId] then return false,"INVALID_ITEM" end
+  elseif payload.itemId~="Auto" and payload.itemId~="Original" and not Forge.Looks[payload.itemId] then return false,"INVALID_ITEM" end
+ elseif name=="RequestClaimAlbumSet" then
+  allowed.itemId=true
+  if type(payload.itemId)~="string" or not Album.Sets[payload.itemId] then return false,"INVALID_ITEM" end
+ elseif name == "RequestHouseDoor" then
 		allowed.locked = true
 		if type(payload.locked) ~= "boolean" then return false, "INVALID_OPEN" end
 	elseif name == "RequestSetShowcaseCard" then

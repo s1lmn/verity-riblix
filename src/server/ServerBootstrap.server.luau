@@ -113,6 +113,10 @@ State.CosmeticsCatalog = function() return Cosmetics:Catalog(not usingStudioMemo
 local ActivityRewards=require(script.Parent.ActivityRewardService).new(Data,State,function(id,rewardId,itemId)
  send(id,"NotificationEvent",{protocolVersion=1,code="ACTIVITY_REWARD_UNLOCKED",source="ActivityReward",achievementId=rewardId,itemId=itemId,eventId=guid()})
 end)
+local Album=require(script.Parent.AlbumService).new(Data,State,ActivityRewards,function(id,code)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Album",eventId=guid()})
+end)
+Phone.onCollectionChanged=function(id) Album:CheckMaster(id) end
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
 Tasks.onReward = function(id, reward, taskId)
 	World:React(id,"Confident",2)
@@ -259,11 +263,26 @@ end)
   send(id,"NotificationEvent",{protocolVersion=1,code=code,source="HomeStyle",eventId=guid()})
   if code=="HOME_STYLE_APPLIED" or code=="HOME_DECOR_PURCHASED" then Bond:React(id,"Love","Home",2.5) end
  end)
+local Arcade=require(script.Parent.ArcadeService).new(World,Data,State,Players,clock,Abilities,function(id,code)
+  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Arcade",eventId=guid()})
+ end)
 local SecretsModel=require(ReplicatedStorage.World.SecretsBuilder).Build(generatedWorld or workspace)
  local Secrets=require(script.Parent.SecretsService).new(SecretsModel,Data,State,Players,clock,Abilities,ActivityRewards,
   function(id,code) send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Secrets",eventId=guid()}) end,
   function(id,emotion,seconds) Bond:React(id,emotion,"Helping",seconds) end)
  Abilities.secrets=Secrets
+local AdventureModel=require(ReplicatedStorage.World.AdventureBuilder).Build(generatedWorld,World.houseProgression.plots)
+local Adventures=require(script.Parent.AdventureService).new(World,AdventureModel,Data,State,Economy,Players,clock,Abilities,Arcade,function(id,code,cash)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Adventure",reward=cash or 0,eventId=guid()})
+end)
+Abilities.adventures=Adventures;Arcade.adventures=Adventures
+local ForgeModel=require(ReplicatedStorage.World.WeatherForgeBuilder).Build(generatedWorld)
+local Forge=require(script.Parent.WeatherForgeService).new(ForgeModel,Data,State,Players,clock,guid,function(id,code)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="WeatherForge",eventId=guid()})
+end)
+Adventures.forge=Forge
+Remote:Register("RequestCraftWeatherItem",function(id,payload)return Forge:Craft(id,payload.itemId)end)
+Remote:Register("RequestSetWeatherLook",function(id,payload)return Forge:SelectLook(id,payload.itemId)end)
 Remote:Register("RequestHouseDoor", function(id, payload)
 	if not Plots.owners[id] then return "NOT_READY" end
 	return Upgrade:SetHouseDoor(id,payload.locked)
@@ -276,6 +295,7 @@ Remote:Register("RequestUpgradeVerity", function(id)
 end)
 Remote:Register("RequestUpgradeSwipe", function(id) return Upgrade:UpgradeSwipe(id) end)
 Remote:Register("RequestPhoneSession", function(id, payload) return Phone:SetOpen(id, payload.open) end)
+Remote:Register("RequestClaimAlbumSet",function(id,payload)return Album:Claim(id,payload.itemId)end)
 Remote:Register("RequestSetShowcaseCard", function(id, payload)
 	return Phone:SetShowcaseCard(id, payload.slot, payload.cardId)
 end)
@@ -323,7 +343,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, HomeStyleService=HomeStyles, CommunityService=Community, VerityBondService=Bond, SecretsService=Secrets, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, HomeStyleService=HomeStyles, CommunityService=Community, VerityBondService=Bond, SecretsService=Secrets, AlbumService=Album, ArcadeService=Arcade, AdventureService=Adventures, WeatherForgeService=Forge, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 ReplicatedStorage:SetAttribute("VerityCoreReady",true)
 local playerConnections, closing = {}, false
@@ -379,7 +399,7 @@ local function onCharacter(player, character)
   Race:Remove(player)
   if Fusion then Fusion:Remove(player) end
   Diversions:End(player,false)
-  Community:Remove(player);Bond:Remove(player);Secrets:Remove(player)
+  Forge:Remove(player);Adventures:Remove(player);Arcade:Remove(player);Community:Remove(player);Bond:Remove(player);Secrets:Remove(player)
 		Tasks:OnDeath(player.UserId)
 		task.delay(Players.RespawnTime, function()
 			if player.Character == character then spawnPlayer(player) end
@@ -420,6 +440,8 @@ local function claimHouse(player, requestedPlot)
 
 	State:Attach(userId, plotId)
  Cosmetics:GrantStarter(userId)
+ Album:CheckMaster(userId)
+ Forge:SeedLegacy(userId)
 	local spawnPoint = World.anchors[plotId].SpawnPoint
 	spawnPoint.Enabled = true
 	player.RespawnLocation = spawnPoint
@@ -437,7 +459,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
- Community:Remove(player);Bond:Remove(player);HomeStyles:Remove(player);Secrets:Remove(player)
+ Forge:Remove(player);Adventures:Remove(player);Arcade:Remove(player);Community:Remove(player);Bond:Remove(player);HomeStyles:Remove(player);Secrets:Remove(player)
  Diversions:Remove(player)
  if Fusion then Fusion:Remove(player,true) end
  Battle:Forget(player);activityLimits[player]=nil
@@ -475,7 +497,7 @@ RunService.Heartbeat:Connect(function(dt)
  Parkour:UpdateMotion(clock())
  Parkour:Tick()
  incomeElapsed += dt; stateElapsed += dt; taskElapsed += dt; houseElapsed += dt
-	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval);Diversions:Tick();Community:Tick();Bond:Tick();Secrets:Tick() end
+	if houseElapsed >= .15 then local interval=houseElapsed;houseElapsed=0;World.houseProgression:Tick();StreetDelivery:Tick();Race:Tick();Battle:Tick(interval);Diversions:Tick();Community:Tick();Bond:Tick();Secrets:Tick();Arcade:Tick();Adventures:Tick() end
 	if incomeElapsed >= Config.IncomeInterval then incomeElapsed = 0; Income:Tick(); Delivery:Tick() end
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then
@@ -516,7 +538,7 @@ MarketplaceService.ProcessReceipt = function(receipt)
 end
 game:BindToClose(function()
 	closing = true
- Secrets:Destroy();Community:Destroy();HomeStyles:Destroy();Bond:Destroy()
+ Forge:Destroy();Adventures:Destroy();Arcade:Destroy();Secrets:Destroy();Community:Destroy();HomeStyles:Destroy();Bond:Destroy()
  if Fusion then Fusion:Destroy() end
 	Data.closed = true
 	for id in State.sessions do Income:Settle(id) end

@@ -112,7 +112,7 @@ end
 function Factory.SetStage(model, level)
  local body=model:FindFirstChild("Body")
  if body then
-  local skin=Skins.Get(level,model:GetAttribute("ElementalSkinOverride"))
+  local skin=Skins.Get(level,model:GetAttribute("WeatherSkinOverride") or model:GetAttribute("ElementalSkinOverride"))
   local id=if skin then (skin.LevelKey or skin.Id) else "Base"
   if body:GetAttribute("ElementalAppliedSkin")~=id then
    local mesh=body:FindFirstChildOfClass("SpecialMesh")

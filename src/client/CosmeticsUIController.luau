@@ -48,6 +48,7 @@ function UI.new(ctx)
     ctx.secrets:Select(id)
    elseif item.achievement then ctx.notifications:Show(Locale.Text(Rewards.Items[item.achievement].condition))
    elseif item.source=="StreetDelivery" then ctx.notifications:Show(Locale.Text("Обычная награда 70% • ×2 22% • ×5 6% • украшение 2%. Все украшения собраны — компенсация ×5."))
+   elseif item.source=="WeatherForge" then ctx.notifications:Show("Создай венец за погодные материалы в кузнице погоды.");if ctx.forge then ctx.forge.routeRequested=os.clock()+180 end;ctx.close()
    elseif item.source=="Fusion" then ctx.notifications:Show(Locale.Text("Заверши заезд слияния, чтобы получить подвески."))
    elseif item.starter then return
    else ctx.request("CosmeticPurchase",{itemId=id}) end
@@ -109,6 +110,8 @@ function UI:Render()
    row.info.Text=if owned then Locale.Text("Награда получена").." • "..progress else Locale.Text(achievement.condition).." "..progress
   elseif item.source=="StreetDelivery" then
    row.info.Text=if owned then Locale.Text("Награда получена") else Locale.Text("Бесплатная доставка • шанс украшения 2%")
+  elseif item.source=="WeatherForge" then
+   row.info.Text=if owned then Locale.Text("Награда получена") else Locale.Text("Создай венец за погодные материалы в кузнице погоды.")
   elseif item.source=="Fusion" then
    row.info.Text=if owned then Locale.Text("Награда получена") else Locale.Text("Заверши заезд слияния, чтобы получить подвески.")
   elseif item.starter then

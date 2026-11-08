@@ -63,7 +63,7 @@ function Controller.new(ctx,boutique)
  end))
  if ctx.net.state then self.last=Rewards.Unlocked(ctx.net.state.CosmeticsOwned)end
  Actions:BindActionAtPriority("VerityRewardBack",function(_,state)
-  if state==Enum.UserInputState.Begin and self.card.Visible and not ctx.active and not ctx.presenting and not Gui.MenuIsOpen and not Input:GetFocusedTextBox()then self:Close();return Enum.ContextActionResult.Sink end
+  if state==Enum.UserInputState.Begin and self.card.Visible and not ctx.active and not ctx.presenting and not ctx.forgeReveal and not Gui.MenuIsOpen and not Input:GetFocusedTextBox()then self:Close();return Enum.ContextActionResult.Sink end
   return Enum.ContextActionResult.Pass
  end,false,3100,Enum.KeyCode.ButtonB,Enum.KeyCode.Escape)
  self.cleanup:Add(function()Actions:UnbindAction("VerityRewardBack")end)
@@ -87,7 +87,7 @@ end
 function Controller:Tick()
  local ctx=self.ctx;local player=Players.LocalPlayer
  local char=player.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
- local blocked=ctx.active or ctx.presenting or Gui.MenuIsOpen or not hum or hum.Health<=0
+ local blocked=ctx.active or ctx.presenting or ctx.forgeReveal or Gui.MenuIsOpen or not hum or hum.Health<=0
   or player:GetAttribute("VerityDiversionKind") or player:GetAttribute("VerityFusionSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityBattleActive")
  if not self.current and not blocked and #self.queue>0 then
   local reward=Rewards.Items[self.queue[1]];local state=ctx.net.state

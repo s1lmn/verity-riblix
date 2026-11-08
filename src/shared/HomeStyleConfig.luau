@@ -15,11 +15,27 @@ C.Decor={
  home_arcade={Name="Игровой автомат",Cost=5000,Level=15,Build=2,Color="FF8DD5"},
  home_beacon={Name="Маяк дружбы",Cost=0,Level=1,Build=1,Color="FFD75B",Earned=true},
 }
+local Album=require(script.Parent.AlbumConfig)
+for id,set in Album.Sets do C.Decor[set.Decor]={Name=set.Name,Cost=0,Level=1,Build=1,Color=set.Color,Earned=true} end
+local Arcade=require(script.Parent.ArcadeConfig)
+for _,prize in Arcade.Prizes do C.Decor[prize.Id]={Name=prize.Name,Cost=0,Level=1,Build=2,Color=prize.Color,Earned=true} end
+for _,entry in {{"home_repair_trophy","Знак автомеханика","FFB66D"},{"home_drone_nest","Домик спасённых дронов","89E8F6"},{"home_festival_lantern","Фонарь праздника","FF99D6"}} do
+ C.Decor[entry[1]]={Name=entry[2],Cost=0,Level=1,Build=1,Color=entry[3],Earned=true}
+end
+local Adventures=require(script.Parent.AdventureConfig)
+for _,prize in Adventures.Prizes do C.Decor[prize.Id]={Name=prize.Name,Cost=0,Level=1,Build=2,Color=prize.Color,Earned=true} end
+local Forge=require(script.Parent.WeatherForgeConfig)
+for _,id in Forge.DecorOrder do local prize=Forge.Decor[id];C.Decor[id]={Name=prize.Name,Cost=0,Level=1,Build=2,Color=prize.Color,Earned=true} end
 function C.ThemeOwned(owned,id) return id=="original" or owned["home_theme_"..id]==true end
 function C.Project(data)
  local owned,themes={},{}
  for id in C.Decor do owned[id]=data.CosmeticsOwned[id]==true end
  for id in C.Themes do themes[id]=C.ThemeOwned(data.CosmeticsOwned,id) end
- return {theme=data.HouseTheme or "original",owned=owned,themes=themes}
+ local trialRanks={}
+ for id,d in Adventures.Trials do
+  local time=(data.AdventureRecords or {})[id]
+  if time then trialRanks[id]=if time<=d.Gold then "Gold" elseif time<=d.Silver then "Silver" else "Bronze" end
+ end
+ return {theme=data.HouseTheme or "original",owned=owned,themes=themes,trialRanks=trialRanks}
 end
 return C

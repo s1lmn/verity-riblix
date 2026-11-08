@@ -150,9 +150,9 @@ function VFX:Hide(model)
 	group.lastPosition, group.lastTime = nil, nil
 end
 
-local function styleAura(group, level, tint, detail)
+local function styleAura(group, level, tint, detail, weatherLook)
 	local skin = Skins.Get(level)
-	local family = if skin then skin.Family else "Candy"
+	local family = if weatherLook then weatherLook.Family elseif skin then skin.Family else "Candy"
 	local style = ELEMENTS[family]
 	local look = Profile.Aura(level)
 	local progress = (level-1)/99
@@ -160,6 +160,12 @@ local function styleAura(group, level, tint, detail)
 	local extraArcs = if detail==0 or level<10 then 0 elseif detail==2 and level>=25 then 2 else 1
 	local moteCount = if detail==0 then 0 elseif detail==1 or level<10 then 3 elseif level>=50 then 7 else 5
 	local trailCount = if detail==2 then look.trails elseif detail==1 then math.min(1,look.trails) else 0
+ if weatherLook then
+  extraArcs=if detail==2 then 2 elseif detail==1 then 1 else 0
+  moteCount=if detail==2 then 7 elseif detail==1 then 4 else 0
+  trailCount=if detail==2 then math.max(1,trailCount) elseif detail==1 then 1 else 0
+ end
+ group.weatherId=weatherLook and weatherLook.Id or ""
 	group.family, group.style, group.look = family, style, look
 	group.progress = progress
 	group.arcCount, group.moteCount, group.trailCount = 2+extraArcs, moteCount, trailCount
@@ -194,11 +200,11 @@ local function styleAura(group, level, tint, detail)
 		if index>trailCount then trail.Enabled = false;trail:Clear() end
 	end
 	group.light.Color = tint
-	group.light.Brightness = .48+look.brightness*.72
+	group.light.Brightness = (if weatherLook then 1.05 else .48)+look.brightness*.72
 	group.highlight.FillColor = tint
-	group.highlight.FillTransparency = .96-progress*.06
+	group.highlight.FillTransparency = (if weatherLook then .91 else .96)-progress*.06
 	group.highlight.OutlineColor = tint:Lerp(accent,.35)
-	group.highlight.OutlineTransparency = .46-progress*.22
+	group.highlight.OutlineTransparency = if weatherLook then .20-progress*.08 else .46-progress*.22
 	group.highlight.Enabled = true
 	group.level, group.color, group.detail, group.hidden = level, tint, detail, false
 end
@@ -241,7 +247,7 @@ end
 
 -- The base halo follows the exact body centre even when the camera-facing pivot tilts.
 -- Low quality and reduced effects keep the silhouette and arc without extra layers.
-function VFX:Update(model, origin, scale, _stage, now, simplified, near, level, reducedMotion, reset, tint, graphics, distance, own)
+function VFX:Update(model, origin, scale, _stage, now, simplified, near, level, reducedMotion, reset, tint, graphics, distance, own, weatherLook)
 	local pulse = self.pulses[model]
 	if pulse and now-pulse.started>=.8 then self.pulses[model]=nil;pulse=nil end
 	if not near then self:Hide(model);return end
@@ -253,8 +259,8 @@ function VFX:Update(model, origin, scale, _stage, now, simplified, near, level, 
 	level = level or model:GetAttribute("VerityLevel") or 1
 	distance = distance or 0
 	local detail = if simplified or reducedMotion or distance>105 then 0 elseif graphics and graphics.Tier==2 then 1 else 2
-	local restyle = group.hidden or group.level~=level or group.color~=color or group.detail~=detail
-	if restyle then styleAura(group,level,color,detail) end
+	local restyle = group.hidden or group.level~=level or group.color~=color or group.detail~=detail or group.weatherId~=(weatherLook and weatherLook.Id or "")
+	if restyle then styleAura(group,level,color,detail,weatherLook) end
 
 	local elapsed = if group.lastTime then now-group.lastTime else 0
 	local delta = if group.lastPosition then center-group.lastPosition else Vector3.zero
@@ -448,10 +454,22 @@ function VFX:Emit(model,origin,scale,level,now,charge,tint)
 end
 
 -- Only the local companion requests these short action reactions.
-function VFX:React(model,origin,scale,level,now)
- local skin=Skins.Get(level)
+function VFX:WeatherChange(model,origin,scale,now,tint)
+ local count=math.clamp(math.floor(10*(self.particleScale or 1)),0,10)
+ for i=1,count do
+  local p=self:Acquire();if not p then break end
+  local angle=i*math.pi*2/math.max(1,count);p.Color=tint:Lerp(WHITE,(i%3)*.12);p.Shape=Enum.PartType.Ball;p.Material=Enum.Material.Neon
+  p.Size=Vector3.one*math.clamp(scale*.1,.12,.65)
+  local center=origin.Position+Vector3.yAxis*(.85*scale)
+  table.insert(self.active,{part=p,owner=model,index=i,position=center+Vector3.new(math.cos(angle)*scale,0,math.sin(angle)*scale),
+   velocity=Vector3.new(math.cos(angle),.8,math.sin(angle))*math.min(4,scale*.5+1.5),started=now,lifetime=.95,opacity=.8})
+ end
+end
+
+function VFX:React(model,origin,scale,level,now,weatherLook)
+ local skin=Skins.Get(level,weatherLook and weatherLook.Skin)
  if not skin then return end
- local family=skin.Family
+ local family=if weatherLook then weatherLook.Family else skin.Family
  local count=math.clamp(math.floor(8*(self.particleScale or 1)),3,8)
  local radius=scale*.96+.1
  local size=math.clamp(scale*.065,.16,.5)
@@ -460,7 +478,7 @@ function VFX:React(model,origin,scale,level,now)
   local angle=i*2*math.pi/count
   local radial=Vector3.new(math.cos(angle),0,math.sin(angle))
   local velocity=radial*(if family=="Magma" then 2.6 else 1.3)+Vector3.new(0,if family=="Aqua" then 2.2 else 1.7,0)
-  local color=Color3.fromHex(skin.Hex)
+  local color=Color3.fromHex(if weatherLook then weatherLook.Color else skin.Hex)
   p.Shape=Enum.PartType.Block;p.Material=Enum.Material.Neon
   p.Size=Vector3.one*size
   local opacity=1

@@ -3,6 +3,11 @@
 local Economy=require(script.Parent.EconomyConfig)
 local Rewards={Version=1}
 Rewards.Definitions=table.freeze({
+ Fire=table.freeze({Seconds=75,TargetFraction=.12,MaximumSeconds=240}),
+ Stars=table.freeze({Seconds=65,TargetFraction=.10,MaximumSeconds=240}),
+ Cave=table.freeze({Seconds=90,TargetFraction=.15,MaximumSeconds=300}),
+ Trial=table.freeze({Seconds=35,TargetFraction=.06,MaximumSeconds=150}),
+ Party=table.freeze({Seconds=35,TargetFraction=.05,MaximumSeconds=150}),
  Community=table.freeze({Seconds=75,TargetFraction=.12,MaximumSeconds=300}),
  Hunt=table.freeze({Seconds=45,TargetFraction=.05,MaximumSeconds=150}),
  Rhythm=table.freeze({Seconds=25,TargetFraction=.025,MaximumSeconds=90}),
@@ -23,6 +28,8 @@ end
 -- Exclusive achievement inventory and house trophies from the team.
 Rewards.Order=table.freeze({"parkour_clear","race_champion","titan_victory"})
 Rewards.Items=table.freeze({
+ album_master=table.freeze({id="album_master",itemId="collector_crown",name="Весь мир в альбоме",condition="Найди все 40 разных карточек в ленте телефона.",
+  progress="Полный альбом • %d/1",color="FFE28D",activity="Album",proof="Все 40 карточек собраны"}),
  secret_solar=table.freeze({id="secret_solar",itemId="prism_specs",name="Хранитель солнечного архива",condition="Запитай приёмник у архива и повтори порядок: день, ночь, звезда.",
   progress="Тайник архива • %d/1",color="FFD875",activity="Secrets",proof="Украшение сохранено в коллекции"}),
  secret_canopy=table.freeze({id="secret_canopy",itemId="leaf_crown",name="Тайна старой кроны",condition="Поднимись по ветвям или прыжком титана. Сыграй: лист, капля, солнце.",

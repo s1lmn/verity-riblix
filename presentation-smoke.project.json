@@ -112,6 +112,18 @@
         },
         "SecretsService": {
           "$path": "src/server/SecretsService.luau"
+        },
+        "AlbumService": {
+          "$path": "src/server/AlbumService.luau"
+        },
+        "ArcadeService": {
+          "$path": "src/server/ArcadeService.luau"
+        },
+        "AdventureService": {
+          "$path": "src/server/AdventureService.luau"
+        },
+        "WeatherForgeService": {
+          "$path": "src/server/WeatherForgeService.luau"
         }
       },
       "PresentationSmoke": {

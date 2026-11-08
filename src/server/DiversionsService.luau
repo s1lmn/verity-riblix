@@ -69,7 +69,7 @@ function Service:Start(player, kind)
     if self.runs[player] then return end
     local root, profile, character = self:Character(player)
     if not root or (root.Position - Config.Station(kind)).Magnitude > Config.JoinReach + 1 then return end
-    for _, attribute in {"VerityRaceSlot", "VerityParkourStep", "VerityFusionSlot", "VerityBattleActive", "VerityRiding"} do
+    for _, attribute in {"VerityDiversionKind", "VerityRaceSlot", "VerityParkourStep", "VerityFusionSlot", "VerityBattleActive", "VerityRiding"} do
         if player:GetAttribute(attribute) then return end
     end
     local now = self.clock()

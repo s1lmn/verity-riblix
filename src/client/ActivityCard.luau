@@ -32,7 +32,7 @@ function Card.ActivityRunning()
 end
 
 function Card.Blocked(ctx)
- return ctx.active or ctx.presenting or ctx.rewardOverlay
+ return ctx.active or ctx.presenting or ctx.forgeReveal or ctx.rewardOverlay
 end
 
 return Card

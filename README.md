@@ -4,6 +4,14 @@
 
 Открывать в Roblox Studio: `build/VERITY-Latest.rbxlx`. Каноническая сборка — `builds/VerityGrowingSimulator.rbxlx`, рядом находится `.version.json` с fingerprint исходников. Уже открытая старая Studio-сцена сама не обновляется после замены файла на диске.
 
+Новый локальный этап: альбом восьми наборов с декором и короной, играющий домашний автомат с рекордом и три варианта событий района. Отдельная копия сборки — `build/VERITY-Album-Arcade.rbxlx`. [Механики и границы готовности](docs/ALBUM_ARCADE_AND_NEIGHBORHOOD.md). Упаковка выполнена без проверок (`--no-verify`); Play не запускался.
+
+Свежая визуальная доводка: `build/VERITY-Polished.rbxlx` (Latest и Album-Arcade обновлены той же версией). [Обложки альбома, аркадный интерфейс и оформление событий](docs/ALBUM_ARCADE_VISUAL_POLISH.md). Без запуска Play и визуальной приёмки.
+
+Новая локальная сборка: `build/VERITY-Weather-Adventures.rbxlx` (Latest и Polished — те же исходники). Добавлены сильная погода с осколками/пещерой,4испытания купленных способностей с рекордами и2формата домашних вечеринок. [Правила, эффекты и границы готовности](docs/WEATHER_TRIALS_AND_HOUSE_PARTIES.md). Только упаковка --no-verify, без Play/тестов/визуальной приёмки.
+
+Новое: `build/VERITY-Fire-Sky.rbxlx` — пятая погода «Огненное небо»,5солнечныхугольков и жар-светильник. Первое событие на новом сервере теперь Fire через30с. Latest/Weather-Adventures/Polished обновлены. [Правила и ограничения](docs/FIRE_SKY_WEATHER.md).
+
 ## Игровой цикл
 
 Занять свободный дом у входа → открыть доставленную коробку → зарабатывать карточками/заданиями и пассивно → улучшать Verity и свайп → покупать способности и достраивать дом.
@@ -53,3 +61,6 @@ python tools/build_project.py --rojo C:/path/to/rojo.exe
 Дополнительные исправления очистки, магазина и финального сохранения: [OPTIMIZATION_FOLLOWUP_2026_11_05.md](docs/OPTIMIZATION_FOLLOWUP_2026_11_05.md).
 
 Расширенный паркур и PvE-битвы Verity: [EXPANDED_ACTIVITIES.md](docs/EXPANDED_ACTIVITIES.md). Без новой игровой приёмки/Play.
+
+
+Кузница погоды и погодные облики (локально 8 ноября): [механика, рецепты, сохранения и ограничения приёмки](docs/WEATHER_FORGE_AND_LOOKS.md). Открывать `build/VERITY-Latest.rbxlx` или `build/VERITY-Weather-Forge.rbxlx`. Упаковка `--no-verify`, без нового Play/тестов/push.

@@ -327,6 +327,7 @@ function WorldIntegration:UpdatePlot(userId, state)
 		verity:SetAttribute("IncomePerSecond", state.IncomePerSecond)
 		verity:SetAttribute("VerityScale", state.VerityScale)
   local cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
+  verity:SetAttribute("WeatherLook",state.WeatherLook or "Auto")
   for slot in cosmetics.Slots do verity:SetAttribute("Cosmetic_"..slot,(state.CosmeticsEquipped or {})[slot]) end
 	end
 	local worldPlot = self.anchors[plotId].WorldPlot

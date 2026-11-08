@@ -151,7 +151,12 @@ function Feedback:TaskHighlights(now)
  end
 end
 function Feedback:Tick(now)
+ if self.ctx.upgradeAttention then self.ctx.upgradeAttention:Tick(now) end
  if self.ctx.community then self.ctx.community:VisualTick(now) end
+ if self.ctx.adventures then self.ctx.adventures:VisualTick(now,now-(self.arcadeFrame or now)) end
+ if self.ctx.arcade then self.ctx.arcade:VisualTick(now,now-(self.arcadeFrame or now)) end
+ if self.ctx.forge then self.ctx.forge:VisualTick(now,now-(self.arcadeFrame or now)) end
+ self.arcadeFrame=now
  self:TickArrival(now)
  if now>=(self.highlightAt or 0) then self.highlightAt=now+.1;self:TaskHighlights(now) end
  local reduced=self.ctx.settings.values.ReducedMotion

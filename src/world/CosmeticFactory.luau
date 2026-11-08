@@ -18,7 +18,22 @@ function Factory.Apply(model,equipped)
   local key=Catalog.BaseId(id)
   local color,accent=definition.color or "FFB72D",definition.accent or "FFF0CE"
   local item=Instance.new("Model");item.Name=id;item.Parent=folder
-  if key=="prism_specs" then
+  if key=="forge_halo" then
+   for n=1,12 do
+    local a=n*math.pi/6
+    local segment=part(item,"GoldenHalo",Vector3.new(.12,.10,.34),Vector3.new(math.cos(a)*.67,1.94,math.sin(a)*.56),"FFE39C")
+    segment.CFrame*=CFrame.Angles(0,-a,0);segment.Material=Enum.Material.Neon
+   end
+   for i,hue in {"FFAC67","C5A5FF","88E5EC"} do
+    local gem=part(item,"ElementGem",Vector3.new(.19,.25,.15),Vector3.new((i-2)*.38,2.04,-.54),hue);gem.CFrame*=CFrame.Angles(0,0,math.pi/4);gem.Material=Enum.Material.Neon
+   end
+  elseif key=="collector_crown" then
+   part(item,"Band",Vector3.new(1.2,.12,.9),Vector3.new(0,1.7,0),"FFD969")
+   for n=-2,2 do
+    part(item,"CrownTip",Vector3.new(.16,.3+(.12*(2-math.abs(n))),.15),Vector3.new(n*.23,1.95,-.25),"FFE9A1")
+    part(item,"CollectionGem",Vector3.one*.11,Vector3.new(n*.23,1.78,-.48),if n%2==0 then "96ECF0" else "DFABFF",Enum.PartType.Ball)
+   end
+  elseif key=="prism_specs" then
    local colors={"FFE18A","90F1F2"}
    for index,side in {-1,1} do
     local x=side*.3

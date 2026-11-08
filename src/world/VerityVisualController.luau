@@ -18,6 +18,7 @@ local Race=require(Shared.VerityRaceConfig)
 local Fusion=require(Shared.VerityFusionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
+local WeatherLooks=require(Shared.WeatherForgeConfig)
 local Players=game:GetService("Players")
 local Factory=require(script.Parent.VerityFactory)
 local VFX=require(script.Parent.VerityVFXService)
@@ -517,6 +518,20 @@ function Controller:Tick(now,dt)
 			end
 		end
 		local active=record.active
+  local desired=WeatherLooks.Resolve(model:GetAttribute("WeatherLook") or "Auto",ReplicatedStorage:GetAttribute("VerityWeatherKind") or "Clear")
+  local desiredId=desired and desired.Id or ""
+  local changed=record.weatherDesiredId~=nil and record.weatherDesiredId~=desiredId
+  record.weatherDesiredId=desiredId
+  local weatherLook=if active or spawning or record.adminLevel or record.fusing then nil else desired
+  record.weatherLook=weatherLook
+  local skin=weatherLook and weatherLook.Skin or ""
+  if record.weatherAppliedSkin~=skin then
+   record.weatherAppliedSkin=skin;model:SetAttribute("WeatherSkinOverride",if skin~="" then skin else nil)
+   Factory.SetStage(model,record.stageLevel or record.level)
+  end
+  if changed and not active and not spawning and not record.fusing and not record.adminLevel and own and near and not reduced and not self.settings.values.ReducedEffects and not self.settings.values.LowGraphics then
+   self.effects:WeatherChange(model,model:GetPivot(),model:GetScale(),now,if weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(record.level))
+  end
 		record.growthCover=0
 		record.lifeState=record.lifeState or {}
 		local velocity=record.origin:VectorToObjectSpace(record.velocity or Vector3.zero)
@@ -566,14 +581,14 @@ function Controller:Tick(now,dt)
 			local hover=if stage>=2 then 0.05*scale else 0
 			local lift=if reduced or not near then 0 else hover+math.sin(phase*(if stage==5 then 1.4 else 2))*scale*(if stage==0 then 0.012 elseif stage==5 then 0.035 else 0.025)
 			local yaw=(if (record.abilityAimUntil or 0)>now then 0 else record.baseYaw)+(if reduced or not near or (record.abilityAimUntil or 0)>now then 0 else math.sin(phase*(if stage==5 then .85 else 1.5))*(if stage==1 then .12 elseif stage>=4 then .06 else .08))
-			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,Factory.Color(renderLevel),renderLevel) end
+			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,if weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(renderLevel),renderLevel) end
 		end
 		visibility(record,record.visibility or 0)
   if record.pendingReaction then
    if now-record.pendingReaction<.6 and now>=(record.reactionAt or 0) and own and near and not active and not spawning
     and not record.racing and not record.riding and not record.fusing and not reduced and not self.settings.values.ReducedEffects and not self.settings.values.LowGraphics then
     record.reactionAt=now+3
-    self.effects:React(model,model:GetPivot(),scale,renderLevel,now)
+    self.effects:React(model,model:GetPivot(),scale,renderLevel,now,weatherLook)
    end
    record.pendingReaction=nil
   end
@@ -587,7 +602,7 @@ function Controller:Tick(now,dt)
 		record.auraNear=not record.fusing and cover<.28 and auraDistance<auraLimit+(if record.auraNear then 8 else 0)
 		self.effects:Update(model,model:GetPivot(),auraScale,stage,now,
 			self.settings.values.ReducedEffects or self.settings.values.LowGraphics,record.auraNear,
-			auraLevel,reduced,record.teleported and not record.riding,Factory.Color(auraLevel),graphics,auraDistance,own)
+			auraLevel,reduced,record.teleported and not record.riding,if weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(auraLevel),graphics,auraDistance,own,weatherLook)
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)
@@ -600,6 +615,7 @@ function Controller:Remove(model)
 	record.growthCover=0;record.spawnCover=0
 	visibility(record,0)
 	record.cleanup:Destroy()
+ if model.Parent then model:SetAttribute("WeatherSkinOverride",nil);Factory.SetStage(model,record.stageLevel or record.level) end
 	self.effects:Remove(model)
 	self.records[model]=nil
 	if self.byOwner[record.key]==record then self.byOwner[record.key]=nil end

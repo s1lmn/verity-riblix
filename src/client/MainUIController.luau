@@ -32,6 +32,9 @@ local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualCon
 local Main={}
 Main.__index=Main
 local Errors={
+ FORGE_TOO_FAR="Подойди к кузнице погоды и заверши текущую активность.",
+ FORGE_NEED_MATERIALS="Собери недостающие материалы во время погодных событий.",
+ ALBUM_INCOMPLETE="Сначала собери все пять разных карт набора.",
  TASK_OTHER_ACTIVITY="Заверши текущую активность, затем возьми поручение.",
  CARD_NOT_OWNED="Этой карточки пока нет в коллекции.",
  ABILITY_LEVEL_REQUIRED="Сначала повысь уровень Verity.",ABILITY_NOT_OWNED="Сначала купи эту способность.",TOO_FAR="Подойди к станции строительства внутри своего дома.",
@@ -95,6 +98,7 @@ function Main.new()
  self.abilities=self.cleanup:Add(require(script.Parent.AbilityController).new(ctx))
  self.cleanup:Add(require(script.Parent.AbilityEffectsController).new(ctx))
  self.cleanup:Add(require(script.Parent.HouseConstructionController).new(ctx))
+ ctx.upgradeAttention=self.cleanup:Add(require(script.Parent.UpgradeAttentionController).new(ctx,self.workshop.rows,self.abilityUI.rows))
  self.cleanup:Add(require(script.Parent.GameplayFeedbackController).new(ctx))
  self.cleanup:Add(require(script.Parent.StreetDeliveryController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityRaceController).new(ctx))
@@ -102,6 +106,9 @@ function Main.new()
  ctx.diversions=self.cleanup:Add(require(script.Parent.DiversionsController).new(ctx))
  ctx.community=self.cleanup:Add(require(script.Parent.CommunityController).new(ctx))
  ctx.secrets=self.cleanup:Add(require(script.Parent.SecretsController).new(ctx))
+ ctx.arcade=self.cleanup:Add(require(script.Parent.ArcadeController).new(ctx))
+ ctx.adventures=self.cleanup:Add(require(script.Parent.AdventureController).new(ctx))
+ ctx.forge=self.cleanup:Add(require(script.Parent.WeatherForgeController).new(ctx))
  self.cleanup:Add(require(script.Parent.VerityFusionController).new(ctx))
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
@@ -169,8 +176,9 @@ function Main.new()
 			self.notificationIds[payload.eventId]=true
 			table.insert(self.notificationOrder,payload.eventId)
 			if #self.notificationOrder>256 then self.notificationIds[table.remove(self.notificationOrder,1)]=nil end
-			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" and payload.code~="DIVERSION_REWARD" and payload.code~="COMMUNITY_WIN" then ctx.sound:Play("Reward") end end
+			if Model.IsFinite(payload.reward) and payload.reward>0 then ctx.rewards:Add(payload.reward);if payload.code~="TASK_REWARD" and payload.code~="PARKOUR_FINISH" and payload.code~="STREET_DELIVERY_REWARD" and payload.code~="RACE_WIN" and payload.code~="BATTLE_WIN" and payload.code~="DIVERSION_REWARD" and payload.source~="Adventure" and not (payload.source=="Community" and type(payload.code)=="string" and payload.code:match("_WIN$")) then ctx.sound:Play("Reward") end end
 		end
+		if payload.code=="ADVENTURE_STEP" then return end
 		if (payload.code=="STREET_DELIVERY_STARTED" or payload.code=="STREET_DELIVERY_DROPPED")
 			and (ActivityCard.Blocked(ctx) or ActivityCard.ActivityRunning()) then return end
 		local drop=if payload.code=="STREET_DELIVERY_REWARD" then payload.deliveryReward else nil
@@ -227,7 +235,7 @@ end
 function Main:Open(name)
 	local ctx=self.ctx
 	if name and name~="SETTINGS" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
-	if name and (ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
+	if name and (ctx.forgeReveal or ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
 	if ctx.active==name then return end
 	self.previousFocus=GuiService.SelectedObject
 	ctx.active=name
@@ -290,11 +298,14 @@ function Main:Tick(dt)
  self.tasks:Tick()
  if ctx.community then ctx.community:Render() end
  if ctx.secrets then ctx.secrets:Render() end
+ if ctx.arcade then ctx.arcade:Render() end
+ if ctx.adventures then ctx.adventures:Render() end
+ if ctx.forge then ctx.forge:Render() end
 	self.tutorial:Render()
 	self.phone:ReconcileSession()
 	if ctx.active=="VERITY" then self.verity:Render() end
 	self.refs.Banner.Visible=now<self.bannerUntil
-	if now>=self.nextPresentation then
+	if now>=self.nextPresentation and not ctx.forgeReveal then
 		local event=self.ledger:Pop()
 		if event and not self.presentation:Has(event.eventId) then
 			local milestone=nil

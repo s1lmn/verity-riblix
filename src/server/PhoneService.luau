@@ -30,6 +30,7 @@ function PhoneService:Swipe(userId)
 	profile.Data.FeedCollection[key] = math.min(1000000,count+1)
 	self.data:Touch(profile)
 	self.state:AdvanceTutorial(profile, 6)
+ if self.onCollectionChanged then self.onCollectionChanged(userId) end
 	return "OK", actual, cardId, count==0
 end
 function PhoneService:SetShowcaseCard(userId, slot, cardId)

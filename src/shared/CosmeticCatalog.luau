@@ -2,8 +2,10 @@
 -- Stable inventory IDs. Prices and product IDs belong to Roblox/server configuration.
 local Catalog = {}
 Catalog.Slots = table.freeze({Face = true, Head = true, Ears = true})
-Catalog.Order = table.freeze({"parkour_star_band","champion_goggles","titan_charms","sun_cap","bubble_bow","beat_headphones","pixel_specs","round_glasses", "party_hat", "star_earrings","delivery_cap","delivery_goggles","delivery_wings","fusion_charms","prism_specs","leaf_crown","cloud_charms"})
+Catalog.Order = table.freeze({"parkour_star_band","champion_goggles","titan_charms","sun_cap","bubble_bow","beat_headphones","pixel_specs","round_glasses", "party_hat", "star_earrings","delivery_cap","delivery_goggles","delivery_wings","fusion_charms","prism_specs","leaf_crown","cloud_charms","collector_crown","forge_halo"})
 local items: {[string]: any} = {
+ forge_halo=table.freeze({id="forge_halo",name="Венец трёх стихий",slot="Head",category="Кузница погоды",source="WeatherForge",exclusive=true}),
+ collector_crown=table.freeze({id="collector_crown",name="Корона коллекционера",slot="Head",category="Альбом карточек",achievement="album_master",exclusive=true}),
  prism_specs=table.freeze({id="prism_specs",name="Призматические очки",slot="Face",category="Секреты района",achievement="secret_solar",exclusive=true}),
  leaf_crown=table.freeze({id="leaf_crown",name="Венок хранителя кроны",slot="Head",category="Секреты района",achievement="secret_canopy",exclusive=true}),
  cloud_charms=table.freeze({id="cloud_charms",name="Облачные подвески",slot="Ears",category="Секреты района",achievement="secret_cloud",exclusive=true}),

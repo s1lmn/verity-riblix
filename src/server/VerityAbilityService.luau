@@ -11,6 +11,7 @@ local Ride=require(Shared.VerityRideConfig)
 local Battle=require(Shared.VerityBattleConfig)
 local Parkour=require(Shared.ParkourConfig)
 local SecretsConfig=require(Shared.SecretsConfig)
+local AdventureConfig=require(Shared.AdventureConfig)
 local Service={};Service.__index=Service
 
 function Service.new(data,state,world,targets)
@@ -37,7 +38,7 @@ function Service:Equipped(player,slot,profile)
  return nil
 end
 function Service:BlockReason(player,slot)
- if player:GetAttribute("VerityDiversionKind") then return "DIVERSION_POWER" end
+ if player:GetAttribute("VerityDiversionKind") and not (self.adventures and self.adventures:AllowsPower(player,slot)) then return "DIVERSION_POWER" end
  if player:GetAttribute("VerityFusionSlot") then return "FUSION_POWER" end
  if player:GetAttribute("VerityRaceSlot") then return "RACE_POWER" end
  local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -55,7 +56,7 @@ function Service:SlotSnapshot(player)
   local untilTime=player:GetAttribute(if slot=="Mobility" then "VerityMobilityUntil" else "VerityAttackUntil") or 0
   local reason=self:BlockReason(player,slot)
   if not profile.Data.VerityUnlocked then reason="BOX_NOT_OPENED" elseif not character then reason="CHARACTER_UNAVAILABLE"
-  elseif slot=="Attack" and not reason and self:IsSafe(player,root) and not (self.secrets and self.secrets:CanAimMechanism(player,item)) then reason="SAFE_ZONE" end
+  elseif slot=="Attack" and not reason and self:IsSafe(player,root) and not (self.secrets and self.secrets:CanAimMechanism(player,item)) and not (self.adventures and self.adventures:CanAimMechanism(player,item)) then reason="SAFE_ZONE" end
   result[slot]={slot=slot,itemId=id,name=item and item.Name,key=if slot=="Mobility" then "F" else "G",
    gamepadKey=if slot=="Mobility" then "ButtonL1" else "ButtonR1",icon=item and Catalog.Icons[id] or (if slot=="Mobility" then "◇" else "✦"),empty=item==nil,
    duration=item and (if slot=="Mobility" and item.MobilityAction then item.FlightDuration else item.Duration) or 0,
@@ -65,7 +66,7 @@ function Service:SlotSnapshot(player)
  return result
 end
 function Service:IsSafe(player,root)
- if SecretsConfig.Sanctuary(root.Position) then return true end
+ if SecretsConfig.Sanctuary(root.Position) or AdventureConfig.TrialContains(root.Position) or AdventureConfig.CaveContains(root.Position) then return true end
  if player:GetAttribute("VerityDiversionKind") then return true end
  if player:GetAttribute("VerityFusionSlot") then return true end
  if player:GetAttribute("VerityParkourStep") then return true end
@@ -91,7 +92,7 @@ function Service:Refresh(player,character,snapshot)
 	if profile and not Catalog.Equipped(profile.Data,"Mobility",profile.HeroPassOwned) then equipped=nil end
 	if current and (current.character~=character or (not current.ride and current.id~=equipped) or (current.ride and (not snapshot.VerityUnlocked or snapshot.VerityLevel<Ride.MinLevel or snapshot.VerityLevel~=current.level)) or humanoid.Health<=0) then self:Stop(player);current=nil end
 	if humanoid.Health<=0 then return end
- if player:GetAttribute("VerityFusionActive") then humanoid.WalkSpeed=0;humanoid.JumpPower=0;return end
+ if player:GetAttribute("VerityFusionActive") or player:GetAttribute("VerityDiversionKind")=="Arcade" then humanoid.WalkSpeed=0;humanoid.JumpPower=0;return end
 	local form=if snapshot.VerityUnlocked then Forms.Get(snapshot.VerityLevel) else nil
  if player:GetAttribute("VerityParkourStep") then
   humanoid.WalkSpeed=Parkour.WalkSpeed;humanoid.UseJumpPower=true;humanoid.JumpPower=Parkour.JumpPower
@@ -200,6 +201,14 @@ function Service:Hit(player,candidate,damage)
 	return self.targets:Damage(candidate.part,damage,player.UserId)
 end
 function Service:Attack(player,item,id,character,root,direction)
+ if self.adventures then
+  local target=self.adventures:TryLaser(player,item,character,root,direction)
+  if target then
+   local head=character:FindFirstChild("Head")
+   self.remote:FireAllClients({kind="Attack",ownerUserId=player.UserId,itemId=id,origin=if head then head.Position else root.Position,points={target},duration=item.Duration or .8})
+   return true
+  end
+ end
  if self.secrets then
   local target=self.secrets:TryLaser(player,item,character,root,direction)
   if target then
@@ -529,7 +538,8 @@ function Service:Activate(player,slot,direction)
   self:Drive(current,root,Vector3.new(0,8,0),false)
   self:WatchFlightInput(player,current)
 	end
-	self.remote:FireAllClients({kind="Mobility",ownerUserId=player.UserId,itemId=id,origin=root.Position,duration=duration,endsAt=now+duration})
+	if self.adventures then self.adventures:ObserveMobility(player,item,action,duration) end
+ self.remote:FireAllClients({kind="Mobility",ownerUserId=player.UserId,itemId=id,origin=root.Position,duration=duration,endsAt=now+duration})
 	task.delay(duration,function() if self.active[player]==current then self:Stop(player,false) end end)
 end
 return Service

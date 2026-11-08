@@ -103,6 +103,8 @@ function Audio:IsCelebrating(now)
  return (now or os.clock())<(self.celebrationUntil or 0)
 end
 
+function Audio:SetWeather(kind) self.weatherKind=kind end
+
 function Audio:Tick(now,dt)
  if self.dead then return end
  local celebrating=self:IsCelebrating(now)
@@ -110,6 +112,8 @@ function Audio:Tick(now,dt)
  for name,entry in Config.UI do
   local sound=self.sounds[name]
   local target=entry.Volume*Config.MixGain(entry.Category,celebrating,feature)
+  if name=="GardenBreeze" then target*=if self.weatherKind=="Storm" then 2 elseif self.weatherKind=="Stars" then .65 else 1
+  elseif name=="NeighborhoodBirds" then target*=if self.weatherKind=="Storm" then .05 elseif self.weatherKind=="Stars" then .12 else 1 end
   -- Fast attenuation, gentle recovery. No additional frame connection or delayed queue.
   local speed=if target<sound.Volume then 24 else 5
   local volume=sound.Volume+(target-sound.Volume)*(1-math.exp(-math.clamp(dt,0,.25)*speed))

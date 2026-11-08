@@ -6,6 +6,7 @@ local Input=game:GetService("UserInputService")
 local Pathfinding=game:GetService("PathfindingService")
 local CollectionService=game:GetService("CollectionService")
 local ActivityCard=require(script.Parent.ActivityCard)
+local CommunityConfig=require(game:GetService("ReplicatedStorage").Shared.CommunityConfig)
 local GUIDE_COLOR=Color3.fromHex("FFEB00")
 local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
@@ -371,6 +372,10 @@ function Tutorial:Render()
    self:Update(now);return
   end
  end
+ local adventureGoal=ctx.adventures and ctx.adventures:Goal()
+ if adventureGoal then self.goal=adventureGoal;self:Update(now);return end
+ local forgeGoal=ctx.forge and ctx.forge:Goal()
+ if forgeGoal then self.goal=forgeGoal;self:Update(now);return end
  local communityGoal=ctx.community and ctx.community:Goal()
  if communityGoal then self.goal=communityGoal;self:Update(now);return end
  local secretGoal=ctx.secrets and ctx.secrets:Goal()
@@ -405,8 +410,8 @@ function Tutorial:Render()
    and community and community.joinable and not player:GetAttribute("VerityCommunityTried") and (state.TaskCompletedCount or 0)>=2 then
    local model=ctx.community:Model();local join=model and model:FindFirstChild("Join")
    if join then
-    self.goal={id="community-join",kind="World",target="CommunityJoin",object=join,position=join.Position,
-     title="Помоги вернуть свет району",detail="",near="%s · Помочь району",touch="Помочь району",prompt=true,radius=6}
+    self.goal={id="community-join:"..(community.variant or "light"),kind="World",target="CommunityJoin",object=join,position=join.Position,
+     title=CommunityConfig.Variants[community.variant or "light"].Name,detail="",near="%s · Помочь району",touch="Помочь району",prompt=true,radius=6}
    end
   end
   if state and state.TutorialCompleted and self.goal and self.goal.id:match("^start:")
@@ -447,8 +452,8 @@ function Tutorial:Update(now)
  local hum=char and char:FindFirstChildOfClass("Humanoid")
  local alive=root and hum and hum.Health>0
  local activity=ActivityCard.ActivityRunning()
- local hunt=player:GetAttribute("VerityDiversionKind")=="Hunt" or player:GetAttribute("VerityDiversionKind")=="Community"
- local blocked=ctx.presenting or ctx.rewardOverlay or (activity and not hunt) or not alive
+ local hunt=player:GetAttribute("VerityDiversionKind")=="Adventure" or player:GetAttribute("VerityDiversionKind")=="Hunt" or player:GetAttribute("VerityDiversionKind")=="Community"
+ local blocked=ctx.presenting or ctx.forgeReveal or ctx.rewardOverlay or (activity and not hunt) or not alive
  self:RefreshAttention(now,blocked or activity)
  if blocked then
   ctx.refs.Tutorial.Visible=false;self.pointer.Visible=false;self.compass.Visible=false
