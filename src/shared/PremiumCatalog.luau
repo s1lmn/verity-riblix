@@ -1,6 +1,7 @@
 --!nonstrict
 -- Stable Core contract. Actual prices come from MarketplaceService, not SuggestedPrice.
 local Config=require(script.Parent.GameConfig)
+local Bridge=require(script.Parent.PremiumVisualBridge)
 local Catalog={Version=1}
 Catalog.Order={"money_x3","hero_kit","home_style_pack","aura_pack","fusion_pack","party_pack","collector_pack","atmosphere_pack"}
 Catalog.Slots={"HouseStyle","Aura","FusionStyle","PartyStyle","AlbumStyle","Atmosphere"}
@@ -45,7 +46,7 @@ function Catalog.Public(data)
  local styles=table.clone(Catalog.Defaults)
  for _,slot in Catalog.Slots do
   local id=(data.PremiumLoadout or {})[slot];local option=id and Catalog.Options[slot][id]
-  if option and Catalog.Owned(data,option.Item) and Catalog.Items[option.Item].PresentationReady then styles[slot]=id end
+  if option and Bridge.Supported(slot,id) and Catalog.Owned(data,option.Item) and Catalog.Items[option.Item].PresentationReady then styles[slot]=id end
  end
  return styles
 end

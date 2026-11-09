@@ -4,14 +4,14 @@ return table.freeze({
 	ProtocolVersion = 1,
 	MoneyPassMultiplier = 3,
 	MoneyPassPrice = 99,
-	-- Set MoneyPassId to the real pass ID from this experience before enabling sales.
-	MoneyPassId = nil,
-	HeroPassId = nil, -- Real Scarlet Sentinel Game Pass ID; no placeholder entitlement.
+	-- Game Passes for Grow your Verity (Cute Moggers Studios, universe 10775557886).
+	MoneyPassId = 2075332782,
+	HeroPassId = 2074444798,
 	HeroPassPrice = 99,
  -- Real IDs only: home_style_pack, aura_pack, fusion_pack, party_pack, collector_pack, atmosphere_pack.
  PremiumPassIds = table.freeze({}),
  -- UI/VFX developer enables a key only after that product's actual presentation is integrated.
- PremiumPresentationReady = table.freeze({}),
+ PremiumPresentationReady = table.freeze({home_style_pack=true,aura_pack=true,fusion_pack=true,party_pack=true,collector_pack=true,atmosphere_pack=true}),
 	PlotCount = 12,
 	ServerCapacity = 12, -- Also set MaxPlayers in Creator Dashboard.
 	BaseWidth = 2,

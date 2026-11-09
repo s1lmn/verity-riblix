@@ -3,6 +3,7 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local C=require(Shared.VerityFusionConfig)
 local Numeric=require(Shared.Numeric)
+local Bridge=require(Shared.PremiumVisualBridge)
 local Service={};Service.__index=Service
 local allowed={Move=true,Jump=true,Boost=true,Ready=true,Swap=true,Leave=true,Sync=true}
 local attrs={"VerityFusionSlot","VerityFusionRole","VerityFusionActive","VerityFusionPremiumStyle"}
@@ -61,7 +62,7 @@ function Service:Publish(only)
  local message={version=C.Version,round=self.round,sequence=self.sequence,phase=self.phase,entries=entries,solo=self.solo==true,
   serverTime=now,velocity=Vector3.new(self.vx or 0,self.vy or 0,self.vz or 0),pose=self.pose,mergeAt=self.mergeAt or 0,deadline=self.deadline or 0,retryAt=self.retryAt or 0,boostReady=self.boostReady or 0,
   faults=self.faults or 0,obstacle=self.obstacle or 1,checkpoint=self.checkpointZ or C.StartZ,jump=self.jumpSerial or 0,
-  distance=math.clamp(((self.z or C.StartZ)-C.StartZ)/(C.EndZ-C.StartZ),0,1),result=self.result,premiumStyle=self.premiumStyle or {id="default",ownerUserId=0,shared=false}}
+  distance=math.clamp(((self.z or C.StartZ)-C.StartZ)/(C.EndZ-C.StartZ),0,1),result=self.result,premiumLook=self.premiumStyle and Bridge.Visual("FusionStyle",self.premiumStyle.id),premiumStyle=self.premiumStyle or {id="default",ownerUserId=0,shared=false}}
  if only then self.stateEvent:FireClient(only,message);return end
  self.lastPublish=now
  self.model:SetAttribute("FusionPhase",self.phase);self.model:SetAttribute("FusionRound",self.round)

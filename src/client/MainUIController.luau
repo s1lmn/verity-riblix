@@ -81,7 +81,7 @@ function Main.new()
 		return id
 	end
 	self.verity=self.cleanup:Add(Verity.new(ctx))
-	self.cleanup:Add(require(script.Parent.MoneyPassController).new(ctx))
+	self.moneyPass=self.cleanup:Add(require(script.Parent.MoneyPassController).new(ctx))
 	self.phone=self.cleanup:Add(Phone.new(ctx))
 	self.workshop=self.cleanup:Add(Workshop.new(ctx))
 	self.houseSelection=self.cleanup:Add(HouseSelection.new())
@@ -95,6 +95,8 @@ function Main.new()
 	self.visuals=self.cleanup:Add(Visuals.new(ctx.settings))
  ctx.visuals=self.visuals
  self.abilityUI=self.cleanup:Add(require(script.Parent.AbilitiesUIController).new(ctx))
+ self.shop=self.cleanup:Add(require(script.Parent.PremiumShopController).new(ctx,self.moneyPass,self.abilityUI))
+ ctx.renderShop=function() self.shop:Render() end
  self.abilities=self.cleanup:Add(require(script.Parent.AbilityController).new(ctx))
  self.cleanup:Add(require(script.Parent.AbilityEffectsController).new(ctx))
  self.cleanup:Add(require(script.Parent.HouseConstructionController).new(ctx))
@@ -129,7 +131,9 @@ function Main.new()
 	for name,button in refs.Nav do
 		self.cleanup:Add(button.Activated:Connect(function() self:Open(if ctx.active==name then nil else name) end))
 	end
-	for _,panel in refs.Panels do self.cleanup:Add(panel.Close.Activated:Connect(function() self:Open(nil) end)) end
+	for name,panel in refs.Panels do
+  self.cleanup:Add(panel.Close.Activated:Connect(function() self:Open(if name=="SHOP" then "MORE" else nil) end))
+ end
 	self.cleanup:Add(refs.SettingsButton.Activated:Connect(function() self:Open(if ctx.active=="SETTINGS" then nil else "SETTINGS") end))
 	self.cleanup:Add(refs.Safe:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 		ctx.animation:Cancel(refs.Panels.PHONE.Root)
@@ -194,7 +198,7 @@ function Main.new()
 	end))
 	local function back(_,state)
 		if ctx.presenting then return Enum.ContextActionResult.Pass end
-		if state==Enum.UserInputState.Begin and ctx.active then self:Open(nil);return Enum.ContextActionResult.Sink end
+		if state==Enum.UserInputState.Begin and ctx.active then self:Open(if ctx.active=="SHOP" then "MORE" else nil);return Enum.ContextActionResult.Sink end
 		return Enum.ContextActionResult.Pass
 	end
 	ContextActionService:BindActionAtPriority("VerityUIBack",back,false,3000,Enum.KeyCode.ButtonB,Enum.KeyCode.Escape)
@@ -238,7 +242,7 @@ end
 
 function Main:Open(name)
 	local ctx=self.ctx
-	if name and name~="SETTINGS" and name~="MORE" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
+	if name and name~="SETTINGS" and name~="MORE" and name~="SHOP" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and (ctx.forgeReveal or ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
 	if ctx.active==name then return end
  if name and self.admin and self.admin.panel.Visible then self.admin:Close() end
@@ -267,6 +271,7 @@ function Main:Render()
 	if ctx.active=="WORKSHOP" then self.workshop:Render() end
 	if ctx.active=="PHONE" then self.phone:Render() end
 	if ctx.active=="COSMETICS" then self.cosmetics:Render() end
+ if ctx.active=="SHOP" then self.shop:Render() end
 	-- Tasks also select the world guide target when their panel is closed.
 	self.tasks:Render();self.tutorial:Render()
 	local selected=GuiService.SelectedObject

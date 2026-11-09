@@ -1,3 +1,5 @@
+Актуальное объединение9ноября: [PREMIUM_INTEGRATION_MERGE.md](PREMIUM_INTEGRATION_MERGE.md). Два ID команды подключены; Core и визуальный контракт согласованы через bridge.
+
 # Premium Core — реализация9ноября2026
 
 Получен dd71cc0 fast-forward; сохранены Scarlet Sentinel/новая арена/верховой полёт и прошлый кооператив. Реализованы PremiumCatalog, PremiumService и PurchaseReceiptService; добавлены3строгих запроса/сохранение PremiumGrants+PremiumLoadout, owner/public projections,8товаров/6слотов, совместное право оформления слияния и оформление вечеринки хозяина без передачи владения. Legacy×3/hero используют единый pass owner, admin session entitlement не становится покупкой. Расходники сохраняют прежние durable ledger handlers за одним проверяющим router. Ни одного placeholderID/новой живой продажи/случайной платной награды.

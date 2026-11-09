@@ -4,6 +4,7 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local Art=require(script.Parent.CollectionArt)
 local Album=require(game:GetService("ReplicatedStorage").Shared.AlbumConfig)
+local Premium=require(game:GetService("ReplicatedStorage").Shared.PremiumVisualCatalog)
 local Drops = require(game:GetService("ReplicatedStorage").Shared.FeedDrops)
 local Feed = require(script.Parent.FeedController)
 local Locale = require(script.Parent.Locale)
@@ -27,8 +28,8 @@ function Collection.new(refs, ctx)
 	self.root.Visible,self.root.Active,self.root.ZIndex=false,true,8
  self.root.ClipsDescendants=true
  self.openScale=W.New("UIScale",{Scale=1},self.root)
- W.Stroke(self.root,T.Purple,1).Transparency=.6
-	W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Purple:Lerp(T.White,.82)),Rotation=75},self.root)
+ self.coverStroke=W.Stroke(self.root,T.Purple,1);self.coverStroke.Transparency=.6
+	self.coverGradient=W.New("UIGradient",{Color=ColorSequence.new(T.Paper,T.Purple:Lerp(T.White,.82)),Rotation=75},self.root)
 	local function resize()
 		local size=refs.Root.AbsoluteSize
   local top=if size.X>size.Y then 20 else 34
@@ -100,6 +101,7 @@ function Collection:OpenPreview(cardId)
  self.tabs.Visible=false
 	self.previewId = cardId
 	self.preview = Feed.Draw(self.root, cardId)
+ if self.gallery then W.Stroke(self.preview,Color3.fromHex(Premium.Gallery.Frame),3).Transparency=.15 end
 	self.preview.Position, self.preview.Size = UDim2.fromOffset(4, 46), UDim2.new(1, -8, 1, -126)
 	self.controls = W.Frame(self.root, "ShowcaseControls", UDim2.new(1, -8, 0, 72))
 	self.controls.Position, self.controls.BackgroundTransparency = UDim2.new(0, 4, 1, -74), 1
@@ -180,6 +182,14 @@ end
 
 function Collection:Render(state)
  self.state=state;if not self.open then return end;self:RenderSlots();self:PaintThumbnails()
+ local gallery=state and state.PremiumStyle and state.PremiumStyle.collection==Premium.Gallery.id or false
+ if gallery~=self.gallery then
+  self.gallery=gallery
+  self.coverStroke.Color=if gallery then Color3.fromHex(Premium.Gallery.Frame) else T.Purple
+  self.coverStroke.Thickness=if gallery then 3 else 1
+  self.coverStroke.Transparency=if gallery then .16 else .6
+  self.coverGradient.Color=ColorSequence.new(T.Paper,if gallery then Color3.fromHex(Premium.Gallery.Paper) else T.Purple:Lerp(T.White,.82))
+ end
  local cards=state and state.FeedCollection or {};local owned=state and state.CosmeticsOwned or {}
  local found=Collection.Count(state)
  self.title.Text=if self.selectedSet then Locale.Text(Album.Sets[self.selectedSet].Name) else string.format(Locale.Text("АЛЬБОМ • %d/40"),found)

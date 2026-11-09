@@ -45,7 +45,8 @@ function PlayerStateService:PublicPlotSnapshot(userId)
 		HomeStyle=HomeStyle.Project(data), HouseTier = Houses.getHouseTier(data.VerityLevel), HouseIncomeLevel = data.HouseIncomeLevel,
 		HouseBuildLevel = data.HouseIncomeLevel, HouseDoorOwned = data.HouseDoorOwned,
 		HouseDoorLocked = session.HouseDoorLocked == true, HouseSecondFloorOwned = data.HouseSecondFloorOwned,
-		PremiumStyles=if self.PremiumPublic then self.PremiumPublic(userId) else table.clone(Premium.Defaults),
+		PremiumStyle=if self.PremiumVisual then self.PremiumVisual(userId) else {},
+  PremiumStyles=if self.PremiumPublic then self.PremiumPublic(userId) else table.clone(Premium.Defaults),
 		WeatherLook=data.WeatherLook, CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),
 	}
 end
@@ -104,13 +105,15 @@ function PlayerStateService:Snapshot(userId)
 		PhoneOpen = session.PhoneOpen, Tasks = tasks, TaskCompletedCount=completedJobs,
   DeliveryPosition = if self.DeliveryPosition then self.DeliveryPosition(userId) else nil,
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),
+  PremiumShop=if self.PremiumShop then self.PremiumShop(userId) else {offers={}},
   Premium=if self.PremiumProjection then self.PremiumProjection(userId) else nil,
+  PremiumStyle=if self.PremiumVisual then self.PremiumVisual(userId) else {},
   PremiumStyles=if self.PremiumPublic then self.PremiumPublic(userId) else table.clone(Premium.Defaults),
   WeatherLook=data.WeatherLook, CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),
   WeatherMaterials=table.clone(data.WeatherMaterials), AdventureRecords=table.clone(data.AdventureRecords), ArcadeBestScore=data.ArcadeBestScore, FeedCollection = table.clone(data.FeedCollection),
   ShowcaseCards = table.clone(data.ShowcaseCards or {}),
   AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = equipped,
-  HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId,
+  HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId, HeroPassTrial = heroAccess and profile.HeroPassOwned~=true,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end

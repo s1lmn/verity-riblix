@@ -7,6 +7,7 @@ local Actions=game:GetService("ContextActionService")
 local Gui=game:GetService("GuiService")
 local C=require(RS.Shared.VerityFusionConfig)
 local Factory=require(RS.World.VerityFusionFactory)
+local Premium=require(RS.Shared.PremiumVisualCatalog)
 local Cleanup=require(script.Parent.Cleanup)
 local ActivityCard=require(script.Parent.ActivityCard)
 local Locale=require(script.Parent.Locale)
@@ -126,7 +127,8 @@ end
 function Controller:ClearVisual()
  if self.ghosts then for _,g in self.ghosts do g.model:Destroy() end;self.ghosts=nil end
  if self.visual then self.visual:Destroy() end
- self.visual=nil;self.spark=nil;self.pose=nil;self.lastRound=nil;self.lastFault=nil;self.lastJump=nil;self.revealed=false;self.bounceAt=nil;self.scale=nil;self.lastPhase=nil
+ if self.starlight then self.starlight:Destroy();self.starlight=nil end
+ self.visual=nil;self.spark=nil;self.trail=nil;self.visualLook=nil;self.pose=nil;self.lastRound=nil;self.lastFault=nil;self.lastJump=nil;self.revealed=false;self.bounceAt=nil;self.scale=nil;self.lastPhase=nil
 end
 function Controller:ReleaseFocus()
  if not self.ownsFocus then return end
@@ -164,7 +166,12 @@ function Controller:Draw(s,now,dt)
  if (not active[s.phase] and not (s.phase=="Results" and s.result=="Won" and now<s.deadline-C.ResultSeconds+1.15)) or not (inRound or close) then
   self:ClearVisual();self:ReleaseCamera();return
  end
- if not self.visual then self.visual,self.spark=Factory.Create(self.folder,s.entries) end
+ local look=if s.premiumLook==Premium.FusionLookId then s.premiumLook else nil
+ if self.visual and self.visualLook~=look then self:ClearVisual() end
+ if not self.visual then
+  self.visual,self.spark,self.trail=Factory.Create(self.folder,s.entries,look)
+  self.visualLook=look
+ end
  local reduced=self.ctx.settings.values.ReducedMotion
  local effects=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics
  local snap=self.lastRound~=s.round or not self.pose or (s.pose.Position-self.pose.Position).Magnitude>30
@@ -185,6 +192,10 @@ function Controller:Draw(s,now,dt)
   if not self.ghosts then self.ghosts=Factory.Ghosts(self.folder,s.entries) end
   Factory.Merge(self.ghosts,self.pose,merge,reduced)
  elseif self.ghosts then for _,g in self.ghosts do g.model:Destroy() end;self.ghosts=nil end
+ if look and s.phase=="Merging" and merge>=.46 and not effects and not reduced then
+  if not self.starlight then self.starlight=Factory.StarlightRing(self.folder) end
+  Factory.PoseStarlightRing(self.starlight,self.pose,merge)
+ elseif self.starlight then self.starlight:Destroy();self.starlight=nil end
  if s.phase=="Results" then scale=math.max(.06,1-math.clamp((now-(s.deadline-C.ResultSeconds)-.25)/.8,0,1)) end
  if not self.scale or math.abs(scale-self.scale)>.025 or scale==1 and self.scale~=1 then self.visual:ScaleTo(scale);self.scale=scale end
  local wobble=if reduced then 0 else math.sin(now*7)*.055
@@ -193,9 +204,13 @@ function Controller:Draw(s,now,dt)
  else
   local budget=self.ctx.settings.values.Graphics
   local factor=budget and budget.ParticleScale or 1
-  if merge>=.85 and not self.revealed then self.spark:Emit(math.max(5,math.floor(24*factor))) end
+  if merge>=.85 and not self.revealed then self.spark:Emit(math.max(5,math.floor((if look then 42 else 24)*factor))) end
   if self.lastJump and s.jump>self.lastJump then self.spark:Emit(math.max(2,math.floor(7*factor))) end
   if s.phase=="Results" and self.lastPhase~="Results" then self.spark:Emit(math.max(5,math.floor(24*factor))) end
+ end
+ if self.trail then
+  self.trail.Enabled=s.phase=="Running" and not effects and not reduced and now>=s.retryAt and not snap
+  if snap or not self.trail.Enabled then self.trail:Clear() end
  end
  self.revealed=self.revealed or merge>=.85
  self.lastRound=s.round;self.lastFault=s.faults;self.lastJump=s.jump;self.lastPhase=s.phase

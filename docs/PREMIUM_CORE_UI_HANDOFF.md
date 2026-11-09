@@ -1,3 +1,5 @@
+Актуальное объединение9ноября: [PREMIUM_INTEGRATION_MERGE.md](PREMIUM_INTEGRATION_MERGE.md). Два ID команды подключены; Core и визуальный контракт согласованы через bridge.
+
 # Premium Core: контракт для разработчика UI / World / VFX
 
 Реализована только наша часть Core,9ноября2026. База после pull: dd71cc0 (Scarlet Sentinel/арена/верховой полёт). Командные изменения сохранены.

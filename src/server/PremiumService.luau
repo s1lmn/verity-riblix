@@ -1,6 +1,7 @@
 --!nonstrict
 -- One production owner of pass lookups and benefits. No client-supplied ownership or price.
 local Catalog=require(game:GetService("ReplicatedStorage").Shared.PremiumCatalog)
+local Bridge=require(game:GetService("ReplicatedStorage").Shared.PremiumVisualBridge)
 local Service={};Service.__index=Service
 function Service.new(data,state,income,abilityShop,market,players,clock,salesEnabled,notify)
  local self=setmetatable({data=data,state=state,income=income,shop=abilityShop,market=market,players=players,clock=clock,
@@ -135,6 +136,7 @@ function Service:Select(userId,slot,id)
  if not profile or not r or not player or not self.state.sessions[userId] then return "NOT_READY" end
  if self:Busy(player) then return "BUSY" end
  if id~="default" then
+  if not Bridge.Supported(slot,id) then return "PRODUCT_UNAVAILABLE" end
   local option=Catalog.Options[slot][id];local item=Catalog.Items[option.Item]
   if not Catalog.Owned(profile.Data,option.Item) then return "NOT_OWNED" end
   if not item.PresentationReady then return "PRODUCT_UNAVAILABLE" end
@@ -159,6 +161,22 @@ function Service:Projection(userId)
    canPurchase=self.enabled and not blocked and r~=nil and not r.inflight[id] and (not r.promptUntil or self.clock()>=r.promptUntil) and Catalog.ValidId(item.PassId) and item.PresentationReady and not owned and profile.Data.VerityUnlocked==true})
  end
  return {version=Catalog.Version,items=items,loadout=Catalog.Public(profile.Data),savedLoadout=table.clone(profile.Data.PremiumLoadout),salesEnabled=self.enabled}
+end
+function Service:VisualStyles(userId) return Bridge.Styles(self:PublicStyles(userId)) end
+function Service:VisualProjection(userId)
+ local projection=self:Projection(userId);if not projection then return {offers={}} end
+ local byItem={};for _,item in projection.items do byItem[item.id]=item end
+ local offers={};local player=self.players:GetPlayerByUserId(userId)
+ local canEquip=player~=nil and not self:Busy(player)
+ local profile=self.data:Get(userId)
+ for id,binding in Bridge.Offers do
+  local item=byItem[binding.Item]
+  offers[id]={productKey=binding.Item,gamePassId=item.gamePassId,configured=item.configured,owned=item.owned,
+   selected=binding.Slot~=nil and projection.loadout[binding.Slot]==binding.Choice or false,
+   canPurchase=item.canPurchase,canEquip=canEquip and profile~=nil and profile.Data.VerityUnlocked and item.owned and item.presentationReady,
+   ownershipState=item.ownershipState}
+ end
+ return {version=1,offers=offers}
 end
 function Service:PublicStyles(userId)
  local profile=self.data:Get(userId);return if profile then Catalog.Public(profile.Data) else table.clone(Catalog.Defaults)

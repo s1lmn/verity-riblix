@@ -5,6 +5,7 @@ local Catalog=require(RS.Shared.AbilityCatalog)
 local Numeric=require(RS.Shared.Numeric)
 local Rewards=require(RS.Shared.ActivityRewards)
 local Locale=require(RS.Shared.LocaleText)
+local PremiumDecor=require(RS.World.PremiumDecorArt)
 local Service={};Service.__index=Service
 local function segmentDistance(a,b,p)
  local d=b-a;if d.Magnitude<.01 then return (a-p).Magnitude end
@@ -307,6 +308,9 @@ function Service:RenderWorld()
  for plot,entry in self.model.parties do
   local record=self.world.houseProgression.plots[plot];local party=self.parties[plot];local state=record.state
   local available=state~=nil and state.VerityUnlocked==true and state.HouseIncomeLevel>=2
+  local disco=party~=nil and available and state.PremiumStyle and state.PremiumStyle.party=="party_disco"
+  if disco and not entry.disco then entry.disco=PremiumDecor.Build(entry.model,record.pivot,"party_disco")
+  elseif not disco and entry.disco then entry.disco:Destroy();entry.disco=nil end
   local mode=if party then party.mode else self.modes[plot] or "Gifts"
   local title=if mode=="Arcade" then "Турнир на автомате" else "Поиск подарков"
   entry.host.Enabled=available and not party;entry.next.Enabled=entry.host.Enabled

@@ -118,6 +118,8 @@ MoneyPass.premium=Premium;AbilityShop.premium=Premium
 local Receipts=require(script.Parent.PurchaseReceiptService).new(Data,State,{Cosmetics,Boost},not usingStudioMemory)
 State.PremiumProjection=function(id)return Premium:Projection(id)end
 State.PremiumPublic=function(id)return Premium:PublicStyles(id)end
+State.PremiumVisual=function(id)return Premium:VisualStyles(id)end
+State.PremiumShop=function(id)return Premium:VisualProjection(id)end
 Delivery.onUnlocked=function(id)Cosmetics:GrantStarter(id);Premium:OnUnlocked(id)end
 
 local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Economy,function(id,reward)
@@ -202,6 +204,9 @@ State.send = function(userId, snapshot)
 end
 local Remote = require(script.Parent.RemoteService).new(Data, State, clock,
 	function(userId, result) send(userId, "ActionResult", result) end)
+local PremiumBridge=require(Shared.PremiumVisualBridge)
+Remote:Register("RequestBuyPremiumOffer",function(id,payload)return Premium:PreparePurchase(id,PremiumBridge.Offers[payload.itemId].Item)end)
+Remote:Register("RequestEquipPremiumOffer",function(id,payload)local b=PremiumBridge.Offers[payload.itemId];return Premium:Select(id,b.Slot,b.Choice)end)
 Remote:Register("RequestPremiumPurchase",function(id,payload)return Premium:PreparePurchase(id,payload.itemId)end)
 Remote:Register("RequestPremiumRefresh",function(id,payload)return Premium:RequestRefresh(id,payload.itemId)end)
 Remote:Register("RequestSetPremiumStyle",function(id,payload)return Premium:Select(id,payload.slot,payload.itemId)end)

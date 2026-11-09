@@ -19,6 +19,7 @@ local Fusion=require(Shared.VerityFusionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
 local WeatherLooks=require(Shared.WeatherForgeConfig)
+local Premium=require(Shared.PremiumVisualCatalog)
 local Players=game:GetService("Players")
 local Factory=require(script.Parent.VerityFactory)
 local VFX=require(script.Parent.VerityVFXService)
@@ -619,9 +620,10 @@ function Controller:Tick(now,dt)
 			else math.min(90,graphics and graphics.EffectDistance or 90)
 		local cover=math.max(record.visibility or 0,record.growthCover or 0,record.spawnCover or 0)
 		record.auraNear=not record.fusing and cover<.28 and auraDistance<auraLimit+(if record.auraNear then 8 else 0)
+  local aura=if not active and not spawning then Premium.Auras[model:GetAttribute("PremiumAura")] else nil
 		self.effects:Update(model,model:GetPivot(),auraScale,stage,now,
 			self.settings.values.ReducedEffects or self.settings.values.LowGraphics,record.auraNear,
-			auraLevel,reduced,record.teleported and not record.riding,if weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(auraLevel),graphics,auraDistance,own,weatherLook)
+			auraLevel,reduced,record.teleported and not record.riding,if aura then Color3.fromHex(aura.Color) elseif weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(auraLevel),graphics,auraDistance,own,aura or weatherLook)
 	end
 	if not showingGrowth then self.effects:HideGrowth() end
 	self.effects:Tick(now)

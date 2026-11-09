@@ -1391,6 +1391,41 @@ for source,target in forgeEnglish do en[source]=target end
 
 local coopPolishEnglish={
  ["ЕЩЁ"]="MORE",
+ ["МАГАЗИН"]="SHOP",
+ ["Ускорение, облики и декор"]="Boosts, looks and decor",
+ ["УСКОРЕНИЕ"]="BOOSTS",
+ ["Деньги ×3"]="3× Cash",
+ ["Постоянный множитель денежного дохода."]="Permanent multiplier for cash earnings.",
+ ["Полёт героя на 18 секунд и красные лазеры на 40 урона."]="18 seconds of flight and red lasers that deal 40 damage.",
+ ["Звёздное слияние"]="Starlight Fusion",
+ ["Облик общего Verity, вспышка слияния и звёздный след на трассе."]="A shared Verity look, a fusion burst and a starlight trail.",
+ ["Сакура"]="Sakura House",
+ ["Розовая отделка, цветущие деревья и тёплые фонарики у входа."]="Pink trim, cherry blossoms and warm entry lanterns.",
+ ["Космический дом"]="Cosmic House",
+ ["Звёздный фасад, созвездия и миниатюрный Сатурн у крыльца."]="A starry facade, constellations and a miniature Saturn by the porch.",
+ ["Неоновая вилла"]="Neon Villa",
+ ["Графитовые панели, мятная подсветка и розовый контур входа."]="Graphite panels, mint lights and a pink outline around the entry.",
+ ["НА СЕССИЮ · ВЫБРАТЬ"]="SESSION ACCESS · EQUIP",
+ ["ВЫБРАНО · НА СЕССИЮ"]="EQUIPPED · THIS SESSION",
+ ["КУПЛЕНО · ВЫБРАТЬ"]="OWNED · EQUIP",
+ ["СКОРО"]="COMING SOON",
+ ["Доступно в магазине"]="Available in the shop",
+ ["Солнечная корона"]="Solar Crown",
+ ["Тёплые лучи и искры вокруг Verity."]="Warm rays and sparks around Verity.",
+ ["Галактическая пыль"]="Galactic Dust",
+ ["Сиреневые орбиты и созвездия вокруг Verity."]="Purple orbits and constellations around Verity.",
+ ["Жидкое золото"]="Liquid Gold",
+ ["Золотые капли и мягкие волны света."]="Golden droplets and soft waves of light.",
+ ["Диско-вечеринка"]="Disco Party",
+ ["Дискошар, танцпол, гирлянды и конфетти для домашней вечеринки."]="A disco ball, dance floor, garlands and confetti for house parties.",
+ ["Галерея коллекционера"]="Collector Gallery",
+ ["Золотые рамки витрины и фиолетовая обложка альбома."]="Golden showcase frames and a purple album cover.",
+ ["Звёздный потолок"]="Starry Ceiling",
+ ["Мягкое созвездие над входной комнатой."]="A soft constellation above the entry room.",
+ ["Светлячки"]="Fireflies",
+ ["Тёплые огоньки у дорожки дома."]="Warm lights along your garden path.",
+ ["Северное сияние"]="Northern Lights",
+ ["Мятные и сиреневые ленты над участком."]="Mint and lilac ribbons over your plot.",
  ["ВЕРИТИ"]="VERITY",
  ["ТЕЛЕФОН"]="PHONE",
  ["ЗАДАНИЯ"]="TASKS",
@@ -1450,6 +1485,21 @@ local premiumEnglish={
  ["Покупка подтверждена Roblox. Возможности доступны!"]="Roblox confirmed your purchase. Benefits are available!",
 }
 for source,target in premiumEnglish do en[source]=target end
+
+local premiumMergeEnglish={
+ ["ВЫБРАНО · СНЯТЬ"]="EQUIPPED · REMOVE",
+ ["НАБОР • %d R$"]="PACK • %d R$",
+ ["Розовая отделка, цветущие деревья и тёплые фонарики у входа. Входит в набор из трёх стилей дома."]="Pink trim, flowering trees and warm entrance lanterns. Includes three home styles.",
+ ["Звёздный фасад, созвездия и миниатюрный Сатурн у крыльца. Входит в набор из трёх стилей дома."]="A star facade, constellations and a tiny Saturn at the porch. Includes three home styles.",
+ ["Графитовые панели, мятная подсветка и розовый контур входа. Входит в набор из трёх стилей дома."]="Graphite panels, mint lighting and a pink entrance outline. Includes three home styles.",
+ ["Тёплые лучи и искры вокруг Verity. Входит в набор из трёх аур."]="Warm rays and sparks around Verity. Includes three auras.",
+ ["Сиреневые орбиты и созвездия вокруг Verity. Входит в набор из трёх аур."]="Lilac orbits and constellations around Verity. Includes three auras.",
+ ["Золотые капли и мягкие волны света. Входит в набор из трёх аур."]="Golden droplets and soft light waves. Includes three auras.",
+ ["Мягкое созвездие над входной комнатой. Входит в набор из трёх атмосфер."]="A soft constellation over the entrance room. Includes three home atmospheres.",
+ ["Тёплые огоньки у дорожки дома. Входит в набор из трёх атмосфер."]="Warm fireflies beside the home path. Includes three home atmospheres.",
+ ["Мятные и сиреневые ленты над участком. Входит в набор из трёх атмосфер."]="Mint and lilac ribbons over your plot. Includes three home atmospheres.",
+}
+for source,target in premiumMergeEnglish do en[source]=target end
 
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source

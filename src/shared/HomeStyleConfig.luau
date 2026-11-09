@@ -1,5 +1,7 @@
 --!nonstrict
 -- Appearance only: these purchases do not alter existing income or construction.
+local Premium=require(script.Parent.PremiumCatalog)
+local Bridge=require(script.Parent.PremiumVisualBridge)
 local C={}
 C.ThemeOrder={"original","candy","lagoon","sunset"}
 C.Themes={
@@ -7,6 +9,9 @@ C.Themes={
  candy={Name="Ягодный дом",Cost=600,Level=5,Color="FF8CCB",Accent="FFE38D",Soft="C6AEFF"},
  lagoon={Name="Лазурная лагуна",Cost=2500,Level=15,Color="6DDAE8",Accent="B5F79D",Soft="A4BFFF"},
  sunset={Name="Тёплый закат",Cost=12000,Level=25,Color="FFB879",Accent="FFF0AD",Soft="EF9BCF"},
+ sakura={Name="Сакура",Premium=true,Level=1,Color="FCA4C8",Accent="FFD7B1",Soft="FBC5DD"},
+ cosmic={Name="Космический дом",Premium=true,Level=1,Color="786AC5",Accent="FFD798",Soft="A89BE5"},
+ neon={Name="Неоновая вилла",Premium=true,Level=1,Color="596980",Accent="79E9D9",Soft="F3A7D9"},
 }
 C.DecorOrder={"home_lounge","home_garden","home_arcade"}
 C.Decor={
@@ -30,12 +35,14 @@ function C.ThemeOwned(owned,id) return id=="original" or owned["home_theme_"..id
 function C.Project(data)
  local owned,themes={},{}
  for id in C.Decor do owned[id]=data.CosmeticsOwned[id]==true end
- for id in C.Themes do themes[id]=C.ThemeOwned(data.CosmeticsOwned,id) end
+ for id,theme in C.Themes do themes[id]=if theme.Premium then Premium.Owned(data,"home_style_pack") and Premium.Items.home_style_pack.PresentationReady else C.ThemeOwned(data.CosmeticsOwned,id) end
  local trialRanks={}
  for id,d in Adventures.Trials do
   local time=(data.AdventureRecords or {})[id]
   if time then trialRanks[id]=if time<=d.Gold then "Gold" elseif time<=d.Silver then "Silver" else "Bronze" end
  end
- return {theme=data.HouseTheme or "original",owned=owned,themes=themes,trialRanks=trialRanks}
+ local saved=C.Themes[data.HouseTheme or "original"]
+ local freeTheme=if saved and not saved.Premium then data.HouseTheme or "original" else "original"
+ return {theme=Bridge.HouseThemes[Premium.Public(data).HouseStyle] or freeTheme,owned=owned,themes=themes,trialRanks=trialRanks}
 end
 return C

@@ -5,6 +5,7 @@ local PhoneSkin=require(script.Parent.PhoneSkin)
 local TaskTabletSkin=require(script.Parent.TaskTabletSkin)
 local CosmeticShopSkin=require(script.Parent.CosmeticShopSkin)
 local SettingsSkin=require(script.Parent.SettingsSkin)
+local PremiumShopSkin=require(script.Parent.PremiumShopSkin)
 local GrowthPanelsSkin=require(script.Parent.GrowthPanelsSkin)
 local Builder = {}
 
@@ -103,7 +104,7 @@ function Builder.Build(playerGui)
   local title=W.Text(button,"Caption",caption,9,true,T.Ink);title.Position=UDim2.new(0,1,1,-16);title.Size=UDim2.new(1,-2,0,14);title.TextXAlignment=Enum.TextXAlignment.Center;title.TextWrapped=false
   refs.Nav[name]=button;table.insert(buttons,button)
  end
- for i,entry in {{"WORKSHOP","ДОМ","Стройка, доход и оформление",T.Mint},{"ABILITIES","СПОСОБНОСТИ","Покупка и выбор для F / G",T.Purple},{"COSMETICS","УКРАШЕНИЯ","Твои находки и награды",T.Pink},{"SETTINGS","НАСТРОЙКИ","Язык, звук и эффекты",T.Gold}} do
+ for i,entry in {{"SHOP","МАГАЗИН","Ускорение, облики и декор",T.Gold},{"WORKSHOP","ДОМ","Стройка, доход и оформление",T.Mint},{"ABILITIES","СПОСОБНОСТИ","Покупка и выбор для F / G",T.Purple},{"COSMETICS","УКРАШЕНИЯ","Твои находки и награды",T.Pink},{"SETTINGS","НАСТРОЙКИ","Язык, звук и эффекты",T.Gold}} do
   local name,caption,description,color=table.unpack(entry)
   local button=W.Button(moreBody,name,"",color:Lerp(T.Paper,.68));button.Size=UDim2.new(1,-6,0,68);button.LayoutOrder=i
   local title=W.Text(button,"Caption",caption,15,true,T.Ink);title.Position=UDim2.fromOffset(14,9);title.Size=UDim2.new(1,-28,0,23)
@@ -132,6 +133,7 @@ function Builder.Build(playerGui)
 	refs.Panels.COSMETICS = CosmeticShopSkin.Build(safe)
 	local settings = SettingsSkin.Build(safe)
 	refs.Panels.SETTINGS = settings
+ refs.Panels.SHOP=PremiumShopSkin.Build(safe)
 
 
  refs.Tutorial=W.Round(W.Frame(safe,"Tutorial",UDim2.fromOffset(220,54),T.Paper),9)

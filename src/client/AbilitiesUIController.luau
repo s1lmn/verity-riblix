@@ -34,17 +34,7 @@ function Controller.new(ctx)
 			emblem.Position,emblem.Size=UDim2.fromOffset(0,109),UDim2.new(1,0,0,38);emblem.TextXAlignment=Enum.TextXAlignment.Center
 		end
 		self.rows[id]={root=row,title=title,description=description,details=details,button=button}
-		self.cleanup:Add(button.Activated:Connect(function()
-			local state=ctx.net.state
-			if not state or ctx.net:IsBusy() then return end
-			local owned=if item.Premium then state.HeroPassOwned else (state.AbilitiesOwned or {})[id]
-			if item.Premium and not owned then
-				if not self.offer or self.promptOpen then return end
-				self.promptOpen=true;self:Render()
-				local ok=pcall(function() Market:PromptGamePassPurchase(Players.LocalPlayer,self.passId) end)
-				if not ok then self.promptOpen=false;self:Render() end
-			else ctx.request(if owned then "EquipAbility" else "BuyAbility",{itemId=id}) end
-		end))
+		self.cleanup:Add(button.Activated:Connect(function() self:Activate(id) end))
 	end
 	self.cleanup:Add(ctx.net.StateChanged.Event:Connect(function(state)
 		local passId=state.HeroPassId
@@ -81,7 +71,21 @@ function Controller.new(ctx)
 	self.cleanup:Add(ctx.refs.Panels.ABILITIES.Root:GetPropertyChangedSignal("Visible"):Connect(function() self:Render() end))
 	self:Render();return self
 end
+function Controller:Activate(id)
+ local ctx=self.ctx
+ local state=ctx.net.state
+ local item=Catalog.Items[id]
+ if not item or not state or not ctx.net.connected or ctx.net:IsBusy() then return end
+ local owned=if item.Premium then state.HeroPassOwned else (state.AbilitiesOwned or {})[id]
+ if item.Premium and not owned then
+  if not state.VerityUnlocked or not self.offer or self.promptOpen or state.Premium and not state.Premium.salesEnabled then return end
+  self.promptOpen=true;self:Render()
+  local ok=pcall(function() Market:PromptGamePassPurchase(Players.LocalPlayer,self.passId) end)
+  if not ok then self.promptOpen=false;self:Render() end
+ else ctx.request(if owned then "EquipAbility" else "BuyAbility",{itemId=id}) end
+end
 function Controller:Render()
+ if self.ctx.renderShop then self.ctx.renderShop() end
 	if not self.ctx.refs.Panels.ABILITIES.Root.Visible then return end
 	local state=self.ctx.net.state
 	local projected={}
@@ -111,7 +115,7 @@ function Controller:Render()
 			elseif item.Premium then string.format(Locale.Text("КУПИТЬ • %d R$"),price)
 			else Locale.Text("КУПИТЬ • $")..Locale.Number(price)
 		local canAct=if not entry then unlocked and (owned or available) elseif owned then entry.canEquip
-			elseif item.Premium then unlocked and self.offer~=nil else entry.canBuy and entry.affordable
+			elseif item.Premium then unlocked and self.offer~=nil and (not state.Premium or state.Premium.salesEnabled) else entry.canBuy and entry.affordable
 		W.SetButton(row.button,text,canAct and not equipped and not self.ctx.net:IsBusy() and self.ctx.net.connected and not self.promptOpen or false,false)
 	end
 end

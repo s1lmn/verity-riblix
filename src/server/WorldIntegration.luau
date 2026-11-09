@@ -6,6 +6,7 @@ local Config = require(Shared.GameConfig)
 local Tasks = require(Shared.TaskConfig)
 local Levels = require(Shared.LevelConfig)
 local Houses = require(Shared.HouseConfig)
+local Premium = require(Shared.PremiumVisualCatalog)
 local PadFactory = require(game:GetService("ReplicatedStorage").World.PurchasePadFactory)
 
 local function updateWorkshop(anchors, state)
@@ -332,8 +333,9 @@ function WorldIntegration:UpdatePlot(userId, state)
 		verity:SetAttribute("IncomePerSecond", state.IncomePerSecond)
 		verity:SetAttribute("VerityScale", state.VerityScale)
   local cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
-  verity:SetAttribute("PremiumAura",styles.Aura or "default")
   verity:SetAttribute("WeatherLook",state.WeatherLook or "Original")
+  local aura=state.PremiumStyle and state.PremiumStyle.aura
+  verity:SetAttribute("PremiumAura",if aura and Premium.Auras[aura] then aura else nil)
   for slot in cosmetics.Slots do verity:SetAttribute("Cosmetic_"..slot,(state.CosmeticsEquipped or {})[slot]) end
 	end
 	local worldPlot = self.anchors[plotId].WorldPlot
