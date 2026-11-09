@@ -1,8 +1,8 @@
 --!nonstrict
--- Non-interactive exterior dressing, shared by the real house and the shop preview.
+-- Non-interactive facade and interior dressing shared by the house and shop preview.
 local Art={}
 function Art.Build(parent,pivot,theme)
- local model=Instance.new("Model");model.Name="PremiumFacade"
+ local model=Instance.new("Model");model.Name="PremiumHouseDecor"
  local function piece(name,pos,size,hex,shape,glow,roll)
   local p=Instance.new("Part")
   p.Name=name;p.Size=size;p.CFrame=pivot*CFrame.new(pos)*CFrame.Angles(0,0,roll or 0)
@@ -25,6 +25,12 @@ function Art.Build(parent,pivot,theme)
    piece("SakuraLanternTop",v(side*5.15,6.86,15.4),v(1,.17,.76),"A86788")
   end
   piece("SakuraLintel",v(0,10.2,15.25),v(9.3,.34,.5),"F084B4")
+  piece("SakuraWallArt",v(-15.5,5.8,3),v(.18,3.4,6),"975970")
+  piece("SakuraPaperPanel",v(-15.36,5.8,3),v(.1,2.95,5.55),"FFF0D9")
+  for i=1,5 do
+   piece("PaperBlossom",v(-15.27,5.35+i*.2,3+math.sin(i*math.pi*.4)*1.35),v(.12,.55,.62),"F499BC",Enum.PartType.Ball)
+  end
+  piece("SakuraInteriorRunner",v(0,.045,5),v(5.3,.075,8),"EBADBF")
  elseif theme=="cosmic" then
   for _,side in {-1,1} do
    local x=side*10
@@ -34,6 +40,12 @@ function Art.Build(parent,pivot,theme)
     piece("ConstellationStar",v(x+(i-3)*.93,y,15.46),Vector3.one*(if i==3 then .42 else .23),"E4D9FF",Enum.PartType.Ball,true)
    end
   end
+  piece("InteriorStarMap",v(-15.5,5.8,3),v(.18,3.4,6),"352A60")
+  for i=1,8 do
+   local z=3+(i-4.5)*.62
+   piece("InteriorStar",v(-15.36,5.75+math.sin(i*1.45)*1.05,z),v(.13,.22,.22),if i%3==0 then "FFD798" else "CBB9FF",Enum.PartType.Ball,true)
+  end
+  piece("CosmicInteriorRunner",v(0,.045,5),v(5.3,.075,8),"5D4E8C")
   piece("PlanetPedestal",v(12,.44,19),v(3,.88,2.6),"524279")
   piece("Planet",v(12,2.38,19),v(2.5,2.5,2.5),"9588F3",Enum.PartType.Ball)
   for n=1,12 do
@@ -50,6 +62,10 @@ function Art.Build(parent,pivot,theme)
    piece("VillaEntryLine",v(side*4.35,4.9,15.2),v(.18,8.6,.16),"FFA4D7",nil,true)
   end
   piece("VillaMintHeader",v(0,10.2,15.25),v(10.9,.19,.2),"8DF1E5",nil,true)
+  piece("VillaWallPanel",v(-15.5,5.8,3),v(.18,3.4,6),"334154")
+  piece("VillaInteriorMint",v(-15.36,6.35,3),v(.12,.13,4.5),"8DF1E5",nil,true)
+  piece("VillaInteriorRose",v(-15.36,5.22,3),v(.12,.13,3.6),"FFA4D7",nil,true)
+  piece("VillaInteriorRunner",v(0,.045,5),v(5.3,.075,8),"526273")
  else
   model:Destroy()
   return nil
