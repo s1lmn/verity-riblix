@@ -7,7 +7,7 @@ local function construct(parent, origin, accent, name)
     local root = Instance.new("Model")
     root.Name = name
     root.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
-    root:SetAttribute("InteriorVersion", 3)
+    root:SetAttribute("InteriorVersion", 4)
     root:SetAttribute("EntryMode", "WalkIn")
     local objects = {[""] = root}
     for _, data in Recipe do
@@ -39,6 +39,7 @@ local function construct(parent, origin, accent, name)
         object.Parent = assert(objects[parentPath], "Missing house parent " .. parentPath)
         objects[data.path] = object
     end
+    require(script.Parent.HouseFacade).Build(objects.Geometry,accent)
     root.PrimaryPart = objects["Geometry/Floor"]
     root.PrimaryPart.PivotOffset = CFrame.new(0, 0.5, 0)
     root:PivotTo(origin)

@@ -83,7 +83,7 @@ function Model.Resolve(state,panel,selectedTaskId,now,nearestTaskId)
  local first=state.Progression and state.Progression.stage=="FirstActivity"
  if not first then
   local abilityId,owned=Model.ReadyAbility(state)
-  if abilityId and (panel==nil or panel=="ABILITIES") then
+  if abilityId and (panel==nil or panel=="MORE" or panel=="ABILITIES") then
    return ui("ability:"..abilityId,if panel=="ABILITIES" then "Ability."..abilityId else "Nav.ABILITIES",
     if owned then "Выбери способность!" else "Купи способность!","!")
   end

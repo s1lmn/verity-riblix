@@ -4,7 +4,7 @@ local C=require(Shared.VerityFusionConfig)
 local Locale=require(Shared.LocaleText)
 local Sign=require(script.Parent.WorldSign)
 local Builder={}
-local VISUAL_VERSION=2
+local VISUAL_VERSION=3
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityFusion")
  if old and old:IsA("Model") and old:GetAttribute("FusionVersion")==C.Version and old:GetAttribute("FusionVisualVersion")==VISUAL_VERSION then
@@ -68,6 +68,29 @@ function Builder.Build(parent)
  local function floor(a,b)
   if b>a then lane("FusionLane",0,-.55,(a+b)/2,C.HalfWidth*2,1.1,b-a,"586882",true) end
  end
+ -- Section islands and scenery stay outside the tested lane/collision envelope.
+ for i,section in C.Sections do
+  local ending=if C.Sections[i+1] then C.Sections[i+1].Z else C.EndZ+12
+  local middle=(section.Z+ending)/2
+  for _,side in {-1,1} do
+   lane("ScenicBank",side*(C.HalfWidth+12),-2,middle,22,3,ending-section.Z,"C4DBD2",false)
+   lane("SectionEdge",side*(C.HalfWidth+.8),.6,middle,.5,.18,ending-section.Z,section.Color,false,true)
+   for z=section.Z+22,ending-12,48 do
+    local trunk=lane("ToyTree",side*(C.HalfWidth+12),3,z,.7,6,.7,"8E7182",false)
+    local crown=lane("TreeCrown",side*(C.HalfWidth+12),7,z,7,6,7,section.Color,false);crown.Shape=Enum.PartType.Ball
+   end
+  end
+  local sign=lane("SectionPlaque",-C.HalfWidth-8,5,section.Z+8,12,3,.5,"354866",false)
+  Sign.Add(sign,section.Name)
+ end
+ for z=C.StartZ+10,C.EndZ-12,45 do
+  if not C.IsGap(z,7) then
+   for _,side in {-1,1} do
+    lane("TrackRimPost",side*(C.HalfWidth+.3),2,z,.65,4,.65,"CAD5ED",false)
+    local lamp=lane("TrackPearl",side*(C.HalfWidth+.3),4.3,z,1.1,1.1,1.1,C.Section(z).Color,false,true);lamp.Shape=Enum.PartType.Ball
+   end
+  end
+ end
  local start=C.StartZ-12
  for index,o in C.Obstacles do
   if o.kind=="Gap" then
@@ -77,7 +100,7 @@ function Builder.Build(parent)
    local left=o.opening-C.OpeningHalf;local right=o.opening+C.OpeningHalf
    lane("GateLeft",(-C.HalfWidth+left)/2,4,o.z,left+C.HalfWidth,8,o.half*2,"9573D5",false)
    lane("GateRight",(right+C.HalfWidth)/2,4,o.z,C.HalfWidth-right,8,o.half*2,"9573D5",false)
-   lane("GateCap",o.opening,12.8,o.z,C.OpeningHalf*2,.6,o.half*2,"8CECD9",false,true)
+   lane("GateCap",o.opening,18.8,o.z,C.OpeningHalf*2,.6,o.half*2,"8CECD9",false,true)
   elseif o.kind=="Bar" then
    lane("SoftHurdle",0,o.height/2,o.z,C.HalfWidth*2,o.height,o.half*2,"FF8DAB",false)
    lane("HurdleStripe",0,o.height+.08,o.z,C.HalfWidth*2,.16,o.half*1.6,"FFDF99",false)
@@ -86,18 +109,33 @@ function Builder.Build(parent)
    bumper:SetAttribute("ObstacleIndex",index)
    lane("BumperGuide",0,.06,o.z,28,.12,1,"FFE1A7",false)
   end
+  -- Mark the required opening/jump before it, with small geometry rather than floating text.
+  local cueX=if o.kind=="Gate" then o.opening else 0
+  for n=1,3 do
+   local z=o.z-12-n*2.5
+   for _,side in {-1,1} do
+    local arrow=lane("CourseCue",cueX+side*.6,.08,z,.22,.12,1.5,if o.kind=="Gate" then "8FF4DA" else "FFD98A",false,true)
+    arrow.CFrame*=CFrame.Angles(0,side*math.pi/4,0)
+   end
+  end
+  if o.kind=="Bumper" then
+   -- The complete rounded model is moved by the same shared BumperX formula as its hit area.
+   local bumper
+   for _,part in root:GetChildren() do if part.Name=="FusionBumper" and part:GetAttribute("ObstacleIndex")==index then bumper=part;break end end
+   if bumper then bumper.Shape=Enum.PartType.Ball;bumper.Size=Vector3.new(5,o.height,5) end
+  end
   local mark=o.z+o.half+7
   lane("CheckpointStripe",0,.04,mark,C.HalfWidth*2,.08,.4,"91E3CB",false)
  end
  floor(start,C.EndZ+14)
  for _,side in {-1,1} do
   lane("LaneEdge",side*C.HalfWidth,.4,(C.StartZ+C.EndZ)/2,.5,.8,C.EndZ-C.StartZ+20,"9EB5D2",false)
-  lane("FinishPillar",side*(C.HalfWidth-1),6,C.EndZ,2,12,2,"C5A6EF",false)
+  lane("FinishPillar",side*(C.HalfWidth-1),9,C.EndZ,2,18,2,"C5A6EF",false)
  end
- lane("FinishHeader",0,12,C.EndZ,C.HalfWidth*2,1.5,2,"FFD769",false)
+ lane("FinishHeader",0,18,C.EndZ,C.HalfWidth*2,1.5,2,"FFD769",false)
  lane("FinishStripe",0,.05,C.EndZ,C.HalfWidth*2,.1,1.3,"FFD769",false,true)
  for z=C.StartZ,C.EndZ,16 do
-  if math.abs(z+4)>6 and math.abs(z-242)>6 then lane("LaneDash",0,.025,z,.45,.05,4,"8EA3BD",false) end
+  if not C.IsGap(z,5) then lane("LaneDash",0,.025,z,.45,.05,4,"8EA3BD",false) end
  end
  root.Parent=parent;return root
 end

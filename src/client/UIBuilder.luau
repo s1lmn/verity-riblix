@@ -27,6 +27,8 @@ local function icon(button, kind)
  if kind=="VERITY" then
   box(3,3,20,20,10,true);box(8,9,3,4,2);box(16,9,3,4,2)
   line(9,17,11,19);line(11,19,16,19);line(16,19,18,17)
+ elseif kind=="MORE" then
+  for _,x in {5,16} do for _,y in {5,16} do box(x,y,6,6,2) end end
  elseif kind=="ABILITIES" then
   line(16,2,7,14);line(7,14,14,14);line(14,14,10,24);line(10,24,22,10);line(22,10,14,10);line(14,10,16,2)
  elseif kind=="PHONE" then
@@ -83,16 +85,32 @@ function Builder.Build(playerGui)
  local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
   Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
   ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
- local names={"VERITY","PHONE","ABILITIES","TASKS","WORKSHOP","COSMETICS"}
- local colors={T.Pink,T.Blue,T.Purple,T.Gold,T.Mint,T.Purple}
+ local more=W.Round(W.Frame(safe,"MorePanel",UDim2.fromOffset(420,430),T.Paper),18);more.Visible=false
+ local moreTitle=W.Text(more,"Title","ЕЩЁ",21,true,T.Purple);moreTitle.Position=UDim2.fromOffset(16,10);moreTitle.Size=UDim2.new(1,-80,0,30)
+ local moreSubtitle=W.Text(more,"Subtitle","",1);moreSubtitle.Visible=false
+ local moreClose=W.Button(more,"Close","×",T.Gold);moreClose.Size=UDim2.fromOffset(44,44);moreClose.Position=UDim2.new(1,-54,0,5)
+ local moreBody=W.New("ScrollingFrame",{Name="Sections",BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.fromOffset(12,58),Size=UDim2.new(1,-24,1,-70),CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=3},more)
+ W.List(moreBody,10)
+ refs.Panels.MORE={Root=more,Title=moreTitle,Subtitle=moreSubtitle,Close=moreClose,Body=moreBody}
  local buttons={}
- for i,name in names do
-  local button=W.Button(nav,name,"",colors[i]);button.Size=UDim2.fromOffset(52,52)
+ local primary={{"VERITY","ВЕРИТИ",T.Pink},{"PHONE","ТЕЛЕФОН",T.Blue},{"TASKS","ЗАДАНИЯ",T.Gold},{"MORE","ЕЩЁ",T.Mint}}
+ for _,entry in primary do
+  local name,caption,color=table.unpack(entry)
+  local button=W.Button(nav,name,"",color);button.Size=UDim2.fromOffset(52,52)
   W.New("UIGradient",{Color=ColorSequence.new(T.White,Color3.fromRGB(218,218,232)),Rotation=115},button)
-  icon(button,name);refs.Nav[name]=button;table.insert(buttons,button)
+  icon(button,name)
+  local shape=button:FindFirstChild("Icon");shape.Position=UDim2.fromScale(.5,.35);shape.Size=UDim2.fromOffset(26,26)
+  local title=W.Text(button,"Caption",caption,9,true,T.Ink);title.Position=UDim2.new(0,1,1,-16);title.Size=UDim2.new(1,-2,0,14);title.TextXAlignment=Enum.TextXAlignment.Center;title.TextWrapped=false
+  refs.Nav[name]=button;table.insert(buttons,button)
  end
- refs.SettingsButton=W.Button(nav,"Settings","",T.Paper)
- icon(refs.SettingsButton,"SETTINGS");table.insert(buttons,refs.SettingsButton)
+ for i,entry in {{"WORKSHOP","ДОМ","Стройка, доход и оформление",T.Mint},{"ABILITIES","СПОСОБНОСТИ","Покупка и выбор для F / G",T.Purple},{"COSMETICS","УКРАШЕНИЯ","Твои находки и награды",T.Pink},{"SETTINGS","НАСТРОЙКИ","Язык, звук и эффекты",T.Gold}} do
+  local name,caption,description,color=table.unpack(entry)
+  local button=W.Button(moreBody,name,"",color:Lerp(T.Paper,.68));button.Size=UDim2.new(1,-6,0,68);button.LayoutOrder=i
+  local title=W.Text(button,"Caption",caption,15,true,T.Ink);title.Position=UDim2.fromOffset(14,9);title.Size=UDim2.new(1,-28,0,23)
+  local detail=W.Text(button,"Detail",description,11,false,T.Muted);detail.Position=UDim2.fromOffset(14,35);detail.Size=UDim2.new(1,-28,0,24)
+  button:SetAttribute("FixedFeedbackSize",true)
+  if name=="SETTINGS" then refs.SettingsButton=button else refs.Nav[name]=button end
+ end
  refs.Navigation=nav
  refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
  refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
@@ -154,7 +172,7 @@ function Builder.Build(playerGui)
   refs.RideButton.Position=UDim2.new(1,-12,0,actionY+104)
   local short=size.Y<360
   local columns=2
-  local side=if short then 44 else 48
+  local side=if short then 48 else 56
   local gap=6
   local hudHeight=if short then 54 else 64
   hud.Size=UDim2.fromOffset(150,hudHeight)

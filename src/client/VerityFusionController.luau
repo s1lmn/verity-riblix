@@ -27,8 +27,9 @@ function Controller.new(ctx)
  self.controls.BackgroundTransparency=1;self.controls.Visible=false
  self.ready=button(self.controls,"Ready","Готов",T.Mint,-12,88)
  self.swap=button(self.controls,"Swap","Сменить роль",T.Gold,-12,138)
- self.jump=button(self.controls,"Jump","Прыжок",T.Mint,-12,88)
- self.boost=button(self.controls,"Boost","Рывок",T.Gold,-12,138)
+ self.jump=button(self.controls,"Jump","Прыжок",T.Mint,-12,104)
+ self.boost=button(self.controls,"Boost","Рывок",T.Gold,-12,154)
+ self.jumpCue=W.Stroke(self.jump,T.Gold,3);self.jumpCue.Transparency=1
  local touch=W.Frame(self.controls,"Steering",UDim2.fromOffset(150,44));touch.BackgroundTransparency=1
  touch.AnchorPoint=Vector2.new(.5,1);touch.Position=UDim2.new(.5,0,1,-75);self.touch=touch
  for index,spec in {{"Left","◀"},{"Brake","Ⅱ"},{"Right","▶"}} do
@@ -123,6 +124,7 @@ function Controller:InputVector()
  return if v.Magnitude>1 then v.Unit else v
 end
 function Controller:ClearVisual()
+ if self.ghosts then for _,g in self.ghosts do g.model:Destroy() end;self.ghosts=nil end
  if self.visual then self.visual:Destroy() end
  self.visual=nil;self.spark=nil;self.pose=nil;self.lastRound=nil;self.lastFault=nil;self.lastJump=nil;self.revealed=false;self.bounceAt=nil;self.scale=nil;self.lastPhase=nil
 end
@@ -151,7 +153,7 @@ function Controller:Camera(frame,dt,snap,merging)
  end
  local pos=frame.Position
  local aim=pos+Vector3.new(0,5,if merging then 0 else 8)
- local wanted=CFrame.lookAt(pos+(if merging then Vector3.new(0,10,23) else Vector3.new(0,15,-32)),aim)
+ local wanted=CFrame.lookAt(pos+(if merging then Vector3.new(0,13,-27) else Vector3.new(0,15,-32)),aim)
  camera.CFrame=if snap then wanted else camera.CFrame:Lerp(wanted,1-math.exp(-12*dt))
  camera.Focus=CFrame.new(aim)
 end
@@ -162,17 +164,27 @@ function Controller:Draw(s,now,dt)
  if (not active[s.phase] and not (s.phase=="Results" and s.result=="Won" and now<s.deadline-C.ResultSeconds+1.15)) or not (inRound or close) then
   self:ClearVisual();self:ReleaseCamera();return
  end
- if not self.visual then self.visual,self.spark=Factory.Create(self.folder) end
+ if not self.visual then self.visual,self.spark=Factory.Create(self.folder,s.entries) end
  local reduced=self.ctx.settings.values.ReducedMotion
  local effects=self.ctx.settings.values.ReducedEffects or self.ctx.settings.values.LowGraphics
  local snap=self.lastRound~=s.round or not self.pose or (s.pose.Position-self.pose.Position).Magnitude>30
- self.pose=if snap then s.pose else self.pose:Lerp(s.pose,1-math.exp(-18*dt))
+ local target=s.pose
+ if s.phase=="Running" and typeof(s.velocity)=="Vector3" and type(s.serverTime)=="number" and now>=s.retryAt then
+  local age=math.clamp(now-s.serverTime,0,.10)
+  local delta=s.velocity*age;delta=Vector3.new(delta.X,math.max(-s.pose.Position.Y,delta.Y),delta.Z)
+  target=s.pose+delta
+ end
+ self.pose=if snap then s.pose else self.pose:Lerp(target,1-math.exp(-30*dt))
  if self.lastRound~=s.round then self.revealed=false;self.lastFault=s.faults;self.lastJump=s.jump end
  if s.faults~=(self.lastFault or s.faults) then self.bounceAt=now;snap=true;self.pose=s.pose end
  local merge=if s.phase=="Merging" then math.clamp((now-s.mergeAt)/C.MergeSeconds,0,1) else 1
- local scale=if s.phase=="Merging" then math.max(.06,math.clamp((merge-.24)/.76,0,1)) else 1
+ local scale=if s.phase=="Merging" then math.max(.01,math.clamp((merge-.60)/.40,0,1)) else 1
  if self.bounceAt and not reduced then scale*=.82+.18*math.clamp((now-self.bounceAt)/.38,0,1) end
- if reduced then scale=if merge<.5 then .06 else 1 end
+ if reduced then scale=if merge<.72 then .01 else 1 end
+ if s.phase=="Merging" then
+  if not self.ghosts then self.ghosts=Factory.Ghosts(self.folder,s.entries) end
+  Factory.Merge(self.ghosts,self.pose,merge,reduced)
+ elseif self.ghosts then for _,g in self.ghosts do g.model:Destroy() end;self.ghosts=nil end
  if s.phase=="Results" then scale=math.max(.06,1-math.clamp((now-(s.deadline-C.ResultSeconds)-.25)/.8,0,1)) end
  if not self.scale or math.abs(scale-self.scale)>.025 or scale==1 and self.scale~=1 then self.visual:ScaleTo(scale);self.scale=scale end
  local wobble=if reduced then 0 else math.sin(now*7)*.055
@@ -181,11 +193,11 @@ function Controller:Draw(s,now,dt)
  else
   local budget=self.ctx.settings.values.Graphics
   local factor=budget and budget.ParticleScale or 1
-  if merge>=.66 and not self.revealed then self.spark:Emit(math.max(5,math.floor(24*factor))) end
+  if merge>=.85 and not self.revealed then self.spark:Emit(math.max(5,math.floor(24*factor))) end
   if self.lastJump and s.jump>self.lastJump then self.spark:Emit(math.max(2,math.floor(7*factor))) end
   if s.phase=="Results" and self.lastPhase~="Results" then self.spark:Emit(math.max(5,math.floor(24*factor))) end
  end
- self.revealed=self.revealed or merge>=.66
+ self.revealed=self.revealed or merge>=.85
  self.lastRound=s.round;self.lastFault=s.faults;self.lastJump=s.jump;self.lastPhase=s.phase
  if inRound and not self.ctx.presenting and Players.LocalPlayer:GetAttribute("VerityFusionActive") then self:Camera(self.pose,dt,snap,s.phase=="Merging") else self:ReleaseCamera() end
 end
@@ -208,10 +220,16 @@ function Controller:Tick(dt)
  local now=workspace:GetServerTimeNow()
  if s then
   self:Draw(s,now,dt)
-  local bumper=self.model and self.model:FindFirstChild("FusionBumper")
-  if bumper and self.visual then
-   local o=C.Obstacles[bumper:GetAttribute("ObstacleIndex")]
-   if o then bumper.Position=Vector3.new(C.TrackX+C.BumperX(now),C.TrackY+o.height/2,o.z) end
+  if self.model and at>=(self.obstacleAt or 0) then
+   self.obstacleAt=at+1/30
+   if self.bumperModel~=self.model then
+    self.bumperModel=self.model;self.bumpers={}
+    for _,v in self.model:GetChildren() do if v.Name=="FusionBumper" then table.insert(self.bumpers,v) end end
+   end
+   for _,bumper in self.bumpers do
+    local o=C.Obstacles[bumper:GetAttribute("ObstacleIndex")]
+    if o then bumper.Position=Vector3.new(C.TrackX+C.BumperX(now,o),C.TrackY+o.height/2,o.z) end
+   end
   end
  end
  local show=s~=nil and e~=nil and not self.ctx.active and not self.ctx.presenting and not self.ctx.rewardOverlay
@@ -230,7 +248,7 @@ function Controller:Tick(dt)
  if not self.touch.Visible then table.clear(self.held) end
  ActivityCard.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
  local role=if e.role=="Pilot" then "Руль" elseif e.role=="Jumper" then "Прыжок и рывок" else "Пробный заезд"
- self.title.Text=Locale.Text(role).." • "..Locale.Text("Двойное желе")
+ self.title.Text=Locale.Text(role).." • "..Locale.Text("Единый Verity")
  if waiting then
   self.detail.Text=if #s.entries<2 then Locale.Text("Ждём второго игрока") else (if e.ready then Locale.Text("Ты готов • ждём напарника") else Locale.Text("Оба должны нажать «Готов»"))
   W.SetButton(self.ready,Locale.Text(if e.ready then "Не готов" else "Готов"),true,false)
@@ -249,14 +267,18 @@ function Controller:Tick(dt)
   local hint=if not obstacle then "Финиш прямо" elseif obstacle.kind=="Gate" then (if obstacle.opening<0 then "Ворота справа" else "Ворота слева")
    elseif obstacle.kind=="Bumper" then "Объедь бампер" elseif obstacle.kind=="Gap" then "Прыжок через разрыв" else "Прыжок через барьер"
   self.title.Text=Locale.Text(role).." • "..Locale.Text(hint)
-  self.detail.Text=if now<s.retryAt then Locale.Text("Возврат к отметке…") else
-   string.format(Locale.Text("%d%% • %d с • ошибки %d/%d"),math.floor(s.distance*100),remaining,s.faults,C.MaxFaults).."\n"..Locale.Text(controls)
+  local distance=obstacle and math.max(0,math.floor(obstacle.z-(s.pose.Position.Z))) or 0
+  local section=C.Section(s.pose.Position.Z)
+  self.card.Size=UDim2.fromOffset(self.card.Size.X.Offset,84)
+  self.detail.Text=Locale.Text(section.Name).." • "..distance..Locale.Text("м").." • "..remaining..Locale.Text("с").." • "..tostring(C.MaxFaults-s.faults).." ♥\n"..Locale.Text(controls)
+
   local input=Input.PreferredInput
   local jumpKey=if input==Enum.PreferredInput.Touch then "" elseif input==Enum.PreferredInput.Gamepad then "A · " else "Space · "
   local boostKey=if input==Enum.PreferredInput.Touch then "" elseif input==Enum.PreferredInput.Gamepad then "R1 · " else "F · "
   W.SetButton(self.jump,jumpKey..Locale.Text("Прыжок"),now>=s.retryAt,false)
   local cooldown=math.max(0,math.ceil(s.boostReady-now))
   W.SetButton(self.boost,boostKey..Locale.Text("Рывок")..(if cooldown>0 then " · "..cooldown else ""),cooldown==0 and now>=s.retryAt,false)
+  self.jumpCue.Transparency=if not pilot and obstacle and (obstacle.kind=="Gap" or obstacle.kind=="Bar") and distance>=5 and distance<=12 and now>=s.retryAt then .1 else 1
   if running and pilot and at>=self.nextMove then self.nextMove=at+.085;self:Send("Move",self:InputVector()) end
  end
 end

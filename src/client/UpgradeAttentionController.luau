@@ -28,7 +28,7 @@ function Controller.new(ctx,workshopRows,abilityRows)
   table.insert(self.targets,{button=button,root=frame,glow=glow,ring=ring,key=key,panel=panel,nav=nav})
   self.cleanup:Add(function()if button.Parent then button:SetAttribute("UpgradeAvailable",nil)end end)
  end
- for _,name in {"VERITY","PHONE","WORKSHOP","ABILITIES"} do add(ctx.refs.Nav[name],name,name,true) end
+ for _,name in {"VERITY","PHONE","WORKSHOP","ABILITIES","MORE"} do add(ctx.refs.Nav[name],name,name,true) end
  add(ctx.refs.Panels.VERITY.Buy,"grow","VERITY")
  add(ctx.refs.Panels.PHONE.Grow,"grow","PHONE")
  add(ctx.refs.Panels.PHONE.Power,"swipe","PHONE")
@@ -57,6 +57,7 @@ function Controller:Refresh()
    if canBuy then ready.ABILITIES=true end
   end
  end
+ ready.MORE=ready.WORKSHOP or ready.ABILITIES
  self.ready=ready
 end
 function Controller:Tick(now)

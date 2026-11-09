@@ -259,6 +259,7 @@ World.houseProgression = require(script.Parent.HouseProgression).new(World, Play
 	State:Publish(id, true)
 	send(id, "NotificationEvent", {protocolVersion=1,code=status,source="HouseFeature"})
 end)
+ World.houseProgression.stopMovement=function(player) Abilities:Stop(player) end
  HomeStyles=require(script.Parent.HomeStyleService).new(World,Data,State,Economy,clock,function(id,code)
   send(id,"NotificationEvent",{protocolVersion=1,code=code,source="HomeStyle",eventId=guid()})
   if code=="HOME_STYLE_APPLIED" or code=="HOME_DECOR_PURCHASED" then Bond:React(id,"Love","Home",2.5) end

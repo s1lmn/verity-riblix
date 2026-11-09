@@ -111,7 +111,12 @@ function V:Tick(now,dt)
  end
  if now<(self.frameAt or 0) and not self.dirty then return end
  self.frameAt=now+(if tier==1 then 1/20 elseif tier==2 then 1/30 else 1/45);self.dirty=false
- self:Hide();if not visible then return end
+ local signature=self.kind..":"..tier..":"..tostring(reduced)..":"..tostring(visible)
+ if self.drawSignature~=signature then self:Hide();self.drawSignature=signature end
+ if not visible then return end
+ -- Only intermittent effects need resetting every visual frame.
+ for _,r in self.meteors do if r.head.Transparency~=1 then r.head.Transparency=1;r.tail.Transparency=1 end end
+ for _,p in self.bolts do if p.Transparency~=1 then p.Transparency=1 end end
  local forward=Vector3.new(camera.CFrame.LookVector.X,0,camera.CFrame.LookVector.Z)
  if forward.Magnitude<.1 then forward=Vector3.zAxis else forward=forward.Unit end
  local right=Vector3.new(-forward.Z,0,forward.X)
@@ -145,6 +150,8 @@ function V:Tick(now,dt)
    local params=RaycastParams.new();params.FilterDescendantsInstances={self.folder,char or self.folder};params.RespectCanCollide=true
    self.fireCovered=workspace:Raycast(base,Vector3.yAxis*85,params)~=nil
   end
+  if self.fireCovered and not self.wasFireCovered then for _,p in self.streaks do p.Transparency=1 end end
+  self.wasFireCovered=self.fireCovered
   if not self.fireCovered then
    local count=if low then 10 elseif reduced then 18 elseif tier==2 then 38 else 64
    for i=1,count do
@@ -226,13 +233,15 @@ function V:Tick(now,dt)
   local range=if settings.Graphics then settings.Graphics.EffectDistance else 260
   if distance<range then
    local fade=math.clamp((distance-range*.75)/math.max(1,range*.25),0,1)
-   local alpha=.48+.52*fade
+   local alpha=math.floor((.48+.52*fade)*80+.5)/80
+   if self.rainbowAlpha~=alpha then self.rainbowTransparency=NumberSequence.new(alpha) end
    for _,beam in self.rainbowBands do
     beam.Segments=if low then 12 elseif tier==2 then 20 else 28
-    if self.rainbowAlpha~=alpha then beam.Transparency=NumberSequence.new(alpha) end
+    if self.rainbowAlpha~=alpha then beam.Transparency=self.rainbowTransparency end
     beam.Enabled=true
    end
    self.rainbowAlpha=alpha
+  else for _,beam in self.rainbowBands do beam.Enabled=false end
   end
  end
 end

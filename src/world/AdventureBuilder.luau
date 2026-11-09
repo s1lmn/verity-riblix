@@ -46,6 +46,16 @@ function B.Build(world,plots)
  local desk=model("WeatherDesk")
  local station=p(desk,"Station",plaza.Position+Vector3.new(-14,1,-8),Vector3.new(2.8,2,2),"9271BE",false)
  circle(desk,"Base",station.Position-Vector3.yAxis*.85,2,"C5AAFF")
+ station.Shape=Enum.PartType.Cylinder;station.Size=Vector3.new(2,2.8,2.8);station.CFrame*=CFrame.Angles(0,0,math.pi/2)
+ local dome=p(desk,"WeatherDome",station.Position+Vector3.yAxis*1.6,Vector3.new(2.5,2.1,2.5),"99DDE9",false,false,Enum.PartType.Ball)
+ p(desk,"DomeBand",station.Position+Vector3.yAxis*.95,Vector3.new(2.8,.22,2.8),"EAD5A2",false)
+ local telescope=p(desk,"Telescope",station.Position+Vector3.new(0,3.15,0),Vector3.new(2.2,.75,.75),"68558B",false,false,Enum.PartType.Cylinder)
+ telescope.CFrame*=CFrame.Angles(0,0,.38)
+ local lens=p(desk,"TelescopeLens",station.Position+Vector3.new(1,3.55,0),Vector3.new(.10,.64,.64),"BCF7F5",false,true,Enum.PartType.Cylinder);lens.CFrame*=CFrame.Angles(0,0,.38)
+ for _,side in {-1,1} do
+  local brace=p(desk,"TelescopeBrace",station.Position+Vector3.new(side*.6,2.15,0),Vector3.new(.14,1.35,.14),"EAD5A2",false)
+  brace.CFrame*=CFrame.Angles(0,0,side*-.4)
+ end
  r.weatherPrompt=prompt(station,"Искать звёздные осколки","Обсерватория погоды","Weather")
  r.weatherLabels=sign(desk,station.Position+Vector3.new(0,2.4,0),"Обсерватория погоды")
  local stars=Instance.new("Folder");stars.Name="StarShards";stars.Parent=root

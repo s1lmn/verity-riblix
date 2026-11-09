@@ -39,6 +39,12 @@ function Service:BlockReason(player,slot)
  if player:GetAttribute("VerityRaceSlot") then return "RACE_POWER" end
  local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
  if player:GetAttribute("VerityParkourStep") or root and Parkour.Contains(root.Position.X,root.Position.Z) then return "PARKOUR_POWER" end
+ if root and (slot=="Mobility" or slot=="Ride") then
+  local profile=self.data:Get(player.UserId)
+  local item=profile and self:Equipped("Mobility",profile)
+  local action=item and (item.MobilityAction or item.Action)
+  if (slot=="Ride" or item and action~="sprint" and action~="shield") and self:IsMovementIndoors(root) then return "HOUSE_POWER" end
+ end
  if slot=="Ride" and player:GetAttribute("VerityBattleActive") then return "BATTLE_OTHER_ACTIVITY" end
  if slot=="Mobility" and player:GetAttribute("VerityRiding") then return "RIDING_POWER" end
  return nil
@@ -82,6 +88,21 @@ function Service:IsInHouse(root)
 			or (math.abs(p.X)<27 and p.Z>=-57 and p.Z<=-14)) then return true end
 	end
 	return false
+end
+-- Movement uses the real room bounds and purchased roof, rather than the wider PvP safety margin.
+function Service:IsMovementIndoors(root)
+ local progression=self.world.houseProgression
+ if not progression then return false end
+ for _,record in progression.plots do
+  local state=record.state
+  if not state or not state.VerityUnlocked or not (state.HouseSecondFloorOwned or state.HouseIncomeLevel>=4) then continue end
+  local p=record.pivot:PointToObjectSpace(root.Position)
+  local entry=math.abs(p.X)<16 and p.Z> -14 and p.Z<14.25 and p.Y>=0 and p.Y<12.4
+  local ceiling=if state.HouseSecondFloorOwned then 31 else 15.4
+  local living=math.abs(p.X)<24 and p.Z>=-54 and p.Z<=-14 and p.Y>=0 and p.Y<ceiling
+  if entry or living then return true end
+ end
+ return false
 end
 function Service:IsSafe(player,root)
  return self:IsAttackBlocked(player,root) or self:IsInHouse(root)

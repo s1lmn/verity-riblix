@@ -221,7 +221,7 @@ function HouseProgression:Tick()
 		local root=character and character:FindFirstChild("HumanoidRootPart")
 		local humanoid=character and character:FindFirstChildOfClass("Humanoid")
 		if root and humanoid and humanoid.Health>0 then
-			table.insert(occupants,{player=player,character=character,root=root})
+			table.insert(occupants,{player=player,character=character,root=root,humanoid=humanoid})
 		end
 	end
 	for _,record in self.plots do
@@ -237,11 +237,12 @@ function HouseProgression:Tick()
 			local p=record.pivot:PointToObjectSpace(root.Position)
 			if not insideHouse(p) then record.insideGuests[player.UserId]=nil;continue end
 			local guestLocked=locked and state.ownerUserId~=player.UserId and record.insideGuests[player.UserId]~=player.Character
-			local upperLocked=(not state or not state.HouseSecondFloorOwned) and p.Y>17 and p.Z< -14
+			local upperLocked=(not state or not state.HouseSecondFloorOwned) and p.Y>17 and p.Z< -14 and occupant.humanoid.FloorMaterial~=Enum.Material.Air
 			if guestLocked or upperLocked then
+    if self.stopMovement then self.stopMovement(player) end
 				local position=if guestLocked then Vector3.new(0,3,19) else Vector3.new(10,3,-22)
 				root.CFrame=record.pivot*CFrame.new(position)
-				root.AssemblyLinearVelocity=Vector3.zero
+				root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
 			end
 		end
 	end

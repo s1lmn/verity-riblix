@@ -13,6 +13,13 @@ function Controller.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),prompts={}},Controller)
  self.card,self.title,self.detail,self.action=Card.Build(ctx.refs.Safe,"AdventureStatus","AdventureAction");self.cleanup:Add(self.card)
  self.weather=self.cleanup:Add(require(script.Parent.WeatherVisuals).new(ctx))
+ self.dock=self.cleanup:Add(W.Round(W.Frame(ctx.refs.Safe,"WeatherDock",UDim2.fromOffset(228,44),T.Paper),12));self.dock.AnchorPoint=Vector2.new(1,1);self.dock.Visible=false
+ self.dock.BackgroundTransparency=.08;W.Stroke(self.dock,T.Purple,1)
+ self.weatherToggle=W.Button(self.dock,"WeatherToggle","",T.Purple:Lerp(T.White,.86));self.weatherToggle.Size=UDim2.new(1,0,0,44);self.weatherToggle.TextSize=11;self.weatherToggle.TextTruncate=Enum.TextTruncate.AtEnd;self.weatherToggle:SetAttribute("FixedFeedbackSize",true)
+ self.weatherText=W.Text(self.dock,"WeatherDetail","",11,false,T.Ink);self.weatherText.Position=UDim2.fromOffset(12,48);self.weatherText.Size=UDim2.new(1,-24,0,37)
+ self.weatherGo=W.Button(self.dock,"WeatherGo","ПОКАЗАТЬ ПУТЬ",T.Mint);self.weatherGo.Position=UDim2.fromOffset(10,91);self.weatherGo.Size=UDim2.new(1,-20,0,44);self.weatherGo.TextSize=11;self.weatherGo:SetAttribute("FixedFeedbackSize",true)
+ self.cleanup:Add(self.weatherToggle.Activated:Connect(function()self.weatherExpanded=not self.weatherExpanded;self:Render()end))
+ self.cleanup:Add(self.weatherGo.Activated:Connect(function()self.guide=true;self.weatherExpanded=false;ctx.close();self:Render()end))
  self.track=W.Round(W.Frame(self.card,"ProgressTrack",UDim2.new(1,-16,0,3),T.Soft),3);self.track.Position=UDim2.new(0,8,1,-5)
  self.fill=W.Round(W.Frame(self.track,"Fill",UDim2.fromScale(0,1),T.Purple),3)
  self.cleanup:Add(self.action.Activated:Connect(function()
@@ -44,7 +51,7 @@ function Controller.new(ctx)
  self.cleanup:Add(ctx.net.Notification.Event:Connect(function(payload)
   if type(payload.code)=="string" and payload.code:match("^TRIAL_NEED_") then self.hint=payload.code:sub(12);self.hintUntil=os.clock()+12 end
  end))
- self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function()self.guide=false;self.hint=nil end))
+ self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function()self.guide=false;self.hint=nil;self.weatherExpanded=false end))
  self.cleanup:Add(function()if self.link then self.link:Disconnect()end end)
  return self
 end
@@ -94,7 +101,7 @@ function Controller:Render()
  local m=self.message;local player=Players.LocalPlayer;local busy=Card.ActivityRunning();local r=m and m.run
  if self.hint and os.clock()>(self.hintUntil or 0) then self.hint=nil end
  self.invite=nil
- if m and not busy then for _,party in m.parties do
+ if m and not busy and m.weather=="Clear" then for _,party in m.parties do
   if party.phase=="Lobby" and not party.seen and party.count<C.PartyLimit then self.invite=party;break end
  end end
  local remaining=m and math.max(0,math.ceil(m.deadline-workspace:GetServerTimeNow())) or 0
@@ -102,7 +109,18 @@ function Controller:Render()
  local introduced=state and state.VerityUnlocked and state.TutorialCompleted
  local relevant=m and (r~=nil or self.hint~=nil or self.invite~=nil or m.weather~="Clear" or remaining<=20)
  local hidden=Card.Blocked(self.ctx) or (self.ctx.arcade and self.ctx.arcade.root.Visible) or player:GetAttribute("VerityDiversionKind")=="Arcade" or (busy and not r)
- self.card.Visible=relevant==true and (r~=nil or introduced==true) and not hidden
+ self.card.Visible=relevant==true and (r~=nil or self.hint~=nil) and (r~=nil or introduced==true) and not hidden
+ self.dock.Visible=relevant==true and introduced==true and not hidden and not r and not self.hint
+ if self.dock.Visible then
+  local size=self.ctx.refs.Safe.AbsoluteSize
+  local touch=game:GetService("UserInputService").PreferredInput==Enum.PreferredInput.Touch
+  self.dock.Position=UDim2.new(1,-12,1,if touch then -145 else -12)
+  self.dock.Size=UDim2.fromOffset(math.min(228,size.X-24),if self.weatherExpanded then 145 else 44)
+  self.weatherText.Visible=self.weatherExpanded==true;self.weatherGo.Visible=self.weatherExpanded==true
+  local title=if self.invite and m.weather=="Clear" then "Вечеринка у соседей" elseif m.weather=="Rainbow" then "Дождевая пещера" else C.WeatherNames[m.weather]
+  self.weatherToggle.Text=Locale.Text(title).." • "..(if self.invite and m.weather=="Clear" then self.invite.count.."/6" else remaining..Locale.Text("с"))..(if self.weatherExpanded then " ▾" else " ▴")
+  self.weatherText.Text=Locale.Text(if self.invite and m.weather=="Clear" then "Загляни в гости и сыграй вместе" elseif m.weather=="Fire" then "5 угольков → жар-светильник" elseif m.weather=="Stars" then "5 осколков → звёздный мобиль" elseif m.weather=="Storm" then "После ливня откроется пещера" elseif m.weather=="Rainbow" then "Три руны → сокровище пещеры" else "Погодные занятия появятся вместе с событием")
+ end
  if self.card.Visible then
   Card.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
   local title,detail,progress,color="","",0,C.WeatherColors[m.weather]

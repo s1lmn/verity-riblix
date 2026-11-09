@@ -28,7 +28,7 @@ function Construction.Create(house)
 			or pivot:PointToObjectSpace(object.Position).Y>=14.8
 		if name=="Floor" or name=="LivingFloor" then stage=0
 		elseif name:find("Living") or name:find("Passage") or name:find("Side") then stage=2 end
-		if name:find("Glass") or path:find("Furniture.Plants",1,true) or path:find("Furniture.Lamps",1,true) then stage=3 end
+		if name=="FacadePlant" or name=="FacadePlanter" or name:find("Glass") or path:find("Furniture.Plants",1,true) or path:find("Furniture.Lamps",1,true) then stage=3 end
 		if name:find("Ceiling") or name:find("RoofCap") or path:find("Furniture.Gallery",1,true) then stage=4 end
 		if path:find("Furniture.Sofa",1,true) or path:find("Furniture.Media",1,true) or path:find("Furniture.CoffeeTable",1,true) then stage=2 end
 		if upper then stage=0 end -- The independent, saved upstairs purchase owns these parts.
@@ -43,6 +43,13 @@ function Construction.Create(house)
 			part(group,pivot,"ProductionBase",Vector3.new(x,.6,z),Vector3.new(6,1.2,9),"4F5777",index)
 			local core=part(group,pivot,"ProductionCore",Vector3.new(x,3.6,z),Vector3.new(3.4,5,4.4),upgrade.Color,index,true)
 			part(group,pivot,"ProductionCap",Vector3.new(x,6.3,z),Vector3.new(5,.5,6),"FFF2BC",index)
+   if index==6 or index==8 then
+    core.Shape=Enum.PartType.Cylinder;core.Size=Vector3.new(5,3.4,3.4);core.CFrame*=CFrame.Angles(0,0,math.pi/2)
+    for _,y in {1.25,5.85} do
+     local band=part(group,pivot,"CapsuleBand",Vector3.new(x,y,z),Vector3.new(.22,4.1,4.1),"FFF0CC",index)
+     band.Shape=Enum.PartType.Cylinder;band.CFrame*=CFrame.Angles(0,0,math.pi/2)
+    end
+   end
 			for side=-1,1,2 do part(group,pivot,"PowerRail",Vector3.new(x+side*2.1,2.4,z),Vector3.new(.25,3,.25),upgrade.Color,index,true) end
 			if index==5 then
 				core.Transparency=1

@@ -52,10 +52,14 @@ function Service:Publish(only)
  local entries={}
  for slot=1,2 do
   local e=self.entries[slot]
-  if e then table.insert(entries,{id=e.player.UserId,slot=slot,role=slotRole(slot,self.solo),ready=e.ready==true,swap=e.swap==true}) end
+  if e then
+   local profile=self.data:Get(e.player.UserId);local d=profile and profile.Data
+   table.insert(entries,{id=e.player.UserId,slot=slot,role=slotRole(slot,self.solo),ready=e.ready==true,swap=e.swap==true,
+    level=d and d.VerityLevel or 1,weatherLook=d and d.WeatherLook or "Auto",equipped=if d then table.clone(d.CosmeticsEquipped) else {}})
+  end
  end
  local message={version=C.Version,round=self.round,sequence=self.sequence,phase=self.phase,entries=entries,solo=self.solo==true,
-  pose=self.pose,mergeAt=self.mergeAt or 0,deadline=self.deadline or 0,retryAt=self.retryAt or 0,boostReady=self.boostReady or 0,
+  serverTime=now,velocity=Vector3.new(self.vx or 0,self.vy or 0,self.vz or 0),pose=self.pose,mergeAt=self.mergeAt or 0,deadline=self.deadline or 0,retryAt=self.retryAt or 0,boostReady=self.boostReady or 0,
   faults=self.faults or 0,obstacle=self.obstacle or 1,checkpoint=self.checkpointZ or C.StartZ,jump=self.jumpSerial or 0,
   distance=math.clamp(((self.z or C.StartZ)-C.StartZ)/(C.EndZ-C.StartZ),0,1),result=self.result}
  if only then self.stateEvent:FireClient(only,message);return end
@@ -88,6 +92,7 @@ end
 function Service:Freeze(entry)
  local player,root,hum=entry.player,entry.root,entry.hum
  self.stopMovement(player)
+ entry.joinPose=root.CFrame
  entry.restore={anchored=root.Anchored,auto=hum.AutoRotate,speed=hum.WalkSpeed,power=hum.JumpPower,collide={}}
  local function part(p)
   if p:IsA("BasePart") then entry.restore.collide[p]=p.CanCollide;p.CanCollide=false end
@@ -141,9 +146,14 @@ function Service:PlaceRiders()
    local seat=C.Seat(slot,self.solo)
    if self.phase=="Merging" then
     local alpha=math.clamp((self.clock()-self.mergeAt)/C.MergeSeconds,0,1)
-    seat=CFrame.new(seat.Position.X,2.9+6.35*alpha,seat.Position.Z)
+    seat=CFrame.new(seat.Position.X,2.9+(seat.Position.Y-2.9)*math.clamp((alpha-.60)/.40,0,1),seat.Position.Z)
    end
-   e.root.CFrame=self.pose*seat
+   local target=self.pose*seat
+   if self.phase=="Merging" and e.joinPose then
+    local t=math.clamp((self.clock()-self.mergeAt)/(C.MergeSeconds*.55),0,1);t=t*t*(3-2*t)
+    target=e.joinPose:Lerp(target,t)
+   end
+   if e.root.CFrame~=target then e.root.CFrame=target end
   end
  end
 end

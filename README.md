@@ -64,3 +64,6 @@ python tools/build_project.py --rojo C:/path/to/rojo.exe
 
 
 Кузница погоды и погодные облики (локально 8 ноября): [механика, рецепты, сохранения и ограничения приёмки](docs/WEATHER_FORGE_AND_LOOKS.md). Открывать `build/VERITY-Latest.rbxlx` или `build/VERITY-Weather-Forge.rbxlx`. Упаковка `--no-verify`, без нового Play/тестов/push.
+
+
+Совместное прохождение V2 и доводка района,9ноября: [механика, UI, ограничения приёмки](docs/COOP_V2_AND_NEIGHBORHOOD_POLISH.md). Получен495d306, текущие правки локальные. Открывать `build/VERITY-Latest.rbxlx` или `build/VERITY-Coop-V2.rbxlx`; только упаковка--no-verify, без Play/тестов.

@@ -149,8 +149,8 @@ function Controller:Render()
 			elseif item then icons[if slot=="Mobility" then item.MobilityAction or item.Action else item.Action] or "◆" else "◇"
 		local activeUntil=player:GetAttribute(if slot=="Attack" then "VerityAttackUntil" else "VerityMobilityUntil") or 0
 		local active=math.max(0,math.ceil(activeUntil-now))
-		local blocked=racing or player:GetAttribute("VerityParkourStep")~=nil or (riding and slot=="Mobility")
-		local status=if racing then "Недоступно в гонке" elseif blocked then "Заблокировано здесь" elseif not item then "Выбери в коллекции" elseif not ctx.net.connected then "Нет связи"
+		local blocked=racing or player:GetAttribute("VerityParkourStep")~=nil or (riding and slot=="Mobility") or snapshot and snapshot.blockedReason~=nil
+		local status=if snapshot and snapshot.blockedReason=="HOUSE_POWER" then "Выйди из дома" elseif racing then "Недоступно в гонке" elseif blocked then "Заблокировано здесь" elseif not item then "Выбери в коллекции" elseif not ctx.net.connected then "Нет связи"
 		 elseif active>0 then string.format(Locale.Text("Действует • %d с"),active)
 		 elseif remaining>0 then string.format(Locale.Text("Перезарядка • %d с"),remaining) else "Готово"
 		W.SetButton(button,icon.." "..key..Locale.Text(name).."\n"..Locale.Text(status),not blocked and remaining==0 and active==0 and ctx.net.connected,false)

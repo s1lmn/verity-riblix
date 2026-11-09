@@ -1386,6 +1386,34 @@ local forgeEnglish={
 }
 for source,target in forgeEnglish do en[source]=target end
 
+local coopPolishEnglish={
+ ["ЕЩЁ"]="MORE",
+ ["ВЕРИТИ"]="VERITY",
+ ["ТЕЛЕФОН"]="PHONE",
+ ["ЗАДАНИЯ"]="TASKS",
+ ["ДОМ"]="HOME",
+ ["СПОСОБНОСТИ"]="ABILITIES",
+ ["УКРАШЕНИЯ"]="ACCESSORIES",
+ ["НАСТРОЙКИ"]="SETTINGS",
+ ["Стройка, доход и оформление"]="Construction, income and style",
+ ["Покупка и выбор для F / G"]="Buy and equip for F / G",
+ ["Твои находки и награды"]="Your discoveries and rewards",
+ ["Язык, звук и эффекты"]="Language, sound and effects",
+ ["ПОКАЗАТЬ ПУТЬ"]="SHOW THE WAY",
+ ["Вечеринка у соседей"]="Neighbor party",
+ ["Загляни в гости и сыграй вместе"]="Visit your neighbors and play together",
+ ["Погодные занятия появятся вместе с событием"]="Weather activities appear when an event starts",
+ ["Единый Verity"]="United Verity",
+ ["Синхронизация"]="Synchronization",
+ ["Звёздный каньон"]="Star canyon",
+ ["Сад импульсов"]="Pulse garden",
+ ["Финальный разгон"]="Final stretch",
+ ["Для рывка, прыжка и полёта выйди из дома."]="Step outside to dash, super jump or fly.",
+ ["Выйди из дома"]="Step outside",
+ ["м"]="m",
+}
+for source,target in coopPolishEnglish do en[source]=target end
+
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source
 end

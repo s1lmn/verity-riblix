@@ -238,7 +238,7 @@ end
 
 function Main:Open(name)
 	local ctx=self.ctx
-	if name and name~="SETTINGS" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
+	if name and name~="SETTINGS" and name~="MORE" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and (ctx.forgeReveal or ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
 	if ctx.active==name then return end
  if name and self.admin and self.admin.panel.Visible then self.admin:Close() end

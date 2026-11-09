@@ -29,8 +29,13 @@ function Builder.Build(parent)
         local inset = part(kind.."Inset", position + Vector3.yAxis * .13, Vector3.new(.12, 6.7, 6.7), "302742")
         inset.Shape = Enum.PartType.Cylinder
         inset.CFrame = CFrame.new(inset.Position) * CFrame.Angles(0, 0, math.pi / 2)
-        local gem = part(kind.."Gem", position + Vector3.yAxis * 3.2, Vector3.one * 1.7, color, kind == "Hunt")
-        if kind == "Rhythm" then gem.CFrame *= CFrame.Angles(0, 0, math.pi / 4) end
+        local gem = part(kind.."Gem", position + Vector3.yAxis * 3.2, Vector3.one * 1.7, color, true)
+        if kind == "Rhythm" then
+            for _,side in {-1,1} do
+                local speaker=part("RhythmSpeaker",position+Vector3.new(side*2.3,1.4,0),Vector3.new(.7,2,.7),"7760A1",true)
+                part("SpeakerGlow",speaker.Position+Vector3.new(0,.25,-.4),Vector3.one*.45,"E9C8FF",true)
+            end
+        end
         for index = 1, 6 do
             local angle = index * math.pi / 3
             part(kind.."Spark", position + Vector3.new(math.cos(angle) * 2.5, 2, math.sin(angle) * 2.5), Vector3.one * .28, color, true)
