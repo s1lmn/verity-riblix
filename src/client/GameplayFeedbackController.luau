@@ -151,6 +151,7 @@ function Feedback:TaskHighlights(now)
  end
 end
 function Feedback:Tick(now)
+ if self.ctx.shop then self.ctx.shop:Step(now) end
  if self.ctx.upgradeAttention then self.ctx.upgradeAttention:Tick(now) end
  if self.ctx.community then self.ctx.community:VisualTick(now) end
  if self.ctx.adventures then self.ctx.adventures:VisualTick(now,now-(self.arcadeFrame or now)) end

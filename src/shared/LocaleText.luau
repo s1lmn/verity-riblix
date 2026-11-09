@@ -1510,6 +1510,53 @@ local premiumMergeEnglish={
 }
 for source,target in premiumMergeEnglish do en[source]=target end
 
+local premiumShowcaseEnglish={
+ ["Цена временно недоступна"]="Price temporarily unavailable",
+ ["Примерь. Посмотри. Выбери."]="Try it. See it. Choose it.",
+ ["Полёт и лазеры для свободного мира"]="Flight and lasers for the open world",
+ ["Тот же заработок. В три раза больше денег."]="The same earnings. Three times the cash.",
+ ["Три узнаваемых стиля для твоего дома"]="Three distinct styles for your home",
+ ["ОДНА ПОКУПКА · ТРИ ВАРИАНТА"]="ONE PURCHASE · THREE VARIANTS",
+ ["ПОСТОЯННЫЙ ПРОПУСК · ДВЕ СПОСОБНОСТИ"]="PERMANENT PASS · TWO POWERS",
+ ["ПОСТОЯННЫЙ ПРОПУСК"]="PERMANENT PASS",
+ ["ПРИМЕРИТЬ"]="TRY IT",
+ ["КУПИТЬ"]="BUY",
+ ["ВЫБРАТЬ"]="EQUIP",
+ ["ВЫБРАНО"]="EQUIPPED",
+ ["СНЯТЬ ОФОРМЛЕНИЕ"]="REMOVE STYLE",
+ ["ПОДТВЕРДИ В ROBLOX"]="CONFIRM IN ROBLOX",
+ ["Загружаем цену Roblox…"]="Loading Roblox price…",
+ ["Цена Roblox: %d R$"]="Roblox price: %d R$",
+ ["Сейчас не продаётся"]="Not currently on sale",
+ ["Пробный доступ на эту сессию"]="Trial access for this session",
+ ["ПОКАЗАТЬ ИНТЕРЬЕР"]="SHOW INTERIOR",
+ ["ПОКАЗАТЬ ФАСАД"]="SHOW EXTERIOR",
+ ["ПОДРОБНЕЕ"]="MORE DETAILS",
+ ["СКРЫТЬ ПОДРОБНОСТИ"]="HIDE DETAILS",
+ ["ГДЕ РАБОТАЕТ И КАК ПОЛЬЗОВАТЬСЯ"]="WHERE IT WORKS & CONTROLS",
+ ["L1 — полёт · R1 — лазеры"]="L1 — flight · R1 — lasers",
+ ["F — полёт · G — лазеры"]="F — flight · G — lasers",
+ ["Кнопки полёта и атаки на экране"]="On-screen flight and attack buttons",
+ ["Полёт %d с · повтор через %d с\nЛазеры: %d урона · дальность %d studs\nПерезарядка лазеров: %d с\n%s"]="Flight %d s · reuse after %d s\nLasers: %d damage · range %d studs\nLaser cooldown: %d s\n%s",
+ ["Свободный мир и PvE. В гонках, паркуре и слиянии силы отключены. Испытания допускают только нужную силу. Под крышей полёт ограничен; безопасные зоны защищены от урона. Направление — стик или WASD, подъём — прыжок; на ПК Ctrl опускает вниз. Сцена сокращена для показа."]="Open world and PvE. Powers are disabled in races, parkour and fusion. Trials allow only their required power. Roofs restrict flight; safe zones block damage. Move with the stick or WASD, jump to ascend; Ctrl descends on PC. This demo is shortened.",
+ ["БЕЗ ПРОПУСКА  $%s/с  →  С ×3  $%s/с"]="WITHOUT PASS  $%s/s  →  WITH ×3  $%s/s",
+ ["Без таймера и повторной покупки.\nПример: доход твоего уровня и дома за 1 секунду, с текущими усилениями.\nВсе 100 уровней доступны бесплатно."]="No timer or repeat purchase.\nExample: one second of income at your level and house, with current boosts.\nAll 100 levels are available for free.",
+ ["Без таймера и повторной покупки.\nПример после распаковки Verity: доход за 1 секунду.\nВсе 100 уровней доступны бесплатно."]="No timer or repeat purchase.\nExample after unboxing Verity: one second of income.\nAll 100 levels are available for free.",
+ ["×3: доход Verity и дома, свайпы и редкие карты, поручения, доставка, паркур, гонки, PvE-арена, искры, ритм, погодные испытания и события района. Материалы и украшения не умножаются. Остальные множители сохраняются. У предела кошелька начисление ограничено."]="×3 applies to Verity and house income, swipes and rare cards, jobs, delivery, parkour, races, PvE arena, sparks, rhythm, weather trials and neighborhood events. Materials and cosmetics are not multiplied. Other multipliers still apply. Earnings are capped at the wallet limit.",
+ ["В наборе: сакура, космический дом и неоновая вилла. Фасад и интерьер.\nОформление не строит этажи и не увеличивает доход. Нужен построенный первый этап дома."]="Includes sakura, cosmic home and neon villa. Exterior and interior.\nStyles do not build floors or increase income. Requires the first house build stage.",
+ ["Достаточно пропуска у одного участника. Покупка не даёт напарнику постоянного владения."]="Only one participant needs the pass. Your partner does not receive permanent ownership.",
+ ["Оформление без изменения характеристик. Примерка не меняет профиль."]="Cosmetic only. Trying it does not change your profile.",
+ ["КРАСНЫЕ ЛАЗЕРЫ"]="RED LASERS",
+ ["ВЗЛЁТ"]="TAKEOFF",
+ ["УПРАВЛЯЕМЫЙ ПОЛЁТ"]="CONTROLLED FLIGHT",
+ ["ПОСАДКА"]="LANDING",
+ ["ОДИН ДОХОД — ВТРОЕ БОЛЬШЕ ДЕНЕГ"]="SAME INCOME — THREE TIMES THE CASH",
+ ["ИНТЕРЬЕР ВХОДНОЙ КОМНАТЫ"]="ENTRY ROOM INTERIOR",
+ ["ФАСАД И ДЕКОР"]="EXTERIOR AND DECOR",
+ ["ЛОКАЛЬНАЯ ПРИМЕРКА"]="LOCAL PREVIEW",
+}
+for source,target in premiumShowcaseEnglish do en[source]=target end
+
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source
 end

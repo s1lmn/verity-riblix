@@ -3,62 +3,103 @@ local RS=game:GetService("ReplicatedStorage")
 local Catalog=require(RS.Shared.PremiumVisualCatalog)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
+local TextService=game:GetService("TextService")
 local Skin={}
-
+Skin.FirstPass={money_x3=true,scarlet_sentinel=true,premium_homes=true}
+local function fixed(button)
+ button:SetAttribute("FixedFeedbackSize",true);button.TextSize=12;button.TextWrapped=true
+ return button
+end
+local function text(parent,name,size,bold,color)
+ return W.Text(parent,name,"",size,bold,color)
+end
 function Skin.Build(parent)
- local root=W.Round(W.Frame(parent,"PremiumShop",UDim2.fromOffset(420,560),T.Paper),18)
- root.Visible=false;root.Active=true;root.SelectionGroup=true
- for _,direction in {"Up","Down","Left","Right"} do root["SelectionBehavior"..direction]=Enum.SelectionBehavior.Stop end
- W.Stroke(root,T.Purple,2).Transparency=.38
- local title=W.Text(root,"Title","МАГАЗИН",20,true,T.Ink)
- title.Position=UDim2.fromOffset(16,10);title.Size=UDim2.new(1,-76,0,33)
- local subtitle=W.Text(root,"Subtitle","",12,false,T.Muted);subtitle.Visible=false
- local close=W.Button(root,"Close","‹",T.Gold)
- close.Position=UDim2.new(1,-54,0,6);close.Size=UDim2.fromOffset(44,44);close.TextSize=27
+ local root=W.Round(W.Frame(parent,"PremiumShop",UDim2.fromOffset(420,560),T.Paper),20)
+ root.Visible=false;root.Active=true;root.SelectionGroup=true;root.ClipsDescendants=true
+ for _,d in {"Up","Down","Left","Right"} do root["SelectionBehavior"..d]=Enum.SelectionBehavior.Stop end
+ W.Stroke(root,T.Purple,2).Transparency=.4
+ local header=W.Round(W.Frame(root,"Header",UDim2.new(1,0,0,76),Color3.fromHex("D6BEFF")),20)
+ W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex("F4CFFF"),Color3.fromHex("B8DAFF")),Rotation=20},header)
+ local title=W.Text(header,"Title","МАГАЗИН",22,true,T.Ink)
+ title.Position=UDim2.fromOffset(16,8);title.Size=UDim2.new(1,-78,0,30)
+ local subtitle=W.Text(header,"Subtitle","Примерь. Посмотри. Выбери.",12,false,T.Ink)
+ subtitle.Position=UDim2.fromOffset(16,39);subtitle.Size=UDim2.new(1,-78,0,25)
+ local close=fixed(W.Button(header,"Close","‹",T.White))
+ close.Position=UDim2.new(1,-56,0,12);close.Size=UDim2.fromOffset(44,44);close.TextSize=27
  local tabs={}
- for index,section in Catalog.Sections do
-  local b=W.Button(root,section.id,section.title,Color3.fromHex(section.color))
-  b.Position=UDim2.new((index-1)/3,12-6*(index-1),0,55);b.Size=UDim2.new(1/3,-12,0,44)
-  b.TextSize=12;b:SetAttribute("FixedFeedbackSize",true)
+ for i,section in Catalog.Sections do
+  local b=fixed(W.Button(root,section.id,section.title,Color3.fromHex(section.color)))
+  b.Position=UDim2.new((i-1)/3,12-6*(i-1),0,83);b.Size=UDim2.new(1/3,-12,0,44)
   tabs[section.id]=b
  end
- local body=W.New("ScrollingFrame",{Name="Offers",Position=UDim2.fromOffset(12,109),Size=UDim2.new(1,-24,1,-121),
+ local body=W.New("ScrollingFrame",{Name="Offers",Position=UDim2.fromOffset(10,136),Size=UDim2.new(1,-20,1,-146),
   BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,
-  ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=3,ScrollBarImageColor3=T.Purple},root)
- W.List(body,9)
- local stage=W.Round(W.Frame(body,"PreviewStage",UDim2.new(1,-6,0,202),T.Soft),15)
- stage.LayoutOrder=0;stage.Visible=false
- local caption=W.Text(stage,"Caption","",14,true)
-  caption.Position=UDim2.fromOffset(12,5);caption.Size=UDim2.new(1,-72,0,39)
- local view=W.Button(stage,"HouseView","ИНТЕРЬЕР",T.White)
- view.Position=UDim2.new(1,-151,0,4);view.Size=UDim2.fromOffset(99,44);view.TextSize=11;view.Visible=false
- local hide=W.Button(stage,"ClosePreview","×",T.Paper)
- hide.Position=UDim2.new(1,-48,0,4);hide.Size=UDim2.fromOffset(44,44)
- local viewport=W.New("ViewportFrame",{Name="Preview",Position=UDim2.fromOffset(4,47),Size=UDim2.new(1,-8,1,-51),BackgroundTransparency=1,
-  Ambient=Color3.fromRGB(185,174,204),LightColor=T.White,LightDirection=Vector3.new(-1,-1,-1)},stage)
- return {Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Tabs=tabs,Stage=stage,Caption=caption,Hide=hide,HouseView=view,Preview=viewport}
+  Active=true,ClipsDescendants=true,ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=3,ScrollBarImageColor3=T.Purple},root)
+ W.List(body,12);W.Padding(body,3)
+ return {Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Tabs=tabs}
 end
-
 function Skin.Card(parent,id,item,order)
+ local focus=Skin.FirstPass[id]==true
  local accent=Color3.fromHex(item.Color)
- local hasVariants=item.Variants~=nil
- local actionY=if hasVariants then 142 else 92
- local row=W.Round(W.Frame(parent,id,UDim2.new(1,-6,0,actionY+54),accent:Lerp(T.Paper,.88)),16)
- row.LayoutOrder=order;row.Visible=false;W.Stroke(row,accent,2).Transparency=.44
- local title=W.Text(row,"Name",item.Title,15,true)
- title.Position=UDim2.fromOffset(12,7);title.Size=UDim2.new(1,-24,0,26)
- local detail=W.Text(row,"Description",item.Description,12,false,T.Muted)
- detail.Position=UDim2.fromOffset(12,36);detail.Size=UDim2.new(1,-24,0,49)
+ local row=W.Round(W.Frame(parent,id,UDim2.new(1,-6,0,320),T.White),18)
+ row.LayoutOrder=order;row.Visible=false;row.ClipsDescendants=true
+ W.Stroke(row,accent,2).Transparency=.2
+ local name=W.Text(row,"Name",item.Title,19,true,T.Ink)
+ local benefit=text(row,"Benefit",13,false,T.Ink)
+ local bundle=text(row,"Bundle",11,true,accent:Lerp(T.Ink,.62))
+ local art=W.Round(W.Frame(row,"ProductScene",UDim2.new(1,-20,0,180),accent:Lerp(T.White,.52)),14)
+ art.ClipsDescendants=true
+ W.New("UIGradient",{Color=ColorSequence.new(accent:Lerp(T.White,.67),accent:Lerp(Color3.fromHex("393263"),.3)),Rotation=80},art)
+ local viewport=W.New("ViewportFrame",{Name="Model",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
+  Ambient=Color3.fromRGB(194,193,215),LightColor=Color3.fromRGB(255,245,228),LightDirection=Vector3.new(-1,-1,-2)},art)
+ local phase=W.Round(W.Frame(art,"PhasePill",UDim2.new(1,-16,0,24),T.Ink),8)
+ phase.Position=UDim2.new(0,8,1,-32);phase.BackgroundTransparency=.2
+ local phaseText=text(phase,"Phase",11,true,T.White);phaseText.Position=UDim2.fromOffset(8,1);phaseText.Size=UDim2.new(1,-16,1,-2)
+ local comparison=text(row,"Comparison",15,true,T.Ink)
+ comparison.TextXAlignment=Enum.TextXAlignment.Center
  local variant
- if hasVariants then
-  variant=W.Button(row,"NextVariant","",T.Soft)
-  variant.Position=UDim2.fromOffset(12,90);variant.Size=UDim2.new(1,-24,0,44)
-  variant.TextSize=12;variant.TextWrapped=true
+ if item.Variants then variant=fixed(W.Button(row,"NextVariant","",accent:Lerp(T.White,.74))) end
+ local view
+ if id=="premium_homes" then view=fixed(W.Button(row,"HouseView","ПОКАЗАТЬ ИНТЕРЬЕР",T.Soft)) end
+ local detail=text(row,"Facts",12,false,T.Muted);detail.TextYAlignment=Enum.TextYAlignment.Top
+ local more=fixed(W.Button(row,"DetailsToggle","ПОДРОБНЕЕ",T.Soft))
+ more.Visible=focus and id~="premium_homes"
+ local extra=text(row,"Rules",12,false,T.Muted);extra.TextYAlignment=Enum.TextYAlignment.Top;extra.Visible=false
+ local price=text(row,"Price",14,true,T.Ink)
+ local preview=fixed(W.Button(row,"TryOn","ПРИМЕРИТЬ",T.Soft))
+ local buy=fixed(W.Button(row,"Buy","КУПИТЬ",accent))
+ local reset=fixed(W.Button(row,"Remove","СНЯТЬ ОФОРМЛЕНИЕ",T.Soft));reset.Visible=false
+ return {Root=row,Title=name,Benefit=benefit,Bundle=bundle,Art=art,Viewport=viewport,Phase=phaseText,
+  Comparison=comparison,Variant=variant,HouseView=view,Details=detail,More=more,Extra=extra,Price=price,
+  Preview=preview,Buy=buy,Reset=reset,Focus=focus}
+end
+function Skin.LayoutCard(row,width,expanded)
+ local y=12
+ local function height(label,minimum)
+  local bounds=TextService:GetTextSize(label.Text,label.TextSize,label.Font,Vector2.new(math.max(120,width-24),10000))
+  return math.max(minimum,math.ceil(bounds.Y)+6)
  end
- local preview=W.Button(row,"TryOn","ПРИМЕРИТЬ",T.White)
- preview.Position=UDim2.fromOffset(12,actionY);preview.Size=UDim2.new(.42,-15,0,44);preview.TextSize=12
- local buy=W.Button(row,"Buy","СКОРО",accent)
- buy.Position=UDim2.new(.42,4,0,actionY);buy.Size=UDim2.new(.58,-16,0,44);buy.TextSize=12;buy.TextWrapped=true
- return {Root=row,Preview=preview,Buy=buy,Variant=variant}
+ local function place(object,h)
+  object.Position=UDim2.fromOffset(12,y);object.Size=UDim2.new(1,-24,0,h);y+=h+7
+ end
+ place(row.Title,height(row.Title,28));place(row.Benefit,height(row.Benefit,36));place(row.Bundle,height(row.Bundle,24))
+ place(row.Art,math.clamp((width-24)*.54,140,230))
+ if row.Comparison.Visible then place(row.Comparison,height(row.Comparison,42)) end
+ if row.Variant then place(row.Variant,44) end
+ if row.HouseView then place(row.HouseView,44) end
+ place(row.Details,height(row.Details,if row.Focus then 64 else 48))
+ if row.More.Visible then place(row.More,44) end
+ row.Extra.Visible=expanded==true
+ if expanded then place(row.Extra,height(row.Extra,64)) end
+ place(row.Price,28)
+ row.Preview.Position=UDim2.fromOffset(12,y);row.Preview.Size=UDim2.new(.46,-15,0,48)
+ row.Buy.Position=UDim2.new(.46,3,0,y);row.Buy.Size=UDim2.new(.54,-15,0,48);y+=55
+ if row.Reset.Visible then place(row.Reset,44) end
+ row.Root.Size=UDim2.new(1,-6,0,y+5)
+end
+function Skin.Layout(refs,safeSize,panelX)
+ local width=math.min(safeSize.X-panelX-12,500)
+ refs.Root.Position=UDim2.fromOffset(panelX,8)
+ refs.Root.Size=UDim2.fromOffset(math.max(240,width),math.max(100,math.min(safeSize.Y-16,720)))
 end
 return Skin

@@ -96,6 +96,7 @@ function Main.new()
  ctx.visuals=self.visuals
  self.abilityUI=self.cleanup:Add(require(script.Parent.AbilitiesUIController).new(ctx))
  self.shop=self.cleanup:Add(require(script.Parent.PremiumShopController).new(ctx,self.moneyPass,self.abilityUI))
+ ctx.shop=self.shop
  ctx.renderShop=function() self.shop:Render() end
  self.abilities=self.cleanup:Add(require(script.Parent.AbilityController).new(ctx))
  self.cleanup:Add(require(script.Parent.AbilityEffectsController).new(ctx))
