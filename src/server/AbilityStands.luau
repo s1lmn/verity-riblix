@@ -70,14 +70,14 @@ function Stands.Build(map,open)
 			text:SetAttribute("Text_locale_en",string.format("%s\nLevel %d • $%d",Locale.Get("en",item.Name),item.Level,item.Cost))
 		end
 		if premium then
-			Locale.SetWorld(text,"Text",if Config.HeroPassId then "ХОУМЛЕНДЕР\nПОЛЁТ + ЛАЗЕРЫ • %d R$" else "ХОУМЛЕНДЕР\nПОЛЁТ + ЛАЗЕРЫ • %d R$ • СКОРО",Config.HeroPassPrice)
+			Locale.SetWorld(text,"Text",if Config.HeroPassId then "АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • %d R$" else "АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • %d R$ • СКОРО",Config.HeroPassPrice)
 			if Config.HeroPassId then task.spawn(function()
 				local ok,offer=pcall(function() return game:GetService("MarketplaceService"):GetProductInfoAsync(Config.HeroPassId,Enum.InfoType.GamePass) end)
 				if not text.Parent then return end
 				if ok and type(offer)=="table" and offer.IsForSale and type(offer.PriceInRobux)=="number" then
-					Locale.SetWorld(text,"Text","ХОУМЛЕНДЕР\nПОЛЁТ + ЛАЗЕРЫ • %d R$",offer.PriceInRobux)
+					Locale.SetWorld(text,"Text","АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • %d R$",offer.PriceInRobux)
      circle:SetAttribute("OfferPrice",offer.PriceInRobux)
-				else Locale.SetWorld(text,"Text","ХОУМЛЕНДЕР\nПРОПУСК ВРЕМЕННО НЕДОСТУПЕН") end
+				else Locale.SetWorld(text,"Text","АЛЫЙ СТРАЖ\nПРОПУСК ВРЕМЕННО НЕДОСТУПЕН") end
 			end) end
 			text.TextColor3=Color3.fromHex("FFE39C")
 			for side=-1,1,2 do

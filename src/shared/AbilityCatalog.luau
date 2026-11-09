@@ -14,12 +14,13 @@ Catalog.Items = {
 	lightning={Name="Цепная молния",Description="Разряд перескакивает между тремя ближайшими целями.",Slot="Attack",Level=40,Cost=150000,Action="lightning",Cooldown=9,Damage=28,Range=100,Chains=3,ChainRange=20,Color="BD9AFF"},
 	gravity={Name="Гравитационный удар",Description="Сожми энергию в точке и порази цели в радиусе 14 метров.",Slot="Attack",Level=50,Cost=750000,Action="gravity",Cooldown=11,Damage=38,Range=75,Radius=14,Color="E796FF"},
 	nova={Name="Сверхновая",Description="Взрыв звёздной энергии в радиусе 21 метра.",Slot="Attack",Level=75,Cost=18000000,Action="nova",Cooldown=15,Damage=52,Range=90,Radius=21,Color="FFD773"},
-	homelander={Name="Хоумлендер",Description="Полёт героя и красные лазеры из глаз. Две способности в одном наборе.",Slot="Attack",Level=1,Premium=true,Action="laser",Cooldown=8,Damage=40,Range=140,Duration=1.1,Color="FF3B57",MobilityAction="flight",FlightDuration=18,FlightSpeed=42,FlightCooldown=24},
+	-- The item ID is stable so existing equipment stays valid.
+	homelander={Name="Алый страж",Description="Полёт героя и красные лазеры из глаз. Две способности в одном наборе.",Slot="Attack",Level=1,Premium=true,Action="laser",Cooldown=8,Damage=40,Range=140,Duration=1.1,Color="FF3B57",MobilityAction="flight",FlightDuration=18,FlightSpeed=42,FlightCooldown=24},
 }
 for _,item in Catalog.Items do table.freeze(item) end
 table.freeze(Catalog.Order);table.freeze(Catalog.Items)
 
-function Catalog.Collection(data,heroOwned,passConfigured)
+function Catalog.Collection(data,heroOwned,passConfigured,temporarySlots)
  local result={}
  for _,id in Catalog.Order do
   local item=Catalog.Items[id];local owned=Catalog.Owns(data,id,heroOwned)
@@ -27,7 +28,7 @@ function Catalog.Collection(data,heroOwned,passConfigured)
   local levelMet=data.VerityLevel>=item.Level;local slots={item.Slot};local equipped={}
   if item.MobilityAction then table.insert(slots,"Mobility") end
   for _,slot in slots do
-   local _,equippedId=Catalog.Equipped(data,slot,heroOwned)
+   local _,equippedId=Catalog.Equipped(data,slot,heroOwned,temporarySlots)
    if equippedId==id then table.insert(equipped,slot) end
   end
   local status=if #equipped>0 then "Equipped" elseif owned then "Owned" elseif not levelMet then "LockedLevel"
@@ -45,8 +46,14 @@ function Catalog.Owns(data,id,heroOwned)
 	local item=Catalog.Items[id]
 	return item~=nil and (if item.Premium then heroOwned==true else data.AbilitiesOwned[id]==true)
 end
-function Catalog.Equipped(data,slot,heroOwned)
-	local id=data.AbilitiesEquipped[slot]
+function Catalog.HeroAccess(profile)
+ return profile.HeroPassOwned==true or profile.AdminHeroSlots~=nil
+end
+function Catalog.ProfileEquipped(profile,slot)
+ return Catalog.Equipped(profile.Data,slot,Catalog.HeroAccess(profile),profile.AdminHeroSlots)
+end
+function Catalog.Equipped(data,slot,heroOwned,temporarySlots)
+	local id=(temporarySlots and temporarySlots[slot]) or data.AbilitiesEquipped[slot]
 	local item=id and Catalog.Items[id]
 	if not item or not Catalog.Owns(data,id,heroOwned) or data.VerityLevel<item.Level then return nil end
 	if item.Slot~=slot and not (slot=="Mobility" and item.MobilityAction) then return nil end

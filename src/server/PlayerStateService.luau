@@ -52,6 +52,9 @@ function PlayerStateService:Snapshot(userId)
 	local profile, session = self.data:Get(userId), self.sessions[userId]
 	if not profile or not session then return nil end
 	local data, level = profile.Data, profile.Data.VerityLevel
+ local heroAccess=Abilities.HeroAccess(profile)
+ local equipped=table.clone(data.AbilitiesEquipped)
+ for slot,id in profile.AdminHeroSlots or {} do equipped[slot]=id end
 	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel,data.HouseDoorOwned,data.HouseSecondFloorOwned)
 	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
@@ -75,8 +78,8 @@ function PlayerStateService:Snapshot(userId)
 		SwipeUpgradeLevel = data.SwipeUpgradeLevel, TutorialStep = data.TutorialStep,
 		TutorialCompleted = data.TutorialCompleted,
         FirstActivityCompleted = data.FirstActivityCompleted,
-        Progression = Goals.Build(data), NextUnlock = Goals.NextUnlock(data,profile.HeroPassOwned),
-        AbilityCollection = Abilities.Collection(data,profile.HeroPassOwned,Config.HeroPassId~=nil),
+        Progression = Goals.Build(data), NextUnlock = Goals.NextUnlock(data,heroAccess),
+        AbilityCollection = Abilities.Collection(data,heroAccess,Config.HeroPassId~=nil,profile.AdminHeroSlots),
         AbilitySlots = if self.AbilitySlots then self.AbilitySlots(userId) else {},
         ActivityRewardQuotes = {Parkour=Rewards.Base(level,"Parkour")*multiplier,
          Battle=Rewards.Base(level,"Battle")*multiplier,Race=Rewards.Base(level,"Race")*multiplier},
@@ -102,8 +105,8 @@ function PlayerStateService:Snapshot(userId)
   WeatherLook=data.WeatherLook, CosmeticsEquipped = table.clone(data.CosmeticsEquipped), ActivityTrophies=Rewards.Unlocked(data.CosmeticsOwned),
   WeatherMaterials=table.clone(data.WeatherMaterials), AdventureRecords=table.clone(data.AdventureRecords), ArcadeBestScore=data.ArcadeBestScore, FeedCollection = table.clone(data.FeedCollection),
   ShowcaseCards = table.clone(data.ShowcaseCards or {}),
-  AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = table.clone(data.AbilitiesEquipped),
-  HeroPassOwned = profile.HeroPassOwned==true, HeroPassId = Config.HeroPassId,
+  AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = equipped,
+  HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end

@@ -45,7 +45,7 @@ function Service:Flying(p)
  return a~=nil and a.flight==true and not a.ride and a.character==p.Character and self.clock()<a.untilTime
 end
 function Service:AirAccess(profile)
- local item=Catalog.Equipped(profile.Data,"Mobility",profile.HeroPassOwned)
+ local item=Catalog.ProfileEquipped(profile,"Mobility")
  return item~=nil and (item.Action=="flight" or item.MobilityAction=="flight")
 end
 function Service:Grounded(root,platform)

@@ -156,7 +156,15 @@ function Controller:Leave()
  local player=Players.LocalPlayer
  if not self.card.Visible or self.ctx.active or self.ctx.presenting or Gui.MenuIsOpen or Input:GetFocusedTextBox() or os.clock()-self.lastLeave<.6 then return false end
  local remote=RS:FindFirstChild("VerityActivities");if not remote then return false end
- self.lastLeave=os.clock();remote:FireServer(if player:GetAttribute("VerityBattleActive") then "LeaveBattle" else "LeaveParkour");return true
+ local now=os.clock();local battle=player:GetAttribute("VerityBattleActive")==true
+ self.lastLeave=now
+ if battle and now>=(self.confirmLeaveUntil or 0) then
+  self.confirmLeaveUntil=now+4
+  return true
+ end
+ self.confirmLeaveUntil=nil
+ remote:FireServer(if battle then "LeaveBattle" else "LeaveParkour")
+ return true
 end
 function Controller:BindArena(arena)
  self.enemyCleanup:Destroy();self.enemyCleanup=Cleanup.new()
@@ -250,6 +258,9 @@ function Controller:Tick()
   end
  end
  local step=player:GetAttribute("VerityParkourStep");local battle=player:GetAttribute("VerityBattleActive")
+ if not battle then self.confirmLeaveUntil=nil end
+ local confirmLeave=battle and os.clock()<(self.confirmLeaveUntil or 0)
+ self.leave.Text=if confirmLeave then "✓" else "×"
  self.card.Visible=(step~=nil or battle==true) and not ActivityCard.Blocked(self.ctx)
  self.next.Enabled=step~=nil and course~=nil and not ActivityCard.Blocked(self.ctx)
  if self.next.Enabled then self.next.Adornee=course:FindFirstChild(string.format("Pad%02d",math.min(#P.Pads,step+1))) end
@@ -268,7 +279,7 @@ function Controller:Tick()
   local wave=arena:GetAttribute("Wave") or 0;local phase=arena:GetAttribute("Phase")
   local heading=if self.ctx.refs.Safe.AbsoluteSize.X<400 then "ВОЛНА %d / %d" else "АРЕНА • ВОЛНА %d / %d"
   self.title.Text=string.format(Locale.Text(heading),wave,#B.Waves)
-  self.detail.Text=if phase=="Fighting" then Locale.Text(if Input.PreferredInput==Enum.PreferredInput.Touch then "Нажми атаку • выходи из красных кругов" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "R1 — атака • выходи из красных кругов" else "G — атака • выходи из красных кругов") else string.format(Locale.Text("Готовься! Следующая волна через %d с"),math.max(0,math.ceil((arena:GetAttribute("Deadline") or now)-now)))
+  self.detail.Text=if confirmLeave then Locale.Text("Нажми ещё раз, чтобы выйти из битвы") elseif phase=="Fighting" then Locale.Text(if Input.PreferredInput==Enum.PreferredInput.Touch then "Нажми атаку • выходи из красных кругов" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "R1 — атака • выходи из красных кругов" else "G — атака • выходи из красных кругов") else string.format(Locale.Text("Готовься! Следующая волна через %d с"),math.max(0,math.ceil((arena:GetAttribute("Deadline") or now)-now)))
  end
 end
 function Controller:Destroy() self.cleanup:Destroy() end

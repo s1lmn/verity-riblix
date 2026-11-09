@@ -667,10 +667,11 @@ local expansionEnglish = {
 	["Сожми энергию в точке и порази цели в радиусе 14 метров."]="Focus energy on a point and hit targets within a radius of 14.",
 	["Сверхновая"]="Supernova",
 	["Взрыв звёздной энергии в радиусе 21 метра."]="A burst of stellar energy within a radius of 21.",
-	["Хоумлендер"]="Homelander",
+	["Алый страж"]="Scarlet Sentinel",
+	["F · Полёт %d с   G · Лазеры %d урона"]="F · Flight %ds   G · Lasers %d damage",
 	["Полёт героя и красные лазеры из глаз. Две способности в одном наборе."]="Hero flight and red eye lasers. Two abilities in one bundle.",
 	["Открыть способности"]="Browse abilities",
-	["ХОУМЛЕНДЕР\nПОЛЁТ + ЛАЗЕРЫ • 99 R$"]="HOMELANDER\nFLIGHT + LASERS • 99 R$",
+	["АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • 99 R$"]="SCARLET SENTINEL\nFLIGHT + LASERS • 99 R$",
 	["%s\nУровень %d • $%d"]="%s\nLevel %d • $%d",
 	["%s\n%d / %d"]="%s\n%d / %d",
 	["Покупай способности, затем выбери одну для F и одну для G."]="Buy abilities, then equip one for F and one for G.",
@@ -732,9 +733,9 @@ local expansionEnglish = {
 	["Дом %s\nСтройка %d / 10"]="%s's home\nConstruction %d / 10",
 	["Стройка дома %d / 10 • открой мастерскую"]="House construction %d / 10 • open the workshop",
 }
-expansionEnglish["ХОУМЛЕНДЕР\nПОЛЁТ + ЛАЗЕРЫ • %d R$"]="HOMELANDER\nFLIGHT + LASERS • %d R$"
-expansionEnglish["ХОУМЛЕНДЕР\nПОЛЁТ + ЛАЗЕРЫ • %d R$ • СКОРО"]="HOMELANDER\nFLIGHT + LASERS • %d R$ • COMING SOON"
-expansionEnglish["ХОУМЛЕНДЕР\nПРОПУСК ВРЕМЕННО НЕДОСТУПЕН"]="HOMELANDER\nPASS TEMPORARILY UNAVAILABLE"
+expansionEnglish["АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • %d R$"]="SCARLET SENTINEL\nFLIGHT + LASERS • %d R$"
+expansionEnglish["АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • %d R$ • СКОРО"]="SCARLET SENTINEL\nFLIGHT + LASERS • %d R$ • COMING SOON"
+expansionEnglish["АЛЫЙ СТРАЖ\nПРОПУСК ВРЕМЕННО НЕДОСТУПЕН"]="SCARLET SENTINEL\nPASS TEMPORARILY UNAVAILABLE"
 for source,translation in expansionEnglish do en[source]=translation end
 
 
@@ -758,7 +759,8 @@ local circleEnglish={
  ["ВЫБРАТЬ СИЛУ"]="EQUIP POWER",
  ["КУПИТЬ СИЛУ"]="BUY POWER",
  ["Полёт + красные лазеры"]="Flight + red eye lasers",
- ["ХОУМЛЕНДЕР"]="HOMELANDER",
+ ["АЛЫЙ СТРАЖ"]="SCARLET SENTINEL",
+ ["АЛЫЙ СТРАЖ · НА СЕССИЮ"]="SCARLET SENTINEL · THIS SESSION",
  ["ПРОПУСК СКОРО"]="PASS COMING SOON",
 }
 for source,target in circleEnglish do en[source]=target end
@@ -777,6 +779,7 @@ local activityEnglish={
  ["СЕРЕБРО"]="SILVER",
  ["БРОНЗА"]="BRONZE",
  ["АРЕНА VERITY\nНужна экипированная атака"]="VERITY ARENA\nEquip an attack to enter",
+ ["Нажми ещё раз, чтобы выйти из битвы"]="Press again to leave the battle",
  ["Для арены экипируй атакующую способность в коллекции."]="Equip an attack ability in your collection to enter the arena.",
  ["Занять место %d"]="Join lane %d",
  ["Дорожка %d"]="Lane %d",

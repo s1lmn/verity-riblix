@@ -194,18 +194,18 @@ abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedSt
 if generatedWorld then
 	require(script.Parent.AbilityStands).Build(generatedWorld,function(player,id) abilityShopRemote:FireClient(player,id) end)
 end
-local function refreshHeroPass(player)
+local function refreshHeroPass(player,equipOnPurchase)
  task.spawn(function()
   for attempt=1,3 do
    if player.Parent~=Players then return end
-   local status=AbilityShop:RefreshPassAsync(player.UserId)
-   if status~="UNAVAILABLE" then return end
+   local status=AbilityShop:RefreshPassAsync(player.UserId,equipOnPurchase)
+   if status~="UNAVAILABLE" and not (equipOnPurchase and status=="UNOWNED") then return end
    task.wait(attempt*2)
   end
  end)
 end
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player,id,purchased)
- if purchased and id==AbilityShop.passId then refreshHeroPass(player) end
+ if purchased and id==AbilityShop.passId then refreshHeroPass(player,true) end
 end)
 State.send = function(userId, snapshot)
 	local player = Players:GetPlayerByUserId(userId)
@@ -384,6 +384,9 @@ adminRemote.OnServerInvoke = function(player, action, value, ...)
   if data.VerityLevel < item.Level then return "ABILITY_LEVEL", item.Level end
   data.AbilitiesOwned[value] = true
   AbilityShop:Equip(id, value, item.Slot)
+ elseif action == "GrantHero" and value == "homelander" then
+  local status=AbilityShop:GrantHeroForSession(id)
+  if status~="OK" then return status end
  else
   return "DENIED"
  end

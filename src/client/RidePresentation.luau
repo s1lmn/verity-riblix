@@ -4,9 +4,14 @@ local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Skins=require(Shared.VerityElementalSkins)
+local Ride=require(Shared.VerityRideConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Presentation={};Presentation.__index=Presentation
 local angles={LeftHip=-68,RightHip=-68,LeftKnee=92,RightKnee=92,Waist=-9,["Left Hip"]=-68,["Right Hip"]=-68}
+local seated={
+ LeftHip={-82,-12},RightHip={-82,12},LeftKnee={92,0},RightKnee={92,0},
+ LeftAnkle={-10,0},RightAnkle={-10,0},Waist={-4,0},["Left Hip"]={-76,-14},["Right Hip"]={-76,14},
+}
 local function release(record)
  for _,joint in record.joints do
   if joint.motor.Parent and joint.motor.C0==joint.last then joint.motor.C0=joint.base end
@@ -21,8 +26,8 @@ end
 function Presentation:Record(player,character,root)
  local record={character=character,root=root,joints={},cleanup=Cleanup.new(),blend=0}
  for _,motor in character:GetDescendants() do
-  if motor:IsA("Motor6D") and angles[motor.Name] then
-   table.insert(record.joints,{motor=motor,base=motor.C0,last=motor.C0,angle=math.rad(angles[motor.Name])})
+  if motor:IsA("Motor6D") and seated[motor.Name] then
+   table.insert(record.joints,{motor=motor,base=motor.C0,last=motor.C0})
   end
  end
  local origin=Instance.new("Attachment");origin.Name="VerityRideSparkles";origin.Position=Vector3.new(0,-2,0);origin.Parent=root
@@ -44,6 +49,26 @@ function Presentation:Record(player,character,root)
  local light=Instance.new("PointLight");light.Range=9;light.Brightness=.35;light.Shadows=false;light.Enabled=false;light.Parent=origin;record.light=light
  self.records[player]=record
  return record
+end
+function Presentation:UpdateSaddle(record,seatOffset)
+ local saddle=record.saddle
+ if not seatOffset then
+  if saddle then saddle.Transparency=1 end
+  return
+ end
+ local root=record.root
+ if not saddle then
+  saddle=Instance.new("Part");saddle.Name="VeritySaddle"
+  saddle.Anchored=true;saddle.CanCollide=false;saddle.CanQuery=false;saddle.CanTouch=false;saddle.CastShadow=false
+  saddle.Material=Enum.Material.SmoothPlastic;saddle.Color=Color3.fromHex("654B93")
+  saddle.Transparency=1;saddle.Parent=record.character
+  record.saddle=record.cleanup:Add(saddle)
+ end
+ local top=root.Size.Y*.47
+ local height=math.max(.25,seatOffset-top)
+ saddle.Size=Vector3.new(root.Size.X*.88,height,root.Size.Z*1.55)
+ saddle.CFrame=root.CFrame*CFrame.new(0,-top-height/2,.08)
+ saddle.Transparency=0
 end
 function Presentation:Tick(dt)
  local camera=workspace.CurrentCamera
@@ -67,13 +92,20 @@ function Presentation:Tick(dt)
   seen[player]=true
   local phase=player:GetAttribute("VerityRidePhase")
   local target=if riding and phase~="Landing" then 1 else 0
+  if riding then record.fused=fused end
   record.blend+=(target-record.blend)*(1-math.exp(-9*dt))
+  local onSaddle=riding and not fused and phase=="Cruise"
+  self:UpdateSaddle(record,if onSaddle then player:GetAttribute("VerityRideSeatOffset") or Ride.GetSeatOffset(hum,root) else nil)
   for _,joint in record.joints do
    local motor=joint.motor
    if not motor.Parent then continue end
    -- Preserve a new base if another feature deliberately edits the joint.
    if motor.C0~=joint.last then joint.base=motor.C0 end
-   local pose=CFrame.new(joint.base.Position)*CFrame.Angles(joint.angle*record.blend,0,0)*joint.base.Rotation
+   local config=seated[motor.Name]
+   local pitch=if record.fused then angles[motor.Name] or 0 else config[1]
+   local spread=if record.fused then 0 else config[2]
+   local pose=CFrame.new(joint.base.Position)*CFrame.Angles(math.rad(pitch)*record.blend,0,math.rad(spread)*record.blend)*joint.base.Rotation
+   if not record.fused and target>0 then motor.Transform=motor.Transform:Lerp(CFrame.identity,record.blend) end
    motor.C0=pose;joint.last=pose
   end
   local model=self.companions[player.UserId]

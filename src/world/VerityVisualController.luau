@@ -322,13 +322,18 @@ visibility=function(record,alpha)
  if record.textured~=textured or record.faceEnabled~=faceEnabled then
   record.textured=textured;record.faceEnabled=faceEnabled;record.appliedVisibility=nil
  end
- if record.appliedVisibility==alpha then return end
- record.appliedVisibility=alpha
- for p in record.parts do if p.Parent then
-  p.LocalTransparencyModifier=if faceEnabled and (p.Name=="Eye" or p.Name=="Smile") then 1 else alpha
- end end
  local primary=record.model.PrimaryPart
- local label=primary and primary:FindFirstChild("LevelLabel");if label then label.Enabled=alpha<.7 end
+ local label=primary and primary:FindFirstChild("LevelLabel");if label then label.Enabled=alpha<.7 and not record.riding end
+ if record.appliedVisibility==alpha and record.appliedRiding==record.riding then return end
+ record.appliedVisibility=alpha;record.appliedRiding=record.riding
+ local crown=record.riding and model:FindFirstChild("Crown")
+ local cosmetics=record.riding and model:FindFirstChild("Cosmetics")
+ local headId=record.riding and model:GetAttribute("Cosmetic_Head")
+ local hat=cosmetics and headId and cosmetics:FindFirstChild(headId)
+ for p in record.parts do if p.Parent then
+  local hidden=(faceEnabled and (p.Name=="Eye" or p.Name=="Smile")) or (crown and p:IsDescendantOf(crown)) or (hat and p:IsDescendantOf(hat))
+  p.LocalTransparencyModifier=if hidden then 1 else alpha
+ end end
 end
 
 function Controller:Follow(record,now,dt)
@@ -374,7 +379,8 @@ function Controller:Follow(record,now,dt)
  record.riding=owner:GetAttribute("VerityRiding")==true
  local scale=Levels.getVerityScale(if record.riding then record.model:GetAttribute("VerityLevel") else record.adminLevel or record.model:GetAttribute("VerityLevel"))
  if record.riding then
-  record.origin=CFrame.new(root.Position-Vector3.new(0,1.7*scale+Ride.SeatOffset,0))*root.CFrame.Rotation
+  local seatOffset=owner:GetAttribute("VerityRideSeatOffset") or Ride.GetSeatOffset(hum,root)
+  record.origin=CFrame.new(root.Position-Vector3.yAxis*(1.7*scale+seatOffset))*root.CFrame.Rotation
   record.lastRoot=root.Position;record.mode="Riding";record.followStarted=false
   local phase=owner:GetAttribute("VerityRidePhase")
   local y0,y1=owner:GetAttribute("VerityRideY0"),owner:GetAttribute("VerityRideY1")

@@ -31,7 +31,7 @@ function Service:Character(player)
 	return character,root,humanoid
 end
 function Service:Equipped(slot,profile)
- return Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
+ return Catalog.ProfileEquipped(profile,slot)
 end
 function Service:BlockReason(player,slot)
  if player:GetAttribute("VerityDiversionKind") and not (self.adventures and self.adventures:AllowsPower(player,slot)) then return "DIVERSION_POWER" end
@@ -113,8 +113,8 @@ function Service:Refresh(player,character,snapshot)
 	if not humanoid or not snapshot then return end
 	local current=self.active[player]
 	local profile=self.data:Get(player.UserId)
-	local equipped=profile and profile.Data.AbilitiesEquipped.Mobility
-	if profile and not Catalog.Equipped(profile.Data,"Mobility",profile.HeroPassOwned) then equipped=nil end
+	local equipped
+	if profile then local _;_,equipped=self:Equipped("Mobility",profile) end
 	if current and (current.character~=character or (not current.ride and current.id~=equipped) or (current.ride and (not snapshot.VerityUnlocked or snapshot.VerityLevel<Ride.MinLevel or snapshot.VerityLevel~=current.level)) or humanoid.Health<=0) then self:Stop(player);current=nil end
 	if humanoid.Health<=0 then return end
  if player:GetAttribute("VerityFusionActive") or player:GetAttribute("VerityDiversionKind")=="Arcade" then humanoid.WalkSpeed=0;humanoid.JumpPower=0;return end
@@ -141,6 +141,7 @@ function Service:Stop(player,stopAttacks)
   if current.hull then current.hull:Destroy() end
   player:SetAttribute("VerityRiding",nil)
   player:SetAttribute("VerityRidePhase",nil)
+  player:SetAttribute("VerityRideSeatOffset",nil)
   player:SetAttribute("VerityRideY0",nil);player:SetAttribute("VerityRideY1",nil)
  end
  self.active[player]=nil
@@ -450,7 +451,8 @@ function Service:Ride(player,profile,now)
  if not root or not root:CanSetNetworkOwnership() then return end
  local scale=Levels.getVerityScale(profile.Data.VerityLevel)
  local diameter=1.7*scale
- local height=diameter+Ride.SeatOffset
+ local seatOffset=Ride.GetSeatOffset(humanoid,root)
+ local height=diameter+seatOffset
  local ray=RaycastParams.new();ray.FilterDescendantsInstances={character};ray.RespectCanCollide=true
  -- Check the full takeoff corridor as well as the future ball volume.
  if workspace:Blockcast(root.CFrame,Vector3.new(4,5,4),Vector3.new(0,height,0),ray) then self.remote:FireClient(player,{kind="Blocked",code="RIDE_SPACE"});return end
@@ -464,10 +466,11 @@ function Service:Ride(player,profile,now)
  self.active[player]=current
  local hull=Instance.new("Part");hull.Name="VerityRideHull";hull.Shape=Enum.PartType.Ball
  hull.Size=Vector3.one*diameter;hull.Transparency=1;hull.Massless=true;hull.CanTouch=false;hull.CanQuery=false;hull.CanCollide=false
- hull.CFrame=root.CFrame*CFrame.new(0,-diameter/2-Ride.SeatOffset,0);hull.Parent=character
+ hull.CFrame=root.CFrame*CFrame.new(0,-diameter/2-seatOffset,0);hull.Parent=character
  local weld=Instance.new("WeldConstraint");weld.Part0=root;weld.Part1=hull;weld.Parent=hull;current.hull=hull
  root.AssemblyLinearVelocity=Vector3.zero
  humanoid.WalkSpeed=Ride.Speed;humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+ player:SetAttribute("VerityRideSeatOffset",seatOffset)
  player:SetAttribute("VerityRiding",true);player:SetAttribute("VerityMobilityUntil",current.untilTime)
  self:Drive(current,root,Vector3.zero,false)
  self:RideTransition(player,current,current.launch+Vector3.new(0,height,0),"Takeoff",function()

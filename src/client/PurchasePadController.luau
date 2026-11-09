@@ -78,7 +78,10 @@ function Controller:Offer(r)
 		local id=r.model:GetAttribute("AbilityId");local item=id and Catalog.Items[id]
 		if not item then return false end
 		if kind=="Hero" then
-			return true,true,"ХОУМЛЕНДЕР","Полёт + красные лазеры",nil,if Config.HeroPassId then nil else Locale.Text("ПРОПУСК СКОРО"),nil,GOLD
+   if state and state.HeroPassOwned then
+    return true,true,"ВЫБРАТЬ СИЛУ","Алый страж",nil,nil,nil,BLUE
+   end
+			return true,true,"АЛЫЙ СТРАЖ","Полёт + красные лазеры",nil,if Config.HeroPassId then nil else Locale.Text("ПРОПУСК СКОРО"),nil,GOLD
 		end
 		local owned=state and (state.AbilitiesOwned or {})[id]
 		local unlocked=state and state.VerityUnlocked and state.VerityLevel>=item.Level
@@ -143,7 +146,7 @@ function Controller:Render()
 		r.gui.Enabled=showLabel==true
 		if showLabel then
 			r.title.Text=Locale.Text(title);r.detail.Text=Locale.Text(detail)
-			r.price.Text=if kind=="Hero" then tostring(model:GetAttribute("OfferPrice") or Config.HeroPassPrice).." R$"
+			r.price.Text=if kind=="Hero" then (if self.ctx.net.state and self.ctx.net.state.HeroPassOwned then "" else tostring(model:GetAttribute("OfferPrice") or Config.HeroPassPrice).." R$")
 				elseif cost==0 then Locale.Text("БЕСПЛАТНО") elseif cost then "$"..Locale.Number(cost) else Locale.Text("КУПЛЕНО")
 			r.status.Text=reason or (if bonus then string.format(Locale.Text("+%d%% пассивного дохода"),bonus) else Locale.Text(if prompt and prompt.HoldDuration>0 then "Подойди и удерживай кнопку" else "Подойди и нажми кнопку"))
 			r.title.TextColor3=color;r.price.TextColor3=color

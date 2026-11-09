@@ -92,9 +92,9 @@ function Controller:Render()
 		local owned=state and (if item.Premium then state.HeroPassOwned else (state.AbilitiesOwned or {})[id])
 		local equipped=state and (state.AbilitiesEquipped or {})[item.Slot]==id
 		if item.MobilityAction and equipped then equipped=(state.AbilitiesEquipped or {}).Mobility==id end
-		if entry then owned=entry.owned;equipped=entry.state=="Equipped" end
+		if entry then owned=entry.owned;equipped=#entry.equippedSlots==#entry.availableSlots end
 		row.description.Text=Locale.Text(item.Description)
-		row.details.Text=if item.Premium then Locale.Text("Постоянный набор • F: полёт • G: лазеры")
+		row.details.Text=if item.Premium then string.format(Locale.Text("F · Полёт %d с   G · Лазеры %d урона"),item.FlightDuration,item.Damage)
 			elseif item.Slot=="Attack" then string.format(Locale.Text("Уровень %d • урон %d • перезарядка %d с"),item.Level,item.Damage,item.Cooldown)
 			else string.format(Locale.Text("Уровень %d • перезарядка %d с • кнопка F"),item.Level,item.Cooldown)
 		local unlocked=state and state.VerityUnlocked and state.VerityLevel>=item.Level

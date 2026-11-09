@@ -56,9 +56,10 @@ function Service:Join(player)
  local seat;for i=1,C.MaxPlayers do if not used[i] then seat=i;break end end
  if not seat then self.notify(player.UserId,"BATTLE_BUSY",0);return end
  self.abilities:Stop(player)
- self.members[player]={character=char,seat=seat}
+ local entryPose=CFrame.new(C.Center+Vector3.new((seat-2.5)*9,4,-18))
+ self.members[player]={character=char,seat=seat,returnPose=entryPose}
  player:SetAttribute("VerityBattleActive",true);player:SetAttribute("VerityBattleFighting",false);player:SetAttribute("VerityBattleWave",0)
- char:PivotTo(CFrame.new(C.Center+Vector3.new((seat-2.5)*9,4,-18)))
+ char:PivotTo(entryPose)
  root.AssemblyLinearVelocity=Vector3.zero
  if self.phase=="Idle" then self.wave=0;self:SetPhase("Countdown",C.Countdown) end
  self.state:Publish(player.UserId,true)
@@ -100,7 +101,7 @@ function Service:Damage(r,amount,userId)
  local player=self.players:GetPlayerByUserId(userId);local root=player and self:Valid(player)
  if self.phase~="Fighting" or not root or not C.Contains(root.Position) or self.enemies[r.part]~=r or r.health<=0 then return 0 end
  local profile=self.data:Get(userId)
- local owned=profile and Catalog.Equipped(profile.Data,"Attack",profile.HeroPassOwned)
+ local owned=profile and Catalog.ProfileEquipped(profile,"Attack")
  local damage=math.min(r.health,math.max(0,amount)*(if owned then 1.5 else 1));r.health-=damage
  r.model:SetAttribute("EnemyHealth",r.health)
  Locale.SetWorld(r.label,"Text","%s • %d / %d",Locale.Get("ru",r.definition.Name),math.ceil(r.health),r.maximum)
@@ -148,9 +149,20 @@ function Service:Strike(r)
 end
 function Service:Tick(dt)
  if self.phase=="Idle" then return end
- for player in self.members do
-  local root=self:Valid(player)
-  if not root or not C.Contains(root.Position) then self:Remove(player,false) end
+ for player,member in self.members do
+  local root,hum=self:Valid(player)
+  if not root then
+   self:Remove(player,false)
+  elseif not C.Contains(root.Position) then
+   self.abilities:Stop(player)
+   member.character:PivotTo(member.returnPose)
+   root.AssemblyLinearVelocity=Vector3.zero;root.AssemblyAngularVelocity=Vector3.zero
+  elseif hum.FloorMaterial~=Enum.Material.Air then
+   local offset=root.Position-C.Center
+   if math.abs(offset.X)<C.HalfWidth-4 and math.abs(offset.Z)<C.HalfLength-4 and offset.Y<12 then
+    member.returnPose=root.CFrame
+   end
+  end
  end
  if next(self.members)==nil then self:Finish(false);return end
  local now=self.clock()

@@ -6,7 +6,7 @@ local Sign=require(script.Parent.WorldSign)
 local B={}
 function B.Build(parent)
  local old=parent:FindFirstChild("VerityBattleArena")
- if old and old:FindFirstChild("ArenaSign") then return old end
+ if old and old:FindFirstChild("ArenaCeiling") then return old end
  if old then old:Destroy() end
  local m=Instance.new("Model");m.Name="VerityBattleArena";m.ModelStreamingMode=Enum.ModelStreamingMode.Persistent
  local function p(name,delta,size,color,solid,neon)
@@ -16,8 +16,21 @@ function B.Build(parent)
  end
  p("Floor",Vector3.new(0,-.6,0),Vector3.new(92,.8,56),"51436F",true)
  p("DuelCircle",Vector3.new(0,-.12,0),Vector3.new(38,.08,38),"6D57A1",false)
- for _,x in {-46,46} do p("ArenaRim",Vector3.new(x,0,0),Vector3.new(.35,.2,56),"83E7FF",false,true) end
- for _,z in {-28,28} do p("ArenaRim",Vector3.new(0,0,z),Vector3.new(92,.2,.35),"F58FC9",false,true) end
+ local function boundary(position,size,color)
+  local wall=p("ArenaBoundary",position+Vector3.yAxis*(C.Ceiling/2-1),size,color,true)
+  wall.Transparency=1;wall.CastShadow=false
+  local railSize=Vector3.new(size.X,3.4,size.Z)
+  local rail=p("ArenaBarrier",position+Vector3.yAxis*.95,railSize,color,false)
+  rail.Material=Enum.Material.Glass;rail.Transparency=.58
+  p("ArenaRail",position+Vector3.yAxis*2.7,Vector3.new(size.X,.22,size.Z),color,false,true)
+ end
+ local width,length=C.HalfWidth+.8,C.HalfLength+.8
+ for _,sign in {-1,1} do
+  boundary(Vector3.new(width*sign,0,0),Vector3.new(.6,C.Ceiling+2,length*2+.6),"83E7FF")
+  boundary(Vector3.new(0,0,length*sign),Vector3.new(width*2-.6,C.Ceiling+2,.6),"F58FC9")
+ end
+ local ceiling=p("ArenaCeiling",Vector3.yAxis*(C.Ceiling+.5),Vector3.new(width*2+1,1,length*2+1),"83E7FF",true)
+ ceiling.Transparency=1;ceiling.CastShadow=false
  for _,x in {-39,39} do for _,z in {-21,21} do
   p("Pillar",Vector3.new(x,3,z),Vector3.new(2.4,6,2.4),"7C5BB7",true)
   p("Crystal",Vector3.new(x,7,z),Vector3.one*2,"B7EEFF",false,true).CFrame*=CFrame.Angles(0,0,math.pi/4)

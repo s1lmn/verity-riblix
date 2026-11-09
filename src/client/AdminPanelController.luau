@@ -51,6 +51,9 @@ function Admin.new(ctx,visuals)
   self:Command("SetLevel",tonumber(entry.Text))
  end)
  text("AbilityHeading","ВЫДАТЬ И ЭКИПИРОВАТЬ")
+ button(body,"GrantHero","АЛЫЙ СТРАЖ · НА СЕССИЮ",function()
+  self:Command("GrantHero","homelander")
+ end)
  for _,id in Catalog.Order do
   local item=Catalog.Items[id]
   if not item.Premium then
@@ -125,7 +128,9 @@ function Admin:Command(action,value)
    if self.upgradeId then self.ctx.sound:StopUpgrade(self.upgradeId);self.upgradeId=nil end
    self.level=value;self:Refresh()
   end
-  self.status.Text=if action=="SetLevel" then "Игровой уровень установлен." else Catalog.Items[value].Name.." экипирована."
+  self.status.Text=if action=="SetLevel" then "Игровой уровень установлен."
+   elseif action=="GrantHero" then "Полёт героя и красные лазеры экипированы."
+   else Catalog.Items[value].Name.." экипирована."
  elseif result=="HOUSE_LEVEL" or result=="ABILITY_LEVEL" then
   self.status.Text=string.format("Минимальный уровень %d (%s).",required,if result=="HOUSE_LEVEL" then "постройка дома" else "способность")
  elseif result=="BOX_NOT_OPENED" or result=="NOT_READY" then self.status.Text="Выбери дом и распакуй Verity."

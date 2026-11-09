@@ -6,7 +6,7 @@ return table.freeze({
 	MoneyPassPrice = 99,
 	-- Set MoneyPassId to the real pass ID from this experience before enabling sales.
 	MoneyPassId = nil,
-	HeroPassId = nil, -- Real Homelander Game Pass ID; no placeholder entitlement.
+	HeroPassId = nil, -- Real Scarlet Sentinel Game Pass ID; no placeholder entitlement.
 	HeroPassPrice = 99,
 	PlotCount = 12,
 	ServerCapacity = 12, -- Also set MaxPlayers in Creator Dashboard.
