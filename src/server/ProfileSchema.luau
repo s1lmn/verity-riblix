@@ -9,9 +9,10 @@ local Abilities = require(Shared.AbilityCatalog)
 local Tasks = require(Shared.TaskConfig)
 local HomeStyle=require(Shared.HomeStyleConfig)
 local Forge=require(Shared.WeatherForgeConfig)
+local Premium=require(Shared.PremiumCatalog)
 local Schema = {}
 function Schema.new()
-	return {DataVersion = 2, HouseTheme = "original", ArcadeBestScore=0, AdventureRecords={}, WeatherMaterials={Ember=0,Stardust=0,RainPearl=0}, WeatherLook="Original", WeatherMaterialsSeeded=false, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
+	return {DataVersion = 2, HouseTheme = "original", ArcadeBestScore=0, AdventureRecords={}, WeatherMaterials={Ember=0,Stardust=0,RainPearl=0}, WeatherLook="Original", WeatherMaterialsSeeded=false, PremiumGrants={}, PremiumLoadout=table.clone(Premium.Defaults), Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
 		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end
@@ -59,9 +60,20 @@ function Schema.validate(raw)
 		receipts[id] = true
 	end
 
- for _,key in {"CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped","AdventureRecords","WeatherMaterials"} do
+ for _,key in {"CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped","AdventureRecords","WeatherMaterials","PremiumGrants","PremiumLoadout"} do
   if type(data[key])~="table" then return nil,"INVALID_"..key end
   data[key]=table.clone(data[key])
+ end
+ for id,passId in data.PremiumGrants do
+  if not Premium.Items[id] or not Premium.ValidId(passId) then return nil,"INVALID_PREMIUM_GRANT" end
+ end
+ for slot,id in data.PremiumLoadout do
+  if type(slot)~="string" or type(id)~="string" or not Premium.Choice(slot,id) then return nil,"INVALID_PREMIUM_LOADOUT" end
+ end
+ for _,slot in Premium.Slots do
+  if data.PremiumLoadout[slot]==nil then data.PremiumLoadout[slot]="default" end
+  local choice=Premium.Options[slot][data.PremiumLoadout[slot]]
+  if choice and not data.PremiumGrants[choice.Item] then return nil,"INVALID_PREMIUM_SELECTION" end
  end
  if type(data.WeatherMaterialsSeeded)~="boolean" then return nil,"INVALID_WEATHER_MIGRATION" end
  for id,amount in data.WeatherMaterials do
@@ -125,7 +137,7 @@ function Schema.validate(raw)
 end
 function Schema.copy(data)
 	local copy = table.clone(data)
-	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped","AdventureRecords","WeatherMaterials"} do copy[key]=table.clone(data[key]) end
+	for _,key in {"Receipts","CosmeticsOwned","CosmeticsEquipped","TaskCooldowns","NeighborhoodTaskCooldowns","FeedCollection","AbilitiesOwned","AbilitiesEquipped","AdventureRecords","WeatherMaterials","PremiumGrants","PremiumLoadout"} do copy[key]=table.clone(data[key]) end
 	copy.ShowcaseCards = table.clone(data.ShowcaseCards or {})
 	return copy
 end

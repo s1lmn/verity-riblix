@@ -52,6 +52,7 @@ function Shop:GrantHeroForSession(userId)
  return self:Equip(userId,"homelander")
 end
 function Shop:RefreshPassAsync(userId,equipOnPurchase)
+ if self.premium then return self.premium:RefreshAsync(userId,"hero_kit",equipOnPurchase) end
 	if not self.passId then return "NOT_CONFIGURED" end
 	local profile=self.data:Get(userId)
 	if not profile then return "NOT_READY" end

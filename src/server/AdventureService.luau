@@ -85,7 +85,7 @@ function Service:Publish(only)
   local scores={};for player,e in party.entries do table.insert(scores,{name=player.DisplayName,userId=player.UserId,score=if party.mode=="Arcade" then e.score or 0 else e.count or 0,done=e.done==true}) end
   table.sort(scores,function(a,b)if a.score==b.score then return a.userId<b.userId end;return a.score>b.score end)
   while #scores>3 do table.remove(scores) end
-  table.insert(list,{round=party.round,position=self.model.parties[plot].board.Position,plot=plot,owner=party.owner.DisplayName,mode=party.mode,phase=party.phase,deadline=party.deadline,count=party.count,leaders=scores})
+  table.insert(list,{round=party.round,position=self.model.parties[plot].board.Position,plot=plot,premiumStyle=((self.world.houseProgression.plots[plot].state or {}).PremiumStyles or {}).PartyStyle or "default",owner=party.owner.DisplayName,mode=party.mode,phase=party.phase,deadline=party.deadline,count=party.count,leaders=scores})
  end
  table.sort(list,function(a,b)return a.plot<b.plot end)
  local function send(p)

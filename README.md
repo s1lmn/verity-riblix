@@ -67,3 +67,6 @@ python tools/build_project.py --rojo C:/path/to/rojo.exe
 
 
 Совместное прохождение V2 и доводка района,9ноября: [механика, UI, ограничения приёмки](docs/COOP_V2_AND_NEIGHBORHOOD_POLISH.md). Получен495d306, текущие правки локальные. Открывать `build/VERITY-Latest.rbxlx` или `build/VERITY-Coop-V2.rbxlx`; только упаковка--no-verify, без Play/тестов.
+
+
+Premium Core,9ноября: [контракт UI/World/VFX](docs/PREMIUM_CORE_UI_HANDOFF.md) и [серверная реализация](docs/PREMIUM_CORE_IMPLEMENTATION.md). Получен dd71cc0, новые правки локальные. Реальные pass ID отложены, оформление новых наборов относится к задаче второго разработчика. Без тестов/Play; упаковка только--no-verify.

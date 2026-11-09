@@ -8,6 +8,10 @@ return table.freeze({
 	MoneyPassId = nil,
 	HeroPassId = nil, -- Real Scarlet Sentinel Game Pass ID; no placeholder entitlement.
 	HeroPassPrice = 99,
+ -- Real IDs only: home_style_pack, aura_pack, fusion_pack, party_pack, collector_pack, atmosphere_pack.
+ PremiumPassIds = table.freeze({}),
+ -- UI/VFX developer enables a key only after that product's actual presentation is integrated.
+ PremiumPresentationReady = table.freeze({}),
 	PlotCount = 12,
 	ServerCapacity = 12, -- Also set MaxPlayers in Creator Dashboard.
 	BaseWidth = 2,

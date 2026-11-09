@@ -67,7 +67,7 @@ function Adapter:Attach(folder)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
 							local messages={
-                FORGE_MATERIALS="Материалы получены! Создай награду в кузнице погоды.",
+                PREMIUM_CONFIRMED="Покупка подтверждена Roblox. Возможности доступны!",FORGE_MATERIALS="Материалы получены! Создай награду в кузнице погоды.",
                 ADVENTURE_REWARD="Приключение завершено! Деньги и декор сохранены.",
         ADVENTURE_STEP="Отлично! Следующая цель отмечена стрелками.",
         ADVENTURE_ENDED="Попытка завершена. Можно попробовать снова.",

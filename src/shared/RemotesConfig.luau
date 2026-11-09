@@ -4,9 +4,10 @@ local Drops = require(script.Parent.FeedDrops)
 local Tasks = require(script.Parent.TaskConfig)
 local Album=require(script.Parent.AlbumConfig)
 local Forge=require(script.Parent.WeatherForgeConfig)
+local Premium=require(script.Parent.PremiumCatalog)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
-	"RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
+	"RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
 	"RequestCraftWeatherItem", "RequestSetWeatherLook", "RequestClaimAlbumSet", "RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
@@ -21,7 +22,13 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 		return false, "INVALID_OPERATION_ID"
 	end
 	local allowed = {operationId = true}
-	if name=="RequestCraftWeatherItem" or name=="RequestSetWeatherLook" then
+	if name=="RequestPremiumPurchase" or name=="RequestPremiumRefresh" then
+  allowed.itemId=true
+  if type(payload.itemId)~="string" or not Premium.Items[payload.itemId] then return false,"INVALID_ITEM" end
+ elseif name=="RequestSetPremiumStyle" then
+  allowed.itemId=true;allowed.slot=true
+  if type(payload.slot)~="string" or type(payload.itemId)~="string" or not Premium.Choice(payload.slot,payload.itemId) then return false,"INVALID_ITEM" end
+ elseif name=="RequestCraftWeatherItem" or name=="RequestSetWeatherLook" then
   allowed.itemId=true
   if type(payload.itemId)~="string" then return false,"INVALID_ITEM" end
   if name=="RequestCraftWeatherItem" then

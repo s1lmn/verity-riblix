@@ -47,7 +47,7 @@ function Service:Act(player,plotId,action)
   if not self.economy:TrySpendCash(player.UserId,item.Cost) then self.notify(player.UserId,"INSUFFICIENT_CASH");return end
   profile.Data.CosmeticsOwned[if action=="Theme" then "home_theme_"..id else id]=true
  end
- if action=="Theme" then profile.Data.HouseTheme=id end
+ if action=="Theme" then profile.Data.HouseTheme=id;profile.Data.PremiumLoadout.HouseStyle="default" end
  self.data:Touch(profile);self.state:Publish(player.UserId,true)
  self.notify(player.UserId,if owned then "HOME_STYLE_APPLIED" else "HOME_DECOR_PURCHASED")
 end

@@ -151,6 +151,12 @@
         },
         "WeatherForgeService": {
           "$path": "src/server/WeatherForgeService.luau"
+        },
+        "PremiumService": {
+          "$path": "src/server/PremiumService.luau"
+        },
+        "PurchaseReceiptService": {
+          "$path": "src/server/PurchaseReceiptService.luau"
         }
       }
     },

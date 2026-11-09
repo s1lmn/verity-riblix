@@ -5,7 +5,7 @@ local C=require(Shared.VerityFusionConfig)
 local Numeric=require(Shared.Numeric)
 local Service={};Service.__index=Service
 local allowed={Move=true,Jump=true,Boost=true,Ready=true,Swap=true,Leave=true,Sync=true}
-local attrs={"VerityFusionSlot","VerityFusionRole","VerityFusionActive"}
+local attrs={"VerityFusionSlot","VerityFusionRole","VerityFusionActive","VerityFusionPremiumStyle"}
 local function slotRole(slot,solo) return if solo then "Solo" elseif slot==1 then "Pilot" else "Jumper" end
 local function finitePosition(p) return Numeric.isFinite(p.X) and Numeric.isFinite(p.Y) and Numeric.isFinite(p.Z) end
 
@@ -61,7 +61,7 @@ function Service:Publish(only)
  local message={version=C.Version,round=self.round,sequence=self.sequence,phase=self.phase,entries=entries,solo=self.solo==true,
   serverTime=now,velocity=Vector3.new(self.vx or 0,self.vy or 0,self.vz or 0),pose=self.pose,mergeAt=self.mergeAt or 0,deadline=self.deadline or 0,retryAt=self.retryAt or 0,boostReady=self.boostReady or 0,
   faults=self.faults or 0,obstacle=self.obstacle or 1,checkpoint=self.checkpointZ or C.StartZ,jump=self.jumpSerial or 0,
-  distance=math.clamp(((self.z or C.StartZ)-C.StartZ)/(C.EndZ-C.StartZ),0,1),result=self.result}
+  distance=math.clamp(((self.z or C.StartZ)-C.StartZ)/(C.EndZ-C.StartZ),0,1),result=self.result,premiumStyle=self.premiumStyle or {id="default",ownerUserId=0,shared=false}}
  if only then self.stateEvent:FireClient(only,message);return end
  self.lastPublish=now
  self.model:SetAttribute("FusionPhase",self.phase);self.model:SetAttribute("FusionRound",self.round)
@@ -71,6 +71,16 @@ function Service:Publish(only)
   if pad.JoinFusion.Enabled~=enabled then pad.JoinFusion.Enabled=enabled end
  end
  self.stateEvent:FireAllClients(message)
+end
+function Service:RefreshPremiumStyle()
+ local previous=self.premiumStyle
+ local style=if self.premium and (self.phase=="Merging" or self.phase=="Running") then self.premium:FusionStyle(self.entries) else {id="default",ownerUserId=0,shared=false}
+ self.premiumStyle=style
+ self.model:SetAttribute("FusionPremiumStyle",style.id);self.model:SetAttribute("FusionPremiumOwner",style.ownerUserId)
+ for _,entry in self.entries do
+  if self.phase=="Merging" or self.phase=="Running" then entry.player:SetAttribute("VerityFusionPremiumStyle",style.id) end
+ end
+ if not previous or previous.id~=style.id or previous.ownerUserId~=style.ownerUserId then self:Publish() end
 end
 function Service:Role(entry,slot)
  entry.player:SetAttribute("VerityFusionSlot",slot)
@@ -138,6 +148,7 @@ function Service:Begin()
  self.jumpSerial=0;self.jumpUntil=0;self.boostUntil=0;self.boostReady=0
  self.pose=C.MergePose()
  for _,e in self.entries do self:Freeze(e) end
+ self:RefreshPremiumStyle()
  self:PlaceRiders();self:Publish()
 end
 function Service:PlaceRiders()
@@ -258,7 +269,7 @@ end
 function Service:Tick(dt)
  local now=self.clock()
  if self.phase=="Results" then
-  if now>=self.deadline then self.phase="Waiting";self.solo=false;self.deadline=nil;self.mergeAt=nil;self:Publish() end
+  if now>=self.deadline then self.phase="Waiting";self.solo=false;self.deadline=nil;self.mergeAt=nil;self:RefreshPremiumStyle();self:Publish() end
   return
  end
  if self.phase=="Waiting" then
@@ -296,6 +307,7 @@ function Service:Destroy()
  if self.phase=="Merging" or self.phase=="Running" then self:Finish(false,nil,true) end
  for slot,e in self.entries do self:Restore(e,slot) end
  table.clear(self.entries);table.clear(self.limits)
+ self.model:SetAttribute("FusionPremiumStyle","default");self.model:SetAttribute("FusionPremiumOwner",0)
  for _,link in self.links do link:Disconnect() end;table.clear(self.links)
  self.control:Destroy();self.stateEvent:Destroy()
 end

@@ -1417,6 +1417,40 @@ local coopPolishEnglish={
 }
 for source,target in coopPolishEnglish do en[source]=target end
 
+local premiumEnglish={
+ ["×3 ко всем деньгам"]="×3 all cash",
+ ["Постоянный множитель денежного заработка."]="A permanent multiplier for cash earnings.",
+ ["Алый страж"]="Scarlet Sentinel",
+ ["Полёт героя и красные лазеры из глаз."]="Hero flight and red eye lasers.",
+ ["Премиальные дома"]="Premium homes",
+ ["Сакура, космический дом и неоновая вилла."]="Sakura, cosmic home and neon villa.",
+ ["Особые ауры"]="Special auras",
+ ["Солнечная корона, галактическая пыль и жидкое золото."]="Solar corona, galaxy dust and liquid gold.",
+ ["Особое слияние"]="Special fusion",
+ ["Оформление общего Verity. Достаточно покупки у одного участника."]="Style your united Verity. Only one participant needs to own it.",
+ ["Набор для вечеринок"]="Party pack",
+ ["Оформление домашней вечеринки."]="Style your house party.",
+ ["Оформление коллекционера"]="Collector style",
+ ["Витрина, рамки и обложка альбома."]="Showcase, frames and an album cover.",
+ ["Атмосфера дома"]="Home atmosphere",
+ ["Звёздный потолок, светлячки и северное сияние на участке."]="A star ceiling, fireflies and aurora on your plot.",
+ ["Дом сакуры"]="Sakura home",
+ ["Космический дом"]="Cosmic home",
+ ["Неоновая вилла"]="Neon villa",
+ ["Солнечная корона"]="Solar corona",
+ ["Галактическая пыль"]="Galaxy dust",
+ ["Жидкое золото"]="Liquid gold",
+ ["Звёздный союз"]="Stellar duo",
+ ["Союз сияния"]="Aurora duo",
+ ["Звёздная дискотека"]="Star disco",
+ ["Золотой альбом"]="Golden album",
+ ["Звёздный потолок"]="Star ceiling",
+ ["Светлячки"]="Fireflies",
+ ["Северное сияние"]="Aurora",
+ ["Покупка подтверждена Roblox. Возможности доступны!"]="Roblox confirmed your purchase. Benefits are available!",
+}
+for source,target in premiumEnglish do en[source]=target end
+
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source
 end

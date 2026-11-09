@@ -314,6 +314,12 @@ function WorldIntegration:UpdatePlot(userId, state)
 		model:SetAttribute(key, state[key])
 	end
 	model:SetAttribute("StateRevision", state.stateRevision)
+ local styles=state.PremiumStyles or {}
+ local house=self.anchors[plotId].WorkshopHouse
+ for _,slot in {"HouseStyle","PartyStyle","AlbumStyle","Atmosphere"} do
+  model:SetAttribute("Premium"..slot,styles[slot] or "default")
+  if house then house:SetAttribute("Premium"..slot,styles[slot] or "default") end
+ end
 	if state.VerityUnlocked and self.verityFactory then
 		local verity = self.verities[userId]
 		if not verity then
@@ -326,6 +332,7 @@ function WorldIntegration:UpdatePlot(userId, state)
 		verity:SetAttribute("IncomePerSecond", state.IncomePerSecond)
 		verity:SetAttribute("VerityScale", state.VerityScale)
   local cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
+  verity:SetAttribute("PremiumAura",styles.Aura or "default")
   verity:SetAttribute("WeatherLook",state.WeatherLook or "Original")
   for slot in cosmetics.Slots do verity:SetAttribute("Cosmetic_"..slot,(state.CosmeticsEquipped or {})[slot]) end
 	end
@@ -359,6 +366,11 @@ function WorldIntegration:ClearPlot(plotId)
 	if verity then verity:Destroy(); self.verities[owner] = nil end
 	model:SetAttribute("OwnerUserId", 0)
 	self.anchors[plotId].ClaimPad:SetAttribute("OwnerUserId",0)
+ local house=self.anchors[plotId].WorkshopHouse
+ for _,slot in {"HouseStyle","PartyStyle","AlbumStyle","Atmosphere"} do
+  model:SetAttribute("Premium"..slot,"default")
+  if house then house:SetAttribute("Premium"..slot,"default") end
+ end
 	updateHouseSign(self.anchors[plotId], nil)
 	self.anchors[plotId].ClaimPrompt.Enabled = true
 	updateWorkshop(self.anchors[plotId], nil)

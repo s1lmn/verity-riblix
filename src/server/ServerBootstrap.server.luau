@@ -60,19 +60,6 @@ local State = require(script.Parent.PlayerStateService).new(Data, clock)
 local Economy = require(script.Parent.EconomyService).new(Data, clock)
 local Income = require(script.Parent.IncomeService).new(Data, State, Economy, clock)
 local MoneyPass = require(script.Parent.MoneyPassService).new(Data, State, Income, MarketplaceService)
-local function refreshMoneyPass(player)
-	task.spawn(function()
-		for attempt=1,3 do
-			if player.Parent~=Players then return end
-			local status=MoneyPass:RefreshAsync(player.UserId)
-			if status~="UNAVAILABLE" then return end
-			task.wait(attempt*2)
-		end
-	end)
-end
-MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player,passId,purchased)
-	if purchased and passId==MoneyPass.passId then refreshMoneyPass(player) end
-end)
 local WorldModule = require(script.Parent.WorldIntegration)
 local generatedWorld
 local worldModules = ReplicatedStorage:FindFirstChild("World")
@@ -124,6 +111,15 @@ Tasks.onReward = function(id, reward, taskId)
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State) end
 local AbilityShop = require(script.Parent.AbilityShopService).new(Data,State,Economy,MarketplaceService)
+local Premium=require(script.Parent.PremiumService).new(Data,State,Income,AbilityShop,MarketplaceService,Players,clock,not usingStudioMemory,function(id,code)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Premium",eventId=guid()})
+end)
+MoneyPass.premium=Premium;AbilityShop.premium=Premium
+local Receipts=require(script.Parent.PurchaseReceiptService).new(Data,State,{Cosmetics,Boost},not usingStudioMemory)
+State.PremiumProjection=function(id)return Premium:Projection(id)end
+State.PremiumPublic=function(id)return Premium:PublicStyles(id)end
+Delivery.onUnlocked=function(id)Cosmetics:GrantStarter(id);Premium:OnUnlocked(id)end
+
 local CombatTargets = require(script.Parent.CombatTargets).new(Data,State,Economy,function(id,reward)
  send(id,"NotificationEvent",{protocolVersion=1,code="COMBAT_REWARD",reward=reward,eventId=guid(),source="Combat"})
 end)
@@ -189,24 +185,15 @@ activitiesRemote.OnServerEvent:Connect(function(player,action,...)
  if action=="LeaveBattle" and Battle.members[player] then Battle:Remove(player,true)
  elseif action=="LeaveParkour" and Parkour.runs[player] then Parkour:Return(player,true) end
 end)
+if Fusion then Fusion.premium=Premium end
+Premium.onChanged=function(userId,itemId)
+ if Fusion and Fusion:Find(Players:GetPlayerByUserId(userId)) and (itemId=="fusion_pack" or itemId=="style:FusionStyle") then Fusion:RefreshPremiumStyle() end
+end
 local abilityShopRemote=Instance.new("RemoteEvent")
 abilityShopRemote.Name="VerityAbilityShop";abilityShopRemote.Parent=ReplicatedStorage
 if generatedWorld then
 	require(script.Parent.AbilityStands).Build(generatedWorld,function(player,id) abilityShopRemote:FireClient(player,id) end)
 end
-local function refreshHeroPass(player,equipOnPurchase)
- task.spawn(function()
-  for attempt=1,3 do
-   if player.Parent~=Players then return end
-   local status=AbilityShop:RefreshPassAsync(player.UserId,equipOnPurchase)
-   if status~="UNAVAILABLE" and not (equipOnPurchase and status=="UNOWNED") then return end
-   task.wait(attempt*2)
-  end
- end)
-end
-MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player,id,purchased)
- if purchased and id==AbilityShop.passId then refreshHeroPass(player,true) end
-end)
 State.send = function(userId, snapshot)
 	local player = Players:GetPlayerByUserId(userId)
 	if player then Abilities:Refresh(player, player.Character, snapshot) end
@@ -215,6 +202,9 @@ State.send = function(userId, snapshot)
 end
 local Remote = require(script.Parent.RemoteService).new(Data, State, clock,
 	function(userId, result) send(userId, "ActionResult", result) end)
+Remote:Register("RequestPremiumPurchase",function(id,payload)return Premium:PreparePurchase(id,payload.itemId)end)
+Remote:Register("RequestPremiumRefresh",function(id,payload)return Premium:RequestRefresh(id,payload.itemId)end)
+Remote:Register("RequestSetPremiumStyle",function(id,payload)return Premium:Select(id,payload.slot,payload.itemId)end)
 Remote:Register("RequestBuyAbility",function(id,payload) return AbilityShop:Buy(id,payload.itemId) end)
 Remote:Register("RequestEquipAbility",function(id,payload) return AbilityShop:Equip(id,payload.itemId,payload.slot) end)
 Remote:Register("RequestUpgradeHouse",function(id)
@@ -344,7 +334,7 @@ end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
 	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
-	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, HomeStyleService=HomeStyles, CommunityService=Community, VerityBondService=Bond, SecretsService=Secrets, AlbumService=Album, ArcadeService=Arcade, AdventureService=Adventures, WeatherForgeService=Forge, WorldSignal = worldSignal.Event}
+	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, PremiumService=Premium, PurchaseReceiptService=Receipts, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, HomeStyleService=HomeStyles, CommunityService=Community, VerityBondService=Bond, SecretsService=Secrets, AlbumService=Album, ArcadeService=Arcade, AdventureService=Adventures, WeatherForgeService=Forge, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
 ReplicatedStorage:SetAttribute("VerityCoreReady",true)
 local playerConnections, closing = {}, false
@@ -465,8 +455,7 @@ local function onPlayer(player)
 	local profile, reason = Data:LoadAsync(player.UserId)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
-	refreshMoneyPass(player)
-	refreshHeroPass(player)
+ Premium:Attach(player)
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
 	player.RespawnLocation = roadSpawn
 	player:SetAttribute("HouseSelectionReady", true)
@@ -487,6 +476,7 @@ local function claimHouse(player, requestedPlot)
 	if not plotId then return reason end
 
 	State:Attach(userId, plotId)
+ Premium:OnUnlocked(userId)
  Cosmetics:GrantStarter(userId)
  Album:CheckMaster(userId)
  Forge:SeedLegacy(userId)
@@ -504,7 +494,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
- Forge:Remove(player);Adventures:Remove(player);Arcade:Remove(player);Community:Remove(player);Bond:Remove(player);HomeStyles:Remove(player);Secrets:Remove(player)
+ Premium:Remove(player);Forge:Remove(player);Adventures:Remove(player);Arcade:Remove(player);Community:Remove(player);Bond:Remove(player);HomeStyles:Remove(player);Secrets:Remove(player)
  Diversions:Remove(player)
  if Fusion then Fusion:Remove(player,true) end
  Battle:Forget(player);activityLimits[player]=nil
@@ -571,17 +561,10 @@ task.spawn(function()
 	end
 end)
 -- Disabled until real owned product IDs are configured; no placeholder IDs.
-MarketplaceService.ProcessReceipt = function(receipt)
-	if usingStudioMemory then return Enum.ProductPurchaseDecision.NotProcessedYet end
-	local granted
- if Cosmetics.products[receipt.ProductId] then
-  granted = Cosmetics:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId)
- else granted = Boost:ProcessReceiptAsync(receipt.PlayerId, tostring(receipt.PurchaseId), receipt.ProductId) end
-	return if granted then Enum.ProductPurchaseDecision.PurchaseGranted else Enum.ProductPurchaseDecision.NotProcessedYet
-end
+MarketplaceService.ProcessReceipt = function(receipt) return Receipts:Process(receipt) end
 game:BindToClose(function()
 	closing = true
- Forge:Destroy();Adventures:Destroy();Arcade:Destroy();Secrets:Destroy();Community:Destroy();HomeStyles:Destroy();Bond:Destroy()
+ Premium:Destroy();Forge:Destroy();Adventures:Destroy();Arcade:Destroy();Secrets:Destroy();Community:Destroy();HomeStyles:Destroy();Bond:Destroy()
  if Fusion then Fusion:Destroy() end
 	Data.closed = true
 	for id in State.sessions do Income:Settle(id) end
