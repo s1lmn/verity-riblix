@@ -41,7 +41,7 @@ function Service:Act(player,plotId,action)
  local item,id,owned
  if action=="Theme" then id=r.themeChoice;item=C.Themes[id];owned=C.ThemeOwned(profile.Data.CosmeticsOwned,id)
  else id=action;item=C.Decor[id];owned=profile.Data.CosmeticsOwned[id]==true end
- if not item or item.Earned then return end
+ if not item or item.Earned or item.Premium and not owned then return end
  if profile.Data.VerityLevel<item.Level or profile.Data.HouseIncomeLevel<(item.Build or 1) then self.notify(player.UserId,"HOME_LEVEL_REQUIRED");return end
  if not owned then
   if not self.economy:TrySpendCash(player.UserId,item.Cost) then self.notify(player.UserId,"INSUFFICIENT_CASH");return end

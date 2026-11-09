@@ -7,6 +7,9 @@ C.Themes={
  candy={Name="Ягодный дом",Cost=600,Level=5,Color="FF8CCB",Accent="FFE38D",Soft="C6AEFF"},
  lagoon={Name="Лазурная лагуна",Cost=2500,Level=15,Color="6DDAE8",Accent="B5F79D",Soft="A4BFFF"},
  sunset={Name="Тёплый закат",Cost=12000,Level=25,Color="FFB879",Accent="FFF0AD",Soft="EF9BCF"},
+ sakura={Name="Сакура",Premium=true,Level=1,Color="FCA4C8",Accent="FFD7B1",Soft="FBC5DD"},
+ cosmic={Name="Космический дом",Premium=true,Level=1,Color="786AC5",Accent="FFD798",Soft="A89BE5"},
+ neon={Name="Неоновая вилла",Premium=true,Level=1,Color="596980",Accent="79E9D9",Soft="F3A7D9"},
 }
 C.DecorOrder={"home_lounge","home_garden","home_arcade"}
 C.Decor={

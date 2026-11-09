@@ -106,7 +106,7 @@ function PlayerStateService:Snapshot(userId)
   WeatherMaterials=table.clone(data.WeatherMaterials), AdventureRecords=table.clone(data.AdventureRecords), ArcadeBestScore=data.ArcadeBestScore, FeedCollection = table.clone(data.FeedCollection),
   ShowcaseCards = table.clone(data.ShowcaseCards or {}),
   AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = equipped,
-  HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId,
+  HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId, HeroPassTrial = heroAccess and profile.HeroPassOwned~=true,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}
 end

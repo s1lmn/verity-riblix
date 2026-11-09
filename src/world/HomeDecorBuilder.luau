@@ -2,6 +2,9 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local C=require(Shared.HomeStyleConfig)
 local Locale=require(Shared.LocaleText)
+local PremiumArt=require(script.Parent.PremiumHouseArt)
+local PremiumDecor=require(script.Parent.PremiumDecorArt)
+local Premium=require(Shared.PremiumVisualCatalog)
 local Builder={}
 local function part(parent,pivot,name,pos,size,color)
  local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=pivot*CFrame.new(pos)
@@ -207,13 +210,27 @@ end
 function Builder.Update(r,house,pivot,state)
  local style=state and state.HomeStyle or {theme="original",owned={},themes={original=true}}
  local owner=state and state.ownerUserId or 0
- if owner~=r.owner then r.themeChoice=style.theme;r.owner=owner end
+ if owner~=r.owner then r.themeChoice=if table.find(C.ThemeOrder,style.theme) then style.theme else "original";r.owner=owner end
  local theme=C.Themes[style.theme] or C.Themes.original
+ local selected=state and state.PremiumStyle
+ local atmosphere=selected and selected.atmosphere
+ if not (state and state.VerityUnlocked and state.HouseIncomeLevel>=1 and Premium.Atmospheres[atmosphere]) then atmosphere=nil end
+ if atmosphere~=r.atmosphere then
+  if r.atmosphereModel then r.atmosphereModel:Destroy();r.atmosphereModel=nil end
+  r.atmosphere=atmosphere
+  if atmosphere then r.atmosphereModel=PremiumDecor.Build(r.folder,pivot,atmosphere) end
+ end
  local signature=tostring(owner)..":"..style.theme..":"..tostring(state and state.HouseIncomeLevel)..":"..tostring(state and state.HouseTier)
  for id in C.Decor do signature..=":"..tostring(style.owned[id]) end
  for _,id in require(Shared.AdventureConfig).TrialOrder do signature..=":"..tostring((style.trialRanks or {})[id]) end
  if signature~=r.signature then
   r.signature=signature
+  local facadeTheme=if state and state.VerityUnlocked and state.HouseIncomeLevel>=1 and theme.Premium then style.theme else nil
+  if facadeTheme~=r.premiumTheme then
+   if r.premiumFacade then r.premiumFacade:Destroy();r.premiumFacade=nil end
+   r.premiumTheme=facadeTheme
+   if facadeTheme then r.premiumFacade=PremiumArt.Build(r.folder,pivot,facadeTheme) end
+  end
   for _,trim in r.trims do trim.part.Color=if style.theme=="original" or not state then trim.part:GetAttribute("DefaultFacadeColor") or trim.color else Color3.fromHex(theme.Color) end
   for id,model in r.items do
    local visible=state and state.VerityUnlocked and style.owned[id] and state.HouseIncomeLevel>=C.Decor[id].Build
@@ -240,6 +257,7 @@ function Builder.Update(r,house,pivot,state)
  Locale.SetWorld(r.styleLabel,"Text",choice.Name)
  Locale.SetWorld(r.apply,"ObjectText",choice.Name)
  if style.themes[r.themeChoice] then Locale.SetWorld(r.apply,"ActionText",if style.theme==r.themeChoice then "Стиль выбран" else "Применить стиль")
+ elseif choice.Premium then Locale.SetWorld(r.apply,"ActionText","Доступно в магазине")
  else Locale.SetWorld(r.apply,"ActionText","Купить за $%d • ур. %d",choice.Cost,choice.Level) end
  for id,p in r.prompts do
   local item=C.Decor[id];p.Enabled=enabled and not style.owned[id];p:SetAttribute("HomeAvailable",p.Enabled)

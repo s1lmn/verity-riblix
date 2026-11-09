@@ -7,6 +7,8 @@ local Locale = require(Shared.LocaleText)
 local Construction = require(script.Parent.HouseConstruction)
 local Door = require(script.Parent.HouseDoor)
 local HomeDecor=require(game:GetService("ReplicatedStorage").World.HomeDecorBuilder)
+local Premium=require(Shared.PremiumVisualCatalog)
+local PremiumDecor=require(game:GetService("ReplicatedStorage").World.PremiumDecorArt)
 local TrophyShelf=require(game:GetService("ReplicatedStorage").World.ActivityTrophyShelf)
 local PadFactory = require(game:GetService("ReplicatedStorage").World.PurchasePadFactory)
 local HouseProgression = {}
@@ -146,6 +148,16 @@ function HouseProgression:Update(plotId,state)
 	local sameOwner = previous and state and previous.ownerUserId == state.ownerUserId
 	local cards = state and state.ShowcaseCards or {}
 	local before = sameOwner and previous.ShowcaseCards or {}
+ local gallery=state and state.PremiumStyle and state.PremiumStyle.collection==Premium.Gallery.id or false
+ if gallery~=record.gallery then
+  record.gallery=gallery
+  if record.galleryArt then record.galleryArt:Destroy();record.galleryArt=nil end
+  if gallery then record.galleryArt=PremiumDecor.Build(record.house,record.pivot*CFrame.new(-9,0,15.8),Premium.Gallery.id) end
+  for _,frame in record.showcase do frame.Color=Color3.fromHex(if gallery then Premium.Gallery.Frame else "53408F") end
+  for _,support in record.showcaseStand do
+   support.Color=Color3.fromHex(if gallery then Premium.Gallery.Accent elseif support.Name=="ShowcaseRail" then "B99AF3" else "6B55A2")
+  end
+ end
 	if not sameOwner then
 		for _, support in record.showcaseStand do support.Transparency = if state then 0 else 1 end
 	end

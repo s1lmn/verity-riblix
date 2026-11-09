@@ -22,20 +22,22 @@ function MoneyPass.new(ctx)
 		end
 		self:Render()
 	end))
-	self.cleanup:Add(self.refs.MoneyPass.Activated:Connect(function()
-		local state=ctx.net.state
-		if not self.offer or not state or state.MoneyPassOwned or self.promptOpen or not ctx.net.connected then return end
-		self.promptOpen=true
-		self:Render()
-		local ok=pcall(function() Market:PromptGamePassPurchase(Players.LocalPlayer,self.passId) end)
-		if not ok then self.promptOpen=false;self:Render() end
-	end))
+	self.cleanup:Add(self.refs.MoneyPass.Activated:Connect(function() self:Buy() end))
 	self.cleanup:Add(Market.PromptGamePassPurchaseFinished:Connect(function(player,passId)
 		if player==Players.LocalPlayer and passId==self.passId then self.promptOpen=false;self:Render() end
 	end))
 	self.cleanup:Add(Locale.Changed.Event:Connect(function() self:Render() end))
 	self:Render()
 	return self
+end
+function MoneyPass:Buy()
+ local net=self.ctx.net
+ local state=net.state
+ if not self.offer or not state or state.MoneyPassOwned or self.promptOpen or not net.connected then return end
+ self.promptOpen=true
+ self:Render()
+ local ok=pcall(function() Market:PromptGamePassPurchase(Players.LocalPlayer,self.passId) end)
+ if not ok then self.promptOpen=false;self:Render() end
 end
 function MoneyPass:Render()
 	local state=self.ctx.net.state
@@ -47,6 +49,7 @@ function MoneyPass:Render()
 		else Locale.Text("×3 ДЕНЬГИ • СКОРО")
 	W.SetButton(self.refs.MoneyPass,text,self.offer~=nil and state~=nil and not owned
 		and not self.promptOpen and self.ctx.net.connected,self.promptOpen==true)
+ if self.ctx.renderShop then self.ctx.renderShop() end
 end
 function MoneyPass:Destroy() self.dead=true;self.cleanup:Destroy() end
 return MoneyPass

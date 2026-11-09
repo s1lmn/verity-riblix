@@ -6,11 +6,12 @@ local Cleanup=require(script.Parent.Cleanup)
 local Controller={};Controller.__index=Controller
 local function decoration(p)
  local parent=p.Parent
+ if p:GetAttribute("PremiumDecoration")==true then return true end
  return not p.CanCollide and p:FindFirstAncestor("Environment") and parent
   and (parent.Name:find("Tree") or parent.Name:find("Bush")) and (p.Name=="Crown" or p.Name=="Top" or p.Name:find("Leaf"))
 end
 function Controller.new(settings)
- local self=setmetatable({settings=settings,cleanup=Cleanup.new(),parts={},decorations={},lights={},shadow=Lighting.GlobalShadows,nextAt=0},Controller)
+ local self=setmetatable({settings=settings,cleanup=Cleanup.new(),parts={},decorations={},lights={},particles={},shadow=Lighting.GlobalShadows,nextAt=0},Controller)
  local function add(object)
   if not object:FindFirstAncestor("GeneratedWorld") then return end
   if object:IsA("BasePart") and not self.parts[object] then
@@ -19,6 +20,8 @@ function Controller.new(settings)
    if r.decor then self.decorations[object]=r end
    local profile=settings.values.Graphics
    object.CastShadow=r.shadow and (not profile or profile.Shadows)
+  elseif object:IsA("ParticleEmitter") and type(object:GetAttribute("PremiumRate"))=="number" then
+   self.particles[object]=object:GetAttribute("PremiumRate")
   elseif object:IsA("Light") and not self.lights[object] then
    self.lights[object]={brightness=object.Brightness,shadows=object.Shadows}
   end
@@ -30,6 +33,7 @@ function Controller.new(settings)
    if r.decor then object.LocalTransparencyModifier=r.alpha end
    self.parts[object]=nil;self.decorations[object]=nil
   end
+  if self.particles[object] then object.Rate=0;object:Clear();self.particles[object]=nil end
   local light=self.lights[object]
   if light then object.Brightness=light.brightness;object.Shadows=light.shadows;self.lights[object]=nil end
  end
@@ -58,6 +62,12 @@ function Controller:Tick()
   local alpha=r.alpha+(1-r.alpha)*fade
   if math.abs(p.LocalTransparencyModifier-alpha)>.005 then p.LocalTransparencyModifier=alpha end
  end
+ for emitter,baseRate in self.particles do
+  local parent=emitter.Parent
+  local near=parent and parent:IsA("BasePart") and (parent.Position-camera.CFrame.Position).Magnitude<profile.EffectDistance
+  local rate=if near and not self.settings.values.ReducedEffects then baseRate*profile.ParticleScale else 0
+  if emitter.Rate~=rate then emitter.Rate=rate;if rate==0 then emitter:Clear() end end
+ end
  for light,r in self.lights do
   local parent=light.Parent
   local position=if parent and parent:IsA("BasePart") then parent.Position elseif parent and parent:IsA("Attachment") then parent.WorldPosition else nil
@@ -72,6 +82,7 @@ function Controller:Destroy()
  self.cleanup:Destroy();Lighting.GlobalShadows=self.shadow
  for p,r in self.parts do if p.Parent then p.CastShadow=r.shadow;if r.decor then p.LocalTransparencyModifier=r.alpha end end end
  for light,r in self.lights do if light.Parent then light.Brightness=r.brightness;light.Shadows=r.shadows end end
- table.clear(self.parts);table.clear(self.decorations);table.clear(self.lights)
+ for emitter in self.particles do if emitter.Parent then emitter.Rate=0;emitter:Clear() end end
+ table.clear(self.parts);table.clear(self.decorations);table.clear(self.lights);table.clear(self.particles)
 end
 return Controller
