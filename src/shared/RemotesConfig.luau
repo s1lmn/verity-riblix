@@ -26,7 +26,11 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 	if name=="RequestBuyPremiumOffer" or name=="RequestEquipPremiumOffer" then
   allowed.itemId=true
   local binding=type(payload.itemId)=="string" and Bridge.Offers[payload.itemId]
-  if not binding or name=="RequestEquipPremiumOffer" and not binding.Slot then return false,"INVALID_ITEM" end
+  if not binding then return false,"INVALID_ITEM" end
+  if name=="RequestEquipPremiumOffer" then
+   allowed.variantId=true
+   if not Bridge.Equip(payload.itemId,payload.variantId) then return false,"INVALID_ITEM" end
+  end
  elseif name=="RequestPremiumPurchase" or name=="RequestPremiumRefresh" then
   allowed.itemId=true
   if type(payload.itemId)~="string" or not Premium.Items[payload.itemId] then return false,"INVALID_ITEM" end

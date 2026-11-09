@@ -172,9 +172,19 @@ function Service:VisualProjection(userId)
  for id,binding in Bridge.Offers do
   local item=byItem[binding.Item]
   offers[id]={productKey=binding.Item,gamePassId=item.gamePassId,configured=item.configured,owned=item.owned,
-   selected=binding.Slot~=nil and projection.loadout[binding.Slot]==binding.Choice or false,
+   selected=binding.Choice~=nil and projection.loadout[binding.Slot]==binding.Choice or false,
    canPurchase=item.canPurchase,canEquip=canEquip and profile~=nil and profile.Data.VerityUnlocked and item.owned and item.presentationReady,
    ownershipState=item.ownershipState}
+ end
+ for id,binding in Bridge.Offers do
+  if binding.Variants then
+   local variants={}
+   for _,variantId in binding.Variants do
+    local offer=offers[variantId]
+    variants[variantId]={selected=offer.selected,canEquip=offer.canEquip}
+   end
+   offers[id].variants=variants
+  end
  end
  return {version=1,offers=offers}
 end

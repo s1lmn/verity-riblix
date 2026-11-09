@@ -17,6 +17,20 @@ B.Offers={
  atmosphere_fireflies={Item="atmosphere_pack",Slot="Atmosphere",Choice="fireflies",Bundle=3},
  atmosphere_aurora={Item="atmosphere_pack",Slot="Atmosphere",Choice="aurora",Bundle=3},
 }
+-- Bundle cards buy one pass; only a whitelisted member chooses a saved style.
+B.Offers.premium_homes={Item="home_style_pack",Slot="HouseStyle",Variants=Visual.Passes.premium_homes.Variants}
+B.Offers.premium_auras={Item="aura_pack",Slot="Aura",Variants=Visual.Passes.premium_auras.Variants}
+B.Offers.home_atmosphere={Item="atmosphere_pack",Slot="Atmosphere",Variants=Visual.Passes.home_atmosphere.Variants}
+function B.Equip(id,variantId)
+ local binding=type(id)=="string" and B.Offers[id]
+ if not binding or not binding.Slot then return nil end
+ if binding.Variants then
+  if type(variantId)~="string" or not table.find(binding.Variants,variantId) then return nil end
+  local choice=B.Offers[variantId]
+  return if choice and choice.Item==binding.Item and choice.Slot==binding.Slot then choice else nil
+ end
+ return if variantId==nil then binding else nil
+end
 B.ByChoice={};B.HouseThemes={}
 for id,v in B.Offers do
  if v.Slot and Visual.Items[id] then B.ByChoice[v.Slot..":"..v.Choice]=id end
