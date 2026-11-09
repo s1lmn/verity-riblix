@@ -8,6 +8,27 @@ local WorldBuilder = {}
 local VERSION = "open-neighborhood-6-compact"
 local ROW_SPACING = 72
 
+local function prepareWorld(world)
+    local spawn = world.Plaza.WelcomeSpawn
+    local road = world.Environment.Road
+    spawn.CFrame = CFrame.new(road.Position + Vector3.yAxis * (road.Size.Y/2 + .1))
+    spawn.Transparency = 1
+    spawn.CanCollide, spawn.CanTouch, spawn.CanQuery = false, false, false
+    if not world:FindFirstChild("AbilityCampusGround") then
+        local ground = world.Environment.Ground
+        local part = Instance.new("Part")
+        part.Name = "AbilityCampusGround"
+        part.Size = Vector3.new(112, ground.Size.Y, 110)
+        part.Position = ground.Position - Vector3.new((ground.Size.X + part.Size.X)/2, 0, (ground.Size.Z - part.Size.Z)/2)
+        part.Anchored = true
+        part.CanTouch = false
+        part.Color = ground.Color
+        part.Material = ground.Material
+        part.Parent = world
+    end
+    Boundary.Build(world)
+end
+
 local function parkTemplateFloor(target, world)
     -- Rojo sync preserves the Studio template's Baseplate. Its top is Y=0,
     -- exactly coplanar with our Ground, so both stud surfaces fight for depth.
@@ -44,7 +65,7 @@ function WorldBuilder.Build(parent, plotCount)
             ParkourBuilder.Build(existing)
             RaceBuilder.Build(existing)
             SurfaceTiles.Build(existing)
-            Boundary.Build(existing)
+            prepareWorld(existing)
             parkTemplateFloor(target, existing)
             return existing
         end
@@ -120,7 +141,7 @@ function WorldBuilder.Build(parent, plotCount)
     ParkourBuilder.Build(root)
     RaceBuilder.Build(root)
     SurfaceTiles.Build(root)
-    Boundary.Build(root)
+    prepareWorld(root)
     parkTemplateFloor(target, root)
     root.Parent = target
     return root

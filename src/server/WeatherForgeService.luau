@@ -55,7 +55,9 @@ function Service:Craft(id,recipeId)
  return "OK"
 end
 function Service:SelectLook(id,lookId)
- local p,profile=self:Near(id);if not p then return "FORGE_TOO_FAR" end
+ local profile=self.data:Get(id)
+ if not profile or not self.state.sessions[id] then return "NOT_READY" end
+ if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
  if lookId~="Auto" and lookId~="Original" then
   local look=F.Looks[lookId];if not look then return "INVALID_ITEM" end
   if not profile.Data.CosmeticsOwned[look.Item] then return "NOT_OWNED" end

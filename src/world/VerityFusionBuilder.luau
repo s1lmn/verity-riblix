@@ -2,10 +2,12 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local C=require(Shared.VerityFusionConfig)
 local Locale=require(Shared.LocaleText)
+local Sign=require(script.Parent.WorldSign)
 local Builder={}
+local VISUAL_VERSION=2
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityFusion")
- if old and old:IsA("Model") and old:GetAttribute("FusionVersion")==C.Version then
+ if old and old:IsA("Model") and old:GetAttribute("FusionVersion")==C.Version and old:GetAttribute("FusionVisualVersion")==VISUAL_VERSION then
   local complete=true
   for _,name in {"FusionPad1","FusionPad2","SoloPad"} do
    local pad=old:FindFirstChild(name)
@@ -19,7 +21,7 @@ function Builder.Build(parent)
  end
  if old then old:Destroy() end
  local root=Instance.new("Model");root.Name="VerityFusion";root.ModelStreamingMode=Enum.ModelStreamingMode.Persistent
- root:SetAttribute("FusionVersion",C.Version)
+ root:SetAttribute("FusionVersion",C.Version);root:SetAttribute("FusionVisualVersion",VISUAL_VERSION)
  local function p(name,position,size,hex,solid,glow)
   local part=Instance.new("Part");part.Name=name;part.Position=position;part.Size=size;part.Color=Color3.fromHex(hex)
   part.Anchored=true;part.CanCollide=solid==true;part.CanQuery=solid==true;part.CanTouch=false;part.CastShadow=false
@@ -31,6 +33,23 @@ function Builder.Build(parent)
  end
  local base=p("FusionDeck",C.Hub-Vector3.new(0,.35,0),Vector3.new(30,.7,16),"EAE2F9",true)
  base.TopSurface=Enum.SurfaceType.Studs
+ local hub=C.Hub
+ local roadEnd=-12
+ local turnZ=hub.Z-36
+ p("FusionWalk",Vector3.new((hub.X+roadEnd)/2,.12,turnZ),Vector3.new(roadEnd-hub.X,.42,9),"85DCCB",true)
+ p("FusionApproach",Vector3.new(hub.X,.15,turnZ+15),Vector3.new(9,.46,33),"85DCCB",true)
+ local function arrow(x,z,direction)
+  local pos=Vector3.new(x,.41,z)
+  local frame=CFrame.lookAt(pos,pos+direction)
+  for _,side in {-1,1} do
+   local arm=p("FusionWalkArrow",pos,Vector3.new(.35,.06,1.9),"35696E",false)
+   arm.CFrame=frame*CFrame.new(side*.57,0,0)*CFrame.Angles(0,side*math.pi/4,0)
+  end
+ end
+ for x=-24,hub.X+10,-14 do arrow(x,turnZ,-Vector3.xAxis) end
+ for z=turnZ+8,hub.Z-9,9 do arrow(hub.X,z,Vector3.zAxis) end
+ local entrance=p("FusionDirection",Vector3.new(-28,3.4,turnZ+5.1),Vector3.new(13,3.4,.4),"354866",false)
+ Sign.Add(entrance,"СЛИЯНИЕ VERITY\nВход по мятной дорожке")
  for slot=1,2 do
   local pad=p("FusionPad"..slot,C.Hub+Vector3.new((slot-1.5)*13,.15,2.5),Vector3.new(8,.25,6),if slot==1 then "FFC660" else "6AE4D2",false)
   prompt(pad,if slot==1 then "Занять руль" else "Управлять прыжком")
@@ -41,7 +60,8 @@ function Builder.Build(parent)
   local orb=p("MergeOrb",C.Hub+Vector3.new(side*12,7,-3),Vector3.one*2.3,if side<0 then "FFC660" else "6AE4D2",false,true)
   orb.Shape=Enum.PartType.Ball
  end
- p("MergeHeader",C.Hub+Vector3.new(0,6.9,-3),Vector3.new(24,1.25,.9),"BCA4E6",false)
+ local header=p("MergeHeader",hub+Vector3.new(0,6.9,-3),Vector3.new(22,3.5,.9),"354866",false)
+ Sign.Add(header,"СЛИЯНИЕ VERITY\nЗаезд вдвоём или тренировка")
  local function lane(name,x,y,z,w,h,d,hex,solid,glow)
   return p(name,Vector3.new(C.TrackX+x,C.TrackY+y,z),Vector3.new(w,h,d),hex,solid,glow)
  end

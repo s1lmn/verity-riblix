@@ -253,7 +253,20 @@ function Controller:BeginSpawn(event)
 end
 
 function Controller:HandleWorld(event)
-	if type(event)~="table" or event.kind~="VerityLevelChanged" then return false end
+ if type(event)~="table" then return false end
+ if event.kind=="VerityLevelSet" then
+  local record=self.byOwner[key(event.ownerUserId,event.plotId)]
+  if not record or event.stateRevision<=record.revision then return false end
+  if record.active then self.effects:CancelUpgrade(record.model);record.active=nil end
+  record.adminLevel=nil;record.adminEmotion=nil;record.growthCover=0;record.baseYaw=0
+  record.level,record.revision,record.idleStart=event.newLevel,event.stateRevision,os.clock()
+  record.ledger=Ledger.new();record.ledger:Seed(record.revision,record.level)
+  self:Apply(record,Levels.getVerityScale(record.level),0,0,Factory.Color(record.level),record.level)
+  record.model:SetAttribute("PresentedLevel",record.level)
+  record.model:SetAttribute("PresentedRevision",record.revision)
+  return true
+ end
+ if event.kind~="VerityLevelChanged" then return false end
 	if not integer(event.oldLevel,1,99) or event.newLevel~=event.oldLevel+1
 		or not integer(event.stateRevision,0,2^53-1) or type(event.eventId)~="string" or #event.eventId>128
 		or not integer(event.ownerUserId,if RunService:IsStudio() then -2^53+1 else 1,2^53-1) or event.ownerUserId==0 or not integer(event.plotId,1,128) then return false end
@@ -518,7 +531,7 @@ function Controller:Tick(now,dt)
 			end
 		end
 		local active=record.active
-  local desired=WeatherLooks.Resolve(model:GetAttribute("WeatherLook") or "Auto",ReplicatedStorage:GetAttribute("VerityWeatherKind") or "Clear")
+  local desired=WeatherLooks.Resolve(model:GetAttribute("WeatherLook") or "Original",ReplicatedStorage:GetAttribute("VerityWeatherKind") or "Clear")
   local desiredId=desired and desired.Id or ""
   local changed=record.weatherDesiredId~=nil and record.weatherDesiredId~=desiredId
   record.weatherDesiredId=desiredId

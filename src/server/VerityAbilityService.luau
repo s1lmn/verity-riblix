@@ -8,7 +8,6 @@ local Catalog=require(Shared.AbilityCatalog)
 local Numeric=require(Shared.Numeric)
 local Levels=require(Shared.LevelConfig)
 local Ride=require(Shared.VerityRideConfig)
-local Battle=require(Shared.VerityBattleConfig)
 local Parkour=require(Shared.ParkourConfig)
 local SecretsConfig=require(Shared.SecretsConfig)
 local AdventureConfig=require(Shared.AdventureConfig)
@@ -31,11 +30,8 @@ function Service:Character(player)
 	if not root or not humanoid or humanoid.Health<=0 or humanoid.SeatPart or root.Anchored then return nil end
 	return character,root,humanoid
 end
-function Service:Equipped(player,slot,profile)
- local item,id=Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
- if item then return item,id end
- if slot=="Attack" and self.arena and self.arena:IsParticipant(player) then return Battle.Basic,"battle_pulse" end
- return nil
+function Service:Equipped(slot,profile)
+ return Catalog.Equipped(profile.Data,slot,profile.HeroPassOwned)
 end
 function Service:BlockReason(player,slot)
  if player:GetAttribute("VerityDiversionKind") and not (self.adventures and self.adventures:AllowsPower(player,slot)) then return "DIVERSION_POWER" end
@@ -51,21 +47,21 @@ function Service:SlotSnapshot(player)
  local result={};local profile=self.data:Get(player.UserId);if not profile then return result end
  local now=workspace:GetServerTimeNow();local character,root=self:Character(player)
  for _,slot in {"Mobility","Attack"} do
-  local item,id=self:Equipped(player,slot,profile)
+  local item,id=self:Equipped(slot,profile)
   local ready=(self.cooldowns[player] or {})[slot] or 0
   local untilTime=player:GetAttribute(if slot=="Mobility" then "VerityMobilityUntil" else "VerityAttackUntil") or 0
   local reason=self:BlockReason(player,slot)
   if not profile.Data.VerityUnlocked then reason="BOX_NOT_OPENED" elseif not character then reason="CHARACTER_UNAVAILABLE"
-  elseif slot=="Attack" and not reason and self:IsSafe(player,root) and not (self.secrets and self.secrets:CanAimMechanism(player,item)) and not (self.adventures and self.adventures:CanAimMechanism(player,item)) then reason="SAFE_ZONE" end
+  elseif slot=="Attack" and not reason and self:IsAttackBlocked(player,root) and not (self.secrets and self.secrets:CanAimMechanism(player,item)) and not (self.adventures and self.adventures:CanAimMechanism(player,item)) then reason="SAFE_ZONE" end
   result[slot]={slot=slot,itemId=id,name=item and item.Name,key=if slot=="Mobility" then "F" else "G",
    gamepadKey=if slot=="Mobility" then "ButtonL1" else "ButtonR1",icon=item and Catalog.Icons[id] or (if slot=="Mobility" then "◇" else "✦"),empty=item==nil,
    duration=item and (if slot=="Mobility" and item.MobilityAction then item.FlightDuration else item.Duration) or 0,
-   emptyAction="OpenAbilityCollection",temporary=id=="battle_pulse",blockedReason=reason,
+   emptyAction="OpenAbilityCollection",blockedReason=reason,
    readyAt=ready,activeUntil=untilTime,active=untilTime>now,canUse=item~=nil and reason==nil and ready<=now and untilTime<=now}
  end
  return result
 end
-function Service:IsSafe(player,root)
+function Service:IsAttackBlocked(player,root)
  if SecretsConfig.Sanctuary(root.Position) or AdventureConfig.TrialContains(root.Position) or AdventureConfig.CaveContains(root.Position) then return true end
  if player:GetAttribute("VerityDiversionKind") then return true end
  if player:GetAttribute("VerityFusionSlot") then return true end
@@ -73,7 +69,11 @@ function Service:IsSafe(player,root)
  if player:GetAttribute("VerityRaceSlot") then return true end
 	if workspace:GetServerTimeNow()<(player:GetAttribute("VerityProtectedUntil") or 0) then return true end
 	if player.Character and player.Character:FindFirstChildOfClass("ForceField") then return true end
-	-- All physical house footprints are sanctuaries, even before their walls are built.
+ return false
+end
+
+-- Players can use powers here, while the house remains protected from PvP.
+function Service:IsInHouse(root)
 	for _,anchors in self.world.anchors do
 		local house=anchors.WorkshopHouse
 		if not house then continue end
@@ -83,6 +83,10 @@ function Service:IsSafe(player,root)
 	end
 	return false
 end
+function Service:IsSafe(player,root)
+ return self:IsAttackBlocked(player,root) or self:IsInHouse(root)
+end
+
 function Service:Refresh(player,character,snapshot)
 	local humanoid=character and character:FindFirstChildOfClass("Humanoid")
 	if not humanoid or not snapshot then return end
@@ -137,9 +141,9 @@ end
 function Service:Remove(player)
 	self:Stop(player);self.requests[player]=nil;self.steering[player]=nil;self.cooldowns[player]=nil
 end
-function Service:Candidates(attacker)
+function Service:Candidates(attacker,includePlayers)
 	local candidates={}
-	for _,player in Players:GetPlayers() do
+	for _,player in (if includePlayers then Players:GetPlayers() else {}) do
 		local character,root,humanoid=self:Character(player)
 		local profile=self.data:Get(player.UserId)
 		if root and profile and profile.Data.VerityUnlocked and self.state.sessions[player.UserId] and not self:IsSafe(player,root) and not player:GetAttribute("VerityBattleActive") and not (attacker and attacker:GetAttribute("VerityBattleActive")) then
@@ -218,7 +222,7 @@ function Service:Attack(player,item,id,character,root,direction)
    return true -- mechanism interaction emits no player damage or combat target reward
   end
  end
-	if self:IsSafe(player,root) then
+	if self:IsAttackBlocked(player,root) then
 		self.remote:FireClient(player,{kind="Blocked",code="SAFE_ZONE"});return false
 	end
 	local head=character:FindFirstChild("Head")
@@ -226,7 +230,7 @@ function Service:Attack(player,item,id,character,root,direction)
 	local cover,bodies=self:CombatRays(character)
 	local result=cast(origin,origin+direction*item.Range,cover,bodies)
 	local endpoint=if result then result.Position else origin+direction*item.Range
-	local candidates=self:Candidates(player);local primary
+	local candidates=self:Candidates(player,not self:IsInHouse(root));local primary
 	for _,candidate in candidates do
 		if candidate.player~=player and result and self:Matches(candidate,result.Instance) then primary=candidate;break end
 	end
@@ -282,13 +286,13 @@ function Service:Attack(player,item,id,character,root,direction)
 			local profile=self.data:Get(player.UserId)
 			local liveCharacter,liveRoot=self:Character(player)
 			local equipped
-			if profile then local _;_,equipped=self:Equipped(player,"Attack",profile) end
-			if self.attacks[player]~=token or liveCharacter~=character or not liveRoot or equipped~=id or self:IsSafe(player,liveRoot) then return end
+			if profile then local _;_,equipped=self:Equipped("Attack",profile) end
+			if self.attacks[player]~=token or liveCharacter~=character or not liveRoot or equipped~=id or self:IsAttackBlocked(player,liveRoot) then return end
 			local liveHead=liveCharacter:FindFirstChild("Head")
 			local currentOrigin=if liveHead then liveHead.Position else liveRoot.Position+Vector3.new(0,2,0)
 			local liveCover,liveBodies=self:CombatRays(liveCharacter)
 			for index,candidate in victims do
-				if not candidate.part.Parent then continue end
+				if not candidate.part.Parent or (candidate.player and self:IsInHouse(liveRoot)) then continue end
 				local delta=candidate.part.Position-liveRoot.Position
 				if delta.Magnitude>item.Range+(item.ChainRange or item.Radius or 0) then continue end
 				-- Recheck cover on each laser tick, including newly closed doors.
@@ -479,7 +483,7 @@ function Service:Activate(player,slot,direction)
  if slot=="Ride" and player:GetAttribute("VerityBattleActive") then return end
  if slot=="Ride" then self:Ride(player,profile,now);return end
  if self.active[player] and self.active[player].ride and slot=="Mobility" then return end
- local item,id=self:Equipped(player,slot,profile)
+ local item,id=self:Equipped(slot,profile)
 	if not item then return end
 	local character,root,humanoid=self:Character(player)
 	if not root then return end

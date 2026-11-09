@@ -51,8 +51,13 @@ function Controller:Tick(dt)
   local name=track:GetAttribute("RaceWinner")
   caption=if name then string.format(Locale.Text("ПОБЕДИТЕЛЬ: %s"),name) else Locale.Text("Заезд отменён")
  else caption=string.format(Locale.Text("ЖДЁМ ИГРОКОВ • %d/4"),count)end
- local board=track:FindFirstChild("RaceBoard");local gui=board and board:FindFirstChild("RaceLabel");local text=gui and gui:FindFirstChild("Text")
- if text then text.Text=caption end
+ local board=track:FindFirstChild("RaceBoard")
+ if board then
+  for _,gui in board:GetChildren() do
+   local text=gui:IsA("SurfaceGui") and gui:FindFirstChild("Text")
+   if text and text.Text~=caption then text.Text=caption end
+  end
+ end
  if self.card.Visible then
   ActivityCard.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
   self.title.Text=caption
@@ -65,7 +70,8 @@ function Controller:Tick(dt)
    end
   end
   local percent=if total>0 then math.floor(100*own/total+.5) else 0
-  self.detail.Text=if count<Config.MinPlayers then string.format(Locale.Text("Место %d • ждём соперника • бесплатно"),slot)
+  self.detail.Text=if phase=="Running" then string.format(Locale.Text("Дорожка %d"),slot)
+   elseif count<Config.MinPlayers or own==0 then string.format(Locale.Text("Место %d • ждём соперника • бесплатно"),slot)
    else string.format(Locale.Text("Место %d • шанс ≈%d%% • бесплатно"),slot,percent)
   W.SetButton(self.leave,"×",phase~="Running",false)
  end

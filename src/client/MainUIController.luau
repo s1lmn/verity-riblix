@@ -113,7 +113,7 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
- self.cleanup:Add(require(script.Parent.AdminPanelController).new(ctx,self.visuals))
+ self.admin=self.cleanup:Add(require(script.Parent.AdminPanelController).new(ctx,self.visuals))
 	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event,model)
 		if event.ownerUserId==Players.LocalPlayer.UserId then
 			self.ledger:Push(event);self.presentation:Start(event,model)
@@ -186,6 +186,10 @@ function Main.new()
 	end))
 	self.cleanup:Add(ctx.net.World.Event:Connect(function(event)
 		local animated=self.visuals:HandleWorld(event)
+  if event.kind=="VerityLevelSet" and event.ownerUserId==Players.LocalPlayer.UserId then
+   self.ledger=Ledger.new();self.ledger:Seed(event.stateRevision,event.newLevel)
+   self.presentation:Stop()
+  end
 		if not animated and event.kind=="VerityLevelChanged" and event.ownerUserId==Players.LocalPlayer.UserId then self.ledger:Push(event) end
 	end))
 	local function back(_,state)
@@ -237,6 +241,7 @@ function Main:Open(name)
 	if name and name~="SETTINGS" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and (ctx.forgeReveal or ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
 	if ctx.active==name then return end
+ if name and self.admin and self.admin.panel.Visible then self.admin:Close() end
 	self.previousFocus=GuiService.SelectedObject
 	ctx.active=name
 	for key,panel in self.refs.Panels do panel.Root.Visible=key==name end
@@ -304,7 +309,7 @@ function Main:Tick(dt)
 	self.tutorial:Render()
 	self.phone:ReconcileSession()
 	if ctx.active=="VERITY" then self.verity:Render() end
-	self.refs.Banner.Visible=now<self.bannerUntil
+	self.refs.Banner.Visible=not ctx.active and now<self.bannerUntil
 	if now>=self.nextPresentation and not ctx.forgeReveal then
 		local event=self.ledger:Pop()
 		if event and not self.presentation:Has(event.eventId) then

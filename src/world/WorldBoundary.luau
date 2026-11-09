@@ -19,6 +19,8 @@ end
 
 function Boundary.Build(world)
 	local floors = {world.Environment.Ground, world.VerityParkour.Island, world.VerityRaceTrack.RaceIsland}
+ local campus=world:FindFirstChild("AbilityCampusGround")
+ if campus then table.insert(floors,campus) end
  local keys={}
  for _,floor in floors do table.insert(keys,tostring(floor.Position)..":"..tostring(floor.Size)) end
  local signature=table.concat(keys,"|")

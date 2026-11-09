@@ -5,7 +5,6 @@ local Collection=game:GetService("CollectionService")
 local RunService=game:GetService("RunService")
 local Tween=game:GetService("TweenService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
-local Battle=require(ReplicatedStorage.Shared.VerityBattleConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local Visuals=require(script.Parent.AbilityVisuals)
@@ -77,7 +76,7 @@ function Controller:Event(event)
 		else self.ctx.notifications:Show(Locale.Text("Промах. Наведи прицел на цель без укрытия.")) end
 		return
 	end
-	local item=Catalog.Items[event.itemId] or (if event.itemId=="battle_pulse" then Battle.Basic else nil)
+	local item=Catalog.Items[event.itemId]
 	local player=Players:GetPlayerByUserId(event.ownerUserId)
 	if not item or not player or not player.Character then return end
  local humanoid=player.Character:FindFirstChildOfClass("Humanoid")
@@ -91,7 +90,6 @@ function Controller:Event(event)
 	local duration=if reduced and event.kind=="Attack" then math.min(event.duration,.4) else event.duration
 	local r={folder=folder,character=player.Character,owner=event.ownerUserId,started=os.clock(),duration=duration,lines={},item=item,kind=event.kind,origin=event.origin}
 	r.serverEndsAt=event.endsAt or (workspace:GetServerTimeNow()+event.duration)
-	if event.itemId=="battle_pulse" then r.origin=self:Eye(event.ownerUserId,0,event.origin) end
 	Visuals.Prepare(r,reduced,graphics and graphics.ParticleScale or 1)
 	table.insert(self.effects,r)
 	if event.kind=="Attack" then
@@ -144,7 +142,7 @@ function Controller:Event(event)
 		Visuals.Mobility(r,root,player.Character:FindFirstChildOfClass("Humanoid"))
 	end
 	if event.ownerUserId==Players.LocalPlayer.UserId then
-		self.ctx.sound:Play(if event.kind=="Mobility" or event.itemId=="battle_pulse" then "SwipeWhoosh" elseif item.Action=="nova" then "Milestone100" elseif item.Action=="lightning" then "Milestone50" else "Milestone25")
+		self.ctx.sound:Play(if event.kind=="Mobility" then "SwipeWhoosh" elseif item.Action=="nova" then "Milestone100" elseif item.Action=="lightning" then "Milestone50" else "Milestone25")
 	end
 end
 function Controller:Tick(dt)

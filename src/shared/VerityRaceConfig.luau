@@ -3,7 +3,7 @@ local Race={Version="verity-race-1",MinPlayers=2,MaxPlayers=4,Countdown=10,BaseS
  QueueTimeout=90,QueueRadius=20,JoinReach=9,RewardSeconds=12,StartZ=128,EndZ=276,BaseY=.45,PadZ=92,
  LaneX={-306,-274,-242,-210},Colors={"FFB72D","67DCD2","FF8ABE","A78AF8"}}
 function Race.Weight(level:number):number
- return 1+4*(math.clamp(level,1,100)-1)/99
+ return 1+(math.clamp(level,1,100)-1)/99
 end
 function Race.Rank(entries,random)
  local ranked={}

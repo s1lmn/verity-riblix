@@ -51,6 +51,7 @@ function Service:Join(player)
  if player:GetAttribute("VerityRaceSlot") or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityFusionSlot") or (player:GetAttribute("VerityRiding") or player:GetAttribute("VerityDiversionKind")) then self.notify(player.UserId,"BATTLE_OTHER_ACTIVITY",0);return end
  if self.phase~="Idle" and self.phase~="Countdown" then self.notify(player.UserId,"BATTLE_BUSY",0);return end
  if self.clock()<(self.ready[player] or 0) then self.notify(player.UserId,"BATTLE_COOLDOWN",0);return end
+ if not self.abilities:Equipped("Attack",profile) then self.notify(player.UserId,"BATTLE_NEEDS_ATTACK",0);return end
  local used={};for _,member in self.members do used[member.seat]=true end
  local seat;for i=1,C.MaxPlayers do if not used[i] then seat=i;break end end
  if not seat then self.notify(player.UserId,"BATTLE_BUSY",0);return end

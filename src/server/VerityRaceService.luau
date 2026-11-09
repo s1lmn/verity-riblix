@@ -3,7 +3,6 @@ local Shared=game:GetService("ReplicatedStorage").Shared
 local Config=require(Shared.VerityRaceConfig)
 local Rewards=require(Shared.ActivityRewards)
 local Numeric=require(Shared.Numeric)
-local Locale=require(Shared.LocaleText)
 local Service={};Service.__index=Service
 local attributes={"VerityRaceSlot","VerityRaceLevel","VerityRaceStartedAt","VerityRaceFinishSeconds","VerityRaceSeed"}
 function Service.new(data,state,economy,players,clock,notify,random)
@@ -28,9 +27,6 @@ function Service:Render()
   pad:SetAttribute("RaceOwner",entry and entry.player.UserId or nil);pad:SetAttribute("RaceLevel",entry and entry.level or nil)
   pad.JoinRace.Enabled=(self.phase=="Waiting" or self.phase=="Countdown") and not entry
   if entry then self.state:Publish(entry.player.UserId,true) end
-  local text=pad.RaceLabel.Text
-  if entry then Locale.SetWorld(text,"Text","%s • LVL %d",entry.player.DisplayName,entry.level)
-  else Locale.SetWorld(text,"Text","МЕСТО %d • ЗАНЯТЬ",slot)end
  end
 end
 function Service:ClearPlayer(player)
@@ -68,8 +64,8 @@ function Service:Start()
  if self:Count()<Config.MinPlayers then return end
  local entries={}
  for _,entry in self.entries do
-  local profile=self:Profile(entry.player);if not profile then return end
-  entry.level=profile.Data.VerityLevel;table.insert(entries,entry)
+  if not self:Profile(entry.player) then return end
+  table.insert(entries,entry)
  end
  -- Iterate slots in a stable order before drawing. The server alone samples the result.
  table.sort(entries,function(a,b)return a.slot<b.slot end)

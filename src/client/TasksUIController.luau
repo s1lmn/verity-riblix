@@ -54,6 +54,7 @@ function Tasks:RefreshScenes()
  local folder=workspace:FindFirstChild("GameplayInteractions")
  local state=self.ctx.net.state
  if not folder or not state then return end
+ local blocked=Card.Blocked(self.ctx) or Card.ActivityRunning()
  local entries,active={},nil
  for _,entry in state.Tasks do entries[entry.taskId]=entry;if entry.status=="Active" then active=entry.taskId end end
  self.nodes={}
@@ -66,11 +67,11 @@ function Tasks:RefreshScenes()
   local finished=(entry.status=="Cooldown" and entry.cooldownEndsAt>workspace:GetServerTimeNow()) or index<(entry.step or 1)
   local current=entry.status=="Active" and index==(entry.step or 1)
   local label=target:FindFirstChild("TaskLabel")
-  if label then label.Enabled=current end
+  if label then label.Enabled=current and not blocked and not target:FindFirstChild("TaskPrompt") end
   local prompt=target:FindFirstChild("TaskPrompt")
   if prompt then
    if self.prompts[prompt]==nil then self.prompts[prompt]=prompt.Enabled end
-   prompt.Enabled=not Card.ActivityRunning() and (current or (not active and index==(entry.step or 1) and entry.cooldownEndsAt<=workspace:GetServerTimeNow()))
+   prompt.Enabled=not blocked and (current or (not active and index==(entry.step or 1) and entry.cooldownEndsAt<=workspace:GetServerTimeNow()))
   end
   local props=target:FindFirstChild("Props")
   if props then for _,part in props:GetChildren() do
@@ -129,7 +130,10 @@ function Tasks:Render()
 end
 function Tasks:Tick()
  local now=os.clock()
- if now>=(self.refreshAt or 0) then self.refreshAt=now+1;self:RefreshScenes() end
+ local blocked=not not (Card.Blocked(self.ctx) or Card.ActivityRunning())
+ if blocked~=self.sceneBlocked or now>=(self.refreshAt or 0) then
+  self.sceneBlocked=blocked;self.refreshAt=now+1;self:RefreshScenes()
+ end
  local entry=self.activeEntry
  local player=Players.LocalPlayer
  local char=player.Character;local root=char and char:FindFirstChild("HumanoidRootPart")

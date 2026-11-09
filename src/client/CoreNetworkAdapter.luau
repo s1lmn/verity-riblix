@@ -120,7 +120,7 @@ function Adapter:Attach(folder)
         PARKOUR_REWARD_RETRY="Награда пока не выдана. Повтори запуск ядра у пульта.",PARKOUR_CHECKPOINT="Чекпоинт сохранён!",PARKOUR_PRACTICE="Отличная тренировка! Награда скоро обновится.",
         STREET_DELIVERY_STARTED="Фургон Verity Express в районе! Следи за посылкой на главной дороге.",STREET_DELIVERY_DROPPED="Посылка выпала! Успей первым подобрать её на тротуаре.",STREET_DELIVERY_REWARD="Посылка твоя! Награда получена.",
         RACE_JOINED="Ты в заезде! Дождись второго участника у своего места.",RACE_STARTED="Старт! Болей за своего Verity!",RACE_WIN="Твой Verity победил! Награда получена.",RACE_FINISH="Заезд завершён! Можно попробовать ещё раз.",RACE_CANCELLED="Недостаточно участников. Verity вернулся к тебе.",
-        BATTLE_JOINED="Ты на арене! Готовься к пяти волнам.",BATTLE_BUSY="Арена занята. Дождись конца битвы.",BATTLE_COOLDOWN="Награда арены скоро обновится.",BATTLE_OTHER_ACTIVITY="Сначала заверши текущую активность.",BATTLE_WAVE="Новая волна! Выходи из красных кругов.",BATTLE_BOSS="Появился Неоновый титан!",BATTLE_WIN="Пять волн пройдены! Награда получена.",BATTLE_FAILED="Битва завершена. Попробуй ещё раз!",PARKOUR_RETRY="Ловушка! Ты вернулся на контрольную точку.",
+        BATTLE_NEEDS_ATTACK="Для арены экипируй атакующую способность в коллекции.",BATTLE_JOINED="Ты на арене! Готовься к пяти волнам.",BATTLE_BUSY="Арена занята. Дождись конца битвы.",BATTLE_COOLDOWN="Награда арены скоро обновится.",BATTLE_OTHER_ACTIVITY="Сначала заверши текущую активность.",BATTLE_WAVE="Новая волна! Выходи из красных кругов.",BATTLE_BOSS="Появился Неоновый титан!",BATTLE_WIN="Пять волн пройдены! Награда получена.",BATTLE_FAILED="Битва завершена. Попробуй ещё раз!",PARKOUR_RETRY="Ловушка! Ты вернулся на контрольную точку.",
         COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
 							if payload.source=="HouseFeature" then
 								messages={OK="Дом улучшен!",INSUFFICIENT_CASH="Не хватает денег",
@@ -215,7 +215,10 @@ function Adapter:AcceptWorld(raw)
 			or type(event.eventId)~="string" or not Model.IsFinite(event.oldScale) or not Model.IsFinite(event.newScale)
 			or math.abs(event.oldScale-Model.Scale(event.oldLevel))>1e-6
 			or math.abs(event.newScale-Model.Scale(event.newLevel))>1e-6 then return end
-	end
+ elseif event.kind=="VerityLevelSet" then
+  if not Model.IsInteger(event.newLevel,1,100) or not Model.IsInteger(event.stateRevision,0,2^53-1)
+   or not Model.IsInteger(event.ownerUserId,1,2^53-1) or not Model.IsInteger(event.plotId,1,128) then return end
+ end
 	self.World:Fire(event)
 end
 function Adapter:Destroy() self.remoteCleanup:Destroy();self.cleanup:Destroy() end

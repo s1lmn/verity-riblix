@@ -2,6 +2,7 @@
 local RS=game:GetService("ReplicatedStorage")
 local C=require(RS.Shared.AdventureConfig)
 local Locale=require(RS.Shared.LocaleText)
+local Sign=require(script.Parent.WorldSign)
 local B={}
 function B.Build(world,plots)
  local root=Instance.new("Folder");root.Name="NeighborhoodAdventures";root.Parent=world
@@ -21,11 +22,9 @@ function B.Build(world,plots)
   q:SetAttribute("AdventureKind",kind);q:SetAttribute("AdventureId",id or "");q:SetAttribute("AdventureIndex",index or 0);q:SetAttribute("AdventurePlot",plot or 0)
   q.Parent=part;q:AddTag("VerityAdventurePrompt");return q
  end
- local function sign(parent,pos,title,color)
-  local post=p(parent,"Sign",pos,Vector3.new(5,2.3,.25),"414563",false)
-  local g=Instance.new("SurfaceGui");g.Face=Enum.NormalId.Back;g.CanvasSize=Vector2.new(320,140);g.MaxDistance=35;g.Parent=post
-  local label=Instance.new("TextLabel");label.Size=UDim2.fromScale(1,1);label.BackgroundTransparency=1;label.Font=Enum.Font.GothamBold;label.TextSize=24;label.TextWrapped=true;label.TextColor3=Color3.fromHex(color or "FFF1CE");label.Parent=g
-  Locale.SetWorld(label,"Text",title);return label
+ local function sign(parent,pos,title)
+  local board=p(parent,"Sign",pos,Vector3.new(8,2.5,.25),"363956",false)
+  return Sign.Add(board,title)
  end
  local function circle(parent,name,pos,radius,color)
   local base=p(parent,name,pos,Vector3.new(.16,radius*2,radius*2),color,false,true,Enum.PartType.Cylinder)
@@ -48,7 +47,7 @@ function B.Build(world,plots)
  local station=p(desk,"Station",plaza.Position+Vector3.new(-14,1,-8),Vector3.new(2.8,2,2),"9271BE",false)
  circle(desk,"Base",station.Position-Vector3.yAxis*.85,2,"C5AAFF")
  r.weatherPrompt=prompt(station,"Искать звёздные осколки","Обсерватория погоды","Weather")
- r.weatherLabel=sign(desk,station.Position+Vector3.new(0,2.4,0),"Обсерватория погоды")
+ r.weatherLabels=sign(desk,station.Position+Vector3.new(0,2.4,0),"Обсерватория погоды")
  local stars=Instance.new("Folder");stars.Name="StarShards";stars.Parent=root
  for i,pos in C.StarPoints do
   local m=model("Star"..i,stars);local shard=p(m,"Core",pos,Vector3.new(.65,1.1,.65),"D7BCFF",false,true)
@@ -57,13 +56,13 @@ function B.Build(world,plots)
  end
  local campus=model("AbilityCampus");local t=C.TrialCenter
  p(campus,"Terrace",t-Vector3.new(0,.4,0),Vector3.new(112,.8,106),"94B7C0",true)
- p(campus,"EntranceWalk",Vector3.new(-125,.35,t.Z-34),Vector3.new(110,.7,9),"C5B8DD",true)
- sign(campus,t+Vector3.new(0,5,48),"ИСПЫТАНИЯ СПОСОБНОСТЕЙ","E6DDFF")
+ p(campus,"EntranceWalk",Vector3.new(-127,.33,t.Z+5),Vector3.new(112,.66,10),"C5B8DD",true)
+ sign(campus,t+Vector3.new(0,5,48),"ИСПЫТАНИЯ СПОСОБНОСТЕЙ")
  for _,id in C.TrialOrder do
   local d=C.Trials[id];local m=model(id,campus)
   local pad=circle(m,"Start",d.Start,3.6,d.Color)
   local q=prompt(pad,"Начать испытание",d.Name,"Trial",id)
-  sign(m,d.Start+Vector3.new(0,2.8,2.6),d.Name,d.Color)
+  sign(m,d.Start+Vector3.new(0,2.8,2.6),d.Name)
   r.trial[id]={start=pad,prompt=q,targets={}}
   for i,pos in d.Points do
    local target=p(m,"Target"..i,pos,Vector3.one*(if id=="laser" then 2 else .35),d.Color,false,id=="laser",Enum.PartType.Ball)
@@ -84,7 +83,7 @@ function B.Build(world,plots)
  p(entrance,"ArchCap",a+Vector3.new(0,6.8,0),Vector3.new(10,2.2,3),"8B91B6",true)
  r.portal=p(entrance,"WaterSeal",a+Vector3.new(0,2.6,0),Vector3.new(5.2,5,.25),"8AE6ED",false,true);r.portal.Transparency=.4
  r.cavePrompt=prompt(r.portal,"Войти в тайную пещеру","Откроется после ливня","Cave")
- r.caveLabel=sign(entrance,a+Vector3.new(0,8.5,0),"Откроется после ливня","BBF4F7")
+ r.caveLabels=sign(entrance,a+Vector3.new(0,8.5,0),"Откроется после ливня")
  local cave=model("RainCave");cave.ModelStreamingMode=Enum.ModelStreamingMode.Persistent;local c=C.CaveCenter
  p(cave,"Floor",c,Vector3.new(88,1,65),"426A7C",true)
  p(cave,"Roof",c+Vector3.new(0,19,0),Vector3.new(88,1,65),"495274",true)
@@ -135,8 +134,9 @@ function B.Build(world,plots)
   entry.next=prompt(board,"Сменить игру","Поиск подарков","PartyMode","",0,plotId);entry.next.KeyboardKeyCode=Enum.KeyCode.R;entry.next.GamepadKeyCode=Enum.KeyCode.ButtonY;entry.next.UIOffset=Vector2.new(0,-55)
   entry.join=prompt(board,"Присоединиться","Вечеринка у соседей","JoinParty","",0,plotId)
   entry.stop=prompt(board,"Завершить вечеринку","Моя вечеринка","StopParty","",0,plotId);entry.stop.KeyboardKeyCode=Enum.KeyCode.R;entry.stop.GamepadKeyCode=Enum.KeyCode.ButtonY
-  entry.label=sign(m,board.Position+Vector3.new(0,2.8,0),"Домашние вечеринки","FFE0F2")
-  entry.label.Parent.Parent.CFrame=pivot*CFrame.new(-8,4.4,18.2)
+  entry.sign=p(m,"PartySign",board.Position+Vector3.new(0,3.1,0),Vector3.new(7,3.3,.25),"363956",false)
+  entry.sign.CFrame=pivot*CFrame.new(-8,4.7,18.2)
+  entry.labels=Sign.Add(entry.sign,"Домашние вечеринки",nil,38)
   for i,offset in C.PartyPoints do
    local giftModel=model("Gift"..i,m);local pos=pivot:PointToWorldSpace(offset)
    local box=gift(giftModel,pos,if i%2==0 then "A8EECD" else "FFB6DB")

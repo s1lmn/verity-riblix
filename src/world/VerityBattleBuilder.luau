@@ -2,9 +2,12 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local C=require(Shared.VerityBattleConfig)
 local Locale=require(Shared.LocaleText)
+local Sign=require(script.Parent.WorldSign)
 local B={}
 function B.Build(parent)
- local old=parent:FindFirstChild("VerityBattleArena");if old then return old end
+ local old=parent:FindFirstChild("VerityBattleArena")
+ if old and old:FindFirstChild("ArenaSign") then return old end
+ if old then old:Destroy() end
  local m=Instance.new("Model");m.Name="VerityBattleArena";m.ModelStreamingMode=Enum.ModelStreamingMode.Persistent
  local function p(name,delta,size,color,solid,neon)
   local part=Instance.new("Part");part.Name=name;part.Anchored=true;part.Position=C.Center+delta;part.Size=size
@@ -22,10 +25,8 @@ function B.Build(parent)
  local entry=p("Entry",Vector3.new(0,1,-32),Vector3.new(9,2,5),"FFD35C",true)
  local q=Instance.new("ProximityPrompt");q.Name="JoinBattle";q.MaxActivationDistance=12;q.HoldDuration=.3;q.RequiresLineOfSight=false
  Locale.SetWorld(q,"ActionText","Начать битву");Locale.SetWorld(q,"ObjectText","Арена Verity • 5 волн • бесплатно");q.Parent=entry
- local label=Instance.new("BillboardGui");label.Size=UDim2.fromOffset(220,52);label.StudsOffsetWorldSpace=Vector3.new(0,4,0);label.MaxDistance=38;label.Parent=entry
- local text=Instance.new("TextLabel");text.Size=UDim2.fromScale(1,1);text.BackgroundTransparency=1;text.TextColor3=Color3.fromHex("FFE57E")
- text.Font=Enum.Font.GothamBold;text.TextSize=16;text.TextWrapped=true;text.TextStrokeTransparency=.3;text.Parent=label
- Locale.SetWorld(text,"Text","БИТВЫ VERITY\n5 волн и босс • 1–4 игрока")
+ local board=p("ArenaSign",Vector3.new(0,6,-32),Vector3.new(17,4,.5),"3B3153",false)
+ Sign.Add(board,"АРЕНА VERITY\nНужна экипированная атака")
  local enemies=Instance.new("Folder");enemies.Name="Enemies";enemies.Parent=m
  m:SetAttribute("Phase","Idle");m:SetAttribute("Wave",0);m.Parent=parent;return m
 end

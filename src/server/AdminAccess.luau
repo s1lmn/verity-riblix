@@ -1,10 +1,14 @@
 --!strict
--- Viewing tools only. Never grants currency, paid ownership or saved progression.
-local Admin={UserIds=table.freeze({[1371278087]=true})} -- JSER42
-function Admin.IsAllowed(userId: number,creatorId: number,userOwned: boolean): boolean
- return Admin.UserIds[userId]==true or (userOwned and creatorId>0 and userId==creatorId)
+-- Temporary tools for the project owner's verified Roblox account (JSER42).
+local Admin = {}
+local ownerUserId = 1371278087
+
+function Admin.IsAllowed(userId: number): boolean
+ return userId == ownerUserId
 end
+
 function Admin.Apply(player: Player)
- player:SetAttribute("VerityAdmin",Admin.IsAllowed(player.UserId,game.CreatorId,game.CreatorType==Enum.CreatorType.User))
+ player:SetAttribute("VerityAdmin", Admin.IsAllowed(player.UserId))
 end
+
 return Admin

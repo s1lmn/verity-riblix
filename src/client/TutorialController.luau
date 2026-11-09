@@ -253,34 +253,42 @@ function Tutorial:HideWorld()
 end
 function Tutorial:ClearRoute()
  if self.targetKey then self.generation+=1;self.job=nil end
- self.targetKey=nil;self.route=nil;self.routeStart=nil;self.nextPathAt=0;self:HideWorld()
+ self.targetKey=nil;self.route=nil;self.nextPathAt=0;self:HideWorld()
 end
 function Tutorial:ComputeRoute(root,position,now)
  if self.goal and self.goal.air then
   self.route=nil;self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","AirRoute");return
  end
  if self.job or now<self.nextPathAt then return end
- if self.route and self.routeStart and (root.Position-self.routeStart).Magnitude<8 then return end
+ if self.route then
+  local index=self.routeIndex or 2
+  local a=self.route[index-1].Position
+  local b=self.route[index].Position
+  local segment=flat(b-a)
+  local offset=flat(root.Position-a)
+  local fraction=math.clamp(offset:Dot(segment)/math.max(segment:Dot(segment),.01),0,1)
+  if (offset-segment*fraction).Magnitude<6 and math.abs(root.Position.Y-(a.Y+(b.Y-a.Y)*fraction))<8 then return end
+  self.route=nil
+ end
  self.nextPathAt=now+1.5
  local humanoid=root.Parent:FindFirstChildOfClass("Humanoid")
  local height=math.clamp(math.ceil((humanoid and humanoid.HipHeight or 2)+root.Size.Y+2),5,8)
  local job={generation=self.generation,start=root.Position};self.job=job
- local target=position
- if self.goal.target=="Delivery" or self.goal.prompt then
-  local approach=flat(root.Position-position);if approach.Magnitude>.1 then target+=approach.Unit*3 end
- end
- target+=Vector3.new(0,3,0);self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","Computing")
+ local target=position+Vector3.new(0,1.5,0);self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","Computing")
  task.spawn(function()
   local waypoints
   for _,allowJump in {false,true} do
    if self.dead or self.job~=job then return end
    local path=Pathfinding:CreatePath({AgentRadius=2,AgentHeight=height,AgentCanJump=allowJump,WaypointSpacing=5})
    local ok=pcall(function()path:ComputeAsync(job.start,target)end)
-   if ok and path.Status==Enum.PathStatus.Success then waypoints=path:GetWaypoints() end
+   if ok and path.Status==Enum.PathStatus.Success then
+    local result=path:GetWaypoints()
+    if #result>=2 then waypoints=result end
+   end
    path:Destroy();if waypoints then break end
   end
   if self.dead or self.job~=job or job.generation~=self.generation then return end
-  self.job=nil;self.route=waypoints;self.routeIndex=2;self.routeStart=job.start
+  self.job=nil;self.route=waypoints;self.routeIndex=2
   self.ctx.refs.Gui:SetAttribute("GuidancePathStatus",if waypoints then "Success" else "NoPath")
  end)
 end
@@ -316,7 +324,7 @@ function Tutorial:DrawRoute(root,now)
   local target=self.targetPosition
   if not validPosition(target) then return end
   local aim=Vector3.new(target.X,root.Position.Y,target.Z)
-  if workspace:Raycast(root.Position,aim-root.Position,params) then return end
+  if (aim-root.Position).Magnitude>18 or workspace:Raycast(root.Position,aim-root.Position,params) then return end
   route={{Position=root.Position},{Position=target}}
  end
  local index=self.routeIndex or 2
@@ -328,7 +336,7 @@ function Tutorial:DrawRoute(root,now)
  self.routeIndex=index
  local points={root.Position};for i=index,#route do table.insert(points,route[i].Position) end
  local segment,distance=1,4
- for i=1,10 do
+ for i=1,6 do
   while segment<#points and flat(points[segment+1]-points[segment]).Magnitude<distance do
    distance-=flat(points[segment+1]-points[segment]).Magnitude;segment+=1
   end
@@ -336,7 +344,7 @@ function Tutorial:DrawRoute(root,now)
   local delta=flat(points[segment+1]-points[segment]);local length=delta.Magnitude;if length<.01 then break end
   local point=points[segment]:Lerp(points[segment+1],distance/length)
   local hit=workspace:Raycast(point+Vector3.new(0,4,0),Vector3.new(0,-16,0),params)
-  if hit and hit.Position.Y<=point.Y+1.5 then
+  if hit and hit.Normal.Y>.65 and hit.Position.Y<=point.Y+1.5 then
    local arrow=self.arrows[i]
    if not arrow then arrow={piece(self.folder,"RouteStem"),piece(self.folder,"RouteHead"),piece(self.folder,"RouteHead")};self.arrows[i]=arrow end
    local cf=CFrame.lookAt(hit.Position+Vector3.new(0,.22,0),hit.Position+Vector3.new(0,.22,0)+delta.Unit)
@@ -459,7 +467,7 @@ function Tutorial:Update(now)
   ctx.refs.Tutorial.Visible=false;self.pointer.Visible=false;self.compass.Visible=false
   self:SetButton(nil);self:HideWorld();return
  end
- ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and not (ctx.active and ctx.refs.Safe.AbsoluteSize.X<640)
+ ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and ctx.active~="TASKS" and not (ctx.active and ctx.refs.Safe.AbsoluteSize.X<640)
  self.pointer.Visible=false;self.compass.Visible=false
  if not goal or not alive then self.lastRootPosition=nil;self:SetButton(nil);self:ClearRoute();return end
  if self.lastRootPosition and (root.Position-self.lastRootPosition).Magnitude>16 then self:ClearRoute() end
@@ -480,7 +488,7 @@ function Tutorial:Update(now)
   if not visible(button) then self:HintText("Прокрути ↓");return end
   self:ShowButtonGuide(button,now);return
  end
- self:SetButton(nil);if goal.kind~="World" then self:ClearRoute();return end
+ self:SetButton(nil);if ctx.active or goal.kind~="World" then self:ClearRoute();return end
  local position,part=self:Target(goal)
  if not validPosition(position) then self:ClearRoute();self:HintText("Подожди…");return end
  if self.targetKey~=goal.id or not self.targetPosition or (self.targetPosition-position).Magnitude>1 then
@@ -511,7 +519,7 @@ function Tutorial:Update(now)
    self.compass.Rotation=math.deg(math.atan2(delta:Dot(right),delta:Dot(forward)));self.compass.Visible=true
   end
  end
- self.anchor.Position=position;self.pin.Enabled=goal.target~="StreetParcel";self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("Забери Verity") else Locale.Text(goal.title)
+ self.anchor.Position=position;self.pin.Enabled=not near and goal.target~="StreetParcel";self.pinTitle.Text=if goal.target=="Delivery" then Locale.Text("Забери Verity") else Locale.Text(goal.title)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4+(if ctx.settings.values.ReducedMotion then 0 else math.sin(now*2)*.15),0)
  self.highlight.Adornee=part;self.highlight.Enabled=part~=nil
  if near then self:HideArrows() else self:ComputeRoute(root,position,now);self:DrawRoute(root,now) end

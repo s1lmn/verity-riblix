@@ -2,38 +2,36 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Config=require(Shared.VerityRaceConfig)
 local Locale=require(Shared.LocaleText)
+local Sign=require(script.Parent.WorldSign)
 local Builder={}
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityRaceTrack")
- if old then assert(old:GetAttribute("RaceVersion")==Config.Version,"Race version mismatch");return old end
- local model=Instance.new("Model");model.Name="VerityRaceTrack";model:SetAttribute("RaceVersion",Config.Version)
+ if old and old:GetAttribute("RaceVersion")==Config.Version and old:GetAttribute("RaceVisualVersion")==3 then return old end
+ if old then old:Destroy() end
+ local model=Instance.new("Model");model.Name="VerityRaceTrack";model:SetAttribute("RaceVersion",Config.Version);model:SetAttribute("RaceVisualVersion",3)
  local function part(name,pos,size,color,collide)
   local p=Instance.new("Part");p.Name=name;p.Anchored=true;p.Position=pos;p.Size=size;p.Color=Color3.fromHex(color)
   p.Material=Enum.Material.Plastic;p.TopSurface=Enum.SurfaceType.Studs;p.BottomSurface=Enum.SurfaceType.Smooth
   p.CanCollide=collide~=false;p.CanQuery=p.CanCollide;p.CanTouch=false;p.Parent=model;return p
  end
- local function label(p,text,width)
-  local g=Instance.new("BillboardGui");g.Name="RaceLabel";g.Size=UDim2.fromOffset(width or 170,52);g.StudsOffsetWorldSpace=Vector3.new(0,3,0)
-  g.MaxDistance=if p.Name=="RaceSign" then 45 elseif p.Name=="RaceBoard" then 38 else 24;g.Parent=p
-  local t=Instance.new("TextLabel");t.Name="Text";t.Size=UDim2.fromScale(1,1);t.BackgroundTransparency=.1
-  t.BackgroundColor3=Color3.fromHex("55416E");t.TextColor3=Color3.fromHex("FFF0CE");t.Font=Enum.Font.GothamBold;t.TextSize=14;t.TextWrapped=true;t.Parent=g
-  local c=Instance.new("UICorner");c.CornerRadius=UDim.new(0,10);c.Parent=t
-  Locale.SetWorld(t,"Text",text);return t
- end
  part("RaceIsland",Vector3.new(-248,-1,180),Vector3.new(156,2,240),"72D74E")
  part("AccessPath",Vector3.new(-178,.10,90),Vector3.new(40,.20,12),"FFF0CE")
  part("SpectatorWalk",Vector3.new(-248,.12,80),Vector3.new(148,.24,14),"FFE3A4")
- local sign=part("RaceSign",Vector3.new(-185,5,104),Vector3.new(1,6,8),"A78AF8")
- label(sign,"ГОНКИ VERITY\nБесплатно • 2–4 игрока",230)
+ local sign=part("RaceSign",Vector3.new(-185,5,104),Vector3.new(1,6,10),"55416E")
+ Sign.Add(sign,"ГОНКИ VERITY\nБесплатно • 2–4 игрока",{Enum.NormalId.Right,Enum.NormalId.Left})
  local board=part("RaceBoard",Vector3.new(-247,5,66),Vector3.new(18,6,.5),"55416E")
- label(board,"Займите свободные места!",250)
+ Sign.Add(board,"Займите свободные места!")
  for slot,x in Config.LaneX do
   local color=Config.Colors[slot]
   part("Lane"..slot,Vector3.new(x,.10,204),Vector3.new(30,.2,176),color)
   local pad=part("QueuePad"..slot,Vector3.new(x,.25,Config.PadZ),Vector3.new(10,.5,10),color)
-  local t=label(pad,"МЕСТО %d • ЗАНЯТЬ");Locale.SetWorld(t,"Text","МЕСТО %d • ЗАНЯТЬ",slot)
+  local number=Instance.new("SurfaceGui")
+  number.Name="LaneNumber";number.Face=Enum.NormalId.Top;number.CanvasSize=Vector2.new(128,128);number.MaxDistance=38;number.LightInfluence=0;number.Parent=pad
+  local digit=Instance.new("TextLabel")
+  digit.Size=UDim2.fromScale(1,1);digit.BackgroundTransparency=1;digit.TextColor3=Color3.fromHex("322744")
+  digit.Font=Enum.Font.GothamBlack;digit.TextSize=78;digit.Text=tostring(slot);digit.Parent=number
   local prompt=Instance.new("ProximityPrompt");prompt.Name="JoinRace";prompt.MaxActivationDistance=Config.JoinReach;prompt.HoldDuration=.3;prompt.RequiresLineOfSight=false
-  Locale.SetWorld(prompt,"ActionText","Занять место");Locale.SetWorld(prompt,"ObjectText","Гонки Verity");prompt.Parent=pad
+  Locale.SetWorld(prompt,"ActionText","Занять место %d",slot);Locale.SetWorld(prompt,"ObjectText","Гонки Verity");prompt.Parent=pad
   for _,side in {-1,1} do
    part("StartPost",Vector3.new(x+side*14,4,144),Vector3.new(.6,8,.6),"FFF0CE")
   end

@@ -25,7 +25,7 @@ F.Recipes={
 F.DecorOrder={"home_forge_brazier","home_forge_globe"}
 F.Decor={home_forge_brazier={Id="home_forge_brazier",Name="Очаг солнечных углей",Color="FFB06C"},home_forge_globe={Id="home_forge_globe",Name="Глобус созвездий",Color="B8A4FF"}}
 function F.Resolve(selection,weather)
- if selection=="Original" then return nil end
- return F.Looks[if selection and selection~="Auto" then selection else F.WeatherLooks[weather]]
+ if not selection or selection=="Original" then return nil end
+ return F.Looks[if selection=="Auto" then F.WeatherLooks[weather] else selection]
 end
 return F

@@ -50,7 +50,7 @@ function Skin.Build(parent)
  local close=W.Button(root,"Close","×",T.Gold)
  close.Size=UDim2.fromOffset(44,44);close.Position=UDim2.new(1,-62,0,24);close.TextSize=26
  local body=W.New("ScrollingFrame",{Name="Orders",BackgroundTransparency=1,BorderSizePixel=0,
-  Position=UDim2.fromOffset(16,80),Size=UDim2.new(1,-32,1,-96),CanvasSize=UDim2.fromOffset(0,contentHeight),
+  Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-124),CanvasSize=UDim2.fromOffset(0,contentHeight),
   AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.Y,
   ScrollBarThickness=3,ScrollBarImageColor3=violet},root)
  W.List(body,gap)
@@ -85,6 +85,10 @@ function Skin.Layout(p,size,panelX)
  local height=math.min(640,size.Y-24)
  p.Root.Position=UDim2.fromOffset(panelX or 12,12)
  p.Root.Size=UDim2.fromOffset(width,height)
+ local short=height<390
+ p.Subtitle.Visible=not short
+ p.Body.Position=UDim2.fromOffset(16,if short then 74 else 108)
+ p.Body.Size=UDim2.new(1,-32,1,if short then -90 else -124)
  p.Title.TextSize=if width<360 then 16 else 20
  return {width=width,height=height,contentHeight=contentHeight,bodyHeight=height-144}
 end

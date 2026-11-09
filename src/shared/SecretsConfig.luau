@@ -7,7 +7,7 @@ C.Items={
  canopy={Name="Тайник в кроне",Hint="Поднимись по ветвям. Мелодия: лист, капля, солнце.",Reward="secret_canopy",Item="leaf_crown",Color="9AF5A9"},
  cloud={Name="Облачная обсерватория",Hint="Включи полёт и пройди три кольца по порядку.",Reward="secret_cloud",Item="cloud_charms",Color="8FEAFF"},
 }
-C.Solar=Vector3.new(-100,.5,-Layout.RoadHalfLength-22)
+C.Solar=Vector3.new(-100,.5,-Layout.RoadHalfLength-38)
 C.Tree=Vector3.new(94,.5,-Layout.RoadHalfLength-18)
 C.Launch=Vector3.new(-25,.55,-Layout.GroundHalfLength+28)
 C.Cloud=Vector3.new(25,40.5,-Layout.GroundHalfLength+26)

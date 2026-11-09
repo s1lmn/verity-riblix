@@ -54,6 +54,7 @@ function Builder.Build(playerGui)
 		ClipToDeviceSafeArea = true }, playerGui)
 	local safe = W.Frame(gui, "SafeRoot")
 	safe.BackgroundTransparency = 1
+	safe.Visible = false
 	local refs = { Gui = gui, Safe = safe, Panels = {}, Nav = {} }
 
  local hud=W.Round(W.Frame(safe,"HUD",UDim2.fromOffset(150,64)),10)
@@ -146,6 +147,7 @@ function Builder.Build(playerGui)
 
  refs.Layout=function(open)
   local size=safe.AbsoluteSize
+  if size.X<=0 or size.Y<=0 then return end
   local actionY=math.max(52,math.min(140,size.Y-168))
   refs.AbilityButton.Position=UDim2.new(1,-12,0,actionY)
   refs.AttackButton.Position=UDim2.new(1,-12,0,actionY+52)
@@ -204,6 +206,7 @@ function Builder.Build(playerGui)
   refs.BannerText.TextSize=13
   refs.Reward.AnchorPoint=Vector2.new(1,0)
   refs.Reward.Position=UDim2.new(1,-16,0,12);refs.Reward.Size=UDim2.fromOffset(140,24);refs.Reward.TextSize=16
+  safe.Visible=true
  end
 
 	return refs

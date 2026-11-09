@@ -1,10 +1,11 @@
 --!nonstrict
--- Owner-only local viewing tools. No economy requests, save writes or synthetic purchases.
+-- Owner-only preview and temporary server progression tools.
 local Players=game:GetService("Players")
 local Input=game:GetService("UserInputService")
 local RS=game:GetService("ReplicatedStorage")
 local Levels=require(RS.Shared.LevelConfig)
 local Abilities=require(RS.Shared.VerityAbilities)
+local Catalog=require(RS.Shared.AbilityCatalog)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Cleanup=require(script.Parent.Cleanup)
@@ -18,7 +19,7 @@ function Admin.new(ctx,visuals)
  local panel=W.Round(W.Frame(safe,"AdminPanel",UDim2.fromOffset(320,540),T.Paper),14)
  panel.AnchorPoint=Vector2.new(1,0);panel.Position=UDim2.new(1,-12,0,60);panel.ZIndex=80;panel.Visible=false
  self.panel=self.cleanup:Add(panel);W.Stroke(panel,T.Purple,2)
- local body=W.New("ScrollingFrame",{Name="Controls",Position=UDim2.fromOffset(10,10),Size=UDim2.new(1,-20,1,-20),
+ local body=W.New("ScrollingFrame",{Name="Controls",Position=UDim2.fromOffset(10,10),Size=UDim2.new(1,-20,1,-64),
   CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollingDirection=Enum.ScrollingDirection.Y,
   ScrollBarThickness=4,BackgroundTransparency=1,BorderSizePixel=0,ZIndex=81},panel)
  W.List(body,8)
@@ -35,16 +36,29 @@ function Admin.new(ctx,visuals)
    local b=button(frame,"Control"..i,e[1],e[2]);b.Size=UDim2.new(1/#entries,-5,1,0);b.Position=UDim2.new((i-1)/#entries,0,0,0)
   end
  end
- text("Heading","ПРОСМОТР VERITY · F8")
- text("Notice","Только у тебя. Прогресс и покупки не меняются.",42)
+ text("Heading","АДМИН VERITY · F8")
+ text("Notice","Выдача меняет твой игровой профиль. «Показать» включает предпросмотр.",42)
  self.info=text("Selected","",52)
- self.status=text("Status","Выбери дом и распакуй Verity.",42)
+ self.status=W.Text(panel,"Status","Выбери дом и распакуй Verity.",13,true,T.Ink)
+ self.status.Position=UDim2.new(0,12,1,-50);self.status.Size=UDim2.new(1,-24,0,44);self.status.ZIndex=82
  local entry=W.New("TextBox",{Name="LevelInput",Text="1",PlaceholderText="Уровень 1–100",ClearTextOnFocus=false,
   Size=UDim2.new(1,-4,0,44),Font=T.Bold,TextSize=16,BackgroundColor3=T.Soft,TextColor3=T.Ink,BorderSizePixel=0,ZIndex=82},body)
  W.Round(entry,10);self.entry=entry
  row({{"−1",function()self:SetLevel(self.level-1)end},{"Показать",function()self:SetLevel(tonumber(entry.Text))end},{"+1",function()self:SetLevel(self.level+1)end}})
  row({{"1",function()self:SetLevel(1)end},{"10",function()self:SetLevel(10)end},{"25",function()self:SetLevel(25)end}})
  row({{"50",function()self:SetLevel(50)end},{"75",function()self:SetLevel(75)end},{"100",function()self:SetLevel(100)end}})
+ button(body,"SetActualLevel","ВЫСТАВИТЬ УРОВЕНЬ",function()
+  self:Command("SetLevel",tonumber(entry.Text))
+ end)
+ text("AbilityHeading","ВЫДАТЬ И ЭКИПИРОВАТЬ")
+ for _,id in Catalog.Order do
+  local item=Catalog.Items[id]
+  if not item.Premium then
+   button(body,"Grant_"..id,string.format("%s · ур. %d",item.Name,item.Level),function()
+    self:Command("GrantAbility",id)
+   end)
+  end
+ end
  button(body,"UpgradePreview","ПОВТОРИТЬ АПГРЕЙД",function()
   if not self:Allowed() then return end
   local e=visuals:AdminLevel(self.level,true)
@@ -92,6 +106,32 @@ function Admin.new(ctx,visuals)
  toggle.Visible=self:Allowed() and not ctx.refs.Panels.PHONE.Root.Visible;self:Refresh()
  return self
 end
+function Admin:Command(action,value)
+ if not self:Allowed() or self.pending or self.ctx.presenting or self.ctx.forgeReveal or self.ctx.rewardOverlay then return end
+ if action=="SetLevel" and (not value or value%1~=0 or value<1 or value>100) then
+  self.status.Text="Введи целый уровень от 1 до 100.";return
+ end
+ local remote=RS:FindFirstChild("VerityAdminCommand")
+ if not remote or not remote:IsA("RemoteFunction") then self.status.Text="Команды сервера пока недоступны.";return end
+ self.pending=true
+ self.status.Text="Применяю изменение…"
+ local ok,result,required=pcall(function()return remote:InvokeServer(action,value)end)
+ self.pending=false
+ if self.dead or not self:Allowed() then return end
+ if not ok then self.status.Text="Сервер не подтвердил команду.";return end
+ if result=="OK" then
+  if action=="SetLevel" then
+   self.visuals:AdminClear()
+   if self.upgradeId then self.ctx.sound:StopUpgrade(self.upgradeId);self.upgradeId=nil end
+   self.level=value;self:Refresh()
+  end
+  self.status.Text=if action=="SetLevel" then "Игровой уровень установлен." else Catalog.Items[value].Name.." экипирована."
+ elseif result=="HOUSE_LEVEL" or result=="ABILITY_LEVEL" then
+  self.status.Text=string.format("Минимальный уровень %d (%s).",required,if result=="HOUSE_LEVEL" then "постройка дома" else "способность")
+ elseif result=="BOX_NOT_OPENED" or result=="NOT_READY" then self.status.Text="Выбери дом и распакуй Verity."
+ elseif result=="IN_ACTIVITY" then self.status.Text="Сначала заверши активность."
+ else self.status.Text="Команда отклонена. Повтори чуть позже." end
+end
 function Admin:Allowed()return Players.LocalPlayer:GetAttribute("VerityAdmin")==true end
 function Admin:Refresh()
  local aura=require(RS.Shared.VerityAnimationProfile).Aura(self.level)
@@ -112,7 +152,7 @@ function Admin:SoundStep(delta)
  self.soundLabel.Text="Звук: "..self.soundNames[self.soundIndex]
 end
 function Admin:Toggle()
- if not self:Allowed() then return end
+ if not self:Allowed() or self.ctx.presenting or self.ctx.forgeReveal or self.ctx.rewardOverlay then return end
  if self.panel.Visible then self:Close() else self.ctx.close();self.panel.Visible=true;self:Refresh() end
 end
 function Admin:Close()
@@ -124,5 +164,5 @@ function Admin:Close()
  if a and a.event.eventId==self.boxId then self.visuals.spawn:Stop(false) end
  self.boxId=nil
 end
-function Admin:Destroy()self:Close();self.cleanup:Destroy()end
+function Admin:Destroy()self.dead=true;self:Close();self.cleanup:Destroy()end
 return Admin

@@ -9,7 +9,8 @@ local V={};V.__index=V
 local rainbow={"FF819F","FFBD82","FFE993","A8F3BC","86DEF3","A5B4FF","D6A8F7"}
 local function line(p,a,b,width)
  local delta=b-a;if delta.Magnitude<.01 then p.Transparency=1;return end
- p.Size=Vector3.new(width,width,delta.Magnitude);p.CFrame=CFrame.lookAt((a+b)/2,b)
+ local up=if math.abs(delta.Unit.Y)>.99 then Vector3.zAxis else Vector3.yAxis
+ p.Size=Vector3.new(width,width,delta.Magnitude);p.CFrame=CFrame.lookAt((a+b)/2,b,up)
 end
 function V.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),streaks={},stars={},meteors={},splashes={},bolts={},beams={},rainGround={},kind="Clear",alpha=0},V)
@@ -70,7 +71,7 @@ function V.new(ctx)
 end
 function V:Set(message)
  if self.kind~=message.weather then
-  self.kind=message.weather;self.dirty=true;self.rainbowAlpha=nil
+  self.kind=message.weather;self.dirty=true;self.rainbowAlpha=nil;self.groundAt=nil
   if self.ctx.sound.SetWeather then self.ctx.sound:SetWeather(self.kind) end
  end
  self.message=message
@@ -168,32 +169,49 @@ function V:Tick(now,dt)
    end
   end
  elseif self.kind=="Storm" then
-  -- Twelve cached roof/ground samples keep rain above roofs and stop it at physical surfaces.
-  if now>=(self.groundAt or 0) then
-   self.groundAt=now+.35;local params=RaycastParams.new();params.FilterDescendantsInstances={self.folder,char or self.folder};params.RespectCanCollide=true
-   for i=1,12 do
-    local offset=Vector3.new((i*17%63)-31,0,(i*29%65)-32)
-    local hit=workspace:Raycast(base+offset+Vector3.yAxis*75,Vector3.new(0,-145,0),params)
-    self.rainGround[i]={offset=offset,y=if hit then hit.Position.Y else base.Y-3}
+  -- Rain stays in world-space columns and ends on the exact surface sampled below each one.
+  local columns=if low then 12 elseif reduced then 16 elseif tier==2 then 24 else 32
+  local cell=Vector3.new(math.round(base.X/8)*8,0,math.round(base.Z/8)*8)
+  if cell~=self.rainCell or columns~=self.rainColumns or now>=(self.groundAt or 0) then
+   self.rainCell=cell;self.rainColumns=columns;self.groundAt=now+.4
+   local params=RaycastParams.new();params.FilterDescendantsInstances={self.folder,char or self.folder};params.RespectCanCollide=true
+   local world=workspace:FindFirstChild("GeneratedWorld")
+   local boundary=world and world:FindFirstChild("MapBoundary")
+   if boundary then params:AddToFilter(boundary) end
+   local top=math.max(165,base.Y+64)
+   for i=1,columns do
+    local origin=cell+Vector3.new((i*17%61)-30,top,(i*29%67)-33)
+    local hit=workspace:Raycast(origin,Vector3.new(0,-top-12,0),params)
+    self.rainGround[i]=hit and hit.Position
    end
   end
-  local count=if low then 16 elseif reduced then 28 elseif tier==2 then 60 else 96
-  for i=1,count do
-   local ground=self.rainGround[(i-1)%12+1]
-   if ground then
-    local y=(now*(if reduced then 16 else 47)+i*7.31)%48
-    local pos=Vector3.new(base.X+ground.offset.X+(i%3-1)*1.6,ground.y+y+.2,base.Z+ground.offset.Z)
-    local p=self.streaks[i];line(p,pos,pos+Vector3.new(-.6,if reduced then -2.5 else -5.5,.2),if low then .05 else .035)
-    p.Color=Color3.fromHex("C2E5FF");p.Transparency=if reduced then .6 else .3
+  local layers=if low or reduced then 2 else 3
+  local speed=if reduced then 23 else 43
+  local length=if reduced then 2.4 else 4.6
+  for i=1,columns do
+   local surface=self.rainGround[i]
+   if not surface then continue end
+   for layer=1,layers do
+    local height=44-(now*speed+i*5.37+layer*44/layers)%44
+    local bottom=surface+Vector3.yAxis*(math.max(0,height-length)+.08)
+    local tip=surface+Vector3.yAxis*(height+.08)
+    if height>.12 then
+     local p=self.streaks[(i-1)*layers+layer]
+     line(p,tip,bottom,if low then .07 else .055)
+     p.Color=Color3.fromHex("C2E5FF");p.Transparency=if reduced then .55 else .36
+    end
+   end
+   local splash=self.splashes[i]
+   if splash and not reduced then
+    local phase=(now*speed+i*5.37)%(44/layers)
+    if phase<5 then
+     local fade=phase/5;local diameter=.3+fade
+     splash.Size=Vector3.new(.035,diameter,diameter)
+     splash.CFrame=CFrame.new(surface+Vector3.yAxis*.05)*CFrame.Angles(0,0,math.pi/2)
+     splash.Color=Color3.fromHex("BEE7FA");splash.Transparency=.58+fade*.42
+    end
    end
   end
-  if not reduced then for i=1,if low then 3 else 12 do
-   local g=self.rainGround[i];if g then
-    local phase=(now*1.5+i*.13)%1;local p=self.splashes[i];p.Size=Vector3.new(.045,.4+phase*1.7,.4+phase*1.7)
-    p.CFrame=CFrame.new(base.X+g.offset.X,g.y+.04,base.Z+g.offset.Z)*CFrame.Angles(0,0,math.pi/2)
-    p.Color=Color3.fromHex("BEE7FA");p.Transparency=.65+phase*.35
-   end
-  end end
   -- One gentle distant lightning stroke every 11s; reduced settings suppress it.
   local time=(workspace:GetServerTimeNow()-(self.message and self.message.since or 0))%11
   if not reduced and not low and time>8 and time<8.38 then

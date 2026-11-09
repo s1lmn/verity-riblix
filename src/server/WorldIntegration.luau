@@ -221,17 +221,16 @@ function WorldIntegration.new(workspace, players, plots, world)
 		sign.Name = "HouseStatus"
 		sign.Adornee = self.anchors[id].HouseEntrance or self.anchors[id].SpawnPoint
 		sign.StudsOffsetWorldSpace = Vector3.new(0, 6, 0)
-		sign.Size = UDim2.fromOffset(170, 46)
-		sign.MaxDistance = 65
+		sign.Size = UDim2.fromOffset(184, 48)
+		sign.MaxDistance = 48
 		sign.Parent = model
 		local label = Instance.new("TextLabel")
 		label.Size = UDim2.fromScale(1, 1)
 		label.Font = Enum.Font.GothamBold
-		label.TextSize = 13
+		label.TextSize = 14
 		label.TextWrapped = true
-		label.TextColor3 = Color3.fromRGB(242,250,255)
-		label.BackgroundTransparency=1
-		label.TextStrokeColor3=Color3.fromRGB(18,34,55);label.TextStrokeTransparency=.2
+		label.TextColor3 = Color3.fromRGB(35,27,53)
+		label.BackgroundTransparency = .08
 		label.Parent = sign
 		local corner = Instance.new("UICorner")
 		corner.CornerRadius = UDim.new(0, 9)
@@ -327,7 +326,7 @@ function WorldIntegration:UpdatePlot(userId, state)
 		verity:SetAttribute("IncomePerSecond", state.IncomePerSecond)
 		verity:SetAttribute("VerityScale", state.VerityScale)
   local cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
-  verity:SetAttribute("WeatherLook",state.WeatherLook or "Auto")
+  verity:SetAttribute("WeatherLook",state.WeatherLook or "Original")
   for slot in cosmetics.Slots do verity:SetAttribute("Cosmetic_"..slot,(state.CosmeticsEquipped or {})[slot]) end
 	end
 	local worldPlot = self.anchors[plotId].WorldPlot

@@ -291,14 +291,19 @@ function Service:RenderWorld()
   end
   Locale.SetWorld(self.model.weatherPrompt,"ActionText",if fire then "Собирать солнечные угольки" else "Искать звёздные осколки")
   self.model.portal.Transparency=if open then .8 else .25;self.model.cavePrompt.Enabled=open
-  Locale.SetWorld(self.model.caveLabel,"Text",if open then "Дождевая пещера открыта!" else "Откроется после ливня")
+  for _,label in self.model.caveLabels do
+   Locale.SetWorld(label,"Text",if open then "Дождевая пещера открыта!" else "Откроется после ливня")
+  end
   Locale.SetWorld(self.model.cavePrompt,"ObjectText",if open then "Дождевая пещера" else "Откроется после ливня")
   self.model.weatherPrompt.Enabled=stars
   self.model.root:SetAttribute("WeatherKind",self.weather)
   RS:SetAttribute("VerityWeatherKind",self.weather)
  end
- Locale.SetWorld(self.model.weatherLabel,"Text","%s • %dс",Locale.Get("ru",C.WeatherNames[self.weather]),math.max(0,math.ceil(self.deadline-now)))
- self.model.weatherLabel:SetAttribute("Text_locale_en",string.format("%s • %ds",Locale.Get("en",C.WeatherNames[self.weather]),math.max(0,math.ceil(self.deadline-now))))
+ local remaining=math.max(0,math.ceil(self.deadline-now))
+ for _,label in self.model.weatherLabels do
+  Locale.SetWorld(label,"Text","%s • %dс",Locale.Get("ru",C.WeatherNames[self.weather]),remaining)
+  label:SetAttribute("Text_locale_en",string.format("%s • %ds",Locale.Get("en",C.WeatherNames[self.weather]),remaining))
+ end
  for plot,entry in self.model.parties do
   local record=self.world.houseProgression.plots[plot];local party=self.parties[plot];local state=record.state
   local available=state~=nil and state.VerityUnlocked==true and state.HouseIncomeLevel>=2
@@ -309,24 +314,31 @@ function Service:RenderWorld()
   for _,q in {entry.host,entry.next,entry.stop,entry.join} do q:SetAttribute("PartyOwner",state and state.ownerUserId or 0);q:SetAttribute("PartyAvailable",q.Enabled) end
   local signature=tostring(available)..mode..tostring(party and party.phase)
   if entry.signature~=signature then
-   entry.signature=signature;entry.board.Transparency=if available then 0 else 1;entry.label.Parent.Enabled=available
+   entry.signature=signature
+   entry.board.Transparency=if available then 0 else 1
+   entry.sign.Transparency=entry.board.Transparency
+   for _,label in entry.labels do label.Parent.Enabled=available end
    Locale.SetWorld(entry.host,"ObjectText",title);Locale.SetWorld(entry.next,"ObjectText",title)
    for _,part in entry.display do part.Transparency=if party then 0 else 1 end
    for _,node in entry.nodes do show(node.model,party~=nil and mode=="Gifts" and party.phase=="Playing");node.prompt.Enabled=party~=nil and mode=="Gifts" and party.phase=="Playing" end
   end
   if available then
    if party then
-    Locale.SetWorld(entry.label,"Text","%s • %dс",Locale.Get("ru",title),math.max(0,math.ceil(party.deadline-now)))
-    entry.label:SetAttribute("Text_locale_en",string.format("%s • %ds",Locale.Get("en",title),math.max(0,math.ceil(party.deadline-now))))
     local leaders={}
     for player,e in party.entries do if not e.left then table.insert(leaders,{name=player.DisplayName,score=if party.mode=="Arcade" then e.score or 0 else e.count or 0}) end end
     table.sort(leaders,function(a,b)if a.score==b.score then return a.name<b.name end;return a.score>b.score end)
     local lines={}
     for i=1,math.min(3,#leaders) do table.insert(lines,i..". "..leaders[i].name.." • "..leaders[i].score) end
     local suffix=if #lines>0 then "\n"..table.concat(lines,"\n") else ""
-    local ru=entry.label:GetAttribute("Text_locale_ru")..suffix;local en=entry.label:GetAttribute("Text_locale_en")..suffix
-    entry.label:SetAttribute("Text_locale_ru",ru);entry.label:SetAttribute("Text_locale_en",en);entry.label.Text=ru;entry.label.TextSize=18
-   else Locale.SetWorld(entry.label,"Text",title);entry.label.TextSize=24 end
+    local seconds=math.max(0,math.ceil(party.deadline-now))
+    for _,label in entry.labels do
+     local ru=string.format("%s • %dс",Locale.Get("ru",title),seconds)..suffix
+     local en=string.format("%s • %ds",Locale.Get("en",title),seconds)..suffix
+     label:SetAttribute("Text_locale_ru",ru);label:SetAttribute("Text_locale_en",en);label.Text=ru
+    end
+   else
+    for _,label in entry.labels do Locale.SetWorld(label,"Text",title) end
+   end
   end
  end
  for _,q in self.prompts do if q.Parent then q:SetAttribute("AdventureEnabled",q.Enabled) end end

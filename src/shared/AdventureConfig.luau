@@ -4,7 +4,7 @@ local C={Version=1,Reach=8,TrialSeconds=65,CaveSeconds=150,PartyLobby=20,PartySe
 C.WeatherCycle={{Kind="Clear",Seconds=30},{Kind="Fire",Seconds=110},{Kind="Clear",Seconds=45},{Kind="Stars",Seconds=135},{Kind="Clear",Seconds=60},{Kind="Storm",Seconds=95},{Kind="Rainbow",Seconds=180},{Kind="Clear",Seconds=60}}
 C.WeatherNames={Fire="Огненное небо",Clear="Ясная погода",Stars="Звёздный дождь",Storm="Грозовой ливень",Rainbow="После дождя: тайная пещера"}
 C.WeatherColors={Fire="FFA567",Clear="FFE2A4",Stars="C2A4FF",Storm="86CFFF",Rainbow="A5F4D2"}
-C.TrialCenter=Vector3.new(-224,.7,-L.GroundHalfLength+44)
+C.TrialCenter=Vector3.new(-224,.7,-L.GroundHalfLength+55)
 C.TrialOrder={"dash","leap","flight","laser"}
 local t=C.TrialCenter
 C.Trials={

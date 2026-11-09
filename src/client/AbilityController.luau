@@ -7,7 +7,6 @@ local GuiService=game:GetService("GuiService")
 local RunService=game:GetService("RunService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
 local Ride=require(ReplicatedStorage.Shared.VerityRideConfig)
-local Battle=require(ReplicatedStorage.Shared.VerityBattleConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
@@ -63,9 +62,7 @@ end
 function Controller:Item(slot)
 	local state=self.ctx.net.state
 	if not state or not state.VerityUnlocked then return nil end
-	local item=Catalog.Equipped(state,slot,state.HeroPassOwned)
- if not item and slot=="Attack" and Players.LocalPlayer:GetAttribute("VerityBattleFighting") then return Battle.Basic end
- return item
+	return Catalog.Equipped(state,slot,state.HeroPassOwned)
 end
 function Controller:Activate(slot,fromButton)
 	local ctx=self.ctx;local button=if slot=="Ride" then ctx.refs.RideButton elseif slot=="Mobility" then ctx.refs.AbilityButton else ctx.refs.AttackButton
@@ -148,7 +145,7 @@ function Controller:Render()
 		local remaining=math.max(0,math.ceil((player:GetAttribute(attribute) or (snapshot and snapshot.readyAt) or 0)-now))
 		local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then (if slot=="Mobility" then "L1 · " else "R1 · ") else (if slot=="Mobility" then "F · " else "G · ")
 		local name=if not item then (if slot=="Mobility" then "Движение" else "Атака") elseif slot=="Mobility" and item.MobilityAction then "Полёт героя" else item.Name
-		local icon=if item and snapshot and (Catalog.Items[snapshot.itemId] or (snapshot.temporary and Battle.Basic))==item then snapshot.icon
+		local icon=if item and snapshot and Catalog.Items[snapshot.itemId]==item then snapshot.icon
 			elseif item then icons[if slot=="Mobility" then item.MobilityAction or item.Action else item.Action] or "◆" else "◇"
 		local activeUntil=player:GetAttribute(if slot=="Attack" then "VerityAttackUntil" else "VerityMobilityUntil") or 0
 		local active=math.max(0,math.ceil(activeUntil-now))

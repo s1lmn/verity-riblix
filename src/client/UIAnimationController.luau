@@ -59,11 +59,13 @@ function Animation:BindButton(button)
 	local function update()
 		local state = button:GetAttribute("UIState")
 		local enabled = state ~= "Disabled" and state ~= "Loading"
-		local color = if enabled then button:GetAttribute("BaseColor") else T.Disabled
-		if state == "Success" then color = T.Mint end
-		if enabled and pressed and fixedSize then color = color:Lerp(T.Ink, 0.12)
-		elseif enabled and hover then color = color:Lerp(T.White, 0.12) end
-		self:Tween(button, 0.12, { BackgroundColor3 = color })
+		local baseColor = button:GetAttribute("BaseColor")
+		if typeof(baseColor) == "Color3" then
+			local color = if state == "Success" then T.Mint elseif enabled then baseColor else T.Disabled
+			if enabled and pressed and fixedSize then color = color:Lerp(T.Ink, 0.12)
+			elseif enabled and hover then color = color:Lerp(T.White, 0.12) end
+			self:Tween(button, 0.12, { BackgroundColor3 = color })
+		end
 		if not fixedSize then
 			self:Tween(scale, 0.12, { Scale = if enabled and pressed then 0.97 elseif enabled and hover then 1.015 else 1 })
 		end

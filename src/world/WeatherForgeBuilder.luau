@@ -2,6 +2,7 @@
 local RS=game:GetService("ReplicatedStorage")
 local F=require(RS.Shared.WeatherForgeConfig)
 local Locale=require(RS.Shared.LocaleText)
+local Sign=require(script.Parent.WorldSign)
 local B={}
 function B.Build(world)
  local m=Instance.new("Model");m.Name="WeatherForge";m.ModelStreamingMode=Enum.ModelStreamingMode.Atomic;m.Parent=world
@@ -42,8 +43,7 @@ function B.Build(world)
   rune.CFrame*=CFrame.Angles(0,-angle,0)
  end
  local sign=p("ForgeSign",Vector3.new(0,5.8,-6),Vector3.new(10,1.9,.25),"413759")
- local gui=Instance.new("SurfaceGui");gui.Face=Enum.NormalId.Back;gui.CanvasSize=Vector2.new(500,100);gui.MaxDistance=35;gui.Parent=sign
- local label=Instance.new("TextLabel");label.Size=UDim2.fromScale(1,1);label.BackgroundTransparency=1;label.Font=Enum.Font.GothamBold;label.TextColor3=Color3.fromHex("FFE8BD");label.TextSize=30;label.Parent=gui;Locale.SetWorld(label,"Text","КУЗНИЦА ПОГОДЫ")
+ Sign.Add(sign,"КУЗНИЦА ПОГОДЫ")
  return {model=m,core=core,prompt=prompt,orbs=orbs}
 end
 return B

@@ -1,7 +1,7 @@
 --!nonstrict
 -- Shared course and display coordinates. Only FusionService advances a run.
 local Layout=require(script.Parent.WorldLayout)
-local C={Version=1,Hub=Vector3.new(-110,.55,333+Layout.EndShift),TrackX=-440,TrackY=18,
+local C={Version=1,Hub=Vector3.new(-110,.55,333+Layout.EndShift),TrackX=-620,TrackY=0,
  StartZ=-120,EndZ=420,HalfWidth=21,Radius=5.65,Speed=9,BoostSpeed=14,BoostSeconds=1.1,BoostCooldown=6,
  JumpSpeed=22,Gravity=44,JoinReach=9,QueueReach=22,QueueSeconds=45,MergeSeconds=2.6,RunSeconds=95,
  RetrySeconds=1.25,MaxFaults=5,ResultSeconds=4,InputTimeout=.35,PublishInterval=.08,Reward="fusion_charms"}

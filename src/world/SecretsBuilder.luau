@@ -2,6 +2,7 @@
 local Shared=game:GetService("ReplicatedStorage").Shared
 local C=require(Shared.SecretsConfig)
 local Locale=require(Shared.LocaleText)
+local Sign=require(script.Parent.WorldSign)
 local Builder={}
 function Builder.Build(world)
  local root=Instance.new("Model");root.Name="NeighborhoodSecrets";root.Parent=world
@@ -24,10 +25,7 @@ function Builder.Build(world)
  end
  local function sign(parent,pos,text)
   local p=part(parent,"CluePlaque",pos,Vector3.new(11,2.8,.25),"37435F",false)
-  local g=Instance.new("SurfaceGui");g.Face=Enum.NormalId.Back;g.PixelsPerStud=35;g.Parent=p
-  local label=Instance.new("TextLabel");label.Size=UDim2.fromScale(1,1);label.BackgroundTransparency=1
-  label.TextColor3=Color3.fromHex("FFF4CE");label.Font=Enum.Font.GothamBold;label.TextSize=18;label.TextWrapped=true
-  label.Parent=g;Locale.SetWorld(label,"Text",text)
+  Sign.Add(p,text)
  end
  local function chest(parent,pos,id)
   local base=part(parent,"Chest",pos,Vector3.new(2.7,1.8,2),C.Items[id].Color,false)

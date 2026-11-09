@@ -150,7 +150,7 @@ function Controller:Render()
  self.materials.Position=UDim2.fromOffset(12,if compact then 43 else 52);self.materials.Size=UDim2.new(1,-24,0,if compact then 42 else 52)
  self.modes.Position=UDim2.fromOffset(12,if compact then 91 else 112)
  local top=if compact then 143 else 166;self.list.Position=UDim2.fromOffset(8,top);self.list.Size=UDim2.new(1,-16,1,-top-8)
- local state=ctx.net.state;local materials=state and state.WeatherMaterials or {};local owned=state and state.CosmeticsOwned or {};local selection=state and state.WeatherLook or "Auto"
+ local state=ctx.net.state;local materials=state and state.WeatherMaterials or {};local owned=state and state.CosmeticsOwned or {};local selection=state and state.WeatherLook or "Original"
  for id,label in self.materialLabels do label.Text=tostring(materials[id] or 0) end
  local near=self:Near();local parts={tostring(state and state.HouseIncomeLevel),tostring(compact),tostring(near),tostring(ctx.net:IsBusy()),tostring(ctx.net.connected),selection}
  for _,id in F.MaterialOrder do table.insert(parts,tostring(materials[id] or 0)) end

@@ -18,11 +18,15 @@ function Skin.Build(parent)
  local badge=box(root,"BoutiqueBadge",20,16,76,7,T.Pink,4)
  local title=W.Text(root,"Title","СТИЛЬ VERITY",20,true)
  title.Position=UDim2.fromOffset(20,28);title.Size=UDim2.new(1,-86,0,32)
- local subtitle=W.Text(root,"Subtitle","Награды за приключения и украшения Verity",12,false,T.Muted)
+ local subtitle=W.Text(root,"Subtitle","Примерь аксессуары и облики Verity",12,false,T.Muted)
  subtitle.Position=UDim2.fromOffset(20,64);subtitle.Size=UDim2.new(1,-40,0,34)
  local close=W.Button(root,"Close","×",T.Gold)
  close.Position=UDim2.new(1,-62,0,24);close.Size=UDim2.fromOffset(44,44);close.TextSize=26
- local body=W.New("ScrollingFrame",{Name="Boutique",Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-144),
+ local accessories=W.Button(root,"Accessories","АКСЕССУАРЫ",T.Mint)
+ accessories.Position=UDim2.fromOffset(16,102);accessories.Size=UDim2.new(.5,-20,0,44)
+ local looks=W.Button(root,"Looks","СКИНЫ",T.Soft)
+ looks.Position=UDim2.new(.5,4,0,102);looks.Size=accessories.Size
+ local body=W.New("ScrollingFrame",{Name="Boutique",Position=UDim2.fromOffset(16,154),Size=UDim2.new(1,-32,1,-190),
   BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,
   ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=3,ScrollBarImageColor3=violet},root)
  W.List(body,10)
@@ -39,7 +43,7 @@ function Skin.Build(parent)
  notice.LayoutOrder=1
  local footer=W.Text(root,"Footer","Твой Verity — твой стиль",11,false,T.Muted)
  footer.Position=UDim2.new(0,16,1,-31);footer.Size=UDim2.new(1,-32,0,20);footer.TextXAlignment=Enum.TextXAlignment.Center
- return {Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Preview=preview,Reset=reset,PreviewCaption=caption}
+ return {Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Preview=preview,Reset=reset,PreviewCaption=caption,Accessories=accessories,Looks=looks,Notice=notice}
 end
 function Skin.Card(parent,item,index)
  local color=if item.slot=="Face" then T.Blue elseif item.slot=="Head" then T.Pink else T.Gold
@@ -87,11 +91,29 @@ function Skin.Card(parent,item,index)
  end
  return {Root=root,buy=buy,info=info,name=name,category=category,tryOn=preview,progress=progress,tones=tones}
 end
+function Skin.LookCard(parent,id,index,color)
+ local root=W.Round(W.Frame(parent,id,UDim2.new(1,-6,0,132),T.White),16)
+ root.LayoutOrder=index+1;root.Visible=false
+ W.Stroke(root,color,2).Transparency=.45
+ box(root,"Swatch",12,12,26,26,color,13)
+ local title=W.Text(root,"Name","",14,true);title.Position=UDim2.fromOffset(46,8);title.Size=UDim2.new(1,-58,0,34)
+ local info=W.Text(root,"Status","",12,false,T.Muted);info.Position=UDim2.fromOffset(12,44);info.Size=UDim2.new(1,-24,0,33)
+ local preview=W.Button(root,"Preview","ПРИМЕРИТЬ",T.Soft)
+ preview.Position=UDim2.fromOffset(12,80);preview.Size=UDim2.new(.43,-16,0,44);preview.TextSize=12
+ local equip=W.Button(root,"Equip","ВЫБРАТЬ",T.Mint)
+ equip.Position=UDim2.new(.43,4,0,80);equip.Size=UDim2.new(.57,-16,0,44);equip.TextSize=12
+ return {Root=root,name=title,info=info,tryOn=preview,buy=equip}
+end
 function Skin.Layout(p,size,panelX)
  local x=panelX or 12
  local width=math.min(420,size.X-x-12);local height=math.min(640,size.Y-24)
  p.Root.Position=UDim2.fromOffset(x,12);p.Root.Size=UDim2.fromOffset(width,height)
  p.Title.TextSize=if width<360 then 17 else 20
- return {width=width,height=height,bodyHeight=height-144}
+ local short=height<410
+ local tabTop=if short then 68 else 102
+ p.Subtitle.Visible=not short
+ p.Accessories.Position=UDim2.fromOffset(16,tabTop);p.Looks.Position=UDim2.new(.5,4,0,tabTop)
+ p.Body.Position=UDim2.fromOffset(16,tabTop+52);p.Body.Size=UDim2.new(1,-32,1,-tabTop-82)
+ return {width=width,height=height,bodyHeight=height-tabTop-82}
 end
 return Skin

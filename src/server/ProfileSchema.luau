@@ -11,7 +11,7 @@ local HomeStyle=require(Shared.HomeStyleConfig)
 local Forge=require(Shared.WeatherForgeConfig)
 local Schema = {}
 function Schema.new()
-	return {DataVersion = 2, HouseTheme = "original", ArcadeBestScore=0, AdventureRecords={}, WeatherMaterials={Ember=0,Stardust=0,RainPearl=0}, WeatherLook="Auto", WeatherMaterialsSeeded=false, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
+	return {DataVersion = 2, HouseTheme = "original", ArcadeBestScore=0, AdventureRecords={}, WeatherMaterials={Ember=0,Stardust=0,RainPearl=0}, WeatherLook="Original", WeatherMaterialsSeeded=false, Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
 		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end

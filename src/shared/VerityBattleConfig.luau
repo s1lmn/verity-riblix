@@ -2,7 +2,6 @@
 local Layout=require(script.Parent.WorldLayout)
 local C={Center=Vector3.new(0,1,333+Layout.EndShift),MaxPlayers=4,Countdown=6,BreakSeconds=5,Timeout=300,Cooldown=150,RewardSeconds=55}
 C.Exit=Vector3.new(0,4,298+Layout.EndShift)
-C.Basic=table.freeze({Name="Импульс арены",Slot="Attack",Level=1,Action="pulse",Cooldown=1.2,Damage=5,Range=110,Duration=.4,Color="76E8FF"})
 C.Types=table.freeze({
  Spark=table.freeze({Name="Искра",Health=28,Speed=7,Damage=12,Radius=5,Range=8,Windup=.95,Delay=3.3,Color="FF8B64",Size=2.1}),
  Watcher=table.freeze({Name="Страж",Health=42,Speed=4,Damage=15,Radius=4,Range=23,Windup=1.2,Delay=4.1,Color="AB8AFF",Size=2.5}),
