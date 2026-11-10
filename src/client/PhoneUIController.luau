@@ -35,7 +35,6 @@ function Phone.new(ctx)
 			self.collection:SetOpen(true)
 		end
 	end))
-	self.cleanup:Add(self.refs.Home.Activated:Connect(function() ctx.close() end))
 	self.cleanup:Add(self.refs.Next.Activated:Connect(function() self.input.Emit() end))
 	self.cleanup:Add(self.refs.Power.Activated:Connect(function() self:Upgrade("UpgradeSwipe") end))
 	self.cleanup:Add(self.refs.Grow.Activated:Connect(function() self:Upgrade("UpgradeVerity") end))

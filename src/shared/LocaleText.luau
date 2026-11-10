@@ -1612,4 +1612,10 @@ local characterPackEnglish={
 }
 for source,target in characterPackEnglish do en[source]=target end
 
+en["ДЕНЬГИ"]="CASH"
+en["МЕНЮ ТЕЛЕФОНА"]="PHONE MENU"
+en["МЕНЮ"]="MENU"
+en["Рост и секреты"]="Growth and secrets"
+en["Цели и награды"]="Goals and rewards"
+
 return Text

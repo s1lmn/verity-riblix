@@ -5,137 +5,184 @@ local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local TextService=game:GetService("TextService")
 local Skin={}
-local INK=Color3.fromHex("211B3D")
+local INK=Color3.fromHex("14131F")
+local PANEL=Color3.fromHex("252635")
+local GREEN=Color3.fromHex("9BF540")
+local GAP=10
 local STAGES={
- money_x3={"FFF3CE","E8A84D"}, scarlet_sentinel={"F67B84","57243D"},
- premium_homes={"FFEEE5","B9A4DB"}, premium_auras={"A7A9F3","423576"},
- fusion_starlight={"92A9FF","41265B"}, party_disco={"EA8DD1","47346A"},
- collector_gallery={"FFEAC0","745391"}, home_atmosphere={"70B1BE","303A75"},
+ money_x3={"9AFD55","179B46"}, scarlet_sentinel={"FF747C","AD244F"},
+ premium_homes={"FFD178","E9669E"}, premium_auras={"C0A3FF","5746BC"},
+ fusion_starlight={"88CEFF","5250CC"}, party_disco={"FF9AE9","AA45AA"},
+ collector_gallery={"FFE08A","C28031"}, home_atmosphere={"7EF1DE","3378B0"},
 }
+local function outline(object,color,width)
+ return W.New("UIStroke",{Color=color or INK,Thickness=width or 2,Transparency=0,ApplyStrokeMode=Enum.ApplyStrokeMode.Border},object)
+end
+local function gradient(object,from,to,rotation)
+ W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex(from),Color3.fromHex(to)),Rotation=rotation or 90},object)
+end
 local function fixed(button)
- button:SetAttribute("FixedFeedbackSize",true);button.TextSize=12;button.TextWrapped=true
+ button.Active=true
+ button:SetAttribute("FixedFeedbackSize",true);button.TextSize=13;button.TextWrapped=true
  return button
 end
-local function text(parent,name,size,bold,color)
- return W.Text(parent,name,"",size,bold,color)
+local function centered(label)
+ label.TextXAlignment=Enum.TextXAlignment.Center
+ return label
+end
+local function whiteType(label)
+ label.TextColor3=T.White
+ W.New("UIStroke",{Color=INK,Thickness=1.7,Transparency=0},label)
+ return label
+end
+local function scroll(root,name)
+ return W.New("ScrollingFrame",{Name=name,BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),
+  AutomaticCanvasSize=Enum.AutomaticSize.Y,Active=true,ClipsDescendants=true,ScrollingDirection=Enum.ScrollingDirection.Y,
+  ScrollBarThickness=4,ScrollBarImageColor3=Color3.fromHex("9494B6")},root)
 end
 function Skin.Build(parent)
- local root=W.Round(W.Frame(parent,"PremiumShop",UDim2.fromOffset(420,560),Color3.fromHex("F0EDF9")),20)
- root.Visible=false;root.Active=true;root.SelectionGroup=true;root.ClipsDescendants=true
- for _,d in {"Up","Down","Left","Right"} do root["SelectionBehavior"..d]=Enum.SelectionBehavior.Stop end
- W.Stroke(root,T.Purple,2).Transparency=.4
- local header=W.Round(W.Frame(root,"Header",UDim2.new(1,0,0,76),INK),20)
- W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex("433075"),INK),Rotation=20},header)
- local title=W.Text(header,"Title","МАГАЗИН",22,true,T.White)
- title.Position=UDim2.fromOffset(16,8);title.Size=UDim2.new(1,-78,0,30)
- local subtitle=W.Text(header,"Subtitle","Примерь. Посмотри. Выбери.",12,false,Color3.fromHex("E1D9F8"))
- subtitle.Position=UDim2.fromOffset(16,39);subtitle.Size=UDim2.new(1,-78,0,25)
- local close=fixed(W.Button(header,"Close","‹",T.White))
- close.Position=UDim2.new(1,-56,0,12);close.Size=UDim2.fromOffset(44,44);close.TextSize=27
+ local backdrop=W.Frame(parent,"ShopBackdrop",UDim2.fromScale(1,1),INK)
+ backdrop.BackgroundTransparency=.4;backdrop.Visible=false;backdrop.Active=true;backdrop.ZIndex=9
+ local root=W.Round(W.Frame(parent,"PremiumShop",UDim2.fromOffset(840,560),PANEL),18)
+ root.Visible=false;root.Active=true;root.SelectionGroup=true;root.ClipsDescendants=true;root.ZIndex=10
+ for _,direction in {"Up","Down","Left","Right"} do root["SelectionBehavior"..direction]=Enum.SelectionBehavior.Stop end
+ outline(root,INK,4)
+ local header=W.Frame(root,"Header",UDim2.new(1,0,0,60),Color3.fromHex("FFB20F"))
+ gradient(header,"FF8D0A","FFF05D",0)
+ local title=whiteType(W.Text(header,"Title","МАГАЗИН",23,true))
+ local subtitle=W.Text(header,"Subtitle","",1);subtitle.Visible=false
+ local close=whiteType(fixed(W.Button(header,"Close","×",Color3.fromHex("E32D56"))))
+ close.Size=UDim2.fromOffset(44,44);close.TextSize=28;outline(close)
+ local back=whiteType(fixed(W.Button(header,"Back","‹",Color3.fromHex("2F65CD"))))
+ back.Position=UDim2.fromOffset(8,5);back.Size=UDim2.fromOffset(44,44);back.TextSize=27;back.Visible=false;outline(back)
  local tabs={}
- for i,section in Catalog.Sections do
-  local b=fixed(W.Button(root,section.id,section.title,Color3.fromHex(section.color)))
-  b.Position=UDim2.new((i-1)/3,12-6*(i-1),0,83);b.Size=UDim2.new(1/3,-12,0,44)
-  tabs[section.id]=b
+ for _,section in Catalog.Sections do
+  local tab=fixed(W.Button(root,section.id,section.title,Color3.fromHex(section.color)))
+  outline(tab);tabs[section.id]=tab
  end
- local body=W.New("ScrollingFrame",{Name="Offers",Position=UDim2.fromOffset(10,136),Size=UDim2.new(1,-20,1,-146),
-  BackgroundTransparency=1,BorderSizePixel=0,CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,
-  Active=true,ClipsDescendants=true,ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=3,ScrollBarImageColor3=T.Purple},root)
- W.List(body,12);W.Padding(body,3)
- return {Root=root,Header=header,Title=title,Subtitle=subtitle,Close=close,Body=body,Tabs=tabs}
+ local body=scroll(root,"Offers")
+ W.Padding(body,6)
+ local grid=W.New("UIGridLayout",{CellPadding=UDim2.fromOffset(GAP,GAP),SortOrder=Enum.SortOrder.LayoutOrder,
+  HorizontalAlignment=Enum.HorizontalAlignment.Center},body)
+ local detail=scroll(root,"Details");detail.Visible=false
+ local parking=W.New("Folder",{Name="InactiveOffers"},root)
+ W.Padding(detail,5);W.List(detail,8)
+ return {Root=root,Backdrop=backdrop,Header=header,Title=title,Subtitle=subtitle,Close=close,Back=back,Body=body,Grid=grid,Detail=detail,Parking=parking,Tabs=tabs}
 end
 function Skin.Card(parent,id,item,order)
- local stage=STAGES[id] or {item.Color,"30274E"}
+ local stage=STAGES[id] or {item.Color,"6747AB"}
  local accent=Color3.fromHex(item.Color)
- local row=W.Round(W.Frame(parent,id,UDim2.new(1,-6,0,320),T.White),18)
+ local row=W.Round(W.Frame(parent,id,UDim2.fromOffset(184,204),Color3.fromHex("1D2030")),14)
  row.LayoutOrder=order;row.Visible=false;row.ClipsDescendants=true
- W.Stroke(row,accent,1.5).Transparency=.22
- local name=W.Text(row,"Name",item.Title,19,true,T.Ink)
- local benefit=text(row,"Benefit",13,false,T.Ink)
- local bundle=text(row,"Bundle",11,true,accent:Lerp(T.Ink,.62))
- local art=W.Round(W.Frame(row,"ProductScene",UDim2.new(1,-20,0,180),accent:Lerp(T.White,.52)),14)
- art.ClipsDescendants=true
- W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex(stage[1]),Color3.fromHex(stage[2])),Rotation=80},art)
+ outline(row,INK,3)
+ local art=W.Round(W.Frame(row,"ProductScene",UDim2.new(1,-10,0,120),accent),11)
+ art.ClipsDescendants=true;gradient(art,stage[1],stage[2],38)
+ outline(art,Color3.fromHex("FFFFFF"),1.25).Transparency=.46
+ local gloss=W.Frame(art,"Shine",UDim2.new(.22,0,1.55,0),T.White)
+ gloss.Position=UDim2.fromScale(.78,-.32);gloss.Rotation=22;gloss.BackgroundTransparency=.82
  local viewport=W.New("ViewportFrame",{Name="Model",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
-  Ambient=Color3.fromRGB(194,193,215),LightColor=Color3.fromRGB(255,245,228),LightDirection=Vector3.new(-1,-1,-2)},art)
- local phase=W.Round(W.Frame(art,"PhasePill",UDim2.new(1,-16,0,24),INK),8)
- phase.Position=UDim2.new(0,8,1,-32);phase.BackgroundTransparency=.2
- local phaseText=text(phase,"Phase",11,true,T.White);phaseText.Position=UDim2.fromOffset(8,1);phaseText.Size=UDim2.new(1,-16,1,-2)
- local comparison=text(row,"Comparison",15,true,T.Ink)
- comparison.TextXAlignment=Enum.TextXAlignment.Center
- local variant
- if item.Variants then variant=fixed(W.Button(row,"NextVariant","",accent:Lerp(T.White,.74))) end
- local view
- if id=="premium_homes" then view=fixed(W.Button(row,"HouseView","ПОКАЗАТЬ ИНТЕРЬЕР",T.Soft)) end
- local detail=text(row,"Facts",12,false,T.Muted);detail.TextYAlignment=Enum.TextYAlignment.Top
- local more=fixed(W.Button(row,"DetailsToggle","ПОДРОБНЕЕ",T.Soft))
- more.Visible=true
- local extra=text(row,"Rules",12,false,T.Muted);extra.TextYAlignment=Enum.TextYAlignment.Top;extra.Visible=false
- local price=text(row,"Price",14,true,T.Ink)
- local preview=fixed(W.Button(row,"TryOn","ПРИМЕРИТЬ",T.Soft))
- local buy=fixed(W.Button(row,"Buy","КУПИТЬ",Color3.fromHex("77E8B5")))
- buy.TextColor3=Color3.fromHex("153E32")
- W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex("EBFFF4"),Color3.fromHex("7ADDB3")),Rotation=90},buy)
- W.Stroke(buy,Color3.fromHex("2B755D"),1).Transparency=.48
- local equip=fixed(W.Button(row,"Equip","ВЫБРАТЬ",Color3.fromHex("DDD0FF")));equip.Visible=false
- local reset=fixed(W.Button(row,"Remove","СНЯТЬ ОФОРМЛЕНИЕ",T.Soft));reset.Visible=false
- return {Root=row,Title=name,Benefit=benefit,Bundle=bundle,Art=art,Viewport=viewport,Phase=phaseText,
-  Comparison=comparison,Variant=variant,HouseView=view,Details=detail,More=more,Extra=extra,Price=price,
+  Ambient=Color3.fromRGB(199,193,219),LightColor=Color3.fromRGB(255,246,227),LightDirection=Vector3.new(-1,-1,-2)},art)
+ local phasePlate=W.Round(W.Frame(art,"PhasePill",UDim2.new(1,-16,0,24),INK),8)
+ phasePlate.Position=UDim2.new(0,8,1,-30);phasePlate.BackgroundTransparency=.22
+ local phase=centered(W.Text(phasePlate,"Phase","",11,true,T.White));phase.Size=UDim2.fromScale(1,1)
+ local name=whiteType(centered(W.Text(row,"Name",item.Title,16,true)))
+ name.ZIndex=3;name.TextTruncate=Enum.TextTruncate.AtEnd
+ local benefit=W.Text(row,"Benefit","",13,false,T.White)
+ local bundle=W.Text(row,"Bundle","",11,true,Color3.fromHex("FFD987"))
+ local comparison=centered(W.Text(row,"Comparison","",15,true,Color3.fromHex("B7FF7E")))
+ local variant=if item.Variants then fixed(W.Button(row,"NextVariant","",accent)) else nil
+ local view=if id=="premium_homes" then fixed(W.Button(row,"HouseView","ИНТЕРЬЕР",T.Soft)) else nil
+ local detail=W.Text(row,"Facts","",12,false,T.White);detail.TextYAlignment=Enum.TextYAlignment.Top
+ local extra=W.Text(row,"Rules","",12,false,Color3.fromHex("D2CCE4"));extra.TextYAlignment=Enum.TextYAlignment.Top
+ local price=centered(W.Text(row,"Price","",13,true,T.White))
+ local preview=fixed(W.Button(row,"TryOn","ПРИМЕРИТЬ",Color3.fromHex("BFDFFF")))
+ preview.ZIndex=4
+ local buy=fixed(W.Button(row,"Buy","КУПИТЬ",GREEN))
+ buy.TextSize=19;outline(buy)
+ gradient(buy,"D5FF7A","72CE32")
+ local equip=fixed(W.Button(row,"Equip","ВЫБРАТЬ",Color3.fromHex("C2ACFF")));outline(equip)
+ local reset=fixed(W.Button(row,"Remove","СНЯТЬ ОФОРМЛЕНИЕ",T.Soft))
+ return {Root=row,Title=name,Benefit=benefit,Bundle=bundle,Art=art,Viewport=viewport,Phase=phase,PhasePlate=phasePlate,
+  Comparison=comparison,Variant=variant,HouseView=view,Details=detail,Extra=extra,Price=price,
   Preview=preview,Buy=buy,Equip=equip,Reset=reset}
 end
-function Skin.LayoutCard(row,width,expanded)
- local y=12
- local function height(label,minimum)
-  local bounds=TextService:GetTextSize(label.Text,label.TextSize,label.Font,Vector2.new(math.max(120,width-24),10000))
-  return math.max(minimum,math.ceil(bounds.Y)+6)
- end
+function Skin.LayoutTile(row)
+ row.Title.TextSize=15
+ row.Title.Position=UDim2.fromOffset(10,8);row.Title.Size=UDim2.new(1,-20,0,32)
+ row.Art.Position=UDim2.fromOffset(5,5);row.Art.Size=UDim2.new(1,-10,1,-58)
+ row.Viewport.Position=UDim2.fromOffset(0,31);row.Viewport.Size=UDim2.new(1,0,1,-34)
+ row.PhasePlate.Visible=false
+ row.Benefit.Visible=false;row.Bundle.Visible=false;row.Comparison.Visible=false;row.Details.Visible=false;row.Extra.Visible=false;row.Reset.Visible=false
+ if row.Variant then row.Variant.Visible=false end
+ if row.HouseView then row.HouseView.Visible=false end
+ row.Preview.BackgroundTransparency=1;row.Preview.TextTransparency=1
+ row.Preview.Position=UDim2.fromOffset(5,5);row.Preview.Size=UDim2.new(1,-10,1,-58)
+ local action=if row.Buy.Visible then row.Buy elseif row.Equip.Visible then row.Equip else nil
+ if action then action.Position=UDim2.new(0,6,1,-50);action.Size=UDim2.new(1,-12,0,44) end
+ row.Price.Visible=action==nil
+ row.Price.Position=UDim2.new(0,6,1,-49);row.Price.Size=UDim2.new(1,-12,0,43)
+end
+function Skin.LayoutDetail(row,width)
+ local y=10
  local function place(object,h)
   object.Position=UDim2.fromOffset(12,y);object.Size=UDim2.new(1,-24,0,h);y+=h+7
  end
- place(row.Title,height(row.Title,25))
- place(row.Art,math.clamp((width-24)*.47,118,202))
- place(row.Benefit,height(row.Benefit,22))
- if row.Comparison.Visible then place(row.Comparison,height(row.Comparison,30)) end
- if row.Variant and row.HouseView then
-  row.Variant.Position=UDim2.fromOffset(12,y);row.Variant.Size=UDim2.new(.60,-15,0,44)
-  row.HouseView.Position=UDim2.new(.60,3,0,y);row.HouseView.Size=UDim2.new(.40,-15,0,44);y+=51
- elseif row.Variant then place(row.Variant,44) end
- place(row.Price,height(row.Price,22))
+ local function fit(label,minimum)
+  local bounds=TextService:GetTextSize(label.Text,label.TextSize,label.Font,Vector2.new(math.max(100,width-24),10000))
+  place(label,math.max(minimum,math.ceil(bounds.Y)+6))
+ end
+ row.Title.TextSize=22;fit(row.Title,30)
+ row.Viewport.Position=UDim2.fromOffset(0,0);row.Viewport.Size=UDim2.fromScale(1,1)
+ row.PhasePlate.Visible=true
+ row.Benefit.Visible=true;row.Bundle.Visible=true;row.Price.Visible=true;row.Details.Visible=true
+ row.Extra.Visible=row.Extra.Text~=""
+ if row.Variant then row.Variant.Visible=true end
+ if row.HouseView then row.HouseView.Visible=true end
+ place(row.Art,math.clamp((width-24)*.40,128,260))
+ fit(row.Benefit,23)
+ if row.Comparison.Visible then fit(row.Comparison,28) end
+ if row.Variant then place(row.Variant,44) end
+ if row.HouseView then place(row.HouseView,44) end
+ fit(row.Price,24)
  local action=if row.Buy.Visible then row.Buy elseif row.Equip.Visible then row.Equip else nil
- row.Preview.Position=UDim2.fromOffset(12,y)
- row.Preview.Size=if action then UDim2.new(.46,-15,0,48) else UDim2.new(1,-24,0,48)
+ row.Preview.BackgroundTransparency=0;row.Preview.TextTransparency=0
+ row.Preview.Position=UDim2.fromOffset(12,y);row.Preview.Size=if action then UDim2.new(.46,-15,0,48) else UDim2.new(1,-24,0,48)
  if action then action.Position=UDim2.new(.46,3,0,y);action.Size=UDim2.new(.54,-15,0,48) end
  y+=55
  if row.Reset.Visible then place(row.Reset,44) end
- place(row.Bundle,height(row.Bundle,18))
- place(row.More,44)
- row.Details.Visible=expanded==true
- row.Extra.Visible=expanded==true and row.Extra.Text~=""
- if expanded then
-  place(row.Details,height(row.Details,30))
-  if row.Extra.Visible then place(row.Extra,height(row.Extra,30)) end
- end
- row.Root.Size=UDim2.new(1,-6,0,y+5)
+ fit(row.Bundle,18);fit(row.Details,26)
+ if row.Extra.Visible then fit(row.Extra,26) end
+ row.Root.Size=UDim2.new(1,-7,0,y+4)
 end
-function Skin.Layout(refs,safeSize,panelX)
- local width=math.max(1,math.min(safeSize.X-panelX-12,500))
- local landscape=width>=414 and safeSize.Y<420
- refs.Root.Position=UDim2.fromOffset(panelX,8)
- refs.Root.Size=UDim2.fromOffset(width,math.max(100,math.min(safeSize.Y-16,720)))
- refs.Header.Size=UDim2.new(1,0,0,54)
- refs.Title.Position=UDim2.fromOffset(12,7)
- refs.Title.Size=UDim2.fromOffset(if landscape then 108 else width-74,40)
- refs.Title.TextSize=if landscape then 16 else 20
+function Skin.Layout(refs,size)
+ local width=math.floor(math.min(1000,size.X-24,math.max(560,size.X*.85)))
+ local height=math.floor(math.min(740,size.Y-16,math.max(290,size.Y*.86)))
+ width=math.max(1,width);height=math.max(1,height)
+ refs.Root.Position=UDim2.fromOffset(math.floor((size.X-width)/2),math.floor((size.Y-height)/2))
+ refs.Root.Size=UDim2.fromOffset(width,height)
+ local compactHeader=width<450 and height<235
+ local horizontal=width>=450 or compactHeader
+ refs.Header.Size=UDim2.new(1,0,0,55)
  refs.Close.Position=UDim2.new(1,-50,0,5)
+ refs.Title.TextSize=if compactHeader then 13 elseif horizontal then 22 else 19
+ refs.Title.Size=UDim2.fromOffset(if compactHeader then 91 elseif horizontal then 168 else width-112,44)
+ local left=if compactHeader then 102 elseif horizontal then 178 else 8
+ local span=(width-left-(if horizontal then 56 else 4))/3
  for i,section in Catalog.Sections do
   local tab=refs.Tabs[section.id]
-  local span=(width-(if landscape then 174 else 24))/3
-  tab.Position=UDim2.fromOffset((if landscape then 116 else 12)+(i-1)*span,if landscape then 5 else 58)
-  tab.Size=UDim2.fromOffset(span-4,44)
-  tab.TextSize=if landscape then 11 else 12
+  tab.Position=UDim2.fromOffset(left+(i-1)*span,if horizontal then 5 else 60)
+  tab.Size=UDim2.fromOffset(span-5,44)
+  tab.ZIndex=2
  end
- local bodyTop=if landscape then 58 else 108
- refs.Body.Position=UDim2.fromOffset(10,bodyTop)
- refs.Body.Size=UDim2.new(1,-20,1,-bodyTop-8)
+ local y=if horizontal then 61 else 109
+ refs.Body.Position=UDim2.fromOffset(6,y);refs.Body.Size=UDim2.new(1,-12,1,-y-6)
+ refs.Detail.Position=UDim2.fromOffset(6,61);refs.Detail.Size=UDim2.new(1,-12,1,-67)
+ local available=width-30
+ local columns=if available>=720 then 4 elseif available>=495 then 3 elseif available>=232 then 2 else 1
+ local tileWidth=math.floor((available-(columns-1)*GAP)/columns)
+ local tileHeight=math.clamp(height-y-14,142,224)
+ refs.Grid.FillDirectionMaxCells=columns
+ refs.Grid.CellSize=UDim2.fromOffset(tileWidth,tileHeight)
+ refs.CompactHeader=compactHeader
 end
 return Skin

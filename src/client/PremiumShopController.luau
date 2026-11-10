@@ -4,6 +4,7 @@ local Market=game:GetService("MarketplaceService")
 local Input=game:GetService("UserInputService")
 local Players=game:GetService("Players")
 local GuiService=game:GetService("GuiService")
+local Lighting=game:GetService("Lighting")
 local Catalog=require(RS.Shared.PremiumVisualCatalog)
 local Bridge=require(RS.Shared.PremiumVisualBridge)
 local Abilities=require(RS.Shared.AbilityCatalog)
@@ -25,20 +26,23 @@ local benefits={
 }
 function Shop.new(ctx,money,abilities)
  local self=setmetatable({ctx=ctx,money=money,abilities=abilities,cleanup=Cleanup.new(),rows={},variants={},
-  expanded={},section="boost",scenes={},prices={},priceRequests={},priceRetry={}},Shop)
+  section="verity",scenes={},prices={},priceRequests={},priceRetry={}},Shop)
  self.refs=ctx.refs.Panels.SHOP
+ self.blur=self.cleanup:Add(Instance.new("BlurEffect"))
+ self.blur.Name="VerityShopBlur";self.blur.Size=10;self.blur.Enabled=false;self.blur.Parent=Lighting
+ self.cleanup:Add(self.refs.Back.Activated:Connect(function() self:Back() end))
  for section,tab in self.refs.Tabs do
   self.cleanup:Add(tab.Activated:Connect(function()
+   if self.section==section then return end
    self.section=section;self:ClearPreview();self.refs.Body.CanvasPosition=Vector2.zero;self:Render()
   end))
  end
  for index,id in Catalog.Order do
-  local row=Skin.Card(self.refs.Body,id,Catalog.Card(id),index);self.rows[id]=row
+  local row=Skin.Card(self.refs.Parking,id,Catalog.Card(id),index);self.rows[id]=row
   self.cleanup:Add(row.Preview.Activated:Connect(function()self:Preview(id)end))
   self.cleanup:Add(row.Buy.Activated:Connect(function()self:Activate(id)end))
   self.cleanup:Add(row.Equip.Activated:Connect(function()self:Activate(id)end))
   self.cleanup:Add(row.Reset.Activated:Connect(function()self:Remove(id)end))
-  self.cleanup:Add(row.More.Activated:Connect(function()self.expanded[id]=not self.expanded[id];self:Render()end))
   if row.Variant then self.cleanup:Add(row.Variant.Activated:Connect(function()
    local card=Catalog.Card(id);self.variants[id]=(self.variants[id] or 1)%#card.Variants+1
    self:DropScene(id);self:Render()
@@ -48,14 +52,24 @@ function Shop.new(ctx,money,abilities)
   end)) end
  end
  self.cleanup:Add(self.refs.Root:GetPropertyChangedSignal("Visible"):Connect(function()
-  if self.refs.Root.Visible then self.prices={};self:Render() else self:ClearPreview() end
+  self.refs.Backdrop.Visible=self.refs.Root.Visible
+  self:UpdateBlur()
+  if self.refs.Root.Visible then
+   self.prices={};self:Render()
+  else
+   self:CloseDetail()
+   self:ClearPreview()
+  end
  end))
- self.cleanup:Add(self.refs.Body:GetPropertyChangedSignal("CanvasPosition"):Connect(function()self.nextVisibility=0 end))
+ for _,body in {self.refs.Body,self.refs.Detail} do
+  self.cleanup:Add(body:GetPropertyChangedSignal("CanvasPosition"):Connect(function() self.nextVisibility=0 end))
+ end
  self.cleanup:Add(self.refs.Root:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
   self:ClearPreview();self:Render()
  end))
  self.cleanup:Add(Locale.Changed.Event:Connect(function()self:Render()end))
- self.cleanup:Add(ctx.settings.Changed.Event:Connect(function()self:ClearPreview();self:Render()end))
+ self.cleanup:Add(ctx.settings.Changed.Event:Connect(function()self:UpdateBlur();self:ClearPreview();self:Render()end))
+ self.cleanup:Add(Input:GetPropertyChangedSignal("PreferredInput"):Connect(function() self:UpdateBlur() end))
  self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
   if result.action=="BuyPremiumOffer" and not result.success then self.promptPassId=nil;self:Render() end
  end))
@@ -83,14 +97,43 @@ function Shop:ClearPreview()
  for id in self.scenes do self:DropScene(id) end
  self.playing=nil;self.nextVisibility=0
 end
+function Shop:UpdateBlur()
+ local values=self.ctx.settings.values
+ self.blur.Enabled=self.refs.Root.Visible and not values.ReducedEffects and not values.LowGraphics
+  and Input.PreferredInput~=Enum.PreferredInput.Touch
+end
+function Shop:CloseDetail()
+ if not self.detailId then return nil end
+ local id=self.detailId
+ self.detailId=nil
+ self.rows[id].Root.Parent=self.refs.Body
+ self.interior=false
+ return id
+end
+function Shop:Back()
+ local id=self:CloseDetail()
+ if not id then return false end
+ self:ClearPreview()
+ self:Render()
+ self.refs.Body.CanvasPosition=self.gridScroll or Vector2.zero
+ if Input.PreferredInput==Enum.PreferredInput.Gamepad then GuiService.SelectedObject=self.rows[id].Preview end
+ return true
+end
 function Shop:Preview(id)
- self.playing=id;self.playAt=os.clock();self:DropScene(id)
- self.ctx.sound:Play("DecorTryOn");self:Render()
- local row=self.rows[id]
- -- Keep the scene at the top of the scroll area without opening a competing panel.
- local y=row.Art.AbsolutePosition.Y-self.refs.Body.AbsolutePosition.Y+self.refs.Body.CanvasPosition.Y-6
- local maxY=math.max(0,self.refs.Body.AbsoluteCanvasSize.Y-self.refs.Body.AbsoluteWindowSize.Y)
- self.refs.Body.CanvasPosition=Vector2.new(0,math.clamp(y,0,maxY))
+ if self.detailId~=id then
+  self:CloseDetail()
+  self.gridScroll=self.refs.Body.CanvasPosition
+  self:ClearPreview()
+  self.detailId=id
+  self.rows[id].Root.Parent=self.refs.Detail
+  self.refs.Detail.CanvasPosition=Vector2.zero
+  if Input.PreferredInput==Enum.PreferredInput.Gamepad then GuiService.SelectedObject=self.refs.Back end
+ end
+ self.playing=id
+ self.playAt=os.clock()
+ self.ctx.sound:Play("DecorTryOn")
+ self:Render()
+ if self.refs.Detail.CanvasPosition.Y>0 then self.refs.Detail.CanvasPosition=Vector2.zero end
 end
 function Shop:Price(passId)
  if type(passId)~="number" or passId<=0 then return nil end
@@ -191,40 +234,50 @@ function Shop:Copy(id,row,state)
  elseif id=="premium_homes" then
   row.Details.Text=Locale.Text("В наборе: сакура, космический дом и неоновая вилла. Фасад и интерьер.\nОформление не строит этажи и не увеличивает доход. Нужен построенный первый этап дома.")
  else row.Details.Text=Locale.Text(if id==Catalog.FusionLookId then "Достаточно пропуска у одного участника. Покупка не даёт напарнику постоянного владения." else "Оформление без изменения характеристик. Примерка не меняет профиль.") end
- row.More.Text=Locale.Text(if self.expanded[id] then "СКРЫТЬ ПОДРОБНОСТИ" else "ПОДРОБНЕЕ")
 end
 function Shop:Render()
  if self.dead or not self.refs.Root.Visible then return end
  local net=self.ctx.net
+ local detail=self.detailId~=nil
+ self.refs.Body.Visible=not detail
+ self.refs.Detail.Visible=detail
+ self.refs.Back.Visible=detail
+ self.refs.Title.Position=UDim2.fromOffset(if detail then 60 else 12,5)
  for _,section in Catalog.Sections do
   local tab=self.refs.Tabs[section.id]
+  tab.Visible=not detail
   local selected=self.section==section.id
   local accent=Color3.fromHex(section.color)
   local color=if selected then accent else accent:Lerp(T.White,.72)
   if tab:GetAttribute("BaseColor")~=color then tab:SetAttribute("BaseColor",color);tab.BackgroundColor3=color end
-  W.SetButton(tab,Locale.Text(section.title),true,false)
+  W.SetButton(tab,Locale.Text(if self.refs.CompactHeader and section.id=="boost" then "ДЕНЬГИ" else section.title),true,false)
  end
  for id,row in self.rows do
-  row.Root.Visible=Catalog.Card(id).Section==self.section
-  if not row.Root.Visible then self:DropScene(id);continue end
+  local visible=if detail then self.detailId==id else Catalog.Card(id).Section==self.section
+  local parent=if not visible then self.refs.Parking elseif detail then self.refs.Detail else self.refs.Body
+  if row.Root.Parent~=parent then row.Root.Parent=parent end
+  row.Root.Visible=visible
+  if not visible then self:DropScene(id);continue end
   self:Copy(id,row,net.state)
   local offer=self:Offer(id,net.state)
   row.Price.Text=if offer.owned then Locale.Text("Куплено") elseif offer.loading then Locale.Text("Загружаем цену Roblox…")
    elseif offer.onSale and offer.price then string.format(Locale.Text("Цена Roblox: %d R$"),offer.price)
    elseif not offer.priceKnown then Locale.Text("Цена временно недоступна")
    else Locale.Text("Сейчас не продаётся")
-  row.Buy.Visible=offer.owned~=true and (not Packs.Items[id] or offer.gamePassId~=nil)
+  row.Buy.Visible=offer.owned~=true and offer.onSale==true and offer.price~=nil
   if Packs.Items[id] and not offer.gamePassId and not offer.owned then row.Price.Text=Locale.Text("Скоро") end
   row.Equip.Visible=offer.owned==true and not offer.selected and id~="money_x3"
   if offer.owned then row.Price.Text=Locale.Text(if offer.selected then "✓ ВЫБРАНО" else "✓ КУПЛЕНО") end
   if offer.trial then row.Price.Text=Locale.Text("Пробный доступ на эту сессию") end
-  W.SetButton(row.Buy,Locale.Text(if offer.pending then "ПОДТВЕРДИ В ROBLOX" else "КУПИТЬ"),row.Buy.Visible
+  local priceLabel=if offer.pending then "…" elseif offer.price then string.format("%d R$",offer.price) else ""
+  W.SetButton(row.Buy,priceLabel,row.Buy.Visible
    and net.connected and not net:IsBusy() and not offer.pending and offer.canPurchase or false,offer.pending==true)
   W.SetButton(row.Equip,Locale.Text("ВЫБРАТЬ"),row.Equip.Visible and net.connected and not net:IsBusy() and offer.canEquip or false,false)
   row.Reset.Visible=offer.selected==true and self:Binding(id)~=nil
   W.SetButton(row.Reset,Locale.Text("СНЯТЬ ОФОРМЛЕНИЕ"),net.connected and not net:IsBusy() and offer.canEquip==true,false)
   W.SetButton(row.Preview,Locale.Text("ПРИМЕРИТЬ"),true,false)
-  Skin.LayoutCard(row,self.refs.Body.AbsoluteSize.X-12,self.expanded[id])
+  if detail then Skin.LayoutDetail(row,self.refs.Detail.AbsoluteSize.X-12)
+  else Skin.LayoutTile(row) end
  end
  self.nextVisibility=0
 end
@@ -237,19 +290,21 @@ function Shop:Step(now)
  if self.playing and now-self.playAt>=8 then self.playing=nil end
  if now>=(self.nextVisibility or 0) then
   self.nextVisibility=now+.2
-  local body=self.refs.Body;local top=body.AbsolutePosition.Y;local bottom=top+body.AbsoluteWindowSize.Y
-  local count=0;local maxScenes=if self.ctx.settings.values.LowGraphics or Input.PreferredInput==Enum.PreferredInput.Touch then 1 else 2
+  local body=if self.detailId then self.refs.Detail else self.refs.Body
+  local top=body.AbsolutePosition.Y;local bottom=top+body.AbsoluteWindowSize.Y
+  local count=0;local maxScenes=if self.detailId then 1 else 8
   for _,id in Catalog.Order do
    local row=self.rows[id];local y=row.Art.AbsolutePosition.Y
-   local visible=row.Root.Visible and y+row.Art.AbsoluteSize.Y>top+4 and y<bottom-4 and count<maxScenes
+   local visible=row.Root.Visible and (self.detailId==id or y+row.Art.AbsoluteSize.Y>top+4 and y<bottom-4) and count<maxScenes
    if visible then
     count+=1
     if not self.scenes[id] then
-     self.scenes[id]=Scenes.new(row.Viewport,self:Variant(id),{interior=id=="premium_homes" and self.interior})
+     self.scenes[id]=Scenes.new(row.Viewport,self:Variant(id),{tile=self.detailId==nil,interior=id=="premium_homes" and self.interior})
     end
    else self:DropScene(id) end
   end
  end
+ if not self.detailId then return end
  local reduced=self.ctx.settings.values.ReducedMotion or self.ctx.settings.values.ReducedEffects
  local interval=if self.ctx.settings.values.LowGraphics then 1/20 else 1/30
  if now<(self.nextFrame or 0) then return end;self.nextFrame=now+interval

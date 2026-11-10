@@ -134,7 +134,7 @@ function Main.new()
 		self.cleanup:Add(button.Activated:Connect(function() self:Open(if ctx.active==name then nil else name) end))
 	end
 	for name,panel in refs.Panels do
-  self.cleanup:Add(panel.Close.Activated:Connect(function() self:Open(if name=="SHOP" then "MORE" else nil) end))
+  self.cleanup:Add(panel.Close.Activated:Connect(function() self:Open(if name=="SHOP" then nil else self.panelBack) end))
  end
 	self.cleanup:Add(refs.SettingsButton.Activated:Connect(function() self:Open(if ctx.active=="SETTINGS" then nil else "SETTINGS") end))
 	self.cleanup:Add(refs.Safe:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
@@ -200,13 +200,16 @@ function Main.new()
 	end))
 	local function back(_,state)
 		if ctx.presenting then return Enum.ContextActionResult.Pass end
-		if state==Enum.UserInputState.Begin and ctx.active then self:Open(if ctx.active=="SHOP" then "MORE" else nil);return Enum.ContextActionResult.Sink end
+		if state==Enum.UserInputState.Begin and ctx.active then
+   if ctx.active~="SHOP" or not self.shop:Back() then self:Open(self.panelBack) end
+   return Enum.ContextActionResult.Sink
+  end
 		return Enum.ContextActionResult.Pass
 	end
 	ContextActionService:BindActionAtPriority("VerityUIBack",back,false,3000,Enum.KeyCode.ButtonB,Enum.KeyCode.Escape)
 	ContextActionService:BindActionAtPriority("VerityUIMenu",function(_,state)
 		if state==Enum.UserInputState.Begin and not GuiService.MenuIsOpen and not UserInputService:GetFocusedTextBox() then
-			if ctx.active then self:Open(nil) else self:Open("VERITY") end
+			if ctx.active then self:Open(nil) else self:Open("PHONE") end
 			return Enum.ContextActionResult.Sink
 		end
 		return Enum.ContextActionResult.Pass
@@ -254,6 +257,8 @@ function Main:Open(name)
 	if ctx.active==name then return end
  if name and self.admin and self.admin.panel.Visible then self.admin:Close() end
 	self.previousFocus=GuiService.SelectedObject
+ if name and not ctx.active then self.worldFocus=if name=="SHOP" then self.refs.Nav.SHOP else self.refs.Nav.PHONE end
+ self.panelBack=if name=="MORE" then "PHONE" elseif name and name~="SHOP" and ctx.active=="MORE" then "MORE" else nil
 	ctx.active=name
 	for key,panel in self.refs.Panels do panel.Root.Visible=key==name end
 	self.phone:SetOpen(name=="PHONE")
@@ -262,7 +267,7 @@ function Main:Open(name)
 	self:Render()
 	if name then self:SetFocus(name)
 	elseif GuiService.SelectedObject and GuiService.SelectedObject:IsDescendantOf(self.refs.Gui) then
-		GuiService.SelectedObject=if UserInputService.PreferredInput==Enum.PreferredInput.Gamepad then self.refs.Nav.VERITY else nil
+		GuiService.SelectedObject=if UserInputService.PreferredInput==Enum.PreferredInput.Gamepad then (self.worldFocus or self.refs.Nav.PHONE) else nil
 	end
 end
 

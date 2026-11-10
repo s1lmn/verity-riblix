@@ -10,46 +10,40 @@ local GrowthPanelsSkin=require(script.Parent.GrowthPanelsSkin)
 local MobileHUD = require(script.Parent.MobileHUDLayout)
 local Builder = {}
 
--- Small native vector icons; no uploaded images or external asset IDs.
-local function icon(button, kind)
- button.Text=""
- local root=W.Frame(button,"Icon",UDim2.fromOffset(26,26))
- root.BackgroundTransparency=1;root.AnchorPoint=Vector2.new(.5,.5);root.Position=UDim2.fromScale(.5,.5)
- local function box(x,y,w,h,r,outline)
-  local f=W.Frame(root,"Shape",UDim2.fromOffset(w,h),T.Ink);f.Position=UDim2.fromOffset(x,y)
-  if r then W.Round(f,r) end
-  if outline then f.BackgroundTransparency=1;local stroke=W.Stroke(f,T.Ink,1.8);stroke.Transparency=0 end
-  return f
+local function launcher(parent,name,caption,color)
+ local dark=Color3.fromHex("191728")
+ local button=W.Round(W.Button(parent,name,"",Color3.fromHex("282638")),16)
+ button:SetAttribute("FixedFeedbackSize",true)
+ W.Stroke(button,dark,3).Transparency=0
+ local inset=W.Round(W.Frame(button,"Inset",UDim2.new(1,-10,1,-10),Color3.fromHex("454059")),12)
+ inset.Position=UDim2.fromOffset(5,5)
+ W.Stroke(inset,Color3.fromHex("817A9D"),1.5).Transparency=.32
+ local art=W.Frame(inset,"Icon",UDim2.fromOffset(40,40))
+ art.AnchorPoint=Vector2.new(.5,.5);art.Position=UDim2.fromScale(.5,.4);art.BackgroundTransparency=1
+ local function part(name,x,y,w,h,tint,r,rotation)
+  local frame=W.Round(W.Frame(art,name,UDim2.fromOffset(w,h),Color3.fromHex(tint)),r)
+  frame.Position=UDim2.fromOffset(x,y);frame.Rotation=rotation or 0
+  return frame
  end
- local function line(x1,y1,x2,y2)
-  local dx,dy=x2-x1,y2-y1
-  local f=box((x1+x2)/2,(y1+y2)/2,math.sqrt(dx*dx+dy*dy),2,1)
-  f.AnchorPoint=Vector2.new(.5,.5);f.Rotation=math.deg(math.atan2(dy,dx));return f
- end
- if kind=="VERITY" then
-  box(3,3,20,20,10,true);box(8,9,3,4,2);box(16,9,3,4,2)
-  line(9,17,11,19);line(11,19,16,19);line(16,19,18,17)
- elseif kind=="MORE" then
-  for _,x in {5,16} do for _,y in {5,16} do box(x,y,6,6,2) end end
- elseif kind=="ABILITIES" then
-  line(16,2,7,14);line(7,14,14,14);line(14,14,10,24);line(10,24,22,10);line(22,10,14,10);line(14,10,16,2)
- elseif kind=="PHONE" then
-  box(6,1,14,24,4,true);box(10,5,6,1,1);box(12,20,2,2,1)
- elseif kind=="TASKS" then
-  box(4,3,18,21,3,true)
-  for _,y in {8,13,18} do box(7,y,2,2,1);box(12,y,7,2,1) end
- elseif kind=="WORKSHOP" then
-  line(3,12,13,4);line(13,4,23,12)
-  box(6,12,14,11,2,true);box(12,16,4,7,1)
- elseif kind=="COSMETICS" then
-  local points={{4,4},{9,2},{10,6},{16,6},{17,2},{22,4},{25,10},{20,13},{19,9},{19,24},{7,24},{7,9},{6,13},{1,10},{4,4}}
-  for i=2,#points do line(points[i-1][1],points[i-1][2],points[i][1],points[i][2]) end
+ if name=="PHONE" then
+  local shell=part("Shell",9,1,24,37,"2979FC",6,-12)
+  W.Stroke(shell,dark,2).Transparency=0
+  part("Glass",12,5,18,27,"85E9FF",4,-12)
+  part("Glint",13,8,12,3,"E4FCFF",2,-12)
+  part("HomeDot",22,31,5,4,"FFFFFF",2,-12)
  else
-  box(5,5,16,16,8,true);box(10,10,6,6,3,true)
-  for i=0,7 do local a=i*math.pi/4;local tooth=box(13+math.cos(a)*10,13+math.sin(a)*10,4,3,1)
-   tooth.AnchorPoint=Vector2.new(.5,.5);tooth.Rotation=math.deg(a) end
+  local handle=part("Handle",12,2,16,20,"FFD571",6)
+  handle.BackgroundTransparency=1;W.Stroke(handle,Color3.fromHex("FFD571"),3).Transparency=0
+  local bag=part("Bag",5,13,30,23,"FF5A71",5,-8)
+  W.Stroke(bag,dark,2).Transparency=0
+  part("BagLight",8,16,23,4,"FF9E90",2,-8)
+  part("Badge",17,22,9,9,"FFD571",3,-8)
  end
-
+ local label=W.Text(inset,"Caption",caption,13,true,color)
+ label.Position=UDim2.new(0,0,1,-20);label.Size=UDim2.new(1,0,0,19)
+ label.TextXAlignment=Enum.TextXAlignment.Center;label.TextWrapped=false
+ W.New("UIStroke",{Color=dark,Thickness=1.6,Transparency=0},label)
+ return button,art,label
 end
 
 function Builder.Build(playerGui)
@@ -84,28 +78,23 @@ function Builder.Build(playerGui)
  refs.RideButton=W.Button(safe,"VerityRide","",T.Mint)
  refs.RideButton.AnchorPoint=Vector2.new(1,0);refs.RideButton.Position=UDim2.new(1,-12,0,244)
  refs.RideButton.Size=UDim2.fromOffset(124,44);refs.RideButton.TextSize=11;refs.RideButton.TextWrapped=true;refs.RideButton.Visible=false
- local nav=W.New("ScrollingFrame",{Name="Navigation",BackgroundTransparency=1,BorderSizePixel=0,
-  Size=UDim2.fromOffset(56,342),CanvasSize=UDim2.new(),ScrollBarThickness=2,
-  ScrollBarImageColor3=T.Purple,ScrollingDirection=Enum.ScrollingDirection.Y},safe)
+ local nav=W.Frame(safe,"Navigation")
+ nav.BackgroundTransparency=1
  local more=W.Round(W.Frame(safe,"MorePanel",UDim2.fromOffset(420,430),T.Paper),18);more.Visible=false
- local moreTitle=W.Text(more,"Title","ЕЩЁ",21,true,T.Purple);moreTitle.Position=UDim2.fromOffset(16,10);moreTitle.Size=UDim2.new(1,-80,0,30)
+ local moreTitle=W.Text(more,"Title","МЕНЮ ТЕЛЕФОНА",21,true,T.Purple);moreTitle.Position=UDim2.fromOffset(16,10);moreTitle.Size=UDim2.new(1,-80,0,30)
  local moreSubtitle=W.Text(more,"Subtitle","",1);moreSubtitle.Visible=false
  local moreClose=W.Button(more,"Close","×",T.Gold);moreClose.Size=UDim2.fromOffset(44,44);moreClose.Position=UDim2.new(1,-54,0,5)
  local moreBody=W.New("ScrollingFrame",{Name="Sections",BackgroundTransparency=1,BorderSizePixel=0,Position=UDim2.fromOffset(12,58),Size=UDim2.new(1,-24,1,-70),CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarThickness=3},more)
  W.List(moreBody,10)
  refs.Panels.MORE={Root=more,Title=moreTitle,Subtitle=moreSubtitle,Close=moreClose,Body=moreBody}
  local buttons={}
- local primary={{"VERITY","ВЕРИТИ",T.Pink},{"PHONE","ТЕЛЕФОН",T.Blue},{"TASKS","ЗАДАНИЯ",T.Gold},{"MORE","ЕЩЁ",T.Mint}}
- for _,entry in primary do
+ for _,entry in {{"PHONE","ТЕЛЕФОН",Color3.fromHex("C5F2FF")},{"SHOP","МАГАЗИН",Color3.fromHex("FFDA75")}} do
   local name,caption,color=table.unpack(entry)
-  local button=W.Button(nav,name,"",color);button.Size=UDim2.fromOffset(52,52)
-  W.New("UIGradient",{Color=ColorSequence.new(T.White,Color3.fromRGB(218,218,232)),Rotation=115},button)
-  icon(button,name)
-  local shape=button:FindFirstChild("Icon");shape.Position=UDim2.fromScale(.5,.35);shape.Size=UDim2.fromOffset(26,26)
-  local title=W.Text(button,"Caption",caption,9,true,T.Ink);title.Position=UDim2.new(0,1,1,-16);title.Size=UDim2.new(1,-2,0,14);title.TextXAlignment=Enum.TextXAlignment.Center;title.TextWrapped=false
-  refs.Nav[name]=button;table.insert(buttons,button)
+  local button,art,label=launcher(nav,name,caption,color)
+  refs.Nav[name]=button
+  table.insert(buttons,{button=button,art=art,label=label})
  end
- for i,entry in {{"SHOP","МАГАЗИН","Ускорение, облики и декор",T.Gold},{"WORKSHOP","ДОМ","Стройка, доход и оформление",T.Mint},{"ABILITIES","СПОСОБНОСТИ","Покупка и выбор для F / G",T.Purple},{"COSMETICS","УКРАШЕНИЯ","Твои находки и награды",T.Pink},{"SETTINGS","НАСТРОЙКИ","Язык, звук и эффекты",T.Gold}} do
+ for i,entry in {{"VERITY","ВЕРИТИ","Рост и секреты",T.Pink},{"TASKS","ЗАДАНИЯ","Цели и награды",T.Gold},{"WORKSHOP","ДОМ","Стройка, доход и оформление",T.Mint},{"ABILITIES","СПОСОБНОСТИ","Покупка и выбор для F / G",T.Purple},{"COSMETICS","УКРАШЕНИЯ","Твои находки и награды",T.Pink},{"SETTINGS","НАСТРОЙКИ","Язык, звук и эффекты",T.Gold}} do
   local name,caption,description,color=table.unpack(entry)
   local button=W.Button(moreBody,name,"",color:Lerp(T.Paper,.68));button.Size=UDim2.new(1,-6,0,68);button.LayoutOrder=i
   local title=W.Text(button,"Caption",caption,15,true,T.Ink);title.Position=UDim2.fromOffset(14,9);title.Size=UDim2.new(1,-28,0,23)
@@ -171,27 +160,25 @@ function Builder.Build(playerGui)
   if size.X<=0 or size.Y<=0 then return end
   local touch=MobileHUD.IsTouch()
   local short=size.Y<360
-  local columns=2
-  local side=if touch then 44 elseif short then 48 else 56
-  local gap=6
-  local hudHeight=if short or touch then 54 else 64
+  local compact=touch and size.Y<355
+  local side=if compact then 59 elseif touch then 72 else 88
+  local gap=8
+  local hudHeight=if touch then 48 else 55
   hud.Size=UDim2.fromOffset(if touch then 122 else 150,hudHeight)
-  refs.Cash.TextSize=if short or touch then 14 else 16
-  refs.Income.Position=UDim2.fromOffset(10,if short or touch then 24 else 28)
-  refs.Level.Position=UDim2.fromOffset(10,if short or touch then 39 else 46)
-  local navTop=8+hudHeight+10
-  local railWidth=columns*side+(columns-1)*gap+4
-  local rows=math.ceil(#buttons/columns)
-  local contentHeight=rows*(side+gap)-gap+4
-  local hintHeight=if open and size.X>=640 then 68 elseif short then 44 else 54
-  local available=math.max(44,size.Y-navTop-hintHeight-16)
-  local navHeight=math.min(contentHeight,available)
-  nav.Position=UDim2.fromOffset(10,navTop);nav.Size=UDim2.fromOffset(railWidth,navHeight)
-  nav.CanvasSize=UDim2.fromOffset(0,contentHeight)
-  nav.ScrollingEnabled=contentHeight>navHeight
-  for i,button in buttons do
+  refs.Cash.TextSize=if touch then 17 else 20
+  refs.Income.Visible=false
+  refs.Level.Position=UDim2.fromOffset(10,if touch then 28 else 33)
+  local navHeight=if compact then side else side*2+gap
+  local navTop=if compact then 62 elseif touch then 68 else math.max(74,math.floor((size.Y-navHeight)*.46))
+  local railWidth=if compact then side*2+gap else side
+  local hintHeight=if short then 44 else 54
+  nav.Position=UDim2.fromOffset(8,navTop);nav.Size=UDim2.fromOffset(railWidth,navHeight)
+  for i,entry in buttons do
+   local button=entry.button
    button.Size=UDim2.fromOffset(side,side)
-   button.Position=UDim2.fromOffset(2+((i-1)%columns)*(side+gap),2+math.floor((i-1)/columns)*(side+gap))
+   button.Position=UDim2.fromOffset(if compact then (i-1)*(side+gap) else 0,if compact then 0 else (i-1)*(side+gap))
+   entry.art.Size=UDim2.fromOffset(40,40)
+   entry.label.TextSize=if compact then 11 else 13
   end
   refs.Tutorial.Position=UDim2.fromOffset(12,navTop+navHeight+8)
   refs.Tutorial.Size=UDim2.fromOffset(if open and size.X>=640 then 150 else math.min(220,size.X-24),hintHeight)
@@ -205,7 +192,7 @@ function Builder.Build(playerGui)
    refs.Status.Position=UDim2.fromOffset(12,navTop+navHeight+8)
   end
   local narrow=size.X<640 or touch
-  hud.Visible,nav.Visible=not (narrow and open),not (narrow and open)
+  hud.Visible,nav.Visible=not open,not open
   local panelX=if narrow then 12 else 10+math.max(150,railWidth)+12
   local topInset=if touch and open then MobileHUD.StatusTop else 0
   local panelSize=Vector2.new(size.X,size.Y-topInset)
@@ -220,7 +207,7 @@ function Builder.Build(playerGui)
   PhoneSkin.Layout(phone,panelSize)
   TaskTabletSkin.Layout(tasks,panelSize,panelX)
   CosmeticShopSkin.Layout(refs.Panels.COSMETICS,panelSize,panelX)
-  PremiumShopSkin.Layout(refs.Panels.SHOP,panelSize,panelX)
+  PremiumShopSkin.Layout(refs.Panels.SHOP,panelSize)
   SettingsSkin.Layout(settings,panelSize,panelX)
   GrowthPanelsSkin.Layout(verity,panelSize,panelX)
   GrowthPanelsSkin.Layout(workshop,panelSize,panelX)
