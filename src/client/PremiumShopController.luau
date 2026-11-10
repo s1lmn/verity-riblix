@@ -7,6 +7,7 @@ local GuiService=game:GetService("GuiService")
 local Catalog=require(RS.Shared.PremiumVisualCatalog)
 local Bridge=require(RS.Shared.PremiumVisualBridge)
 local Abilities=require(RS.Shared.AbilityCatalog)
+local Packs=require(RS.Shared.CharacterPacks)
 local Economy=require(RS.Shared.EconomyConfig)
 local Houses=require(RS.Shared.HouseConfig)
 local Config=require(RS.Shared.GameConfig)
@@ -15,9 +16,10 @@ local Locale=require(script.Parent.Locale)
 local Skin=require(script.Parent.PremiumShopSkin)
 local Scenes=require(script.Parent.PremiumShopScenes)
 local W=require(script.Parent.UIWidgets)
+local T=require(script.Parent.UITheme)
 local Shop={};Shop.__index=Shop
 local benefits={
- scarlet_sentinel="Полёт и лазеры для свободного мира",
+ scarlet_sentinel="Долгий полёт над районом и усиленные лазеры против NPC",
  money_x3="Тот же заработок. В три раза больше денег.",
  premium_homes="Три узнаваемых стиля для твоего дома",
 }
@@ -121,6 +123,11 @@ function Shop:Offer(id,state)
   result.owned=state.HeroPassOwned==true;result.trial=state.HeroPassTrial==true
   result.selected=result.owned and eq.Attack==Catalog.HeroAbilityId and eq.Mobility==Catalog.HeroAbilityId
   result.canEquip=result.owned and state.VerityUnlocked==true
+ elseif Packs.Items[id] then
+  local equipped=state.AbilitiesEquipped or {}
+  result.trial=state.CharacterPackTrial==id and not result.owned
+  result.owned=result.owned or result.trial
+  result.selected=result.owned and equipped.Attack==id and equipped.Mobility==id
  end
  local info=self:Price(result.gamePassId)
  local price=info and info.PriceInRobux
@@ -129,7 +136,7 @@ function Shop:Offer(id,state)
  result.onSale=info and info.IsForSale==true
  result.loading=result.gamePassId~=nil and not info and self.priceRequests[result.gamePassId]==true
  result.canPurchase=result.canPurchase==true and result.onSale and result.price~=nil and not result.owned
- result.pending=self.promptPassId==result.gamePassId and os.clock()<(self.promptUntil or 0)
+ result.pending=result.gamePassId~=nil and self.promptPassId==result.gamePassId and os.clock()<(self.promptUntil or 0)
  return result
 end
 function Shop:Remove(id)
@@ -143,6 +150,7 @@ function Shop:Activate(id)
  if not net.connected or net:IsBusy() or offer.pending or offer.selected then return end
  if offer.owned and offer.canEquip then
   if id=="scarlet_sentinel" then self.abilities:Activate(Catalog.HeroAbilityId)
+  elseif Packs.Items[id] then self.ctx.request("EquipAbility",{itemId=id})
   else
    local v=self:Variant(id)
    self.ctx.request("EquipPremiumOffer",{itemId=id,variantId=if v~=id then v else nil})
@@ -162,14 +170,18 @@ function Shop:Copy(id,row,state)
  if row.Variant then
   row.Variant.Text=string.format(Locale.Text("Вариант %d/%d · %s ›"),self.variants[id] or 1,#card.Variants,Locale.Text(Catalog.Items[self:Variant(id)].Title))
  end
- if row.HouseView then row.HouseView.Text=Locale.Text(if self.interior then "ПОКАЗАТЬ ФАСАД" else "ПОКАЗАТЬ ИНТЕРЬЕР") end
+ if row.HouseView then row.HouseView.Text=Locale.Text(if self.interior then "ФАСАД" else "ИНТЕРЬЕР") end
  if id=="scarlet_sentinel" then
   local a=Abilities.Items[Catalog.HeroAbilityId]
   local controls=if Input.PreferredInput==Enum.PreferredInput.Gamepad then "L1 — полёт · R1 — лазеры"
-   elseif Input.PreferredInput==Enum.PreferredInput.Touch then "Кнопки полёта и атаки на экране"
+   elseif Input.PreferredInput==Enum.PreferredInput.Touch then "Прыжок — выше · кнопка «Спуск» — ниже"
    else "F — полёт · G — лазеры"
-  row.Details.Text=string.format(Locale.Text("Полёт %d с · повтор через %d с\nЛазеры: %d урона · дальность %d studs\nПерезарядка лазеров: %d с\n%s"),a.FlightDuration,a.FlightCooldown,a.Damage,a.Range,a.Cooldown,Locale.Text(controls))
-  row.Extra.Text=Locale.Text("Свободный мир и PvE. В гонках, паркуре и слиянии силы отключены. Испытания допускают только нужную силу. Под крышей полёт ограничен; безопасные зоны защищены от урона. Направление — стик или WASD, подъём — прыжок; на ПК Ctrl опускает вниз. Сцена сокращена для показа.")
+  row.Details.Text=string.format(Locale.Text("Полёт %d с · скорость %d studs/с · повтор через %d с\nЛазеры: %d против NPC / %d против игроков · дальность %d studs\nПерезарядка лазеров: %d с\n%s"),a.FlightDuration,a.FlightSpeed,a.FlightCooldown,a.PvEDamage,a.Damage,a.Range,a.Cooldown,Locale.Text(controls))
+  row.Extra.Text=Locale.Text("Свободный мир и PvE. В гонках, паркуре и слиянии силы отключены. Испытания допускают только нужную силу. Под крышей полёт ограничен; безопасные зоны защищены от урона. Направление — стик или WASD, подъём — прыжок. Для спуска нажми Ctrl на ПК или удерживай «Спуск» на телефоне. Сцена сокращена для показа.")
+ elseif Packs.Items[id] then
+  local pack=Packs.Items[id]
+  row.Details.Text=string.format(Locale.Text("Движение: %s · повтор через %d с\nPvE: %s · повтор через %d с"),Locale.Text(pack.MobilityLabel),pack.MobilityCooldown,Locale.Text(pack.AttackLabel),pack.Cooldown)
+  row.Extra.Text=Locale.Text("Боевой приём работает в активной волне PvE. В гонках, паркуре и совместном заезде способности отключены.")
  elseif id=="money_x3" then
   local level=math.clamp(state and state.VerityLevel or 1,1,100)
   local base=Economy.getIncome(level)*Houses.getIncomeMultiplier(state and state.HouseIncomeLevel or 0,state and state.HouseDoorOwned,state and state.HouseSecondFloorOwned)*(state and state.BoostMultiplier or 1)
@@ -179,22 +191,30 @@ function Shop:Copy(id,row,state)
  elseif id=="premium_homes" then
   row.Details.Text=Locale.Text("В наборе: сакура, космический дом и неоновая вилла. Фасад и интерьер.\nОформление не строит этажи и не увеличивает доход. Нужен построенный первый этап дома.")
  else row.Details.Text=Locale.Text(if id==Catalog.FusionLookId then "Достаточно пропуска у одного участника. Покупка не даёт напарнику постоянного владения." else "Оформление без изменения характеристик. Примерка не меняет профиль.") end
- row.More.Text=Locale.Text(if self.expanded[id] then "СКРЫТЬ ПОДРОБНОСТИ" else "ГДЕ РАБОТАЕТ И КАК ПОЛЬЗОВАТЬСЯ")
+ row.More.Text=Locale.Text(if self.expanded[id] then "СКРЫТЬ ПОДРОБНОСТИ" else "ПОДРОБНЕЕ")
 end
 function Shop:Render()
  if self.dead or not self.refs.Root.Visible then return end
  local net=self.ctx.net
- for _,section in Catalog.Sections do W.SetButton(self.refs.Tabs[section.id],(if self.section==section.id then "● " else "")..Locale.Text(section.title),true,false) end
+ for _,section in Catalog.Sections do
+  local tab=self.refs.Tabs[section.id]
+  local selected=self.section==section.id
+  local accent=Color3.fromHex(section.color)
+  local color=if selected then accent else accent:Lerp(T.White,.72)
+  if tab:GetAttribute("BaseColor")~=color then tab:SetAttribute("BaseColor",color);tab.BackgroundColor3=color end
+  W.SetButton(tab,Locale.Text(section.title),true,false)
+ end
  for id,row in self.rows do
   row.Root.Visible=Catalog.Card(id).Section==self.section
   if not row.Root.Visible then self:DropScene(id);continue end
   self:Copy(id,row,net.state)
   local offer=self:Offer(id,net.state)
-  row.Price.Text=if offer.loading then Locale.Text("Загружаем цену Roblox…")
+  row.Price.Text=if offer.owned then Locale.Text("Куплено") elseif offer.loading then Locale.Text("Загружаем цену Roblox…")
    elseif offer.onSale and offer.price then string.format(Locale.Text("Цена Roblox: %d R$"),offer.price)
    elseif not offer.priceKnown then Locale.Text("Цена временно недоступна")
    else Locale.Text("Сейчас не продаётся")
-  row.Buy.Visible=offer.owned~=true
+  row.Buy.Visible=offer.owned~=true and (not Packs.Items[id] or offer.gamePassId~=nil)
+  if Packs.Items[id] and not offer.gamePassId and not offer.owned then row.Price.Text=Locale.Text("Скоро") end
   row.Equip.Visible=offer.owned==true and not offer.selected and id~="money_x3"
   if offer.owned then row.Price.Text=Locale.Text(if offer.selected then "✓ ВЫБРАНО" else "✓ КУПЛЕНО") end
   if offer.trial then row.Price.Text=Locale.Text("Пробный доступ на эту сессию") end
@@ -218,7 +238,7 @@ function Shop:Step(now)
  if now>=(self.nextVisibility or 0) then
   self.nextVisibility=now+.2
   local body=self.refs.Body;local top=body.AbsolutePosition.Y;local bottom=top+body.AbsoluteWindowSize.Y
-  local count=0;local maxScenes=if self.ctx.settings.values.LowGraphics then 1 else 2
+  local count=0;local maxScenes=if self.ctx.settings.values.LowGraphics or Input.PreferredInput==Enum.PreferredInput.Touch then 1 else 2
   for _,id in Catalog.Order do
    local row=self.rows[id];local y=row.Art.AbsolutePosition.Y
    local visible=row.Root.Visible and y+row.Art.AbsoluteSize.Y>top+4 and y<bottom-4 and count<maxScenes

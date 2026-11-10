@@ -1,8 +1,9 @@
 --!nonstrict
 -- Shared presentation definitions; purchases and hits are owned by the server.
+local Packs=require(script.Parent.CharacterPacks)
 local Catalog = {}
 Catalog.Order = {"dash","leap","sprint","shield","flight","repulsor","eye_laser","lightning","gravity","nova","homelander"}
-Catalog.Icons=table.freeze({dash="➜",leap="↑",sprint="»",shield="◇",flight="✧",repulsor="✦",eye_laser="◎",lightning="ϟ",gravity="◉",nova="☀",homelander="★"})
+Catalog.Icons={dash="➜",leap="↑",sprint="»",shield="◇",flight="✧",repulsor="✦",eye_laser="◎",lightning="ϟ",gravity="◉",nova="☀",homelander="★"}
 Catalog.Items = {
 	dash={Name="Квантовый рывок",Description="Мощный рывок вперёд со световым следом.",Slot="Mobility",Level=1,Cost=75,Action="dash",Cooldown=5,Duration=.3,Power=65,Color="79E8FF"},
 	leap={Name="Прыжок титана",Description="Взлети над районом одним прыжком.",Slot="Mobility",Level=3,Cost=300,Action="leap",Cooldown=8,Duration=.8,Power=115,Color="A5FF80"},
@@ -15,15 +16,23 @@ Catalog.Items = {
 	gravity={Name="Гравитационный удар",Description="Сожми энергию в точке и порази цели в радиусе 14 метров.",Slot="Attack",Level=50,Cost=750000,Action="gravity",Cooldown=11,Damage=38,Range=75,Radius=14,Color="E796FF"},
 	nova={Name="Сверхновая",Description="Взрыв звёздной энергии в радиусе 21 метра.",Slot="Attack",Level=75,Cost=18000000,Action="nova",Cooldown=15,Damage=52,Range=90,Radius=21,Color="FFD773"},
 	-- The item ID is stable so existing equipment stays valid.
-	homelander={Name="Алый страж",Description="Полёт героя и красные лазеры из глаз. Две способности в одном наборе.",Slot="Attack",Level=1,Premium=true,Action="laser",Cooldown=8,Damage=40,Range=140,Duration=1.1,Color="FF3B57",MobilityAction="flight",FlightDuration=18,FlightSpeed=42,FlightCooldown=24},
+	homelander={Name="Алый страж",Description="Полёт героя и красные лазеры из глаз. Две способности в одном наборе.",Slot="Attack",Level=1,Premium=true,Action="laser",Cooldown=8,Damage=40,PvEDamage=68,Range=140,Duration=1.1,Color="FF3B57",MobilityAction="flight",FlightDuration=30,FlightSpeed=58,FlightCooldown=38},
 }
+for _,id in Packs.Order do
+ local pack=Packs.Items[id]
+ local item=table.clone(pack)
+ item.Premium=true;item.Pack=true;item.Level=1;item.Slot="Attack"
+ Catalog.Items[id]=item;Catalog.Icons[id]=pack.Icon
+ table.insert(Catalog.Order,id)
+end
+table.freeze(Catalog.Icons)
 for _,item in Catalog.Items do table.freeze(item) end
 table.freeze(Catalog.Order);table.freeze(Catalog.Items)
 
 function Catalog.Collection(data,heroOwned,passConfigured,temporarySlots)
  local result={}
  for _,id in Catalog.Order do
-  local item=Catalog.Items[id];local owned=Catalog.Owns(data,id,heroOwned)
+  local item=Catalog.Items[id];local owned=Catalog.Owns(data,id,heroOwned,temporarySlots)
   local unlocked=data.VerityUnlocked==true
   local levelMet=data.VerityLevel>=item.Level;local slots={item.Slot};local equipped={}
   if item.MobilityAction then table.insert(slots,"Mobility") end
@@ -32,7 +41,7 @@ function Catalog.Collection(data,heroOwned,passConfigured,temporarySlots)
    if equippedId==id then table.insert(equipped,slot) end
   end
   local status=if #equipped>0 then "Equipped" elseif owned then "Owned" elseif not levelMet then "LockedLevel"
-   elseif item.Premium then (if passConfigured then "PassRequired" else "Unavailable") else "Purchasable"
+   elseif item.Premium then (if (item.Pack and Packs.PassId(id)~=nil) or (not item.Pack and passConfigured) then "PassRequired" else "Unavailable") else "Purchasable"
   table.insert(result,{id=id,icon=Catalog.Icons[id],name=item.Name,description=item.Description,slot=item.Slot,availableSlots=slots,
    requiredLevel=item.Level,cost=item.Cost,premium=item.Premium==true,owned=owned,levelMet=levelMet,
    state=status,equippedSlots=equipped,canEquip=unlocked and owned and levelMet,canBuy=unlocked and not item.Premium and not owned and levelMet,
@@ -42,12 +51,16 @@ function Catalog.Collection(data,heroOwned,passConfigured,temporarySlots)
  end
  return result
 end
-function Catalog.Owns(data,id,heroOwned)
-	local item=Catalog.Items[id]
-	return item~=nil and (if item.Premium then heroOwned==true else data.AbilitiesOwned[id]==true)
+function Catalog.Owns(data,id,heroOwned,temporarySlots)
+ local item=Catalog.Items[id]
+ if not item then return false end
+ if item.Pack then
+  return Packs.Owns(data,id) or temporarySlots~=nil and (temporarySlots.Attack==id or temporarySlots.Mobility==id)
+ end
+ return if item.Premium then heroOwned==true else data.AbilitiesOwned[id]==true
 end
 function Catalog.HeroAccess(profile)
- return profile.HeroPassOwned==true or profile.AdminHeroSlots~=nil
+ return profile.HeroPassOwned==true or profile.AdminHeroSlots~=nil and (profile.AdminHeroSlots.Attack=="homelander" or profile.AdminHeroSlots.Mobility=="homelander")
 end
 function Catalog.ProfileEquipped(profile,slot)
  return Catalog.Equipped(profile.Data,slot,Catalog.HeroAccess(profile),profile.AdminHeroSlots)
@@ -55,7 +68,7 @@ end
 function Catalog.Equipped(data,slot,heroOwned,temporarySlots)
 	local id=(temporarySlots and temporarySlots[slot]) or data.AbilitiesEquipped[slot]
 	local item=id and Catalog.Items[id]
-	if not item or not Catalog.Owns(data,id,heroOwned) or data.VerityLevel<item.Level then return nil end
+	if not item or not Catalog.Owns(data,id,heroOwned,temporarySlots) or data.VerityLevel<item.Level then return nil end
 	if item.Slot~=slot and not (slot=="Mobility" and item.MobilityAction) then return nil end
 	return item,id
 end

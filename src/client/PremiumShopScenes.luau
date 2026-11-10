@@ -9,6 +9,8 @@ local Decor=require(World.PremiumDecorArt)
 local Fusion=require(World.VerityFusionFactory)
 local Themes=require(RS.Shared.HomeStyleConfig)
 local Visual=require(RS.Shared.PremiumVisualCatalog)
+local Packs=require(RS.Shared.CharacterPacks)
+local PackArt=require(World.CharacterPackArt)
 local Scene={};Scene.__index=Scene
 local function piece(parent,name,size,pos,color,shape,glow)
  local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=CFrame.new(pos)
@@ -26,6 +28,7 @@ function Scene.new(viewport,id,options)
  local item=Visual.Items[id]
  if id=="scarlet_sentinel" then self:Hero()
  elseif id=="money_x3" then self:Money()
+ elseif item.Preview=="CharacterPack" then self:CharacterPack(id)
  elseif item.Preview=="House" then
   local theme=Themes.Themes[item.Theme]
   self.house=Interior.CreateHouse(self.world,CFrame.identity,Color3.fromHex(theme.Color))
@@ -59,9 +62,14 @@ function Scene:Hero()
  local world=self.world
  self.pet=Verity.Create(world,CFrame.identity,{level=1,preview=true})
  self.pet:ScaleTo(1.5);self.pet.PrimaryPart.LevelLabel.Enabled=false
- piece(world,"LaunchPad",Vector3.new(4.8,.25,4.3),Vector3.new(0,-.2,0),"5C467C")
+ local base=piece(world,"LaunchPad",Vector3.new(.28,4.6,4.6),Vector3.new(0,-.22,0),"55263C",Enum.PartType.Cylinder)
+ base.CFrame*=CFrame.Angles(0,0,math.pi/2)
+ local rim=piece(world,"LaunchRim",Vector3.new(.08,4.42,4.42),Vector3.new(0,-.04,0),"FF9D82",Enum.PartType.Cylinder)
+ rim.CFrame*=CFrame.Angles(0,0,math.pi/2)
+ local deck=piece(world,"LaunchDeck",Vector3.new(.12,4.1,4.1),Vector3.new(0,.04,0),"73354D",Enum.PartType.Cylinder)
+ deck.CFrame*=CFrame.Angles(0,0,math.pi/2)
  for i=1,7 do
-  piece(world,"Skyline",Vector3.new(.65,.5+(i%3)*.4,.75),Vector3.new((i-4)*1.15,-.65,-2.3),if i%2==0 then "CEB8FF" else "A6DFFE")
+  piece(world,"Skyline",Vector3.new(.72,.55+(i%3)*.55,.8),Vector3.new((i-4)*1.25,-.72,2.35),if i%2==0 then "CB697D" else "77364F")
  end
  self.target=Instance.new("Model");self.target.Name="PreviewDrone";self.target.Parent=world
  piece(self.target,"Drone",Vector3.new(.85,.55,.65),Vector3.new(-1.3,2,-4.2),"A6C6E9",Enum.PartType.Ball)
@@ -75,7 +83,20 @@ function Scene:Hero()
  end
  for i=1,7 do self.trail[i]=piece(world,"FlightSpark",Vector3.one*.12,Vector3.zero,"FFCDA7",Enum.PartType.Ball,true) end
  self.hit=piece(world,"Impact",Vector3.one*.3,Vector3.new(-1.3,2,-4.2),"FF9F76",Enum.PartType.Ball,true)
- self:Frame(Vector3.new(0,2.2,-.6),Vector3.new(5,6,5),Vector3.new(.55,.2,-1))
+ self:Frame(Vector3.new(-.25,2.1,-.9),Vector3.new(4.85,4.7,5),Vector3.new(.64,.22,-1))
+end
+function Scene:CharacterPack(id)
+ self.pack=Packs.Items[id]
+ self.pet=Verity.Create(self.world,CFrame.identity,{level=1,preview=true})
+ self.pet.PrimaryPart.LevelLabel.Enabled=false
+ PackArt.Build(self.pet,id)
+ local pedestal=piece(self.world,"PackStage",Vector3.new(.2,3.8,3.8),Vector3.new(0,-.17,0),self.pack.Color,Enum.PartType.Cylinder)
+ pedestal.CFrame*=CFrame.Angles(0,0,math.pi/2)
+ self.packAccents={}
+ for i=1,8 do
+  self.packAccents[i]=piece(self.world,"PackSpark",Vector3.one*.13,Vector3.zero,self.pack.Accent,Enum.PartType.Ball,true)
+ end
+ self:Frame(Vector3.new(0,1.1,0),Vector3.new(4,3.8,3.7),Vector3.new(.36,.22,-1))
 end
 function Scene:Money()
  self.coins={}
@@ -120,6 +141,26 @@ function Scene:Step(age,reduced)
    c.p.CFrame=CFrame.new(c.pos+Vector3.new(0,lift,0))*CFrame.Angles(0,0,math.pi/2)
   end
   return "ОДИН ДОХОД — ВТРОЕ БОЛЬШЕ ДЕНЕГ"
+ elseif self.pack then
+  local t=if reduced then 0 else age%8
+  local attack=t>=4
+  local bob=if reduced then .14 else .22+.12*math.sin(t*2)
+  local x=0
+  if not reduced and not attack then
+   if self.pack.Travel=="surf" then x=.58*math.sin(t*1.7)
+   elseif self.pack.Travel=="glide" then bob+=.75*math.sin(t*math.pi/4)
+   elseif self.pack.LandingSlam then bob+=math.max(0,math.sin(t*1.2))*.85
+   elseif self.pack.SecondDashWindow then x=(if t<2 then -1 else 1)*smooth(t%2)*.8
+   else x=.55*math.sin(t*2.4) end
+  end
+  self.pet:PivotTo(CFrame.new(x,bob,0)*CFrame.Angles(0,if reduced then 0 else .22*math.sin(t*1.6),0))
+  for i,p in self.packAccents do
+   local angle=i*math.pi/4+t*(if attack then 1.5 else .7)
+   local radius=if attack then 1.45+.36*math.sin((t-4)*1.6) else 1.13
+   p.Position=Vector3.new(math.cos(angle)*radius,.5+.35*math.sin(angle*1.3),math.sin(angle)*radius)
+   p.Transparency=if reduced then .5 else .12
+  end
+  return if attack then self.pack.AttackLabel else self.pack.MobilityLabel
  elseif self.house then return if self.options.interior then "ИНТЕРЬЕР ВХОДНОЙ КОМНАТЫ" else "ФАСАД И ДЕКОР"
  elseif self.pet then
   self.pet:PivotTo(CFrame.new(0,if reduced then .2 else .2+math.sin(age*1.6)*.12,0))

@@ -1,6 +1,7 @@
 --!nonstrict
 -- Native cosmetic geometry in unscaled model coordinates. No physics or uploaded IDs.
 local Catalog=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
+local PackArt=require(script.Parent.CharacterPackArt)
 local Factory={}
 local function part(parent,name,size,position,color,shape)
  local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=CFrame.new(position)
@@ -9,9 +10,10 @@ local function part(parent,name,size,position,color,shape)
  if shape then p.Shape=shape end
  p.Parent=parent;return p
 end
-function Factory.Apply(model,equipped)
+function Factory.Apply(model,equipped,characterPack)
  local old=model:FindFirstChild("Cosmetics");if old then old:Destroy() end
  local folder=Instance.new("Folder");folder.Name="Cosmetics";folder.Parent=model
+ if characterPack then PackArt.Build(folder,characterPack) end
  for _,id in equipped do
   local definition=Catalog.Items[id]
   if not definition then continue end
@@ -72,18 +74,27 @@ function Factory.Apply(model,equipped)
     for n=-1,1 do part(item,"Cloud",Vector3.new(.15,.14,.12),Vector3.new(side*.9+n*.08,.63+(if n==0 then .04 else 0),0),"E4FAFF",Enum.PartType.Ball) end
    end
   elseif key=="round_glasses" then
-   -- Open square frames leave the oval eyes fully visible.
    for _,side in {-1,1} do
-    local x=side*0.29
-    for _,y in {0.83,1.2} do part(item,"Frame",Vector3.new(.48,.055,.06),Vector3.new(x,y,-.85),"733DE8") end
-    for _,dx in {-.24,.24} do part(item,"Frame",Vector3.new(.055,.37,.06),Vector3.new(x+dx,1.015,-.85),"733DE8") end
-    part(item,"Temple",Vector3.new(.055,.055,.46),Vector3.new(side*.57,1.15,-.61),"733DE8")
+    local x=side*.31
+    for i=1,10 do
+     local a=i*math.pi/5
+     local rim=part(item,"RoundRim",Vector3.new(.16,.045,.075),Vector3.new(x+math.cos(a)*.247,1.015+math.sin(a)*.224,-.855),if i%4==0 then "B88CF7" else "6B48A1")
+     rim.CFrame*=CFrame.Angles(0,0,a+math.pi/2)
+    end
+    part(item,"Temple",Vector3.new(.055,.06,.38),Vector3.new(side*.56,1.08,-.65),"50376E")
+    part(item,"Hinge",Vector3.one*.082,Vector3.new(side*.555,1.08,-.9),"FFE0A1",Enum.PartType.Ball)
    end
-   part(item,"Bridge",Vector3.new(.15,.055,.06),Vector3.new(0,1.12,-.85),"733DE8")
+   part(item,"Bridge",Vector3.new(.13,.05,.07),Vector3.new(0,1.085,-.855),"FFE0A1")
   elseif key=="party_hat" then
-   part(item,"Brim",Vector3.new(.9,.07,.85),Vector3.new(0,1.72,0),"FF5CB8")
-   part(item,"Hat",Vector3.new(.58,.43,.58),Vector3.new(0,1.96,0),"59C9FF")
-   part(item,"Pom",Vector3.one*.2,Vector3.new(0,2.27,0),"FFDE23",Enum.PartType.Ball)
+   local brim=part(item,"Brim",Vector3.new(.08,.94,.94),Vector3.new(0,1.72,0),"A445A9",Enum.PartType.Cylinder)
+   brim.CFrame*=CFrame.Angles(0,0,math.pi/2)
+   for i=1,4 do
+    local hue=({"E774D2","9B7FF4","7EDDD2","FDCB76"})[i]
+    local diameter=.66-(i-1)*.12
+    local tier=part(item,"HatTier",Vector3.new(.13,diameter,diameter),Vector3.new(0,1.77+i*.115,0),hue,Enum.PartType.Cylinder)
+    tier.CFrame*=CFrame.Angles(0,0,math.pi/2)
+   end
+   part(item,"Pom",Vector3.one*.2,Vector3.new(0,2.32,0),"FFF0B0",Enum.PartType.Ball)
   elseif key=="delivery_cap" then
    part(item,"CourierCap",Vector3.new(.94,.38,.85),Vector3.new(0,1.83,0),"55DCC9")
    part(item,"Visor",Vector3.new(1.06,.1,.62),Vector3.new(0,1.68,-.40),"64557F")
@@ -115,9 +126,14 @@ function Factory.Apply(model,equipped)
    end
   elseif key=="star_earrings" then
    for _,side in {-1,1} do
-    part(item,"Stud",Vector3.one*.10,Vector3.new(side*.85,.96,0),"FFDE23",Enum.PartType.Ball)
-    local p=part(item,"Charm",Vector3.new(.18,.18,.10),Vector3.new(side*.88,.75,0),"FF5CB8")
-    p.CFrame*=CFrame.Angles(0,0,math.pi/4)
+    part(item,"Stud",Vector3.one*.13,Vector3.new(side*.85,.97,-.04),"FFDC83",Enum.PartType.Ball)
+    part(item,"Link",Vector3.new(.045,.17,.048),Vector3.new(side*.875,.855,-.04),"E6AD58")
+    local center=Vector3.new(side*.90,.69,-.04)
+    for i=1,4 do
+     local ray=part(item,"StarRay",Vector3.new(.085,.31,.105),center,if i%2==0 then "EF7EBA" else "FFC7DA")
+     ray.CFrame*=CFrame.Angles(0,0,i*math.pi/4)
+    end
+    part(item,"StarGem",Vector3.one*.127,center+Vector3.new(0,0,-.065),"FFF0BB",Enum.PartType.Ball)
    end
   elseif key=="parkour_star_band" then
    part(item,"Band",Vector3.new(1.2,.10,.85),Vector3.new(0,1.66,0),"9865FF")

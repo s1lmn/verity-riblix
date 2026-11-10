@@ -166,6 +166,10 @@ local function styleAura(group, level, tint, detail, weatherLook)
   trailCount=if detail==2 then math.max(1,trailCount) elseif detail==1 then 1 else 0
  end
  group.weatherId=weatherLook and weatherLook.Id or ""
+ local aura=group.weatherId
+ if aura=="aura_solar_crown" and detail>0 then moteCount=if detail==2 then 9 else 5
+ elseif aura=="aura_galactic_dust" and detail>0 then moteCount=if detail==2 then 9 else 4
+ elseif aura=="aura_liquid_gold" and detail>0 then moteCount=if detail==2 then 6 else 4 end
 	group.family, group.style, group.look = family, style, look
 	group.progress = progress
 	group.arcCount, group.moteCount, group.trailCount = 2+extraArcs, moteCount, trailCount
@@ -187,7 +191,7 @@ local function styleAura(group, level, tint, detail, weatherLook)
 		ribbon.halo.Enabled = index<=group.arcCount and detail>0
 	end
 	for index,mote in group.motes do
-		mote.Shape = if family=="Frost" or family=="Cyber" then Enum.PartType.Block else Enum.PartType.Ball
+		mote.Shape = if family=="Frost" or family=="Cyber" or aura=="aura_galactic_dust" or aura=="aura_solar_crown" then Enum.PartType.Block else Enum.PartType.Ball
 		mote.Color = if family=="Rainbow" then SPECTRUM[(index-1)%#SPECTRUM+1]
 			elseif index%2==0 then accent:Lerp(WHITE,.28) else tint:Lerp(WHITE,.23)
 		if index>moteCount then mote.Transparency = 1 end
@@ -235,13 +239,27 @@ local function poseAura(group, center, scale, now, reducedMotion, wave)
 		local height = if family=="Magma" or family=="Aqua" then -.62+1.48*phase
 			else -.24+.49*math.sin(angle*.8+index)
 		local orbit = VFX.Radius(scale,3)*(1.08+.11*math.sin(index+phase*TAU))
+  if aura=="aura_solar_crown" then
+   angle=spin+index*TAU/group.moteCount
+   height=.67+(index%2)*.14;orbit=scale*.84+.2
+  elseif aura=="aura_galactic_dust" then
+   height=.54*math.sin(angle);orbit*=1.16
+  elseif aura=="aura_liquid_gold" then
+   height=.4-1.32*phase;orbit*=1-.16*phase
+  end
 		local point = center+Vector3.new(math.cos(angle)*orbit,scale*height,math.sin(angle)*orbit)
 		local diameter = size*(.66+(index%3)*.23)
 		mote.Size = if family=="Frost" then Vector3.new(diameter*.62,diameter*1.6,diameter*.62)
 			elseif family=="Magma" then Vector3.new(diameter*.74,diameter*1.5,diameter*.74)
 			else Vector3.one*diameter
 		mote.CFrame = CFrame.new(point)*CFrame.Angles(angle*.4,angle,.65+index*.12)
-		mote.Transparency = 1-.88*math.sin(math.pi*phase)^.65
+  if aura=="aura_solar_crown" then
+   mote.Size=Vector3.new(diameter*.65,diameter*2.15,diameter*.65)
+   mote.CFrame=CFrame.new(point)*CFrame.Angles(0,-angle,math.pi/4)
+  elseif aura=="aura_liquid_gold" then
+   mote.Size=Vector3.new(diameter*1.1,diameter*(1.25+.5*phase),diameter*1.1)
+  end
+		mote.Transparency = if aura=="aura_solar_crown" then .14 else 1-.88*math.sin(math.pi*phase)^.65
 	end
 end
 

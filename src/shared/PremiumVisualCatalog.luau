@@ -1,5 +1,6 @@
 --!nonstrict
 -- Pass IDs and planned prices for this experience. Core and Roblox supply live offers.
+local Packs=require(script.Parent.CharacterPacks)
 local Catalog={}
 Catalog.HeroAbilityId="homelander"
 Catalog.FusionLookId="fusion_starlight"
@@ -33,7 +34,7 @@ Catalog.Gallery={id="collector_gallery",Frame="F0BD60",Accent="8051BE",Paper="EF
 Catalog.Atmospheres={atmosphere_starry=true,atmosphere_fireflies=true,atmosphere_aurora=true}
 Catalog.Items={
  money_x3={Section="boost",Title="Деньги ×3",Description="Постоянный множитель денежного дохода.",Color="FFD36B",Preview="Money"},
- scarlet_sentinel={Section="verity",Title="Алый страж",Description="Полёт героя на 18 секунд и красные лазеры на 40 урона.",Color="FF7B95",Preview="Hero"},
+ scarlet_sentinel={Section="verity",Title="Алый страж",Description="Долгий скоростной полёт и красные лазеры с усилением против NPC.",Color="FF7B95",Preview="Hero"},
  fusion_starlight={Section="verity",Title="Звёздное слияние",Description="Общий облик, церемония и след. Достаточно пропуска у одного участника.",Color="C6A8FF",Preview="Fusion"},
  home_theme_sakura={Section="house",Title="Сакура",Description="Розовая отделка, цветущие деревья и тёплые фонарики у входа.",Color="FCA4C8",Preview="House",Theme="sakura"},
  home_theme_cosmic={Section="house",Title="Космический дом",Description="Звёздный фасад, созвездия и миниатюрный Сатурн у крыльца.",Color="786AC5",Preview="House",Theme="cosmic"},
@@ -47,6 +48,11 @@ Catalog.Items={
  atmosphere_fireflies={Section="house",Title="Светлячки",Description="Тёплые огоньки у дорожки дома.",Color="F4DB92",Preview="Decor"},
  atmosphere_aurora={Section="house",Title="Северное сияние",Description="Мятные и сиреневые ленты над участком.",Color="90F1DA",Preview="Decor"},
 }
+for _,id in Packs.Order do
+ local pack=Packs.Items[id]
+ Catalog.Items[id]={Section="verity",Title=pack.Name,Description=pack.Description,Color=pack.Color,Preview="CharacterPack"}
+ table.insert(Catalog.Order,id)
+end
 for _,id in {"home_theme_sakura","home_theme_cosmic","home_theme_neon"} do Catalog.Items[id].Description..=" Входит в набор из трёх стилей дома." end
 for _,id in {"aura_solar_crown","aura_galactic_dust","aura_liquid_gold"} do Catalog.Items[id].Description..=" Входит в набор из трёх аур." end
 for _,id in {"atmosphere_starry","atmosphere_fireflies","atmosphere_aurora"} do Catalog.Items[id].Description..=" Входит в набор из трёх атмосфер." end

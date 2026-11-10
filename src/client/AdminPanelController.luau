@@ -6,6 +6,7 @@ local RS=game:GetService("ReplicatedStorage")
 local Levels=require(RS.Shared.LevelConfig)
 local Abilities=require(RS.Shared.VerityAbilities)
 local Catalog=require(RS.Shared.AbilityCatalog)
+local Packs=require(RS.Shared.CharacterPacks)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Cleanup=require(script.Parent.Cleanup)
@@ -54,6 +55,11 @@ function Admin.new(ctx,visuals)
  button(body,"GrantHero","АЛЫЙ СТРАЖ · НА СЕССИЮ",function()
   self:Command("GrantHero","homelander")
  end)
+ for _,id in Packs.Order do
+  button(body,"Grant_"..id,Packs.Items[id].Name.." · НА СЕССИЮ",function()
+   self:Command("GrantCharacterPack",id)
+  end)
+ end
  for _,id in Catalog.Order do
   local item=Catalog.Items[id]
   if not item.Premium then
@@ -130,6 +136,7 @@ function Admin:Command(action,value)
   end
   self.status.Text=if action=="SetLevel" then "Игровой уровень установлен."
    elseif action=="GrantHero" then "Полёт героя и красные лазеры экипированы."
+   elseif action=="GrantCharacterPack" then Catalog.Items[value].Name.." · экипирован на сессию."
    else Catalog.Items[value].Name.." экипирована."
  elseif result=="HOUSE_LEVEL" or result=="ABILITY_LEVEL" then
   self.status.Text=string.format("Минимальный уровень %d (%s).",required,if result=="HOUSE_LEVEL" then "постройка дома" else "способность")

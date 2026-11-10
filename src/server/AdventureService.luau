@@ -155,7 +155,7 @@ end
 function Service:TrialItem(p,id)
  local profile=self.data:Get(p.UserId);local d=C.Trials[id];if not profile or not d then return nil end
  local item=Catalog.ProfileEquipped(profile,d.Slot)
- return if item and (if d.Slot=="Mobility" then item.MobilityAction or item.Action else item.Action)==d.Action then item else nil
+ return if item and not item.Pack and (if d.Slot=="Mobility" then item.MobilityAction or item.Action else item.Action)==d.Action then item else nil
 end
 function Service:AllowsPower(p,slot)
  local r=self.runs[p];return r~=nil and r.kind=="Trial" and C.Trials[r.id].Slot==slot and self:TrialItem(p,r.id)~=nil

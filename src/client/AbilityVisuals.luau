@@ -55,6 +55,28 @@ function Visuals.Prepare(r,reduced,particleScale)
 	r.reduced=reduced;r.rings={};r.bursts={};r.emitters={};r.motionTrails={};r.motes={}
 	r.channelDuration=r.duration;r.color=Color3.fromHex(r.item.Color)
 end
+function Visuals.Pack(r,position,landing)
+ local action=if landing then "slam" else r.item.PackAction
+ local radius=if landing then 10 else r.item.Radius
+ local accent=Color3.fromHex(r.item.Accent)
+ local ground=position-Vector3.yAxis*2
+ ring(r,ground,radius,r.color,Vector3.yAxis,.7,0)
+ if not r.reduced then
+  ring(r,ground,radius*.74,accent,Vector3.yAxis,.6,.11)
+  burst(r,ground,r.color,18,0)
+ end
+ if action=="dome" then
+  local shell=piece(r,position,r.color,Vector3.one*radius*2)
+  shell.Name="ForgeDome";shell.Shape=Enum.PartType.Ball;shell.Transparency=if r.reduced then .94 else .88
+  shell.Material=Enum.Material.ForceField
+  r.duration=5
+ elseif action=="heal" then
+  for _,offset in {Vector3.zero,Vector3.yAxis*2} do
+   ring(r,ground+offset,radius*.9,accent,Vector3.yAxis,.74,.05)
+  end
+ end
+end
+
 function Visuals.Attack(r,target)
 	local action=r.item.Action;local color=r.color
 	local delta=r.origin-target
@@ -104,12 +126,16 @@ function Visuals.Mobility(r,root,humanoid)
 		ring(r,root.Position,4.2,color,Vector3.yAxis,r.channelDuration,0,"Shield",.45)
 		if not r.reduced then ring(r,root.Position,4.2,WHITE,Vector3.zAxis,r.channelDuration,0,"Shield",-.45) end
 	else
-		ring(r,feet,if action=="leap" then 6 else 4,color,Vector3.yAxis,.6,0)
+		local scarletFlight=action=="flight" and item.PvEDamage~=nil
+		ring(r,feet,if action=="leap" or scarletFlight then 6 else 4,color,Vector3.yAxis,.6,0)
+		if scarletFlight and not r.reduced then
+			ring(r,feet,4.8,Color3.fromHex("FFC580"),Vector3.yAxis,.52,.08)
+		end
 		burst(r,feet,color,if action=="leap" then 18 else 10,0)
 		if not r.reduced then
 			r.motionSource=piece(r,root.Position,color);r.motionSource.Transparency=1
 			trail(r,r.motionSource,-1,color,if action=="dash" then .22 else .35)
-			trail(r,r.motionSource,1,color,if action=="dash" then .22 else .35)
+			trail(r,r.motionSource,1,if scarletFlight then Color3.fromHex("FFC580") elseif item.Pack then Color3.fromHex(item.Accent) else color,if action=="dash" then .22 else .35)
 		end
 	end
 	if action=="flight" then

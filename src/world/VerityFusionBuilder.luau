@@ -4,7 +4,7 @@ local C=require(Shared.VerityFusionConfig)
 local Locale=require(Shared.LocaleText)
 local Sign=require(script.Parent.WorldSign)
 local Builder={}
-local VISUAL_VERSION=4
+local VISUAL_VERSION=5
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityFusion")
  if old and old:IsA("Model") and old:GetAttribute("FusionVersion")==C.Version and old:GetAttribute("FusionVisualVersion")==VISUAL_VERSION then
@@ -28,7 +28,7 @@ function Builder.Build(parent)
   part.Material=if glow then Enum.Material.Neon else Enum.Material.SmoothPlastic;part.Parent=root;return part
  end
  local function prompt(part,text)
-  local q=Instance.new("ProximityPrompt");q.Name="JoinFusion";q.RequiresLineOfSight=false;q.MaxActivationDistance=C.JoinReach;q.HoldDuration=.2
+  local q=Instance.new("ProximityPrompt");q.Name="JoinFusion";q.RequiresLineOfSight=false;q.MaxActivationDistance=C.JoinReach;q.HoldDuration=0;q.ClickablePrompt=true
   Locale.SetWorld(q,"ActionText",text);Locale.SetWorld(q,"ObjectText","Слияние Verity");q.Parent=part
  end
  local base=p("FusionDeck",C.Hub-Vector3.new(0,.35,0),Vector3.new(30,.7,16),"EAE2F9",true)

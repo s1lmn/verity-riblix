@@ -38,7 +38,10 @@ function PlayerStateService:PublicPlotSnapshot(userId)
 	local profile, session = self.data:Get(userId), self.sessions[userId]
 	if not profile or not session then return nil end
 	local data = profile.Data
+ local attack,attackId=Abilities.ProfileEquipped(profile,"Attack")
+ local mobility,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
 	return {
+  CharacterPack=if attack and attack.Pack then attackId elseif mobility and mobility.Pack then mobilityId else nil,
 		protocolVersion = 1, stateRevision = profile.Revision, ownerUserId = userId, PlotId = session.PlotId,
 		VerityLevel = data.VerityLevel, VerityScale = Levels.getVerityScale(data.VerityLevel),
 		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
@@ -56,8 +59,9 @@ function PlayerStateService:Snapshot(userId)
 	if not profile or not session then return nil end
 	local data, level = profile.Data, profile.Data.VerityLevel
  local heroAccess=Abilities.HeroAccess(profile)
- local equipped=table.clone(data.AbilitiesEquipped)
- for slot,id in profile.AdminHeroSlots or {} do equipped[slot]=id end
+ local attack,attackId=Abilities.ProfileEquipped(profile,"Attack")
+ local mobility,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
+ local equipped={Attack=attackId,Mobility=mobilityId}
 	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel,data.HouseDoorOwned,data.HouseSecondFloorOwned)
 	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
@@ -103,6 +107,8 @@ function PlayerStateService:Snapshot(userId)
   WeatherMaterials=table.clone(data.WeatherMaterials), AdventureRecords=table.clone(data.AdventureRecords), ArcadeBestScore=data.ArcadeBestScore, FeedCollection = table.clone(data.FeedCollection),
   ShowcaseCards = table.clone(data.ShowcaseCards or {}),
   AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = equipped,
+  CharacterPack=if attack and attack.Pack then attackId elseif mobility and mobility.Pack then mobilityId else nil,
+  CharacterPackTrial=profile.AdminHeroSlots and profile.AdminHeroSlots.Attack,
   HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId, HeroPassTrial = heroAccess and profile.HeroPassOwned~=true,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},
 		NextOperationSequence = (session.LastOperationSequence or 0) + 1}

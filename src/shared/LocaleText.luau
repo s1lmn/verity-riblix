@@ -669,6 +669,7 @@ local expansionEnglish = {
 	["Взрыв звёздной энергии в радиусе 21 метра."]="A burst of stellar energy within a radius of 21.",
 	["Алый страж"]="Scarlet Sentinel",
 	["F · Полёт %d с   G · Лазеры %d урона"]="F · Flight %ds   G · Lasers %d damage",
+ ["Полёт %d с · лазеры %d PvE / %d PvP"]="Flight %d s · lasers %d PvE / %d PvP",
 	["Полёт героя и красные лазеры из глаз. Две способности в одном наборе."]="Hero flight and red eye lasers. Two abilities in one bundle.",
 	["Открыть способности"]="Browse abilities",
 	["АЛЫЙ СТРАЖ\nПОЛЁТ + ЛАЗЕРЫ • 99 R$"]="SCARLET SENTINEL\nFLIGHT + LASERS • 99 R$",
@@ -1540,8 +1541,13 @@ local premiumShowcaseEnglish={
  ["L1 — полёт · R1 — лазеры"]="L1 — flight · R1 — lasers",
  ["F — полёт · G — лазеры"]="F — flight · G — lasers",
  ["Кнопки полёта и атаки на экране"]="On-screen flight and attack buttons",
+ ["Долгий полёт над районом и усиленные лазеры против NPC"]="Long flight over the neighborhood and stronger lasers against NPCs",
+ ["↓ Спуск"]="↓ Descend",
+ ["Прыжок — выше · кнопка «Спуск» — ниже"]="Jump to ascend · hold Descend to go down",
+ ["Долгий скоростной полёт и красные лазеры с усилением против NPC."]="Extended high-speed flight and crimson lasers with bonus NPC damage.",
+ ["Полёт %d с · скорость %d studs/с · повтор через %d с\nЛазеры: %d против NPC / %d против игроков · дальность %d studs\nПерезарядка лазеров: %d с\n%s"]="Flight %d s · speed %d studs/s · reuse after %d s\nLasers: %d vs NPCs / %d vs players · range %d studs\nLaser cooldown: %d s\n%s",
  ["Полёт %d с · повтор через %d с\nЛазеры: %d урона · дальность %d studs\nПерезарядка лазеров: %d с\n%s"]="Flight %d s · reuse after %d s\nLasers: %d damage · range %d studs\nLaser cooldown: %d s\n%s",
- ["Свободный мир и PvE. В гонках, паркуре и слиянии силы отключены. Испытания допускают только нужную силу. Под крышей полёт ограничен; безопасные зоны защищены от урона. Направление — стик или WASD, подъём — прыжок; на ПК Ctrl опускает вниз. Сцена сокращена для показа."]="Open world and PvE. Powers are disabled in races, parkour and fusion. Trials allow only their required power. Roofs restrict flight; safe zones block damage. Move with the stick or WASD, jump to ascend; Ctrl descends on PC. This demo is shortened.",
+ ["Свободный мир и PvE. В гонках, паркуре и слиянии силы отключены. Испытания допускают только нужную силу. Под крышей полёт ограничен; безопасные зоны защищены от урона. Направление — стик или WASD, подъём — прыжок. Для спуска нажми Ctrl на ПК или удерживай «Спуск» на телефоне. Сцена сокращена для показа."]="Open world and PvE. Powers are disabled in races, parkour and fusion. Trials allow only their required power. Roofs restrict flight; safe zones block damage. Move with the stick or WASD, jump to ascend. Press Ctrl on PC or hold Descend on mobile to descend. This demo is shortened.",
  ["БЕЗ ПРОПУСКА  $%s/с  →  С ×3  $%s/с"]="WITHOUT PASS  $%s/s  →  WITH ×3  $%s/s",
  ["Без таймера и повторной покупки.\nПример: доход твоего уровня и дома за 1 секунду, с текущими усилениями.\nВсе 100 уровней доступны бесплатно."]="No timer or repeat purchase.\nExample: one second of income at your level and house, with current boosts.\nAll 100 levels are available for free.",
  ["Без таймера и повторной покупки.\nПример после распаковки Verity: доход за 1 секунду.\nВсе 100 уровней доступны бесплатно."]="No timer or repeat purchase.\nExample after unboxing Verity: one second of income.\nAll 100 levels are available for free.",
@@ -1651,5 +1657,30 @@ function Text.SetWorld(instance, property, source, ...)
 	instance:SetAttribute(property .. "_locale_en", translatedEn)
 	instance:AddTag(Text.WorldTag)
 end
+
+local characterPackEnglish={
+ ["Волна"]="Wave",["Вихрь"]="Vortex",["Метка"]="Mark",["Купол"]="Dome",
+ ["Удар"]="Slam",["Бег"]="Sprint",["Лечение"]="Heal",["Планер"]="Glide",["Рывок ×2"]="Dash ×2",
+ ["Рифовый капитан"]="Reef Captain",
+ ["Скользи на волне и собирай мелких врагов водоворотом."]="Ride a wave and pull smaller enemies together with a vortex.",
+ ["Прилив"]="Tide Ride",["Водоворот"]="Vortex",
+ ["Фазовый гонец"]="Phase Courier",
+ ["Сделай два рывка. Следующий точный выстрел пометит цель для команды."]="Dash twice, then land a shot to mark the target for your team.",
+ ["Двойной рывок"]="Double Dash",["Второй рывок"]="Second Dash",["Метка фазы"]="Phase Mark",
+ ["Магмовый кузнец"]="Magma Smith",
+ ["Прерви атаки мелких врагов приземлением и укрой команду куполом."]="Interrupt smaller enemies on landing and shelter your team under a dome.",
+ ["Сейсмопрыжок"]="Seismic Leap",["Кузнечный купол"]="Forge Dome",
+ ["Янтарный медик"]="Amber Medic",
+ ["Ускорься к союзникам и восстанови здоровье команды."]="Sprint to your allies and restore the team's health.",
+ ["Спасательный спринт"]="Rescue Sprint",["Лечебная вспышка"]="Healing Flash",
+ ["Полярный следопыт"]="Polar Ranger",
+ ["Раскрой ледяные крылья и замедли наступающую волну."]="Spread ice wings and slow an incoming wave.",
+ ["Ледяной планер"]="Ice Glider",["Иней"]="Frost Field",
+ ["На PvE-арене"]="In the PvE arena",
+ ["Эта способность работает в активной волне PvE."]="This power works during an active PvE wave.",
+ ["Движение: %s · повтор через %d с\nPvE: %s · повтор через %d с"]="Movement: %s · reuse after %ds\nPvE: %s · reuse after %ds",
+ ["Боевой приём работает в активной волне PvE. В гонках, паркуре и совместном заезде способности отключены."]="The combat power works during an active PvE wave. Powers are disabled in races, parkour, and co-op rides.",
+}
+for source,target in characterPackEnglish do en[source]=target end
 
 return Text

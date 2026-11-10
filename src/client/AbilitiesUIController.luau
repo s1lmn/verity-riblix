@@ -30,7 +30,7 @@ function Controller.new(ctx)
 		button.AnchorPoint,button.Position,button.Size=Vector2.new(0,1),UDim2.new(0,0,1,0),UDim2.new(1,0,0,44)
 		button.TextSize=12
 		if item.Premium then
-			local emblem=W.Text(row,"Emblem","◉  ═══════  ◉",28,true,Color3.fromHex("FF244A"))
+			local emblem=W.Text(row,"Emblem",if item.Pack then Catalog.Icons[id] else "◉  ═══════  ◉",28,true,color)
 			emblem.Position,emblem.Size=UDim2.fromOffset(0,109),UDim2.new(1,0,0,38);emblem.TextXAlignment=Enum.TextXAlignment.Center
 		end
 		self.rows[id]={root=row,title=title,description=description,details=details,button=button}
@@ -76,6 +76,14 @@ function Controller:Activate(id)
  local state=ctx.net.state
  local item=Catalog.Items[id]
  if not item or not state or not ctx.net.connected or ctx.net:IsBusy() then return end
+ if item.Pack then
+  for _,entry in state.AbilityCollection or {} do
+   if entry.id==id and entry.canEquip then ctx.request("EquipAbility",{itemId=id});return end
+  end
+  if ctx.shop then ctx.shop.section="verity" end
+  ctx.open("SHOP")
+  return
+ end
  local owned=if item.Premium then state.HeroPassOwned else (state.AbilitiesOwned or {})[id]
  if item.Premium and not owned then
   if not state.VerityUnlocked or not self.offer or self.promptOpen or state.Premium and not state.Premium.salesEnabled then return end
@@ -98,7 +106,13 @@ function Controller:Render()
 		if item.MobilityAction and equipped then equipped=(state.AbilitiesEquipped or {}).Mobility==id end
 		if entry then owned=entry.owned;equipped=#entry.equippedSlots==#entry.availableSlots end
 		row.description.Text=Locale.Text(item.Description)
-		row.details.Text=if item.Premium then string.format(Locale.Text("F · Полёт %d с   G · Лазеры %d урона"),item.FlightDuration,item.Damage)
+  if item.Pack then
+   row.title.Text=Locale.Text(item.Name)
+   row.details.Text=Locale.Text(item.MobilityLabel).." / "..Locale.Text(item.AttackLabel)
+   W.SetButton(row.button,Locale.Text(if equipped then "ВЫБРАНО" elseif owned then "ВЫБРАТЬ" else "В МАГАЗИН"),not equipped and (not owned or entry and entry.canEquip) and not self.ctx.net:IsBusy(),false)
+   continue
+  end
+		row.details.Text=if item.Premium then string.format(Locale.Text("Полёт %d с · лазеры %d PvE / %d PvP"),item.FlightDuration,item.PvEDamage or item.Damage,item.Damage)
 			elseif item.Slot=="Attack" then string.format(Locale.Text("Уровень %d • урон %d • перезарядка %d с"),item.Level,item.Damage,item.Cooldown)
 			else string.format(Locale.Text("Уровень %d • перезарядка %d с • кнопка F"),item.Level,item.Cooldown)
 		local unlocked=state and state.VerityUnlocked and state.VerityLevel>=item.Level
