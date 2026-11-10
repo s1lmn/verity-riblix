@@ -42,6 +42,8 @@ end
 function MoneyPass:Render()
 	local state=self.ctx.net.state
 	local owned=state and state.MoneyPassOwned==true
+ self.refs.MoneyPass.Visible=not owned
+ self.refs.MoneyPassHint.Visible=not owned
 	local text=if owned then Locale.Text("×3 ДЕНЬГИ • АКТИВНО")
 		elseif self.promptOpen then Locale.Text("ПОДТВЕРДИ ПОКУПКУ В ROBLOX")
 		elseif self.offer then string.format(Locale.Text("×3 ДЕНЬГИ • %d R$"),self.offer.PriceInRobux)

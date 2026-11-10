@@ -34,6 +34,7 @@ function Shop.new(ctx,money,abilities)
   local row=Skin.Card(self.refs.Body,id,Catalog.Card(id),index);self.rows[id]=row
   self.cleanup:Add(row.Preview.Activated:Connect(function()self:Preview(id)end))
   self.cleanup:Add(row.Buy.Activated:Connect(function()self:Activate(id)end))
+  self.cleanup:Add(row.Equip.Activated:Connect(function()self:Activate(id)end))
   self.cleanup:Add(row.Reset.Activated:Connect(function()self:Remove(id)end))
   self.cleanup:Add(row.More.Activated:Connect(function()self.expanded[id]=not self.expanded[id];self:Render()end))
   if row.Variant then self.cleanup:Add(row.Variant.Activated:Connect(function()
@@ -193,10 +194,13 @@ function Shop:Render()
    elseif offer.onSale and offer.price then string.format(Locale.Text("Цена Roblox: %d R$"),offer.price)
    elseif not offer.priceKnown then Locale.Text("Цена временно недоступна")
    else Locale.Text("Сейчас не продаётся")
-  local label=if offer.pending then "ПОДТВЕРДИ В ROBLOX" elseif offer.selected then "ВЫБРАНО" elseif offer.owned then "ВЫБРАТЬ" else "КУПИТЬ"
+  row.Buy.Visible=offer.owned~=true
+  row.Equip.Visible=offer.owned==true and not offer.selected and id~="money_x3"
+  if offer.owned then row.Price.Text=Locale.Text(if offer.selected then "✓ ВЫБРАНО" else "✓ КУПЛЕНО") end
   if offer.trial then row.Price.Text=Locale.Text("Пробный доступ на эту сессию") end
-  W.SetButton(row.Buy,Locale.Text(label),net.connected and not net:IsBusy() and not offer.pending and not offer.selected
-   and (offer.owned and offer.canEquip or not offer.owned and offer.canPurchase) or false,offer.pending==true)
+  W.SetButton(row.Buy,Locale.Text(if offer.pending then "ПОДТВЕРДИ В ROBLOX" else "КУПИТЬ"),row.Buy.Visible
+   and net.connected and not net:IsBusy() and not offer.pending and offer.canPurchase or false,offer.pending==true)
+  W.SetButton(row.Equip,Locale.Text("ВЫБРАТЬ"),row.Equip.Visible and net.connected and not net:IsBusy() and offer.canEquip or false,false)
   row.Reset.Visible=offer.selected==true and self:Binding(id)~=nil
   W.SetButton(row.Reset,Locale.Text("СНЯТЬ ОФОРМЛЕНИЕ"),net.connected and not net:IsBusy() and offer.canEquip==true,false)
   W.SetButton(row.Preview,Locale.Text("ПРИМЕРИТЬ"),true,false)

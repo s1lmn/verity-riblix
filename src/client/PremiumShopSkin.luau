@@ -67,11 +67,15 @@ function Skin.Card(parent,id,item,order)
  local extra=text(row,"Rules",12,false,T.Muted);extra.TextYAlignment=Enum.TextYAlignment.Top;extra.Visible=false
  local price=text(row,"Price",14,true,T.Ink)
  local preview=fixed(W.Button(row,"TryOn","ПРИМЕРИТЬ",T.Soft))
- local buy=fixed(W.Button(row,"Buy","КУПИТЬ",accent))
+ local buy=fixed(W.Button(row,"Buy","КУПИТЬ",Color3.fromHex("77E8B5")))
+ buy.TextColor3=Color3.fromHex("153E32")
+ W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex("EBFFF4"),Color3.fromHex("7ADDB3")),Rotation=90},buy)
+ W.Stroke(buy,Color3.fromHex("2B755D"),1).Transparency=.48
+ local equip=fixed(W.Button(row,"Equip","ВЫБРАТЬ",Color3.fromHex("DDD0FF")));equip.Visible=false
  local reset=fixed(W.Button(row,"Remove","СНЯТЬ ОФОРМЛЕНИЕ",T.Soft));reset.Visible=false
  return {Root=row,Title=name,Benefit=benefit,Bundle=bundle,Art=art,Viewport=viewport,Phase=phaseText,
   Comparison=comparison,Variant=variant,HouseView=view,Details=detail,More=more,Extra=extra,Price=price,
-  Preview=preview,Buy=buy,Reset=reset,Focus=focus}
+  Preview=preview,Buy=buy,Equip=equip,Reset=reset,Focus=focus}
 end
 function Skin.LayoutCard(row,width,expanded)
  local y=12
@@ -92,8 +96,11 @@ function Skin.LayoutCard(row,width,expanded)
  row.Extra.Visible=expanded==true
  if expanded then place(row.Extra,height(row.Extra,64)) end
  place(row.Price,28)
- row.Preview.Position=UDim2.fromOffset(12,y);row.Preview.Size=UDim2.new(.46,-15,0,48)
- row.Buy.Position=UDim2.new(.46,3,0,y);row.Buy.Size=UDim2.new(.54,-15,0,48);y+=55
+ local action=if row.Buy.Visible then row.Buy elseif row.Equip.Visible then row.Equip else nil
+ row.Preview.Position=UDim2.fromOffset(12,y)
+ row.Preview.Size=if action then UDim2.new(.46,-15,0,48) else UDim2.new(1,-24,0,48)
+ if action then action.Position=UDim2.new(.46,3,0,y);action.Size=UDim2.new(.54,-15,0,48) end
+ y+=55
  if row.Reset.Visible then place(row.Reset,44) end
  row.Root.Size=UDim2.new(1,-6,0,y+5)
 end

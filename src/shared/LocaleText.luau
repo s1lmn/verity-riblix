@@ -1512,6 +1512,8 @@ local premiumMergeEnglish={
 for source,target in premiumMergeEnglish do en[source]=target end
 
 local premiumShowcaseEnglish={
+ ["✓ КУПЛЕНО"]="✓ OWNED",
+ ["✓ ВЫБРАНО"]="✓ EQUIPPED",
  ["Цена временно недоступна"]="Price temporarily unavailable",
  ["Примерь. Посмотри. Выбери."]="Try it. See it. Choose it.",
  ["Полёт и лазеры для свободного мира"]="Flight and lasers for the open world",
