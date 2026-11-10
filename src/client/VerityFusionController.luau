@@ -19,7 +19,8 @@ local active={Merging=true,Running=true}
 local DESKTOP_ACTION_Y={88,138,104,154}
 local function button(parent,name,text,color,x,y,w)
  local b=W.Button(parent,name,text,color);b.Size=UDim2.fromOffset(w or 108,44)
- b.AnchorPoint=Vector2.new(1,0);b.Position=UDim2.new(1,x,0,y);b.TextSize=12;return b
+ b.AnchorPoint=Vector2.new(1,0);b.Position=UDim2.new(1,x,0,y);b.TextSize=12
+ b.Active=true;b.TextWrapped=true;b:SetAttribute("FixedFeedbackSize",true);return b
 end
 function Controller.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),held={},nextMove=0,nextBind=0,windowFocused=true},Controller)
@@ -27,7 +28,9 @@ function Controller.new(ctx)
  self.card,self.title,self.detail,self.leave=ActivityCard.Build(ctx.refs.Safe,"FusionStatus","LeaveFusion")
  self.cleanup:Add(self.card)
  self.controls=self.cleanup:Add(W.Frame(ctx.refs.Safe,"FusionControls",UDim2.fromScale(1,1)))
- self.controls.BackgroundTransparency=1;self.controls.Visible=false
+ self.controls.BackgroundTransparency=1;self.controls.Visible=false;self.controls.ZIndex=22
+ self.join=button(self.controls,"Join","",T.Mint,-12,88);self.join.Visible=false
+ self.joinButtons={self.join}
  self.ready=button(self.controls,"Ready","Готов",T.Mint,-12,88)
  self.swap=button(self.controls,"Swap","Сменить роль",T.Gold,-12,138)
  self.jump=button(self.controls,"Jump","Прыжок",T.Mint,-12,104)
@@ -39,7 +42,7 @@ function Controller.new(ctx)
  for _,spec in {{"Left","◀"},{"Brake","Ⅱ"},{"Right","▶"}} do
   local b=W.Button(touch,spec[1],spec[2],T.Paper);b.Size=UDim2.fromOffset(46,44)
   table.insert(self.steeringButtons,b)
-  b.Selectable=false
+  b.Active=true;b.Selectable=false;b:SetAttribute("FixedFeedbackSize",true)
   self.cleanup:Add(b.InputBegan:Connect(function(input)
    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then self.held[spec[1]]=input end
   end))
@@ -53,8 +56,13 @@ function Controller.new(ctx)
   if self.mine and self.mine.role=="Pilot" then self:Send("Move",Vector2.zero) end
  end))
  self.cleanup:Add(Input.WindowFocused:Connect(function() self.windowFocused=true end))
- for b,action in {[self.ready]="Ready",[self.swap]="Swap",[self.jump]="Jump",[self.boost]="Boost",[self.leave]="Leave"} do
-  self.cleanup:Add(b.Activated:Connect(function() self:Send(action) end))
+ for b,action in {[self.join]="Join",[self.ready]="Ready",[self.swap]="Swap",[self.jump]="Jump",[self.boost]="Boost",[self.leave]="Leave"} do
+  self.cleanup:Add(b.InputBegan:Connect(function(input)
+   if input.UserInputType==Enum.UserInputType.Touch and b.Interactable then self:Send(action) end
+  end))
+  self.cleanup:Add(b.Activated:Connect(function(input)
+   if not input or input.UserInputType~=Enum.UserInputType.Touch then self:Send(action) end
+  end))
  end
  local function bind(name,action,...)
   Actions:BindActionAtPriority(name,function(_,state)
@@ -73,7 +81,7 @@ function Controller.new(ctx)
 end
 function Controller:Bind(model)
  if self.stateLink then self.stateLink:Disconnect();self.stateLink=nil end
- self.model=model;self.snapshot=nil;self.mine=nil;self.control=nil;self.nextSync=0
+ self.model=model;self.snapshot=nil;self.mine=nil;self.control=nil;self.nextSync=0;self.wasMember=false;self.readyRequest=nil;self.joinPendingUntil=nil
  self:ClearVisual();self:ReleaseCamera();self:ReleaseFocus()
  if not model then return end
  local event=model:FindFirstChild("FusionState");local control=model:FindFirstChild("FusionControl")
@@ -85,6 +93,14 @@ function Controller:Bind(model)
   local previous=self.snapshot;self.snapshot=message;self.mine=nil
   self.receivedAt=os.clock()
   for _,entry in message.entries do if entry.id==Players.LocalPlayer.UserId then self.mine=entry;break end end
+  if self.mine then
+   self.joinPendingUntil=nil
+   if (not previous or not self.wasMember) and self.ctx.active then self.ctx.close() end
+  end
+  self.wasMember=self.mine~=nil
+  if self.readyRequest and (not self.mine or self.mine.ready==self.readyRequest.value or message.phase~="Waiting") then
+   self.readyRequest=nil
+  end
   if self.mine and (not previous or previous.phase~=message.phase) then
    if message.phase=="Merging" then
     if self.ctx.active then self.ctx.close() end
@@ -97,9 +113,36 @@ function Controller:Bind(model)
   end
  end)
 end
+function Controller:NearbySlot(s)
+ local char=Players.LocalPlayer.Character
+ local root=char and char:FindFirstChild("HumanoidRootPart")
+ local state=self.ctx.net.state
+ if not root or not state or not state.VerityUnlocked or ActivityCard.ActivityRunning()
+  or Players.LocalPlayer:GetAttribute("VerityRiding") or s.phase~="Waiting" or not self.model then return nil end
+ local best,distance=nil,C.JoinReach
+ for slot=1,2 do
+  local pad=self.model:FindFirstChild("FusionPad"..slot)
+  if not pad then continue end
+  local taken=false
+  for _,entry in s.entries do if entry.slot==slot then taken=true;break end end
+  local gap=(root.Position-pad.Position).Magnitude
+  if not taken and gap<distance then best=slot;distance=gap end
+ end
+ return best
+end
+
 function Controller:Send(action,value)
  local s=self.snapshot;local e=self.mine
- if not self.control or not s or not e or Gui.MenuIsOpen or Input:GetFocusedTextBox() then return false end
+ if not self.control or not s or Gui.MenuIsOpen or Input:GetFocusedTextBox() then return false end
+ if action=="Join" then
+  local slot=not e and not self.ctx.active and self:NearbySlot(s)
+  local now=os.clock()
+  if not slot or now<(self.joinPendingUntil or 0) then return false end
+  self.joinPendingUntil=now+1
+  self.control:FireServer("Join",s.round,slot)
+  return true
+ end
+ if not e then return false end
  if action=="Jump" or action=="Boost" then
   if s.phase~="Running" or e.role~="Jumper" or self.ctx.active or workspace:GetServerTimeNow()<s.retryAt then return false end
   if action=="Boost" and workspace:GetServerTimeNow()<s.boostReady then return false end
@@ -108,6 +151,12 @@ function Controller:Send(action,value)
   self.lastAction[action]=now+.15
  elseif action=="Ready" or action=="Swap" then
   if s.phase~="Waiting" or self.ctx.active then return false end
+  if action=="Ready" then
+   local now=os.clock()
+   if self.readyRequest and now<self.readyRequest.deadline then return false end
+   value=not e.ready
+   self.readyRequest={value=value,deadline=now+.9}
+  end
  elseif action=="Leave" and self.ctx.active then return false end
  self.control:FireServer(action,s.round,value);return true
 end
@@ -251,9 +300,20 @@ function Controller:Tick(dt)
    end
   end
  end
- local show=s~=nil and e~=nil and not self.ctx.active and not self.ctx.presenting and not self.ctx.rewardOverlay
- self.card.Visible=show;self.controls.Visible=show
+ local touch=MobileHUD.IsTouch()
+ local unblocked=not self.ctx.active and not self.ctx.presenting and not self.ctx.forgeReveal and not self.ctx.rewardOverlay and not Gui.MenuIsOpen
+ local show=s~=nil and e~=nil and unblocked
+ local joinSlot=touch and s and not e and unblocked and self:NearbySlot(s)
+ self.join.Visible=joinSlot~=nil and joinSlot~=false
+ self.card.Visible=show;self.controls.Visible=show or self.join.Visible
+ if self.join.Visible then
+  local pending=at<(self.joinPendingUntil or 0)
+  W.SetButton(self.join,if pending then "…" else Locale.Text(if joinSlot==1 then "Занять руль" else "Управлять прыжком"),not pending,pending)
+  MobileHUD.PlaceActions(self.ctx.refs.Safe,self.joinButtons,52)
+ end
  if not show then
+  for _,b in self.actionButtons do b.Visible=false end
+  self.touch.Visible=false
   table.clear(self.held)
   self:ReleaseFocus()
   return
@@ -263,10 +323,9 @@ function Controller:Tick(dt)
  local pilot=e.role=="Pilot";local jumper=e.role=="Jumper"
  self.ready.Visible=waiting;self.swap.Visible=waiting and #s.entries==2
  self.jump.Visible=running and jumper;self.boost.Visible=running and jumper
- local touch=MobileHUD.IsTouch()
  self.touch.Visible=running and pilot and touch
  if touch then
-  MobileHUD.PlaceActions(self.ctx.refs.Safe,if self.touch.Visible then self.steeringButtons else self.actionButtons)
+  MobileHUD.PlaceActions(self.ctx.refs.Safe,if self.touch.Visible then self.steeringButtons else self.actionButtons,if self.touch.Visible then 44 else 52)
  else
   for i,b in self.actionButtons do
    b.AnchorPoint=Vector2.new(1,0)
@@ -274,13 +333,14 @@ function Controller:Tick(dt)
    b.Size=UDim2.fromOffset(108,44)
   end
  end
- if not self.touch.Visible then table.clear(self.held) end
+ if not self.touch.Visible or Gui.MenuIsOpen then table.clear(self.held) end
  ActivityCard.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
  local role=if pilot then "Руль" else "Прыжок и рывок"
  self.title.Text=Locale.Text(role).." • "..Locale.Text("Единый Verity")
  if waiting then
   self.detail.Text=if #s.entries<2 then Locale.Text("Ждём второго игрока") else (if e.ready then Locale.Text("Ты готов • ждём напарника") else Locale.Text("Оба должны нажать «Готов»"))
-  W.SetButton(self.ready,Locale.Text(if e.ready then "Не готов" else "Готов"),true,false)
+  local pending=self.readyRequest and at<self.readyRequest.deadline
+  W.SetButton(self.ready,if pending then "…" else Locale.Text(if e.ready then "Не готов" else "Готов"),not pending,pending==true)
   W.SetButton(self.swap,Locale.Text(if e.swap then "Ждём согласия" else "Сменить роль"),true,false)
   if Input.PreferredInput==Enum.PreferredInput.Gamepad and not self.ownsFocus then
    self.previousFocus=Gui.SelectedObject;self.ownsFocus=true;Gui.SelectedObject=self.ready

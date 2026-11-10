@@ -5,7 +5,7 @@ local C=require(Shared.VerityFusionConfig)
 local Numeric=require(Shared.Numeric)
 local Bridge=require(Shared.PremiumVisualBridge)
 local Service={};Service.__index=Service
-local allowed={Move=true,Jump=true,Boost=true,Ready=true,Swap=true,Leave=true,Sync=true}
+local allowed={Move=true,Jump=true,Boost=true,Ready=true,Swap=true,Leave=true,Sync=true,Join=true}
 local attrs={"VerityFusionSlot","VerityFusionRole","VerityFusionActive","VerityFusionPremiumStyle"}
 local function slotRole(slot) return if slot==1 then "Pilot" else "Jumper" end
 local function finitePosition(p) return Numeric.isFinite(p.X) and Numeric.isFinite(p.Y) and Numeric.isFinite(p.Z) end
@@ -220,16 +220,23 @@ function Service:Control(player,action,round,value)
   return
  end
  if round~=self.round then return end
+ if action=="Join" then
+  if value==1 or value==2 then self:Join(player,value) end
+  return
+ end
  local entry,slot=self:Find(player);if not entry then return end
  if action=="Move" then
   if self.phase~="Running" or slot~=1 or typeof(value)~="Vector2" or not self:Limit(player,"Move",.065,now)
    or not Numeric.isFinite(value.X) or not Numeric.isFinite(value.Y) or value.Magnitude>1.02 then return end
   self.move=if value.Magnitude>1 then value.Unit else value;self.lastMove=now;return
  end
- if value~=nil or not self:Limit(player,action,.22,now) then return end
+ if (action=="Ready" and type(value)~="boolean") or (action~="Ready" and value~=nil)
+  or not self:Limit(player,action,.22,now) then return end
  if action=="Leave" then self:Remove(player);return end
  if self.phase=="Waiting" then
-  if action=="Ready" then entry.ready=not entry.ready;entry.swap=false;self:Publish();self:Begin()
+  if action=="Ready" then
+   if entry.ready==value then self:Publish(player);return end
+   entry.ready=value;entry.swap=false;self:Publish();self:Begin()
   elseif action=="Swap" and self.entries[1] and self.entries[2] then
    entry.swap=not entry.swap;entry.ready=false
    if self.entries[1].swap and self.entries[2].swap then

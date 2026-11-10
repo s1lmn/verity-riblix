@@ -98,7 +98,7 @@ function Controller:Render()
 		if item.MobilityAction and equipped then equipped=(state.AbilitiesEquipped or {}).Mobility==id end
 		if entry then owned=entry.owned;equipped=#entry.equippedSlots==#entry.availableSlots end
 		row.description.Text=Locale.Text(item.Description)
-		row.details.Text=if item.Premium then string.format(Locale.Text("F · Полёт %d с   G · Лазеры %d урона"),item.FlightDuration,item.Damage)
+		row.details.Text=if item.Premium then string.format(Locale.Text("Полёт %d с · лазеры %d PvE / %d PvP"),item.FlightDuration,item.PvEDamage or item.Damage,item.Damage)
 			elseif item.Slot=="Attack" then string.format(Locale.Text("Уровень %d • урон %d • перезарядка %d с"),item.Level,item.Damage,item.Cooldown)
 			else string.format(Locale.Text("Уровень %d • перезарядка %d с • кнопка F"),item.Level,item.Cooldown)
 		local unlocked=state and state.VerityUnlocked and state.VerityLevel>=item.Level

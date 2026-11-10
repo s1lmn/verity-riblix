@@ -17,6 +17,17 @@ local icons={dash="↠",leap="↑",sprint="»",shield="◆",flight="▲",pulse="
 function Controller.new(ctx)
 	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),touchButtons={ctx.refs.AbilityButton,ctx.refs.AttackButton,ctx.refs.RideButton}},Controller)
 	self.remote=ReplicatedStorage:WaitForChild("UseVerityAbility",10)
+ self.descend=self.cleanup:Add(W.Button(ctx.refs.Safe,"FlightDescend","",Color3.fromHex("A9E7F4")))
+ self.descend.Visible=false;self.descend.TextSize=12
+ self.descend:SetAttribute("FixedFeedbackSize",true)
+ table.insert(self.touchButtons,self.descend)
+ self.cleanup:Add(self.descend.InputBegan:Connect(function(input)
+  if input.UserInputType==Enum.UserInputType.Touch and self.descend.Visible then self.descendInput=input end
+ end))
+ self.cleanup:Add(Input.InputEnded:Connect(function(input)
+  if self.descendInput==input then self.descendInput=nil end
+ end))
+ self.cleanup:Add(Input.WindowFocusReleased:Connect(function() self.descendInput=nil end))
 	for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
 		self.cleanup:Add(button.Activated:Connect(function() self:Activate(slot,true) end))
 		local action="Verity"..slot
@@ -53,7 +64,7 @@ function Controller.new(ctx)
 		if not hum or hum.Health<=0 then return end
 		local blocked=ctx.active or ctx.presenting or ctx.forgeReveal or GuiService.MenuIsOpen or Input:GetFocusedTextBox()
   local movement=if blocked then Vector3.zero else hum.MoveDirection
-  local vertical=if blocked then 0 elseif Input:IsKeyDown(Enum.KeyCode.LeftControl) then -.65
+  local vertical=if blocked then 0 elseif self.descendInput or Input:IsKeyDown(Enum.KeyCode.LeftControl) then -.65
    elseif hum.Jump or Input:IsKeyDown(Enum.KeyCode.Space) or (self.ascendUntil or 0)>workspace:GetServerTimeNow() then 1 else 0
 		local direction=Vector3.new(movement.X,vertical,movement.Z)
 		if direction.Magnitude>1 then direction=direction.Unit end
@@ -128,6 +139,7 @@ function Controller:Render()
  if not touch then
   local actionY=math.max(if inActivity then 88 else 52,math.min(140,size.Y-168))
   for i,button in self.touchButtons do
+   if button==self.descend then continue end
    button.AnchorPoint=Vector2.new(1,0)
    button.Position=UDim2.new(1,-12,0,actionY+(i-1)*52)
    button.Size=UDim2.fromOffset(124,44)
@@ -147,6 +159,14 @@ function Controller:Render()
   local usableHere=not touch or not (racing or parkour or riding and slot=="Mobility")
   local allowed=not adventure or adventure=="Trial" and trialDefinition and trialDefinition.Slot==slot
   button.Visible=visible and allowed and usableHere and state~=nil and state.VerityUnlocked or false
+ end
+ local mobility=self:Item("Mobility")
+ local flying=remaining>0 and (riding or mobility and (mobility.MobilityAction or mobility.Action)=="flight")
+ self.descend.Visible=touch and visible and flying and not transitioning or false
+ if not self.descend.Visible or GuiService.MenuIsOpen then self.descendInput=nil end
+ if self.descend.Visible then
+  if not riding then rideButton.Visible=false end
+  self.descend.Text=Locale.Text("↓ Спуск")
  end
  if touch then MobileHUD.PlaceActions(ctx.refs.Safe,self.touchButtons) end
  if touch and rideButton.Size.X.Offset<76 and not riding and not transitioning then caption="Верхом" end

@@ -17,9 +17,10 @@ function Layout.StatusWidth(size)
  return math.max(1, math.min(300, size.X - 142))
 end
 
-function Layout.PlaceActions(safe, buttons)
+function Layout.PlaceActions(safe, buttons, minTarget)
  local size = safe.AbsoluteSize
- if size.X < 44 or size.Y < 52 then return end
+ local target = minTarget or 44
+ if size.X < target or size.Y < target+8 then return end
 
  local count = 0
  for _, button in buttons do
@@ -47,17 +48,17 @@ function Layout.PlaceActions(safe, buttons)
  local gap = 6
  local leftReserve = math.clamp(size.X * .25, 76, 118)
  local available = right - leftReserve - gap * (count - 1)
- local width = math.clamp(math.floor(available / count), 44, 100)
+ local width = math.clamp(math.floor(available / count), target, if minTarget then 136 else 100)
  local rowWidth = count * width + (count - 1) * gap
  local left = math.max(6, right - rowWidth)
- local maxY = bottom - 44
- local y = math.clamp(math.floor(centerY - 22), math.min(174, maxY), maxY)
+ local maxY = bottom - target
+ local y = math.clamp(math.floor(centerY - target/2), math.min(174, maxY), maxY)
  local column = 0
  for _, button in buttons do
   if button.Visible then
    button.AnchorPoint = Vector2.zero
    button.Position = UDim2.fromOffset(left + column * (width + gap), y)
-   button.Size = UDim2.fromOffset(width, 44)
+   button.Size = UDim2.fromOffset(width, target)
    column += 1
   end
  end

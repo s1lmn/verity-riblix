@@ -98,7 +98,7 @@ function Controller:Event(event)
 		if self.ctx.visuals then self.ctx.visuals:AimAbility(event.ownerUserId,target,duration) end
 		if item.Action=="laser" then
 			for side=-1,1,2 do
-				local beam=line(folder,self:Eye(event.ownerUserId,side,event.origin),target,color,if reduced then .16 else .5)
+				local beam=line(folder,self:Eye(event.ownerUserId,side,event.origin),target,color,if reduced then .16 elseif item.PvEDamage then .72 else .5)
 				beam.side=side;table.insert(r.lines,beam)
 				local eye=part(folder,beam.source.Position,Vector3.one*.5,color,true);beam.eye=eye
 				local light=Instance.new("PointLight");light.Color=color;light.Brightness=if reduced then .4 else 1.5;light.Range=10;light.Parent=eye

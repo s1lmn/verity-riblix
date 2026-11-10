@@ -15,7 +15,7 @@ Catalog.Items = {
 	gravity={Name="Гравитационный удар",Description="Сожми энергию в точке и порази цели в радиусе 14 метров.",Slot="Attack",Level=50,Cost=750000,Action="gravity",Cooldown=11,Damage=38,Range=75,Radius=14,Color="E796FF"},
 	nova={Name="Сверхновая",Description="Взрыв звёздной энергии в радиусе 21 метра.",Slot="Attack",Level=75,Cost=18000000,Action="nova",Cooldown=15,Damage=52,Range=90,Radius=21,Color="FFD773"},
 	-- The item ID is stable so existing equipment stays valid.
-	homelander={Name="Алый страж",Description="Полёт героя и красные лазеры из глаз. Две способности в одном наборе.",Slot="Attack",Level=1,Premium=true,Action="laser",Cooldown=8,Damage=40,Range=140,Duration=1.1,Color="FF3B57",MobilityAction="flight",FlightDuration=18,FlightSpeed=42,FlightCooldown=24},
+	homelander={Name="Алый страж",Description="Полёт героя и красные лазеры из глаз. Две способности в одном наборе.",Slot="Attack",Level=1,Premium=true,Action="laser",Cooldown=8,Damage=40,PvEDamage=68,Range=140,Duration=1.1,Color="FF3B57",MobilityAction="flight",FlightDuration=30,FlightSpeed=58,FlightCooldown=38},
 }
 for _,item in Catalog.Items do table.freeze(item) end
 table.freeze(Catalog.Order);table.freeze(Catalog.Items)

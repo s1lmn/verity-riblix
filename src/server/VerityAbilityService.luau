@@ -320,7 +320,8 @@ function Service:Attack(player,item,id,character,root,direction)
 				-- Recheck cover on each laser tick, including newly closed doors.
 				local hit=cast(currentOrigin,candidate.part.Position,liveCover,liveBodies)
 				if hit and self:Matches(candidate,hit.Instance) then
-					dealt+=self:Hit(player,candidate,item.Damage/ticks*(if item.Chains then .8^(index-1) else 1))
+					local damage=if not candidate.player and item.PvEDamage then item.PvEDamage else item.Damage
+					dealt+=self:Hit(player,candidate,damage/ticks*(if item.Chains then .8^(index-1) else 1))
 				end
 			end
 			if tick==ticks and self.attacks[player]==token then

@@ -99,15 +99,19 @@ function Art.Build(parent,pivot,id,preview)
   end
  elseif Catalog.Auras[id] then
   local aura=Catalog.Auras[id]
-  for i=1,16 do
-   local a=i*math.pi/8
-   local radius=if id=="aura_solar_crown" then 1.2 else 1.37
-   local height=if id=="aura_solar_crown" then 1.34 else .67+.39*math.sin(a)
-   local size=if id=="aura_liquid_gold" then .14+.075*(i%3) else .09+.045*(i%3)
-   local gem=piece("AuraGem",v(math.cos(a)*radius,height,math.sin(a)*radius),
-    if id=="aura_solar_crown" then v(size*.7,size*2.3,size) else Vector3.one*size,
-    aura.Color,if id=="aura_liquid_gold" then ball else nil,true)
-   if id=="aura_solar_crown" then gem.CFrame*=CFrame.Angles(0,0,math.cos(a)*.55) end
+  local count=if id=="aura_liquid_gold" then 7 else 12
+  for i=1,count do
+   local a=i*math.pi*2/count
+   local radius=if id=="aura_solar_crown" then .86 else 1.24
+   local height=if id=="aura_solar_crown" then 1.53+(i%2)*.14
+    elseif id=="aura_galactic_dust" then .83+.56*math.sin(a) else .55-.25*math.cos(a)
+   local size=.13+.06*(i%3)
+   local dimensions=if id=="aura_solar_crown" then v(size*.74,size*2.25,size*.74)
+    elseif id=="aura_liquid_gold" then v(size*1.2,size*1.6,size*1.2) else Vector3.one*size
+   local color=if i%3==0 then "FFF0C6" else aura.Color
+   local gem=piece("AuraGem",v(math.cos(a)*radius,height,math.sin(a)*radius),dimensions,
+    color,if id=="aura_liquid_gold" then ball else nil,id~="aura_liquid_gold")
+   gem.CFrame*=CFrame.Angles(0,-a,math.pi*.25)
   end
  end
  model.Parent=parent

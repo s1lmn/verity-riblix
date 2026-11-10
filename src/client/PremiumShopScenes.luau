@@ -59,9 +59,14 @@ function Scene:Hero()
  local world=self.world
  self.pet=Verity.Create(world,CFrame.identity,{level=1,preview=true})
  self.pet:ScaleTo(1.5);self.pet.PrimaryPart.LevelLabel.Enabled=false
- piece(world,"LaunchPad",Vector3.new(4.8,.25,4.3),Vector3.new(0,-.2,0),"5C467C")
+ local base=piece(world,"LaunchPad",Vector3.new(.28,4.6,4.6),Vector3.new(0,-.22,0),"55263C",Enum.PartType.Cylinder)
+ base.CFrame*=CFrame.Angles(0,0,math.pi/2)
+ local rim=piece(world,"LaunchRim",Vector3.new(.08,4.42,4.42),Vector3.new(0,-.04,0),"FF9D82",Enum.PartType.Cylinder)
+ rim.CFrame*=CFrame.Angles(0,0,math.pi/2)
+ local deck=piece(world,"LaunchDeck",Vector3.new(.12,4.1,4.1),Vector3.new(0,.04,0),"73354D",Enum.PartType.Cylinder)
+ deck.CFrame*=CFrame.Angles(0,0,math.pi/2)
  for i=1,7 do
-  piece(world,"Skyline",Vector3.new(.65,.5+(i%3)*.4,.75),Vector3.new((i-4)*1.15,-.65,-2.3),if i%2==0 then "CEB8FF" else "A6DFFE")
+  piece(world,"Skyline",Vector3.new(.72,.55+(i%3)*.55,.8),Vector3.new((i-4)*1.25,-.72,2.35),if i%2==0 then "CB697D" else "77364F")
  end
  self.target=Instance.new("Model");self.target.Name="PreviewDrone";self.target.Parent=world
  piece(self.target,"Drone",Vector3.new(.85,.55,.65),Vector3.new(-1.3,2,-4.2),"A6C6E9",Enum.PartType.Ball)
@@ -75,7 +80,7 @@ function Scene:Hero()
  end
  for i=1,7 do self.trail[i]=piece(world,"FlightSpark",Vector3.one*.12,Vector3.zero,"FFCDA7",Enum.PartType.Ball,true) end
  self.hit=piece(world,"Impact",Vector3.one*.3,Vector3.new(-1.3,2,-4.2),"FF9F76",Enum.PartType.Ball,true)
- self:Frame(Vector3.new(0,2.2,-.6),Vector3.new(5,6,5),Vector3.new(.55,.2,-1))
+ self:Frame(Vector3.new(-.25,2.1,-.9),Vector3.new(4.85,4.7,5),Vector3.new(.64,.22,-1))
 end
 function Scene:Money()
  self.coins={}

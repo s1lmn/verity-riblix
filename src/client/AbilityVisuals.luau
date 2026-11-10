@@ -104,12 +104,16 @@ function Visuals.Mobility(r,root,humanoid)
 		ring(r,root.Position,4.2,color,Vector3.yAxis,r.channelDuration,0,"Shield",.45)
 		if not r.reduced then ring(r,root.Position,4.2,WHITE,Vector3.zAxis,r.channelDuration,0,"Shield",-.45) end
 	else
-		ring(r,feet,if action=="leap" then 6 else 4,color,Vector3.yAxis,.6,0)
+		local scarletFlight=action=="flight" and item.PvEDamage~=nil
+		ring(r,feet,if action=="leap" or scarletFlight then 6 else 4,color,Vector3.yAxis,.6,0)
+		if scarletFlight and not r.reduced then
+			ring(r,feet,4.8,Color3.fromHex("FFC580"),Vector3.yAxis,.52,.08)
+		end
 		burst(r,feet,color,if action=="leap" then 18 else 10,0)
 		if not r.reduced then
 			r.motionSource=piece(r,root.Position,color);r.motionSource.Transparency=1
 			trail(r,r.motionSource,-1,color,if action=="dash" then .22 else .35)
-			trail(r,r.motionSource,1,color,if action=="dash" then .22 else .35)
+			trail(r,r.motionSource,1,if scarletFlight then Color3.fromHex("FFC580") else color,if action=="dash" then .22 else .35)
 		end
 	end
 	if action=="flight" then
