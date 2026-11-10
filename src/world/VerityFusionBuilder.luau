@@ -4,12 +4,12 @@ local C=require(Shared.VerityFusionConfig)
 local Locale=require(Shared.LocaleText)
 local Sign=require(script.Parent.WorldSign)
 local Builder={}
-local VISUAL_VERSION=3
+local VISUAL_VERSION=4
 function Builder.Build(parent)
  local old=parent:FindFirstChild("VerityFusion")
  if old and old:IsA("Model") and old:GetAttribute("FusionVersion")==C.Version and old:GetAttribute("FusionVisualVersion")==VISUAL_VERSION then
   local complete=true
-  for _,name in {"FusionPad1","FusionPad2","SoloPad"} do
+  for _,name in {"FusionPad1","FusionPad2"} do
    local pad=old:FindFirstChild(name)
    local join=pad and pad:FindFirstChild("JoinFusion")
    if not pad or not pad:IsA("BasePart") or not join or not join:IsA("ProximityPrompt") then
@@ -54,14 +54,13 @@ function Builder.Build(parent)
   local pad=p("FusionPad"..slot,C.Hub+Vector3.new((slot-1.5)*13,.15,2.5),Vector3.new(8,.25,6),if slot==1 then "FFC660" else "6AE4D2",false)
   prompt(pad,if slot==1 then "Занять руль" else "Управлять прыжком")
  end
- prompt(p("SoloPad",C.Hub+Vector3.new(0,.16,-5),Vector3.new(7,.25,4),"A995ED",false),"Пробный заезд одному")
  for _,side in {-1,1} do
   p("MergePillar",C.Hub+Vector3.new(side*12,3.3,-3),Vector3.new(1.7,6.6,1.7),"8268B8",false)
   local orb=p("MergeOrb",C.Hub+Vector3.new(side*12,7,-3),Vector3.one*2.3,if side<0 then "FFC660" else "6AE4D2",false,true)
   orb.Shape=Enum.PartType.Ball
  end
  local header=p("MergeHeader",hub+Vector3.new(0,6.9,-3),Vector3.new(22,3.5,.9),"354866",false)
- Sign.Add(header,"СЛИЯНИЕ VERITY\nЗаезд вдвоём или тренировка")
+ Sign.Add(header,"СЛИЯНИЕ VERITY\nЗаезд для двух игроков")
  local function lane(name,x,y,z,w,h,d,hex,solid,glow)
   return p(name,Vector3.new(C.TrackX+x,C.TrackY+y,z),Vector3.new(w,h,d),hex,solid,glow)
  end

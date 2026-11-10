@@ -7,6 +7,14 @@ local Rewards=require(RS.Shared.ActivityRewards)
 local Locale=require(RS.Shared.LocaleText)
 local PremiumDecor=require(RS.World.PremiumDecorArt)
 local Service={};Service.__index=Service
+local PARTY_EFFECT_SECONDS=6
+local PARTY_EFFECT_COOLDOWN=12
+
+local function hasDisco(party,state)
+ return party~=nil and state~=nil and state.ownerUserId==party.owner.UserId
+  and state.PremiumStyle~=nil and state.PremiumStyle.party=="party_disco"
+end
+
 local function segmentDistance(a,b,p)
  local d=b-a;if d.Magnitude<.01 then return (a-p).Magnitude end
  return (a+d*math.clamp((p-a):Dot(d)/d:Dot(d),0,1)-p).Magnitude
@@ -249,12 +257,29 @@ function Service:ArcadeFinished(p,arcade,award)
  if self.runs[p]==r then p:SetAttribute("VerityDiversionKind","Adventure") end
  self:Publish()
 end
+function Service:LaunchPartyEffects(p,plot,q)
+ local party=self.parties[plot]
+ local record=self.world.houseProgression.plots[plot]
+ local entry=self.model.parties[plot]
+ if self.closed or not party or party.owner~=p or not record or not entry
+  or q~=entry.effects or not entry.disco or not hasDisco(party,record.state)
+  or not self:PartyAccess(p,plot) then return end
+ local now=self.clock()
+ if now>=party.deadline or now<(party.effectsReadyAt or 0) then return end
+ party.effectsReadyAt=now+PARTY_EFFECT_COOLDOWN
+ entry.disco:SetAttribute("PartyEffectsUntil",now+PARTY_EFFECT_SECONDS)
+ q.Enabled=false
+ q:SetAttribute("PartyAvailable",false)
+ q:SetAttribute("AdventureEnabled",false)
+end
+
 function Service:Interact(p,q)
  if not self:Limit(p,.3) or not q:IsDescendantOf(self.model.root) then return end
  local root,profile=self:Character(p);if not root or (root.Position-q.Parent.Position).Magnitude>C.Reach+.5 then return end
  local kind=q:GetAttribute("AdventureKind");local id=q:GetAttribute("AdventureId");local index=q:GetAttribute("AdventureIndex");local plot=q:GetAttribute("AdventurePlot")
  if kind=="Trial" then self:StartTrial(p,id);return elseif kind=="Weather" then self:StartStars(p);return elseif kind=="Cave" then self:StartCave(p);return
  elseif kind=="HostParty" then self:Host(p,plot);return elseif kind=="JoinParty" then self:JoinParty(p,plot);return
+ elseif kind=="PartyEffects" then self:LaunchPartyEffects(p,plot,q);return
  elseif kind=="PartyMode" or kind=="StopParty" then
   local record=self.world.houseProgression.plots[plot];if not record or not record.state or record.state.ownerUserId~=p.UserId then return end
   if kind=="StopParty" then self:StopParty(plot,false) elseif not self.parties[plot] then self.modes[plot]=if self.modes[plot]=="Arcade" then "Gifts" else "Arcade";self:RenderWorld() end;return
@@ -308,14 +333,15 @@ function Service:RenderWorld()
  for plot,entry in self.model.parties do
   local record=self.world.houseProgression.plots[plot];local party=self.parties[plot];local state=record.state
   local available=state~=nil and state.VerityUnlocked==true and state.HouseIncomeLevel>=2
-  local disco=party~=nil and available and state.PremiumStyle and state.PremiumStyle.party=="party_disco"
+  local disco=available and hasDisco(party,state)
   if disco and not entry.disco then entry.disco=PremiumDecor.Build(entry.model,record.pivot,"party_disco")
   elseif not disco and entry.disco then entry.disco:Destroy();entry.disco=nil end
   local mode=if party then party.mode else self.modes[plot] or "Gifts"
   local title=if mode=="Arcade" then "Турнир на автомате" else "Поиск подарков"
   entry.host.Enabled=available and not party;entry.next.Enabled=entry.host.Enabled
   entry.join.Enabled=party~=nil and party.phase=="Lobby" and party.count<C.PartyLimit;entry.stop.Enabled=party~=nil
-  for _,q in {entry.host,entry.next,entry.stop,entry.join} do q:SetAttribute("PartyOwner",state and state.ownerUserId or 0);q:SetAttribute("PartyAvailable",q.Enabled) end
+  entry.effects.Enabled=disco and now<party.deadline and now>=(party.effectsReadyAt or 0)
+  for _,q in {entry.host,entry.next,entry.stop,entry.join,entry.effects} do q:SetAttribute("PartyOwner",state and state.ownerUserId or 0);q:SetAttribute("PartyAvailable",q.Enabled) end
   local signature=tostring(available)..mode..tostring(party and party.phase)
   if entry.signature~=signature then
    entry.signature=signature

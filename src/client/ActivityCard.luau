@@ -2,6 +2,7 @@
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Players=game:GetService("Players")
+local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Card={}
 
 function Card.Build(parent,name,leaveName)
@@ -18,6 +19,14 @@ function Card.Build(parent,name,leaveName)
 end
 
 function Card.Layout(root,title,detail,size)
+ if MobileHUD.IsTouch() then
+  root.AnchorPoint=Vector2.new(1,0)
+  root.Position=UDim2.new(1,-8,0,MobileHUD.StatusTop)
+  root.Size=UDim2.fromOffset(MobileHUD.StatusWidth(size),74)
+  title.TextSize=12
+  detail.TextSize=11
+  return
+ end
  local narrow=size.X<640
  root.AnchorPoint=Vector2.new(if narrow then 1 else .5,0)
  root.Position=if narrow then UDim2.new(1,-8,0,8) else UDim2.new(.5,0,0,8)

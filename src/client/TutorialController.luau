@@ -5,6 +5,7 @@ local RunService=game:GetService("RunService")
 local Input=game:GetService("UserInputService")
 local Pathfinding=game:GetService("PathfindingService")
 local CollectionService=game:GetService("CollectionService")
+local MobileHUD=require(script.Parent.MobileHUDLayout)
 local ActivityCard=require(script.Parent.ActivityCard)
 local CommunityConfig=require(game:GetService("ReplicatedStorage").Shared.CommunityConfig)
 local GUIDE_COLOR=Color3.fromHex("FFEB00")
@@ -470,14 +471,18 @@ function Tutorial:Update(now)
   ctx.refs.Tutorial.Visible=false;self.pointer.Visible=false;self.compass.Visible=false
   self:SetButton(nil);self:HideWorld();return
  end
- ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and ctx.active~="TASKS" and not (ctx.active and ctx.refs.Safe.AbsoluteSize.X<640)
+ local touch=MobileHUD.IsTouch()
+ local adventure=ctx.adventures
+ local covered=touch and (activity or adventure and (adventure.card.Visible or adventure.dock.Visible and adventure.weatherExpanded))
+ ctx.refs.Tutorial.Visible=goal~=nil and alive~=nil and alive~=false and not covered
+  and ctx.active~="TASKS" and not (ctx.active and (touch or ctx.refs.Safe.AbsoluteSize.X<640))
  self.pointer.Visible=false;self.compass.Visible=false
  if not goal or not alive then self.lastRootPosition=nil;self:SetButton(nil);self:ClearRoute();return end
  if self.lastRootPosition and (root.Position-self.lastRootPosition).Magnitude>16 then self:ClearRoute() end
  self.lastRootPosition=root.Position
  ctx.refs.Gui:SetAttribute("GuidanceGoal",goal.id);ctx.refs.Gui:SetAttribute("GuidanceKind",goal.kind)
  ctx.refs.GuideTitle.Text=Locale.Text(goal.title);self:HintText(goal.detail)
- ctx.refs.TutorialText.Size=UDim2.new(1,if goal.kind=="World" then -54 else -16,1,if ctx.refs.Safe.AbsoluteSize.Y<360 then -22 else -25)
+ ctx.refs.TutorialText.Size=UDim2.new(1,if goal.kind=="World" then -54 else -16,1,if ctx.refs.Safe.AbsoluteSize.Y<360 and not touch then -22 else -25)
  if goal.kind=="UI" then
   self:ClearRoute();local button=self:UIButton(goal.target)
   if not button or not visible(button,true) then

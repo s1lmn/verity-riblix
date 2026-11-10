@@ -7,6 +7,7 @@ local CosmeticShopSkin=require(script.Parent.CosmeticShopSkin)
 local SettingsSkin=require(script.Parent.SettingsSkin)
 local PremiumShopSkin=require(script.Parent.PremiumShopSkin)
 local GrowthPanelsSkin=require(script.Parent.GrowthPanelsSkin)
+local MobileHUD = require(script.Parent.MobileHUDLayout)
 local Builder = {}
 
 -- Small native vector icons; no uploaded images or external asset IDs.
@@ -168,19 +169,16 @@ function Builder.Build(playerGui)
  refs.Layout=function(open)
   local size=safe.AbsoluteSize
   if size.X<=0 or size.Y<=0 then return end
-  local actionY=math.max(52,math.min(140,size.Y-168))
-  refs.AbilityButton.Position=UDim2.new(1,-12,0,actionY)
-  refs.AttackButton.Position=UDim2.new(1,-12,0,actionY+52)
-  refs.RideButton.Position=UDim2.new(1,-12,0,actionY+104)
+  local touch=MobileHUD.IsTouch()
   local short=size.Y<360
   local columns=2
-  local side=if short then 48 else 56
+  local side=if touch then 44 elseif short then 48 else 56
   local gap=6
-  local hudHeight=if short then 54 else 64
-  hud.Size=UDim2.fromOffset(150,hudHeight)
-  refs.Cash.TextSize=if short then 14 else 16
-  refs.Income.Position=UDim2.fromOffset(10,if short then 24 else 28)
-  refs.Level.Position=UDim2.fromOffset(10,if short then 39 else 46)
+  local hudHeight=if short or touch then 54 else 64
+  hud.Size=UDim2.fromOffset(if touch then 122 else 150,hudHeight)
+  refs.Cash.TextSize=if short or touch then 14 else 16
+  refs.Income.Position=UDim2.fromOffset(10,if short or touch then 24 else 28)
+  refs.Level.Position=UDim2.fromOffset(10,if short or touch then 39 else 46)
   local navTop=8+hudHeight+10
   local railWidth=columns*side+(columns-1)*gap+4
   local rows=math.ceil(#buttons/columns)
@@ -201,25 +199,35 @@ function Builder.Build(playerGui)
   refs.GuideTitle.TextSize=if short then 10 else 11
   refs.TutorialText.Position=UDim2.fromOffset(8,if short then 18 else 21)
   refs.Status.Position=refs.Tutorial.Position
-  local narrow=size.X<640
+  if touch then
+   refs.Tutorial.Position=UDim2.new(1,-MobileHUD.StatusWidth(size)-8,0,MobileHUD.GuideTop)
+   refs.Tutorial.Size=UDim2.fromOffset(MobileHUD.StatusWidth(size),54)
+   refs.Status.Position=UDim2.fromOffset(12,navTop+navHeight+8)
+  end
+  local narrow=size.X<640 or touch
   hud.Visible,nav.Visible=not (narrow and open),not (narrow and open)
   local panelX=if narrow then 12 else 10+math.max(150,railWidth)+12
-  local width=math.min(if narrow then size.X-24 else size.X-panelX-12,420)
+  local topInset=if touch and open then MobileHUD.StatusTop else 0
+  local panelSize=Vector2.new(size.X,size.Y-topInset)
+  local width=math.min(size.X-panelX-12,420)
   local top=8
-  local height=math.max(100,math.min(size.Y-16,560))
+  local height=math.max(100,math.min(panelSize.Y-16,560))
   for _,item in refs.Panels do
    item.Root.Position=UDim2.fromOffset(panelX,top)
    item.Root.Size=UDim2.fromOffset(width,height)
    item.Title.TextSize=if width<360 then 18 else 21
   end
-  PhoneSkin.Layout(phone,size)
-  TaskTabletSkin.Layout(tasks,size,panelX)
-  CosmeticShopSkin.Layout(refs.Panels.COSMETICS,size,panelX)
-  PremiumShopSkin.Layout(refs.Panels.SHOP,size,panelX)
-  SettingsSkin.Layout(settings,size,panelX)
-  GrowthPanelsSkin.Layout(verity,size,panelX)
-  GrowthPanelsSkin.Layout(workshop,size,panelX)
-  GrowthPanelsSkin.Layout(refs.Panels.ABILITIES,size,panelX)
+  PhoneSkin.Layout(phone,panelSize)
+  TaskTabletSkin.Layout(tasks,panelSize,panelX)
+  CosmeticShopSkin.Layout(refs.Panels.COSMETICS,panelSize,panelX)
+  PremiumShopSkin.Layout(refs.Panels.SHOP,panelSize,panelX)
+  SettingsSkin.Layout(settings,panelSize,panelX)
+  GrowthPanelsSkin.Layout(verity,panelSize,panelX)
+  GrowthPanelsSkin.Layout(workshop,panelSize,panelX)
+  GrowthPanelsSkin.Layout(refs.Panels.ABILITIES,panelSize,panelX)
+  if topInset>0 then
+   for _, panel in refs.Panels do panel.Root.Position += UDim2.fromOffset(0,topInset) end
+  end
   refs.Toasts.AnchorPoint=Vector2.new(1,0)
   refs.Toasts.Size,refs.Toasts.Position=UDim2.fromOffset(math.min(size.X-24,300),108),UDim2.new(1,-12,0,72)
   refs.Banner.AnchorPoint=Vector2.new(1,0)
@@ -227,6 +235,16 @@ function Builder.Build(playerGui)
   refs.BannerText.TextSize=13
   refs.Reward.AnchorPoint=Vector2.new(1,0)
   refs.Reward.Position=UDim2.new(1,-16,0,12);refs.Reward.Size=UDim2.fromOffset(140,24);refs.Reward.TextSize=16
+  if touch then
+   refs.Toasts.AnchorPoint=Vector2.new(if open then .5 else 1,0)
+   refs.Toasts.Position=if open then UDim2.new(.5,0,0,MobileHUD.NoticeTop) else UDim2.new(1,-8,0,MobileHUD.NoticeTop)
+   refs.Toasts.Size=UDim2.fromOffset(if open then math.min(340,size.X-24) else MobileHUD.StatusWidth(size),MobileHUD.NoticeHeight)
+   refs.Reward.AnchorPoint=Vector2.zero
+   refs.Reward.Position=UDim2.fromOffset(8,navTop+navHeight+7)
+   refs.Reward.Size=UDim2.fromOffset(120,24)
+   refs.Reward.TextSize=13
+  end
+  refs.Reward.TextTransparency=if touch and (open or size.Y<310) then 1 else 0
   safe.Visible=true
  end
 

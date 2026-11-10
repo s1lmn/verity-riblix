@@ -144,6 +144,8 @@ function B.Build(world,plots)
   entry.next=prompt(board,"Сменить игру","Поиск подарков","PartyMode","",0,plotId);entry.next.KeyboardKeyCode=Enum.KeyCode.R;entry.next.GamepadKeyCode=Enum.KeyCode.ButtonY;entry.next.UIOffset=Vector2.new(0,-55)
   entry.join=prompt(board,"Присоединиться","Вечеринка у соседей","JoinParty","",0,plotId)
   entry.stop=prompt(board,"Завершить вечеринку","Моя вечеринка","StopParty","",0,plotId);entry.stop.KeyboardKeyCode=Enum.KeyCode.R;entry.stop.GamepadKeyCode=Enum.KeyCode.ButtonY
+  entry.effects=prompt(board,"Запустить конфетти","Диско-вечеринка","PartyEffects","",0,plotId)
+  entry.effects.Enabled=false;entry.effects.UIOffset=Vector2.new(0,-55)
   entry.sign=p(m,"PartySign",board.Position+Vector3.new(0,3.1,0),Vector3.new(7,3.3,.25),"363956",false)
   entry.sign.CFrame=pivot*CFrame.new(-8,4.7,18.2)
   entry.labels=Sign.Add(entry.sign,"Домашние вечеринки",nil,38)

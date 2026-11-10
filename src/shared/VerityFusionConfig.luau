@@ -30,8 +30,8 @@ end
 function C.Pose(x,z,y,yaw)
  return CFrame.new(C.TrackX+x,C.TrackY+y,z)*CFrame.Angles(0,math.pi+yaw,0)
 end
-function C.Seat(slot,solo)
- return CFrame.new(if solo then 0 else (slot-1.5)*4.3,13.1,0)
+function C.Seat(slot)
+ return CFrame.new((slot-1.5)*4.3,13.1,0)
 end
 function C.MergePose() return CFrame.new(C.Hub+Vector3.new(0,.35,0))*CFrame.Angles(0,math.pi,0) end
 function C.ObstacleHit(o,x,z,y,now)

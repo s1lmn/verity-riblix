@@ -13,8 +13,10 @@ local ActivityCard=require(script.Parent.ActivityCard)
 local Locale=require(script.Parent.Locale)
 local T=require(script.Parent.UITheme)
 local W=require(script.Parent.UIWidgets)
+local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Controller={};Controller.__index=Controller
 local active={Merging=true,Running=true}
+local DESKTOP_ACTION_Y={88,138,104,154}
 local function button(parent,name,text,color,x,y,w)
  local b=W.Button(parent,name,text,color);b.Size=UDim2.fromOffset(w or 108,44)
  b.AnchorPoint=Vector2.new(1,0);b.Position=UDim2.new(1,x,0,y);b.TextSize=12;return b
@@ -31,10 +33,12 @@ function Controller.new(ctx)
  self.jump=button(self.controls,"Jump","Прыжок",T.Mint,-12,104)
  self.boost=button(self.controls,"Boost","Рывок",T.Gold,-12,154)
  self.jumpCue=W.Stroke(self.jump,T.Gold,3);self.jumpCue.Transparency=1
- local touch=W.Frame(self.controls,"Steering",UDim2.fromOffset(150,44));touch.BackgroundTransparency=1
- touch.AnchorPoint=Vector2.new(.5,1);touch.Position=UDim2.new(.5,0,1,-75);self.touch=touch
- for index,spec in {{"Left","◀"},{"Brake","Ⅱ"},{"Right","▶"}} do
-  local b=W.Button(touch,spec[1],spec[2],T.Paper);b.Size=UDim2.fromOffset(46,44);b.Position=UDim2.fromOffset((index-1)*52,0)
+ self.actionButtons={self.ready,self.swap,self.jump,self.boost}
+ local touch=W.Frame(self.controls,"Steering",UDim2.fromScale(1,1));touch.BackgroundTransparency=1;self.touch=touch
+ self.steeringButtons={}
+ for _,spec in {{"Left","◀"},{"Brake","Ⅱ"},{"Right","▶"}} do
+  local b=W.Button(touch,spec[1],spec[2],T.Paper);b.Size=UDim2.fromOffset(46,44)
+  table.insert(self.steeringButtons,b)
   b.Selectable=false
   self.cleanup:Add(b.InputBegan:Connect(function(input)
    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then self.held[spec[1]]=input end
@@ -46,7 +50,7 @@ function Controller.new(ctx)
  self.cleanup:Add(Input.WindowFocusReleased:Connect(function()
   self.windowFocused=false
   table.clear(self.held)
-  if self.mine and self.mine.role~="Jumper" then self:Send("Move",Vector2.zero) end
+  if self.mine and self.mine.role=="Pilot" then self:Send("Move",Vector2.zero) end
  end))
  self.cleanup:Add(Input.WindowFocused:Connect(function() self.windowFocused=true end))
  for b,action in {[self.ready]="Ready",[self.swap]="Swap",[self.jump]="Jump",[self.boost]="Boost",[self.leave]="Leave"} do
@@ -97,7 +101,7 @@ function Controller:Send(action,value)
  local s=self.snapshot;local e=self.mine
  if not self.control or not s or not e or Gui.MenuIsOpen or Input:GetFocusedTextBox() then return false end
  if action=="Jump" or action=="Boost" then
-  if s.phase~="Running" or e.role=="Pilot" or self.ctx.active or workspace:GetServerTimeNow()<s.retryAt then return false end
+  if s.phase~="Running" or e.role~="Jumper" or self.ctx.active or workspace:GetServerTimeNow()<s.retryAt then return false end
   if action=="Boost" and workspace:GetServerTimeNow()<s.boostReady then return false end
   local now=os.clock();self.lastAction=self.lastAction or {}
   if now<(self.lastAction[action] or 0) then return true end
@@ -256,13 +260,23 @@ function Controller:Tick(dt)
  end
  local running=s.phase=="Running";local waiting=s.phase=="Waiting"
  if not waiting or Input.PreferredInput~=Enum.PreferredInput.Gamepad then self:ReleaseFocus() end
- local pilot=e.role~="Jumper";local jumper=e.role~="Pilot"
+ local pilot=e.role=="Pilot";local jumper=e.role=="Jumper"
  self.ready.Visible=waiting;self.swap.Visible=waiting and #s.entries==2
  self.jump.Visible=running and jumper;self.boost.Visible=running and jumper
- self.touch.Visible=running and pilot and Input.PreferredInput==Enum.PreferredInput.Touch
+ local touch=MobileHUD.IsTouch()
+ self.touch.Visible=running and pilot and touch
+ if touch then
+  MobileHUD.PlaceActions(self.ctx.refs.Safe,if self.touch.Visible then self.steeringButtons else self.actionButtons)
+ else
+  for i,b in self.actionButtons do
+   b.AnchorPoint=Vector2.new(1,0)
+   b.Position=UDim2.new(1,-12,0,DESKTOP_ACTION_Y[i])
+   b.Size=UDim2.fromOffset(108,44)
+  end
+ end
  if not self.touch.Visible then table.clear(self.held) end
  ActivityCard.Layout(self.card,self.title,self.detail,self.ctx.refs.Safe.AbsoluteSize)
- local role=if e.role=="Pilot" then "Руль" elseif e.role=="Jumper" then "Прыжок и рывок" else "Пробный заезд"
+ local role=if pilot then "Руль" else "Прыжок и рывок"
  self.title.Text=Locale.Text(role).." • "..Locale.Text("Единый Verity")
  if waiting then
   self.detail.Text=if #s.entries<2 then Locale.Text("Ждём второго игрока") else (if e.ready then Locale.Text("Ты готов • ждём напарника") else Locale.Text("Оба должны нажать «Готов»"))

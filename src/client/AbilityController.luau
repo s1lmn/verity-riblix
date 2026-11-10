@@ -7,13 +7,15 @@ local GuiService=game:GetService("GuiService")
 local RunService=game:GetService("RunService")
 local Catalog=require(ReplicatedStorage.Shared.AbilityCatalog)
 local Ride=require(ReplicatedStorage.Shared.VerityRideConfig)
+local Adventure=require(ReplicatedStorage.Shared.AdventureConfig)
 local Cleanup=require(script.Parent.Cleanup)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
+local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Controller={};Controller.__index=Controller
 local icons={dash="↠",leap="↑",sprint="»",shield="◆",flight="▲",pulse="✦",laser="═",lightning="ϟ",gravity="◉",nova="★"}
 function Controller.new(ctx)
-	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new()},Controller)
+	local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),touchButtons={ctx.refs.AbilityButton,ctx.refs.AttackButton,ctx.refs.RideButton}},Controller)
 	self.remote=ReplicatedStorage:WaitForChild("UseVerityAbility",10)
 	for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
 		self.cleanup:Add(button.Activated:Connect(function() self:Activate(slot,true) end))
@@ -122,22 +124,35 @@ function Controller:Render()
  local visible=(not adventure or adventure=="Trial") and player:GetAttribute("VerityDiversionKind")~="Arcade" and not fusion and not ctx.active and not ctx.presenting and not ctx.forgeReveal and not ctx.rewardOverlay and humanoid and humanoid.Health>0
  local size=ctx.refs.Safe.AbsoluteSize
  local inActivity=fusion or racing or player:GetAttribute("VerityParkourStep") or player:GetAttribute("VerityBattleActive")
- local actionY=math.max(if inActivity then 88 else 52,math.min(140,size.Y-168))
- ctx.refs.AbilityButton.Position=UDim2.new(1,-12,0,actionY)
- ctx.refs.AttackButton.Position=UDim2.new(1,-12,0,actionY+52)
+ local touch=MobileHUD.IsTouch()
+ if not touch then
+  local actionY=math.max(if inActivity then 88 else 52,math.min(140,size.Y-168))
+  for i,button in self.touchButtons do
+   button.AnchorPoint=Vector2.new(1,0)
+   button.Position=UDim2.new(1,-12,0,actionY+(i-1)*52)
+   button.Size=UDim2.fromOffset(124,44)
+  end
+ end
 	local rideButton=ctx.refs.RideButton
  rideButton.Visible=visible and not adventure and not inActivity and state and state.VerityUnlocked and state.VerityLevel>=Ride.MinLevel or false
- local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "L3 " else "R "
+ local key=if touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "L3 " else "R "
  local remaining=math.max(0,math.ceil((Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)-workspace:GetServerTimeNow()))
  local phase=Players.LocalPlayer:GetAttribute("VerityRidePhase")
  local transitioning=riding and (phase=="Takeoff" or phase=="Landing")
  local caption=if phase=="Takeoff" then "Взлетаем!" elseif phase=="Landing" then "Приземляемся" elseif riding then "Спешиться" else "Верхом на Verity"
+ local trial=ctx.adventures and ctx.adventures.message and ctx.adventures.message.run
+ local trialDefinition=trial and trial.kind=="Trial" and Adventure.Trials[trial.id]
+ local parkour=player:GetAttribute("VerityParkourStep")~=nil
+ for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
+  local usableHere=not touch or not (racing or parkour or riding and slot=="Mobility")
+  local allowed=not adventure or adventure=="Trial" and trialDefinition and trialDefinition.Slot==slot
+  button.Visible=visible and allowed and usableHere and state~=nil and state.VerityUnlocked or false
+ end
+ if touch then MobileHUD.PlaceActions(ctx.refs.Safe,self.touchButtons) end
+ if touch and rideButton.Size.X.Offset<76 and not riding and not transitioning then caption="Верхом" end
  W.SetButton(rideButton,key..Locale.Text(caption)..(if riding and not transitioning then " · "..remaining else ""),ctx.net.connected and not transitioning,false)
  for slot,button in {Mobility=ctx.refs.AbilityButton,Attack=ctx.refs.AttackButton} do
 		local item=self:Item(slot)
-		local trial=self.ctx.adventures and self.ctx.adventures.message and self.ctx.adventures.message.run
-  local allowed=not adventure or adventure=="Trial" and trial and trial.kind=="Trial" and require(game:GetService("ReplicatedStorage").Shared.AdventureConfig).Trials[trial.id].Slot==slot
-  button.Visible=visible and allowed and state~=nil and state.VerityUnlocked or false
 		if not button.Visible then continue end
 		local attribute=if slot=="Mobility" then "VerityAbilityReadyAt" else "VerityAttackReadyAt"
 		local snapshot=state.AbilitySlots and state.AbilitySlots[slot]
@@ -153,7 +168,13 @@ function Controller:Render()
 		local status=if snapshot and snapshot.blockedReason=="HOUSE_POWER" then "Выйди из дома" elseif racing then "Недоступно в гонке" elseif blocked then "Заблокировано здесь" elseif not item then "Выбери в коллекции" elseif not ctx.net.connected then "Нет связи"
 		 elseif active>0 then string.format(Locale.Text("Действует • %d с"),active)
 		 elseif remaining>0 then string.format(Locale.Text("Перезарядка • %d с"),remaining) else "Готово"
-		W.SetButton(button,icon.." "..key..Locale.Text(name).."\n"..Locale.Text(status),not blocked and remaining==0 and active==0 and ctx.net.connected,false)
+		local caption=icon.." "..key..Locale.Text(name).."\n"..Locale.Text(status)
+		if touch then
+			local label=if button.Size.X.Offset<76 or not item then (if slot=="Mobility" then "Навык" else "Атака") else name
+			local seconds=math.max(active,remaining)
+			caption=Locale.Text(label)..(if seconds>0 then "\n"..seconds..Locale.Text("с") else "")
+		end
+		W.SetButton(button,caption,not blocked and remaining==0 and active==0 and ctx.net.connected,false)
 	end
 	self.reticle.Visible=ctx.refs.AttackButton.Visible and self:Item("Attack")~=nil and not racing and not player:GetAttribute("VerityParkourStep")
 end

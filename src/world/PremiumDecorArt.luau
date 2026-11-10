@@ -20,6 +20,7 @@ function Art.Build(parent,pivot,id,preview)
   e.Speed=NumberRange.new(.6,2);e.SpreadAngle=Vector2.new(100,100);e.LightEmission=.65;e.Color=ColorSequence.new(Color3.fromHex(color))
   e.Size=NumberSequence.new({NumberSequenceKeypoint.new(0,.21),NumberSequenceKeypoint.new(1,0)})
   e:SetAttribute("PremiumRate",rate);e.Parent=part
+  return e
  end
  local ball=Enum.PartType.Ball
  if id=="party_disco" then
@@ -39,7 +40,14 @@ function Art.Build(parent,pivot,id,preview)
   for i=-4,4 do
    piece("GarlandBulb",center+v(i*.87,3.92+i*i*.04,-3.4),v(.29,.34,.29),colors[i%4+1],ball,true)
   end
-  emitter(disco,10,"FFB5DE")
+  local confetti=emitter(disco,32,"FFB5DE")
+  if confetti then
+   confetti:SetAttribute("PremiumPartyEffect",true)
+   confetti.Speed=NumberRange.new(3,7)
+   confetti.Acceleration=v(0,-7,0)
+   confetti.SpreadAngle=Vector2.new(165,165)
+   confetti.Color=ColorSequence.new(Color3.fromHex("FFB5DE"),Color3.fromHex("A2E8DA"))
+  end
  elseif id==Catalog.Gallery.id then
   if preview then
    for i=-1,1 do

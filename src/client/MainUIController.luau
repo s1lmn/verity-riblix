@@ -18,6 +18,7 @@ local Settings=require(script.Parent.SettingsController)
 local Animation=require(script.Parent.UIAnimationController)
 local Sound=require(script.Parent.UISoundController)
 local Notifications=require(script.Parent.NotificationController)
+local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Rewards=require(script.Parent.FloatingRewardController)
 local Verity=require(script.Parent.VerityUIController)
 local HouseSelection=require(script.Parent.HouseSelectionController)
@@ -214,6 +215,11 @@ function Main.new()
 	self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function() ctx.homeRouteRequested=nil;self:Open(nil);self.phone.input:Cancel();ctx.sound:StopFeedback() end))
 	self.cleanup:Add(UserInputService.WindowFocusReleased:Connect(function() self.phone.input:Cancel() end))
 	self.cleanup:Add(UserInputService:GetPropertyChangedSignal("PreferredInput"):Connect(function()
+		ctx.animation:Cancel(refs.Panels.PHONE.Root)
+		refs.Panels.PHONE.Root.Rotation=0
+		refs.Layout(ctx.active~=nil)
+		ctx.notifications:RefreshLayout()
+		self:Render()
 		if UserInputService.PreferredInput==Enum.PreferredInput.Gamepad and ctx.active then self:SetFocus(ctx.active) end
 	end))
 	local elapsed=0
@@ -315,7 +321,10 @@ function Main:Tick(dt)
 	self.tutorial:Render()
 	self.phone:ReconcileSession()
 	if ctx.active=="VERITY" then self.verity:Render() end
-	self.refs.Banner.Visible=not ctx.active and now<self.bannerUntil
+	local touch=MobileHUD.IsTouch()
+	local minigame=ctx.arcade and ctx.arcade.root.Visible or ctx.diversions and ctx.diversions.rhythm.Visible
+	ctx.notifications:Tick(dt,touch and (minigame or ctx.presenting or ctx.forgeReveal or ctx.rewardOverlay) or false)
+	self.refs.Banner.Visible=not touch and not ctx.active and now<self.bannerUntil
 	if now>=self.nextPresentation and not ctx.forgeReveal then
 		local event=self.ledger:Pop()
 		if event and not self.presentation:Has(event.eventId) then
@@ -326,7 +335,11 @@ function Main:Tick(dt)
 			ctx.sound:PlayUpgrade(event,false)
 			self.bannerUntil=now+(if milestone then 1.6 else 0.7)
 			self.nextPresentation=self.bannerUntil+0.1
-			self.refs.Banner.Visible=true
+			if touch then
+				ctx.notifications:Show(self.refs.BannerText.Text,if milestone then "Milestone" else "Info",if milestone then 2.6 else 1.7)
+			else
+				self.refs.Banner.Visible=not ctx.active
+			end
 		end
 	end
 end

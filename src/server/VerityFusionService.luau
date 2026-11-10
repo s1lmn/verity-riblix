@@ -7,7 +7,7 @@ local Bridge=require(Shared.PremiumVisualBridge)
 local Service={};Service.__index=Service
 local allowed={Move=true,Jump=true,Boost=true,Ready=true,Swap=true,Leave=true,Sync=true}
 local attrs={"VerityFusionSlot","VerityFusionRole","VerityFusionActive","VerityFusionPremiumStyle"}
-local function slotRole(slot,solo) return if solo then "Solo" elseif slot==1 then "Pilot" else "Jumper" end
+local function slotRole(slot) return if slot==1 then "Pilot" else "Jumper" end
 local function finitePosition(p) return Numeric.isFinite(p.X) and Numeric.isFinite(p.Y) and Numeric.isFinite(p.Z) end
 
 function Service.new(model,data,state,players,clock,stopMovement,notify)
@@ -22,7 +22,7 @@ function Service.new(model,data,state,players,clock,stopMovement,notify)
   if select("#",...)~=0 then return end
   self:Control(player,action,round,value)
  end))
- self.pads={model:FindFirstChild("FusionPad1"),model:FindFirstChild("FusionPad2"),model:FindFirstChild("SoloPad")}
+ self.pads={model:FindFirstChild("FusionPad1"),model:FindFirstChild("FusionPad2")}
  for index,pad in self.pads do
   table.insert(self.links,pad.JoinFusion.Triggered:Connect(function(player) self:Join(player,index) end))
  end
@@ -55,11 +55,11 @@ function Service:Publish(only)
   local e=self.entries[slot]
   if e then
    local profile=self.data:Get(e.player.UserId);local d=profile and profile.Data
-   table.insert(entries,{id=e.player.UserId,slot=slot,role=slotRole(slot,self.solo),ready=e.ready==true,swap=e.swap==true,
+   table.insert(entries,{id=e.player.UserId,slot=slot,role=slotRole(slot),ready=e.ready==true,swap=e.swap==true,
     level=d and d.VerityLevel or 1,weatherLook=d and d.WeatherLook or "Auto",equipped=if d then table.clone(d.CosmeticsEquipped) else {}})
   end
  end
- local message={version=C.Version,round=self.round,sequence=self.sequence,phase=self.phase,entries=entries,solo=self.solo==true,
+ local message={version=C.Version,round=self.round,sequence=self.sequence,phase=self.phase,entries=entries,
   serverTime=now,velocity=Vector3.new(self.vx or 0,self.vy or 0,self.vz or 0),pose=self.pose,mergeAt=self.mergeAt or 0,deadline=self.deadline or 0,retryAt=self.retryAt or 0,boostReady=self.boostReady or 0,
   faults=self.faults or 0,obstacle=self.obstacle or 1,checkpoint=self.checkpointZ or C.StartZ,jump=self.jumpSerial or 0,
   distance=math.clamp(((self.z or C.StartZ)-C.StartZ)/(C.EndZ-C.StartZ),0,1),result=self.result,premiumLook=self.premiumStyle and Bridge.Visual("FusionStyle",self.premiumStyle.id),premiumStyle=self.premiumStyle or {id="default",ownerUserId=0,shared=false}}
@@ -68,7 +68,7 @@ function Service:Publish(only)
  self.model:SetAttribute("FusionPhase",self.phase);self.model:SetAttribute("FusionRound",self.round)
  self.model:SetAttribute("FusionMergeAt",self.mergeAt)
  for index,pad in self.pads do
-  local enabled=self.phase=="Waiting" and (if index==3 then next(self.entries)==nil else not self.entries[index])
+  local enabled=self.phase=="Waiting" and not self.entries[index]
   if pad.JoinFusion.Enabled~=enabled then pad.JoinFusion.Enabled=enabled end
  end
  self.stateEvent:FireAllClients(message)
@@ -85,20 +85,20 @@ function Service:RefreshPremiumStyle()
 end
 function Service:Role(entry,slot)
  entry.player:SetAttribute("VerityFusionSlot",slot)
- entry.player:SetAttribute("VerityFusionRole",slotRole(slot,self.solo))
+ entry.player:SetAttribute("VerityFusionRole",slotRole(slot))
  self.state:Publish(entry.player.UserId,true)
 end
-function Service:Join(player,index)
+function Service:Join(player,slot)
+ local pad=self.pads[slot]
  local now=self.clock()
- if self.phase~="Waiting" or not self:Limit(player,"Join",.5,now) or self:Find(player) then return end
- local solo=index==3;local slot=if solo then 1 else index
- if self.entries[slot] or solo and next(self.entries)~=nil then return end
+ if not pad or self.phase~="Waiting" or not self:Limit(player,"Join",.5,now)
+  or self:Find(player) or self.entries[slot] then return end
  local char,root,hum=self:Eligible(player)
- if not char or (root.Position-self.pads[index].Position).Magnitude>C.JoinReach+1 then return end
- self.solo=solo
- local entry={player=player,character=char,root=root,hum=hum,joined=now,ready=solo,swap=false}
- self.entries[slot]=entry;self:Role(entry,slot)
- if solo then self:Begin() else self:Publish() end
+ if not char or (root.Position-pad.Position).Magnitude>C.JoinReach+1 then return end
+ local entry={player=player,character=char,root=root,hum=hum,joined=now,ready=false,swap=false}
+ self.entries[slot]=entry
+ self:Role(entry,slot)
+ self:Publish()
 end
 function Service:Freeze(entry)
  local player,root,hum=entry.player,entry.root,entry.hum
@@ -135,11 +135,15 @@ function Service:Restore(entry,slot)
  if player.Parent==self.players then self.state:Publish(player.UserId,true) end
 end
 function Service:Begin()
- if self.phase~="Waiting" or not self.entries[1] or not self.entries[1].ready
-  or not self.solo and (not self.entries[2] or not self.entries[2].ready) then return end
- for _,e in self.entries do
-  local c,root=self:Eligible(e.player)
-  if c~=e.character or (root.Position-C.Hub).Magnitude>C.QueueReach then self:Remove(e.player);return end
+ local pilot,jumper=self.entries[1],self.entries[2]
+ if self.phase~="Waiting" or not pilot or not jumper or pilot.player==jumper.player
+  or not pilot.ready or not jumper.ready then return end
+ for _,entry in {pilot,jumper} do
+  local character,root=self:Eligible(entry.player)
+  if not root or character~=entry.character or (root.Position-C.Hub).Magnitude>C.QueueReach then
+   self:Remove(entry.player)
+   return
+  end
  end
  local now=self.clock()
  self.round+=1;self.phase="Merging";self.mergeAt=now;self.deadline=now+C.MergeSeconds;self.result=nil
@@ -155,7 +159,7 @@ end
 function Service:PlaceRiders()
  for slot,e in self.entries do
   if e.root.Parent and e.player.Character==e.character then
-   local seat=C.Seat(slot,self.solo)
+   local seat=C.Seat(slot)
    if self.phase=="Merging" then
     local alpha=math.clamp((self.clock()-self.mergeAt)/C.MergeSeconds,0,1)
     seat=CFrame.new(seat.Position.X,2.9+(seat.Position.Y-2.9)*math.clamp((alpha-.60)/.40,0,1),seat.Position.Z)
@@ -203,7 +207,7 @@ function Service:Remove(player,forget)
   else
    self.entries[slot]=nil;self:Restore(e,slot)
    for _,other in self.entries do other.ready=false;other.swap=false end
-   self.solo=false;self:Publish()
+   self:Publish()
   end
  end
  if forget then self.limits[player]=nil end
@@ -236,7 +240,7 @@ function Service:Control(player,action,round,value)
   end
   return
  end
- if self.phase~="Running" or now<(self.retryAt or 0) or slot~=2 and not self.solo then return end
+ if self.phase~="Running" or now<(self.retryAt or 0) or slot~=2 then return end
  if action=="Jump" then self.jumpUntil=now+.18
  elseif action=="Boost" and now>=self.boostReady then self.boostUntil=now+C.BoostSeconds;self.boostReady=now+C.BoostCooldown end
 end
@@ -270,7 +274,7 @@ end
 function Service:Tick(dt)
  local now=self.clock()
  if self.phase=="Results" then
-  if now>=self.deadline then self.phase="Waiting";self.solo=false;self.deadline=nil;self.mergeAt=nil;self:RefreshPremiumStyle();self:Publish() end
+  if now>=self.deadline then self.phase="Waiting";self.deadline=nil;self.mergeAt=nil;self:RefreshPremiumStyle();self:Publish() end
   return
  end
  if self.phase=="Waiting" then

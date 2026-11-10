@@ -8,6 +8,7 @@ local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Cleanup=require(script.Parent.Cleanup)
+local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Controller={};Controller.__index=Controller
 function Controller.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),prompts={}},Controller)
@@ -113,10 +114,14 @@ function Controller:Render()
  self.dock.Visible=relevant==true and introduced==true and not hidden and not r and not self.hint
  if self.dock.Visible then
   local size=self.ctx.refs.Safe.AbsoluteSize
-  local touch=game:GetService("UserInputService").PreferredInput==Enum.PreferredInput.Touch
-  self.dock.Position=UDim2.new(1,-12,1,if touch then -145 else -12)
-  self.dock.Size=UDim2.fromOffset(math.min(228,size.X-24),if self.weatherExpanded then 145 else 44)
-  self.weatherText.Visible=self.weatherExpanded==true;self.weatherGo.Visible=self.weatherExpanded==true
+  local touch=MobileHUD.IsTouch()
+  self.dock.AnchorPoint=Vector2.new(1,if touch then 0 else 1)
+  self.dock.Position=if touch then UDim2.new(1,-8,0,MobileHUD.StatusTop) else UDim2.new(1,-12,1,-12)
+  local compact=touch and size.Y<228
+  self.dock.Size=UDim2.fromOffset(if touch then MobileHUD.StatusWidth(size) else math.min(228,size.X-24),if not self.weatherExpanded then 44 elseif compact then 90 elseif touch then 110 else 145)
+  self.weatherText.Size=UDim2.new(1,-24,0,if touch then 20 else 37)
+  self.weatherGo.Position=UDim2.fromOffset(10,if compact then 44 elseif touch then 65 else 91)
+  self.weatherText.Visible=self.weatherExpanded==true and not compact;self.weatherGo.Visible=self.weatherExpanded==true
   local title=if self.invite and m.weather=="Clear" then "Вечеринка у соседей" elseif m.weather=="Rainbow" then "Дождевая пещера" else C.WeatherNames[m.weather]
   self.weatherToggle.Text=Locale.Text(title).." • "..(if self.invite and m.weather=="Clear" then self.invite.count.."/6" else remaining..Locale.Text("с"))..(if self.weatherExpanded then " ▾" else " ▴")
   self.weatherText.Text=Locale.Text(if self.invite and m.weather=="Clear" then "Загляни в гости и сыграй вместе" elseif m.weather=="Fire" then "5 угольков → жар-светильник" elseif m.weather=="Stars" then "5 осколков → звёздный мобиль" elseif m.weather=="Storm" then "После ливня откроется пещера" elseif m.weather=="Rainbow" then "Три руны → сокровище пещеры" else "Погодные занятия появятся вместе с событием")
@@ -161,7 +166,7 @@ function Controller:Render()
   elseif kind=="Chest" then enabled=enabled and r and r.kind=="Cave" and r.index==4
   elseif kind=="Exit" then enabled=enabled and (r and r.kind=="Cave" or player.Character and player.Character:GetPivot().Position.Y< -20)
   elseif kind=="HostParty" or kind=="PartyMode" then enabled=enabled and not busy and q:GetAttribute("PartyOwner")==player.UserId
-  elseif kind=="StopParty" then enabled=enabled and q:GetAttribute("PartyOwner")==player.UserId
+  elseif kind=="StopParty" or kind=="PartyEffects" then enabled=enabled and q:GetAttribute("PartyOwner")==player.UserId
   elseif kind=="JoinParty" then local party=self:Party(plot);enabled=enabled and not busy and party and not party.seen
   elseif kind=="PartyGift" then enabled=enabled and r and r.kind=="Party" and r.plot==plot and r.targetIndex==index and not r.done end
   q.Enabled=enabled==true

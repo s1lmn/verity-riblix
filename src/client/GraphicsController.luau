@@ -62,11 +62,20 @@ function Controller:Tick()
   local alpha=r.alpha+(1-r.alpha)*fade
   if math.abs(p.LocalTransparencyModifier-alpha)>.005 then p.LocalTransparencyModifier=alpha end
  end
+ local serverNow=workspace:GetServerTimeNow()
  for emitter,baseRate in self.particles do
   local parent=emitter.Parent
   local near=parent and parent:IsA("BasePart") and (parent.Position-camera.CFrame.Position).Magnitude<profile.EffectDistance
-  local rate=if near and not self.settings.values.ReducedEffects then baseRate*profile.ParticleScale else 0
-  if emitter.Rate~=rate then emitter.Rate=rate;if rate==0 then emitter:Clear() end end
+  local partyEffect=emitter:GetAttribute("PremiumPartyEffect")==true
+  local allowed=near and not self.settings.values.ReducedEffects
+  local decor=if partyEffect and parent then parent.Parent else nil
+  local activeUntil=decor and decor:GetAttribute("PartyEffectsUntil") or 0
+  local emitting=allowed and (not partyEffect or serverNow<activeUntil)
+  local rate=if emitting then baseRate*profile.ParticleScale else 0
+  if emitter.Rate~=rate then
+   emitter.Rate=rate
+   if rate==0 and (not partyEffect or not allowed) then emitter:Clear() end
+  end
  end
  for light,r in self.lights do
   local parent=light.Parent
