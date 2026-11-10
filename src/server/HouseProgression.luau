@@ -213,7 +213,7 @@ function HouseProgression:Update(plotId,state)
 	record.exitPrompt.Enabled=owned
  Locale.SetWorld(record.exitPrompt,"ActionText",if locked then "Открыть изнутри" else "Закрыть для гостей")
 	record.floorPrompt.Enabled=state~=nil and state.VerityUnlocked and not upper
-	Locale.SetWorld(record.doorPrompt,"ActionText",if not owned then "Купить за $%d" elseif locked then "Открыть гостям" else "Закрыть для гостей",table.unpack(if not owned then {Houses.Features.Door.Cost} else {}))
+	Locale.SetWorld(record.doorPrompt,"ActionText",if not owned then "Купить за $%d" elseif locked then "ОТКРЫТЬ ДВЕРЬ" else "ЗАКРЫТЬ ДВЕРЬ",table.unpack(if not owned then {Houses.Features.Door.Cost} else {}))
 	Locale.SetWorld(record.floorPrompt,"ActionText","Открыть за $%d",Houses.Features.SecondFloor.Cost)
 	for _,object in record.decor:GetDescendants() do
 		if object:IsA("BasePart") then

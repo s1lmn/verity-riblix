@@ -19,15 +19,15 @@ function Factory.Create(parent,cf,kind,plotId,prompt)
  anchor.Anchored=true;anchor.Transparency=1;anchor.CanCollide=false;anchor.CanTouch=false;anchor.CanQuery=false
  anchor.Parent=model;model.PrimaryPart=anchor
  local radius=if kind=="Hero" then 3.05 else 2.35
- disc(model,cf*CFrame.new(0,-.045,0),"Base",radius*2+.3,.12,.08,"253549",false)
+ disc(model,cf*CFrame.new(0,-.045,0),"Base",radius*2+.3,.12,.08,"B5B8DF",false)
  disc(model,cf*CFrame.new(0,.025,0),"ThinRim",radius*2,.055,.12,"72FFAC",true)
- disc(model,cf*CFrame.new(0,.065,0),"Inset",radius*2-.18,.04,.02,"172639",false)
+ disc(model,cf*CFrame.new(0,.065,0),"Inset",radius*2-.18,.04,.02,"DFF8FF",false)
  -- A thin rim and two guides use eight parts in total; no animated halo.
  for _,side in {-1,1} do
   local frame=cf*CFrame.new(0,.1,side*(radius+.12))
   piece(model,frame,"Guide",Vector3.new(.6,.045,.12),.12,"72FFAC",true)
  end
- disc(model,cf*CFrame.new(0,.105,0),"Badge",1.25,.04,.1,"32465C",false)
+ disc(model,cf*CFrame.new(0,.105,0),"Badge",1.25,.04,.1,"BCEEDB",false)
  piece(model,cf*CFrame.new(0,.15,0),"PurchasePlus",Vector3.new(.13,.045,.68),.04,"72FFAC",true)
  piece(model,cf*CFrame.new(0,.15,0),"PurchasePlus",Vector3.new(.68,.045,.13),.04,"72FFAC",true)
  local light=Instance.new("PointLight");light.Color=Color3.fromHex("72FFAC")

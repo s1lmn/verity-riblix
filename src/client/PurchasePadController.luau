@@ -39,12 +39,12 @@ function Controller.new(ctx)
 		local gui=Instance.new("BillboardGui");gui.Name="Purchase_"..model.Name;gui.Adornee=anchor
 		gui.Size=UDim2.fromOffset(224,94);gui.StudsOffsetWorldSpace=Vector3.new(0,model:GetAttribute("LabelHeight") or 3.4,0)
 		gui.MaxDistance=model:GetAttribute("LabelDistance") or 48;gui.AlwaysOnTop=false;gui.Active=false;gui.Enabled=false;gui.Parent=folder
-  local panel=W.Round(W.Frame(gui,"OfferCard",UDim2.fromScale(1,1),Color3.fromHex("172639")),12)
-  panel.BackgroundTransparency=.12
-  local border=W.Stroke(panel,Color3.fromHex("89B9C9"),1);border.Transparency=.42
+  local panel=W.Round(W.Frame(gui,"OfferCard",UDim2.fromScale(1,1),Color3.fromHex("F0FBFF")),12)
+  panel.BackgroundTransparency=.03
+  local border=W.Stroke(panel,Color3.fromHex("B5DCE8"),1);border.Transparency=.16
   local accent=W.Round(W.Frame(panel,"Availability",UDim2.new(0,3,1,-16),GREEN),2);accent.Position=UDim2.fromOffset(7,8)
 		local function text(name,y,size,bold)
-			local label=W.Text(panel,name,"",size,bold,Color3.fromHex("F2FAFF"))
+			local label=W.Text(panel,name,"",size,bold,Color3.fromHex("294C65"))
 			label.Position=UDim2.fromOffset(16,y);label.Size=UDim2.new(1,-26,0,20)
 			label.TextXAlignment=Enum.TextXAlignment.Center;label.TextStrokeColor3=Color3.fromHex("122237");label.TextStrokeTransparency=1
 			return label
@@ -129,12 +129,12 @@ function Controller:Render()
 	local character=Players.LocalPlayer.Character
 	local root=character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+ local uiAllowed=not self.ctx.active and not self.ctx.presenting and not self.ctx.forgeReveal and not self.ctx.rewardOverlay
 	for model,r in self.pads do
 		if not model.Parent then continue end
 		local prompt=r.reference.Value
 		local visible,ready,title,detail,cost,reason,bonus,color=self:Offer(r)
 		visible=visible and camera and (camera.CFrame.Position-r.anchor.Position).Magnitude<80 or false
-		local uiAllowed=not self.ctx.active and not self.ctx.presenting and not self.ctx.forgeReveal
 		local kind=model:GetAttribute("PurchaseKind")
 		r.visible=visible;r.canBuy=(ready or kind=="Ability") and visible and uiAllowed
 			and humanoid~=nil and humanoid.Health>0 or false
@@ -144,10 +144,9 @@ function Controller:Render()
    and uiAllowed and humanoid~=nil and humanoid.Health>0 or false
 		if prompt then
    -- The purchase marker disappears. The native door action remains at the door.
-   if doorControl then
-    prompt.ActionText=Locale.Text(if state.HouseDoorLocked then "ОТКРЫТЬ ДВЕРЬ" else "ЗАКРЫТЬ ДВЕРЬ")
-    prompt.UIOffset=Vector2.zero
-   elseif kind=="Door" then prompt.UIOffset=Vector2.new(0,48) end
+   -- Locale.TrackWorld owns ActionText; polling a competing string restarted the prompt.
+   local offset=if doorControl then Vector2.zero else Vector2.new(0,48)
+   if kind=="Door" and prompt.UIOffset~=offset then prompt.UIOffset=offset end
 			local minZ=prompt:GetAttribute("ExteriorMinZ")
 			local enabled=(r.canBuy or doorControl) and (not minZ or (root and prompt.Parent
 				and prompt.Parent.CFrame:PointToObjectSpace(root.Position).Z>=minZ)) or false
@@ -165,7 +164,9 @@ function Controller:Render()
      elseif info and not info.IsForSale then Locale.Text("Сейчас не продаётся") else Locale.Text("Цена временно недоступна")
    else r.price.Text=if cost==0 then Locale.Text("БЕСПЛАТНО") elseif cost then "$"..Locale.Number(cost) else Locale.Text("КУПЛЕНО") end
 			r.status.Text=reason or (if bonus then string.format(Locale.Text("+%d%% пассивного дохода"),bonus) else Locale.Text(if prompt and prompt.HoldDuration>0 then "Подойди и удерживай кнопку" else "Подойди и нажми кнопку"))
-			r.title.TextColor3=Color3.fromHex("F2FAFF");r.price.TextColor3=color;r.accent.BackgroundColor3=color
+			r.title.TextColor3=Color3.fromHex("294C65")
+   r.price.TextColor3=if color==GREEN then Color3.fromHex("21684A") elseif color==RED then Color3.fromHex("A92C50") elseif color==GOLD then Color3.fromHex("81570E") else Color3.fromHex("286580")
+   r.accent.BackgroundColor3=color
 
 		end
 		for _,entry in r.parts do
