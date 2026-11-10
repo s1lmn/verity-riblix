@@ -1,7 +1,10 @@
 --!nonstrict
 -- One production owner of pass lookups and benefits. No client-supplied ownership or price.
-local Catalog=require(game:GetService("ReplicatedStorage").Shared.PremiumCatalog)
-local Bridge=require(game:GetService("ReplicatedStorage").Shared.PremiumVisualBridge)
+local Shared=game:GetService("ReplicatedStorage").Shared
+local Catalog=require(Shared.PremiumCatalog)
+local Bridge=require(Shared.PremiumVisualBridge)
+local Config=require(Shared.GameConfig)
+local Packs=require(Shared.CharacterPacks)
 local Service={};Service.__index=Service
 function Service.new(data,state,income,abilityShop,market,players,clock,salesEnabled,notify)
  local self=setmetatable({data=data,state=state,income=income,shop=abilityShop,market=market,players=players,clock=clock,
@@ -29,15 +32,15 @@ function Service:Record(userId)
  local p=self.data:Get(userId);local r=self.records[userId]
  return p,r and r.profile==p and r or nil
 end
-function Service:Apply(userId,profile,equipHero)
+function Service:Apply(userId,profile,equipAfterPurchase)
  local money=Catalog.Owned(profile.Data,"money_x3");local hero=Catalog.Owned(profile.Data,"hero_kit")
  local changed=false
  if (profile.MoneyPassOwned==true)~=money then self.income:Settle(userId);profile.MoneyPassOwned=money;changed=true end
  if (profile.HeroPassOwned==true)~=hero then profile.HeroPassOwned=hero;changed=true end
  local r=self.records[userId]
- if equipHero and hero and r then r.equipHero=true end
- if hero and r and r.equipHero and self.state.sessions[userId] and profile.Data.VerityUnlocked then
-  if self.shop:Equip(userId,"homelander")=="OK" then r.equipHero=nil;changed=true end
+ if equipAfterPurchase and r then r.pendingAbility=equipAfterPurchase end
+ if r and r.pendingAbility and self.state.sessions[userId] and profile.Data.VerityUnlocked then
+  if self.shop:Equip(userId,r.pendingAbility)=="OK" then r.pendingAbility=nil end
  end
  if changed then self.data:Touch(profile) end
 end
@@ -46,14 +49,14 @@ function Service:Attach(player)
  if not profile or self.dead then return end
  local old=self.records[userId];if old and old.profile==profile then return end
  self.records[userId]={profile=profile,epochs={},inflight={},statuses={},refreshAt=0}
- self:Apply(userId,profile,false)
+ self:Apply(userId,profile,nil)
  for _,id in Catalog.Order do if Catalog.Items[id].PassId then self:SpawnRefresh(userId,id,false) end end
 end
 function Service:OnUnlocked(userId)
  local profile,r=self:Record(userId);if not profile or not r then return end
- self:Apply(userId,profile,false)
+ self:Apply(userId,profile,nil)
 end
-function Service:RefreshAsync(userId,id,equipHero)
+function Service:RefreshAsync(userId,id,equipAfterPurchase)
  local item=Catalog.Items[id];if not item then return "INVALID_ITEM" end
  if not Catalog.ValidId(item.PassId) then return "NOT_CONFIGURED" end
  if not self.enabled or self.dead then return "DISABLED" end
@@ -68,9 +71,19 @@ function Service:RefreshAsync(userId,id,equipHero)
   r.statuses[id]="Unknown";self.state:Publish(userId,true);return "UNAVAILABLE"
  end
  r.statuses[id]=if owned then "Owned" else "Unowned"
+ local ability=Packs.AbilityForOffer(id)
  local changed=false
+ local bonus=false
  if owned then
-  if profile.Data.PremiumGrants[id]~=item.PassId then profile.Data.PremiumGrants[id]=item.PassId;changed=true end
+  local data=profile.Data
+  if data.PremiumGrants[id]~=item.PassId then data.PremiumGrants[id]=item.PassId;changed=true end
+  if ability and not data.CharacterPackBonuses[id] and data.Cash<=Config.MaxMoney-Packs.BonusCash then
+   -- One profile write carries both the cash and its permanent claim marker.
+   data.Cash+=Packs.BonusCash
+   data.TotalEarned=math.min(Config.MaxMoney,data.TotalEarned+Packs.BonusCash)
+   data.CharacterPackBonuses[id]=true
+   changed=true;bonus=true
+  end
  else
   if profile.Data.PremiumGrants[id]~=nil then profile.Data.PremiumGrants[id]=nil;changed=true end
   for _,slot in Catalog.Slots do
@@ -79,19 +92,20 @@ function Service:RefreshAsync(userId,id,equipHero)
   end
  end
  if changed then self.data:Touch(profile) end
- self:Apply(userId,profile,equipHero and id=="hero_kit" and owned)
+ self:Apply(userId,profile,if equipAfterPurchase and owned then ability else nil)
+ if bonus then self.notify(userId,"CHARACTER_PACK_BONUS") end
  self.state:Publish(userId,true)
  if self.onChanged then self.onChanged(userId,id) end
  return if owned then "OWNED" else "UNOWNED"
 end
-function Service:SpawnRefresh(userId,id,equipHero)
+function Service:SpawnRefresh(userId,id,equipAfterPurchase)
  local profile,r=self:Record(userId);if not profile or not r then return end
  task.spawn(function()
   for attempt=1,3 do
    local current,record=self:Record(userId);if self.dead or current~=profile or record~=r then return end
-   local status=self:RefreshAsync(userId,id,equipHero)
+   local status=self:RefreshAsync(userId,id,equipAfterPurchase)
    if status~="UNAVAILABLE" then
-    if equipHero and status=="OWNED" then self.notify(userId,"PREMIUM_CONFIRMED") end
+    if equipAfterPurchase and status=="OWNED" then self.notify(userId,"PREMIUM_CONFIRMED") end
     return
    end
    task.wait(attempt*2)

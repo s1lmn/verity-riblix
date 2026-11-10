@@ -155,6 +155,9 @@
         "PremiumService": {
           "$path": "src/server/PremiumService.luau"
         },
+        "ShopProductService": {
+          "$path": "src/server/ShopProductService.luau"
+        },
         "PurchaseReceiptService": {
           "$path": "src/server/PurchaseReceiptService.luau"
         },

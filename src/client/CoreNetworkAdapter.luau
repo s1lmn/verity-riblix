@@ -67,7 +67,7 @@ function Adapter:Attach(folder)
 					elseif type(payload)=="table" then
 						if payload.protocolVersion==1 then
 							local messages={
-                PREMIUM_CONFIRMED="Покупка подтверждена Roblox. Возможности доступны!",FORGE_MATERIALS="Материалы получены! Создай награду в кузнице погоды.",
+                CHARACTER_PACK_BONUS="Разовый бонус набора зачислен!",PREMIUM_CONFIRMED="Покупка подтверждена Roblox. Возможности доступны!",FORGE_MATERIALS="Материалы получены! Создай награду в кузнице погоды.",
                 ADVENTURE_REWARD="Приключение завершено! Деньги и декор сохранены.",
         ADVENTURE_STEP="Отлично! Следующая цель отмечена стрелками.",
         ADVENTURE_ENDED="Попытка завершена. Можно попробовать снова.",
@@ -149,7 +149,7 @@ function Adapter:Attach(folder)
          message=string.format(Locale.Text("Из посылки: %s!"),Locale.Text(Cosmetics.Items[drop.itemId].name))
         else message=string.format(Locale.Text("Награда доставки ×%d: $%s"),drop.multiplier or 1,Locale.Number(payload.reward)) end
        end
-							if message then self.Notification:Fire({version=1,message=message,kind=if payload.code=="SHOP_CASH_GRANTED" or payload.code=="SHOP_BOOST_GRANTED" then "Success" else "Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward,achievementId=payload.achievementId,itemId=payload.itemId}) end
+							if message then self.Notification:Fire({version=1,message=message,kind=if payload.code=="SHOP_CASH_GRANTED" or payload.code=="SHOP_BOOST_GRANTED" or payload.code=="CHARACTER_PACK_BONUS" then "Success" else "Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward,achievementId=payload.achievementId,itemId=payload.itemId}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
 					end
 				end)

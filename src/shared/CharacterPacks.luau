@@ -36,6 +36,24 @@ Packs.Items=table.freeze({
  }),
 })
 
+Packs.BonusCash=25000
+Packs.Looks=table.freeze({
+ homelander=table.freeze({Id="scarlet_sentinel",Color="EF335E",Accent="FFD491",Dark="51263F",Family="Crimson",Effect="Алый шлейф"}),
+ reef_captain=table.freeze({Id="reef_captain",Color="27CBB8",Accent="FF968A",Dark="146884",Family="Aqua",Effect="Жемчужные брызги"}),
+ phase_courier=table.freeze({Id="phase_courier",Color="8170F9",Accent="9EF6FF",Dark="27264C",Family="Cyber",Effect="Фазовые искры"}),
+ magma_smith=table.freeze({Id="magma_smith",Color="F35F30",Accent="FFD184",Dark="492C42",Family="Magma",Effect="Кузнечные угли"}),
+ amber_medic=table.freeze({Id="amber_medic",Color="FFAD44",Accent="FFF4B8",Dark="A34E59",Family="Candy",Effect="Янтарное сияние"}),
+ polar_ranger=table.freeze({Id="polar_ranger",Color="67C8F6",Accent="CCB5FF",Dark="2C578C",Family="Frost",Effect="Ледяные кристаллы"}),
+})
+function Packs.LookForAbilities(attackId,mobilityId)
+ if Packs.Looks[attackId] then return attackId end
+ if Packs.Looks[mobilityId] then return mobilityId end
+ return nil
+end
+function Packs.AbilityForOffer(id)
+ return if id=="hero_kit" or id=="scarlet_sentinel" then "homelander" elseif Packs.Items[id] then id else nil
+end
+
 function Packs.PassId(id)
  local value=(Config.PremiumPassIds or {})[id]
  return if Packs.Items[id] and type(value)=="number" and value>0 and value%1==0 and value<=9007199254740991 then value else nil
