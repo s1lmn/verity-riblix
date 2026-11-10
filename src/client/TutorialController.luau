@@ -3,7 +3,6 @@ local Locale = require(script.Parent.Locale)
 local Players=game:GetService("Players")
 local RunService=game:GetService("RunService")
 local Input=game:GetService("UserInputService")
-local Pathfinding=game:GetService("PathfindingService")
 local CollectionService=game:GetService("CollectionService")
 local MobileHUD=require(script.Parent.MobileHUDLayout)
 local ActivityCard=require(script.Parent.ActivityCard)
@@ -251,6 +250,7 @@ function Tutorial:Target(goal)
 end
 function Tutorial:HideArrows()
  for _,arrow in self.arrows do for _,p in arrow do p.Transparency=1 end end
+ for _,glow in self.arrowHighlights or {} do glow.Enabled=false end
 end
 function Tutorial:HideWorld()
  self.pin.Enabled=false;self.highlight.Enabled=false;self:HideArrows()
@@ -260,114 +260,41 @@ function Tutorial:ClearRoute()
  self.targetKey=nil;self.route=nil;self.nextPathAt=0;self:HideWorld()
 end
 function Tutorial:ComputeRoute(root,position,now)
- if self.goal and self.goal.air then
-  self.route=nil;self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","AirRoute");return
- end
- if self.job or now<self.nextPathAt then return end
- if self.route then
-  local index=self.routeIndex or 2
-  local a=self.route[index-1].Position
-  local b=self.route[index].Position
-  local segment=flat(b-a)
-  local offset=flat(root.Position-a)
-  local fraction=math.clamp(offset:Dot(segment)/math.max(segment:Dot(segment),.01),0,1)
-  if (offset-segment*fraction).Magnitude<6 and math.abs(root.Position.Y-(a.Y+(b.Y-a.Y)*fraction))<8 then return end
-  self.route=nil
- end
- self.nextPathAt=now+1.5
- local humanoid=root.Parent:FindFirstChildOfClass("Humanoid")
- local height=math.clamp(math.ceil((humanoid and humanoid.HipHeight or 2)+root.Size.Y+2),5,8)
- local job={generation=self.generation,start=root.Position};self.job=job
- local target=position+Vector3.new(0,1.5,0);self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","Computing")
- task.spawn(function()
-  local waypoints
-  for _,allowJump in {false,true} do
-   if self.dead or self.job~=job then return end
-   local path=Pathfinding:CreatePath({AgentRadius=2,AgentHeight=height,AgentCanJump=allowJump,WaypointSpacing=5})
-   local ok=pcall(function()path:ComputeAsync(job.start,target)end)
-   if ok and path.Status==Enum.PathStatus.Success then
-    local result=path:GetWaypoints()
-    if #result>=2 then waypoints=result end
-   end
-   path:Destroy();if waypoints then break end
-  end
-  if self.dead or self.job~=job or job.generation~=self.generation then return end
-  self.job=nil;self.route=waypoints;self.routeIndex=2
-  self.ctx.refs.Gui:SetAttribute("GuidancePathStatus",if waypoints then "Success" else "NoPath")
- end)
+ -- Direction indicator, deliberately independent of navmesh, raycasts and ground height.
+ self.targetPosition=position
+ self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","Direct")
 end
 function Tutorial:DrawRoute(root,now)
  if self.lastDrawAt and now-self.lastDrawAt<.1 then return end
- self.lastDrawAt=now
- self:HideArrows()
- if self.goal and self.goal.air and validPosition(self.targetPosition) then
-  local from=root.Position+Vector3.yAxis
-  local delta=self.targetPosition-from
-  if delta.Magnitude<3 then return end
-  local direction=delta.Unit
-  local up=if math.abs(direction:Dot(Vector3.yAxis))>.95 then Vector3.zAxis else Vector3.yAxis
-  for i=1,5 do
-   local distance=3+(i-1)*5.5;if distance>delta.Magnitude-1 then break end
-   local arrow=self.arrows[i]
-   if not arrow then arrow={piece(self.folder,"RouteStem"),piece(self.folder,"RouteHead"),piece(self.folder,"RouteHead")};self.arrows[i]=arrow end
-   local position=from+direction*distance
-   local frame=CFrame.lookAt(position,position+direction,up)
-   arrow[1].Size=Vector3.new(.65,.22,2.5);arrow[1].CFrame=frame*CFrame.new(0,0,.5)
-   arrow[2].Size=Vector3.new(.65,.22,1.9);arrow[2].CFrame=frame*CFrame.new(-.62,0,-.7)*CFrame.Angles(0,-math.pi/4,0)
-   arrow[3].Size=arrow[2].Size;arrow[3].CFrame=frame*CFrame.new(.62,0,-.7)*CFrame.Angles(0,math.pi/4,0)
-   for _,p in arrow do p.Transparency=.08 end
-  end
-  return
- end
- local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Include;params.RespectCanCollide=true
- local objects={workspace.Terrain}
- for _,name in {"GeneratedWorld","GameplayInteractions"}do local object=workspace:FindFirstChild(name);if object then table.insert(objects,object) end end
- params.FilterDescendantsInstances=objects
- local route=self.route
- if not route or #route<2 then
-  local target=self.targetPosition
-  if not validPosition(target) then return end
-  local aim=Vector3.new(target.X,root.Position.Y,target.Z)
-  if (aim-root.Position).Magnitude>18 or workspace:Raycast(root.Position,aim-root.Position,params) then return end
-  route={{Position=root.Position},{Position=target}}
- end
- local index=self.routeIndex or 2
- while index<#route do
-  local p=route[index].Position
-  if flat(p-root.Position).Magnitude>3.5 or math.abs(p.Y-root.Position.Y)>6 then break end
-  index+=1
- end
- self.routeIndex=index
- local points={root.Position};for i=index,#route do table.insert(points,route[i].Position) end
- local segment,distance=1,4
+ self.lastDrawAt=now;self:HideArrows()
+ if not validPosition(self.targetPosition) then return end
+ local from=root.Position+Vector3.new(0,-.45,0)
+ local delta=self.targetPosition+Vector3.new(0,1.2,0)-from
+ if delta.Magnitude<3 then return end
+ local direction=delta.Unit
+ local up=if math.abs(direction:Dot(Vector3.yAxis))>.95 then Vector3.zAxis else Vector3.yAxis
+ self.arrowHighlights=self.arrowHighlights or {}
  for i=1,6 do
-  while segment<#points and flat(points[segment+1]-points[segment]).Magnitude<distance do
-   distance-=flat(points[segment+1]-points[segment]).Magnitude;segment+=1
+  local distance=3+(i-1)*6.5
+  if distance>delta.Magnitude-1 then break end
+  local arrow=self.arrows[i]
+  if not arrow then
+   local model=Instance.new("Model");model.Name="DirectionArrow";model.Parent=self.folder
+   arrow={piece(model,"RouteStem"),piece(model,"RouteHead"),piece(model,"RouteHead")};self.arrows[i]=arrow
+   local glow=Instance.new("Highlight");glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
+   glow.FillColor=GUIDE_COLOR;glow.OutlineColor=Color3.fromHex("6C5600")
+   glow.FillTransparency=.12;glow.OutlineTransparency=.15;glow.Parent=model
+   self.arrowHighlights[i]=glow
   end
-  if segment>=#points then break end
-  local delta=flat(points[segment+1]-points[segment]);local length=delta.Magnitude;if length<.01 then break end
-  local point=points[segment]:Lerp(points[segment+1],distance/length)
-  local hit=workspace:Raycast(point+Vector3.new(0,4,0),Vector3.new(0,-16,0),params)
-  if hit and hit.Normal.Y>.65 and hit.Position.Y<=point.Y+1.5 then
-   local arrow=self.arrows[i]
-   if not arrow then arrow={piece(self.folder,"RouteStem"),piece(self.folder,"RouteHead"),piece(self.folder,"RouteHead")};self.arrows[i]=arrow end
-   local cf=CFrame.lookAt(hit.Position+Vector3.new(0,.22,0),hit.Position+Vector3.new(0,.22,0)+delta.Unit)
-   arrow[1].Size=Vector3.new(.95,.18,3.1)
-   arrow[1].CFrame=cf*CFrame.new(0,0,.65)
-   arrow[2].Size=Vector3.new(.82,.18,2.6)
-   arrow[2].CFrame=cf*CFrame.new(-.84,0,-.95)*CFrame.Angles(0,-math.pi/4,0)
-   arrow[3].Size=arrow[2].Size
-   arrow[3].CFrame=cf*CFrame.new(.84,0,-.95)*CFrame.Angles(0,math.pi/4,0)
-   for _,p in arrow do p.Transparency=0 end
-  end
-  distance+=6.5
- end
- local waypoint=route[self.routeIndex]
- if waypoint and waypoint.Action==Enum.PathWaypointAction.Jump and flat(waypoint.Position-root.Position).Magnitude<6 then
-  self:HintText(if Input.PreferredInput==Enum.PreferredInput.Touch then "Прыжок ↑"
-   elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then "A · Прыжок" else "ПРОБЕЛ · Прыжок")
+  local pos=from+direction*distance;local cf=CFrame.lookAt(pos,pos+direction,up)
+  arrow[1].Size=Vector3.new(.95,.18,3.1);arrow[1].CFrame=cf*CFrame.new(0,0,.65)
+  arrow[2].Size=Vector3.new(.82,.18,2.6);arrow[2].CFrame=cf*CFrame.new(-.84,0,-.95)*CFrame.Angles(0,-math.pi/4,0)
+  arrow[3].Size=arrow[2].Size;arrow[3].CFrame=cf*CFrame.new(.84,0,-.95)*CFrame.Angles(0,math.pi/4,0)
+  for _,p in arrow do p.Transparency=0 end
+  self.arrowHighlights[i].Enabled=true
  end
 end
+
 function Tutorial:Render()
  local ctx=self.ctx;local player=Players.LocalPlayer
  local now=os.clock()
@@ -406,19 +333,11 @@ function Tutorial:Render()
  else
   local state=ctx.net.state
   local root=player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-  local nearestTask,best=nil,math.huge
-  if state and root then
-   for _,entry in state.Tasks or {} do
-    if entry.status=="Ready" and validPosition(entry.targetPosition) then
-     local distance=flat(entry.targetPosition-root.Position).Magnitude
-     if distance<best then nearestTask,best=entry.taskId,distance end
-    end
-   end
-  end
+  local nearestTask=nil
   self.goal=Goals.Resolve(state,ctx.active,ctx.tasks and ctx.tasks.selectedTaskId,workspace:GetServerTimeNow(),nearestTask)
   local delivery=workspace:FindFirstChild("VerityStreetDelivery")
   local community=ctx.community and ctx.community.message
-  if state and state.TutorialCompleted and self.goal and self.goal.id:match("^start:") and not ctx.active
+  if state and state.TutorialCompleted and self.goal and self.goal.id=="phone" and not ctx.active
    and community and community.joinable and not player:GetAttribute("VerityCommunityTried") and (state.TaskCompletedCount or 0)>=2 then
    local model=ctx.community:Model();local join=model and model:FindFirstChild("Join")
    if join then
@@ -426,7 +345,7 @@ function Tutorial:Render()
      title=CommunityConfig.Variants[community.variant or "light"].Name,detail="",near="%s · Помочь району",touch="Помочь району",prompt=true,radius=6}
    end
   end
-  if state and state.TutorialCompleted and self.goal and self.goal.id:match("^start:")
+  if state and state.TutorialCompleted and self.goal and self.goal.id=="phone"
    and (state.TaskCompletedCount or 0)>0 and state.TaskCompletedCount%3==0
    and not ctx.active and not (state.Progression and state.Progression.stage=="FirstActivity") then
    local kinds=if player:GetAttribute("VerityLastDiversionKind")=="Hunt" then {"Rhythm","Hunt"} else {"Hunt","Rhythm"}
@@ -441,7 +360,7 @@ function Tutorial:Render()
     end
    end
   end
-  if not ctx.active and self.goal and self.goal.id:match("^start:") and state and state.TutorialCompleted
+  if not ctx.active and self.goal and self.goal.id=="phone" and state and state.TutorialCompleted
    and not (state.Progression and state.Progression.stage=="FirstActivity")
    and delivery and delivery:GetAttribute("Phase")=="Collect" then
    self.goal={id="street-parcel",kind="World",target="StreetParcel",title="Забери посылку",detail="",
@@ -503,13 +422,7 @@ function Tutorial:Update(now)
   self:ClearRoute();self.targetKey=goal.id;self.targetPosition=position;self.generation+=1
  end
  local delta=position-root.Position;local near=flat(delta).Magnitude<=goal.radius and math.abs(delta.Y)<6
- if near and (goal.target=="Delivery" or goal.prompt) then
-  local ray=RaycastParams.new();ray.FilterType=Enum.RaycastFilterType.Include;ray.RespectCanCollide=true
-  local world=workspace:FindFirstChild("GeneratedWorld")
-  ray.FilterDescendantsInstances=if world then {world} else {}
-  local from=root.Position+Vector3.new(0,1,0)
-  near=workspace:Raycast(from,position+Vector3.new(0,1.5,0)-from,ray)==nil
- end
+
  if near then
   local key=if Input.PreferredInput==Enum.PreferredInput.Gamepad then "X" else "E"
   local hint=Locale.Text(goal.near or goal.detail)

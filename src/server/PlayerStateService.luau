@@ -61,26 +61,16 @@ function PlayerStateService:Snapshot(userId)
 	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel,data.HouseDoorOwned,data.HouseSecondFloorOwned)
 	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
-	local tasks = {}
- local completedJobs=0
-	for id, config in TaskConfig do
-		local state = session.Tasks[id] or {Active = false, CooldownUntil = data[config.CooldownField][id] or 0}
-		if state.CompletedThisVisit then completedJobs+=1 end
-        tasks[id] = {taskId = id,completedThisVisit=state.CompletedThisVisit==true, reward = Rewards.Task(level,id,config.Reward) * multiplier,
-			status = if state.Active then "Active" elseif state.CooldownUntil > self.clock() then "Cooldown" else "Ready",
-			cooldownEndsAt = state.CooldownUntil, targetPosition = if self.TaskPosition then self.TaskPosition(id,math.min(state.Step or 1,#config.Steps)) else nil,
-            step=math.min(state.Step or 1,#config.Steps),stepCount=#config.Steps,
-            holdStartedAt=state.HoldStartedAt,
-            holdSeconds=config.Steps[math.min(state.Step or 1,#config.Steps)].HoldSeconds,
-			Active = state.Active, CooldownUntil = state.CooldownUntil, HoldStartedAt = state.HoldStartedAt}
-	end
+ local tasks,story={},nil
+ if self.TaskProjection then tasks,story=self.TaskProjection(userId) end
+ local completedJobs=if story then math.min(story.total,story.chapter-1) else 0
 	return {protocolVersion = 1, balanceVersion = Economy.BalanceVersion, stateRevision = profile.Revision,
 		serverTime = self.clock(), ownerUserId = userId, PlotId = session.PlotId,
 		Cash = data.Cash, TotalEarned = data.TotalEarned, VerityLevel = level,
 		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
 		SwipeUpgradeLevel = data.SwipeUpgradeLevel, TutorialStep = data.TutorialStep,
 		TutorialCompleted = data.TutorialCompleted,
-        FirstActivityCompleted = data.FirstActivityCompleted,
+        FirstActivityCompleted = data.FirstActivityCompleted, Story=story,
         Progression = Goals.Build(data), NextUnlock = Goals.NextUnlock(data,heroAccess),
         AbilityCollection = Abilities.Collection(data,heroAccess,Config.HeroPassId~=nil,profile.AdminHeroSlots),
         AbilitySlots = if self.AbilitySlots then self.AbilitySlots(userId) else {},

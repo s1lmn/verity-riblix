@@ -8,7 +8,7 @@ local Premium=require(script.Parent.PremiumCatalog)
 local Bridge=require(script.Parent.PremiumVisualBridge)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
-	"RequestBuyPremiumOffer", "RequestEquipPremiumOffer", "RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
+	"RequestStoryGuide", "RequestBuyPremiumOffer", "RequestEquipPremiumOffer", "RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
 	"RequestCraftWeatherItem", "RequestSetWeatherLook", "RequestClaimAlbumSet", "RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
@@ -23,7 +23,10 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 		return false, "INVALID_OPERATION_ID"
 	end
 	local allowed = {operationId = true}
-	if name=="RequestBuyPremiumOffer" or name=="RequestEquipPremiumOffer" then
+	if name=="RequestStoryGuide" then
+  allowed.enabled=true
+  if type(payload.enabled)~="boolean" then return false,"INVALID_BOOLEAN" end
+ elseif name=="RequestBuyPremiumOffer" or name=="RequestEquipPremiumOffer" then
   allowed.itemId=true
   local binding=type(payload.itemId)=="string" and Bridge.Offers[payload.itemId]
   if not binding then return false,"INVALID_ITEM" end

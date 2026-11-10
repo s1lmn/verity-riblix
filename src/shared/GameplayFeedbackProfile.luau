@@ -12,7 +12,7 @@ function Profile.Transitions(previous: any,current: any)
  for _,entry in previous.Tasks or {} do before[entry.taskId]=entry end
  for _,entry in current.Tasks or {} do
   local old=before[entry.taskId]
-  if old and entry.status=="Cooldown" and entry.cooldownEndsAt>old.cooldownEndsAt then
+  if old and entry.status=="Done" and old.status~="Done" then
    table.insert(out.completed,entry.taskId)
   end
  end

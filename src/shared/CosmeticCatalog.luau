@@ -2,8 +2,11 @@
 -- Stable inventory IDs. Prices and product IDs belong to Roblox/server configuration.
 local Catalog = {}
 Catalog.Slots = table.freeze({Face = true, Head = true, Ears = true})
-Catalog.Order = table.freeze({"parkour_star_band","champion_goggles","titan_charms","sun_cap","bubble_bow","beat_headphones","pixel_specs","round_glasses", "party_hat", "star_earrings","delivery_cap","delivery_goggles","delivery_wings","fusion_charms","prism_specs","leaf_crown","cloud_charms","collector_crown","forge_halo"})
+Catalog.Order = table.freeze({"story_spark_band","story_signal_charms","story_neighborhood_crown","parkour_star_band","champion_goggles","titan_charms","sun_cap","bubble_bow","beat_headphones","pixel_specs","round_glasses", "party_hat", "star_earrings","delivery_cap","delivery_goggles","delivery_wings","fusion_charms","prism_specs","leaf_crown","cloud_charms","collector_crown","forge_halo"})
 local items: {[string]: any} = {
+ story_spark_band=table.freeze({id="story_spark_band",name="Ободок первой искры",slot="Head",category="История района",achievement="story_first_light",exclusive=true}),
+ story_signal_charms=table.freeze({id="story_signal_charms",name="Подвески сигнала",slot="Ears",category="История района",achievement="story_signal",exclusive=true}),
+ story_neighborhood_crown=table.freeze({id="story_neighborhood_crown",name="Корона доброго соседа",slot="Head",category="История района",achievement="story_finale",exclusive=true}),
  forge_halo=table.freeze({id="forge_halo",name="Венец трёх стихий",slot="Head",category="Кузница погоды",source="WeatherForge",exclusive=true}),
  collector_crown=table.freeze({id="collector_crown",name="Корона коллекционера",slot="Head",category="Альбом карточек",achievement="album_master",exclusive=true}),
  prism_specs=table.freeze({id="prism_specs",name="Призматические очки",slot="Face",category="Секреты района",achievement="secret_solar",exclusive=true}),

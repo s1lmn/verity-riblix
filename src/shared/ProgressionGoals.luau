@@ -31,7 +31,7 @@ function Goals.Build(data)
   return {stage="FirstUpgrade",goal={kind=if data.Cash>=cost then "UpgradeVerity" else "EarnCash",
    progress=math.min(data.Cash,cost),total=cost,remaining=math.max(0,cost-data.Cash)}}
  end
- if not data.FirstActivityCompleted then return {stage="FirstActivity",goal={kind="Task",taskId="PRESS_BUTTON"}} end
+ -- The story is optional and never gates FreePlay, abilities or growth.
  return {stage="FreePlay"}
 end
 return table.freeze(Goals)

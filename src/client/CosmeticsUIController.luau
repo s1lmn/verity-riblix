@@ -76,6 +76,7 @@ function UI.new(ctx)
    elseif item.achievement and Rewards.Items[item.achievement].activity=="Secrets" and ctx.secrets then
     local id=if item.achievement=="secret_solar" then "solar" elseif item.achievement=="secret_canopy" then "canopy" else "cloud"
     ctx.secrets:Select(id)
+   elseif item.achievement and Rewards.Items[item.achievement].activity=="Story" then ctx.open("TASKS")
    elseif item.achievement then ctx.notifications:Show(Locale.Text(Rewards.Items[item.achievement].condition))
    elseif item.source=="StreetDelivery" then ctx.notifications:Show(Locale.Text("Обычная награда 70% • ×2 22% • ×5 6% • украшение 2%. Все украшения собраны — компенсация ×5."))
    elseif item.source=="WeatherForge" then self:GuideToForge()

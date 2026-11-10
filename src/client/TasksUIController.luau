@@ -5,24 +5,16 @@ local Locale=require(script.Parent.Locale)
 local Cleanup=require(script.Parent.Cleanup)
 local W=require(script.Parent.UIWidgets)
 local Card=require(script.Parent.ActivityCard)
+local Story=require(game:GetService("ReplicatedStorage").Shared.StoryConfig)
+local Cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
 local Tasks={};Tasks.__index=Tasks
 function Tasks.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),target=nil,original={},prompts={},nodes={}},Tasks)
- for taskId,row in ctx.refs.Panels.TASKS.Rows do
-  self.cleanup:Add(row.Button.Activated:Connect(function()
-   local state=ctx.net.state
-   if not state then return end
-   for _,entry in state.Tasks do
-    if entry.taskId~=taskId then continue end
-    if entry.status=="Ready" or (entry.status=="Cooldown" and entry.cooldownEndsAt<=workspace:GetServerTimeNow()) then
-     self.selectedTaskId=taskId;ctx.request("TaskStart",{taskId=taskId})
-    elseif entry.status=="Active" then self.selectedTaskId=taskId;ctx.close() end
-    return
-   end
-  end))
- end
+ local p=ctx.refs.Panels.TASKS
+ self.cleanup:Add(p.Guide.Activated:Connect(function()ctx.request("StoryGuide",{enabled=true})end))
+ self.cleanup:Add(p.Pause.Activated:Connect(function()ctx.request("StoryGuide",{enabled=false})end))
  self.cleanup:Add(ctx.net.Result.Event:Connect(function(result)
-  if result.action=="TaskStart" and result.success and ctx.active=="TASKS" then ctx.close() end
+  if result.action=="StoryGuide" and result.success and ctx.active=="TASKS" then ctx.close() end
  end))
  self.cleanup:Add(Players.LocalPlayer.CharacterRemoving:Connect(function() self:ClearCarry() end))
  return self
@@ -64,21 +56,21 @@ function Tasks:RefreshScenes()
   local entry=entries[id]
   if not entry then continue end
   table.insert(self.nodes,target)
-  local finished=(entry.status=="Cooldown" and entry.cooldownEndsAt>workspace:GetServerTimeNow()) or index<(entry.step or 1)
+  local finished=entry.status=="Done" or index<(entry.step or 1)
   local current=entry.status=="Active" and index==(entry.step or 1)
   local label=target:FindFirstChild("TaskLabel")
   if label then label.Enabled=current and not blocked and not target:FindFirstChild("TaskPrompt") end
   local prompt=target:FindFirstChild("TaskPrompt")
   if prompt then
    if self.prompts[prompt]==nil then self.prompts[prompt]=prompt.Enabled end
-   prompt.Enabled=not blocked and (current or (not active and index==(entry.step or 1) and entry.cooldownEndsAt<=workspace:GetServerTimeNow()))
+   prompt.Enabled=not blocked and current
   end
   local props=target:FindFirstChild("Props")
   if props then for _,part in props:GetChildren() do
    if not part:IsA("BasePart") then continue end
    if not self.original[part] then self.original[part]={color=part.Color,material=part.Material,alpha=part.Transparency} end
    local original=self.original[part]
-   if part:GetAttribute("TaskPickup") then part.LocalTransparencyModifier=if finished then 1 else 0 end
+   if part:GetAttribute("TaskPickup") then part.LocalTransparencyModifier=if finished or entry.status=="Locked" then 1 else 0 end
    if part:GetAttribute("TaskResult") then part.Transparency=if finished then 0 else 1 end
    if part:GetAttribute("TaskRestore") then
     part.Color=if finished then Color3.fromHex(Config[id].Color) else original.color
@@ -91,43 +83,47 @@ function Tasks:RefreshScenes()
  for prompt in self.prompts do if not prompt:IsDescendantOf(workspace) then self.prompts[prompt]=nil end end
 end
 function Tasks:Render()
- local net=self.ctx.net;local state=net.state
+ local net=self.ctx.net;local state=net.state;local story=state and state.Story
+ local p=self.ctx.refs.Panels.TASKS
  self.target=nil;self.activeEntry=nil
- local entries={}
- self.ctx.refs.Panels.TASKS.Title.Text=string.format(Locale.Text("ЗАДАНИЯ • %d/10"),state and state.TaskCompletedCount or 0)
- if state then for _,entry in state.Tasks do entries[entry.taskId]=entry;if entry.status=="Active" then self.activeEntry=entry end end end
- for taskId,row in self.ctx.refs.Panels.TASKS.Rows do
-  local entry=entries[taskId];local definition=Config[taskId]
-  if not entry then
-   row.Reward.Text="$—";row.Status.Text=Locale.Text("Загрузка…")
-   W.SetButton(row.Button,Locale.Text("WAITING FOR SERVER"),false,false);continue
-  end
-  row.Reward.Text="$"..Locale.Number(entry.reward)
-  local remaining=math.max(0,math.ceil(entry.cooldownEndsAt-workspace:GetServerTimeNow()))
-  local busy=net:IsBusy("TaskStart")
-  local cooldown=entry.status=="Cooldown" and remaining>0
-  local index=entry.step or 1
-  if entry.status=="Active" then
-   row.Description.Text=Locale.Text(definition.Steps[index].Title)
-   row.Progress.Text=string.format(Locale.Text("Этап %d/%d • %s"),index,#definition.Steps,Locale.Text(definition.Steps[index].Action))
-  else
-   row.Description.Text=Locale.Text(definition.Description)
-   row.Progress.Text=if cooldown then string.format(Locale.Text("Выполнено %d/%d"),#definition.Steps,#definition.Steps)
-    else string.format(Locale.Text("Выполнено %d/%d"),index-1,#definition.Steps)
-  end
-  row.Status.Text=if cooldown then string.format(Locale.Text("Снова через %dс"),remaining) elseif entry.status=="Active" then Locale.Text("Выполняется") else Locale.Text("Можно начать")
-  W.SetButton(row.Button,if cooldown then Locale.Text("СКОРО СНОВА") elseif busy then Locale.Text("WAITING…")
-   elseif entry.status=="Active" then Locale.Text("ПОКАЗАТЬ ПУТЬ →") elseif index>1 then Locale.Text("ПРОДОЛЖИТЬ →")
-   else Locale.Text("НАЧАТЬ ЗАДАНИЕ →"),net.connected and not cooldown and not busy and not Card.ActivityRunning(),busy)
-  if entry.status=="Active" and typeof(entry.targetPosition)=="Vector3" then
-   self.target,self.targetName=entry.targetPosition,definition.Steps[index].Title
+ p.Title.Text=string.format(Locale.Text("ИСТОРИЯ • %d/%d"),story and math.min(story.total,story.chapter-1) or 0,#Story.Chapters)
+ p.Hint.Text=Locale.Text("История не обязательна: дом, рост Verity и все активности доступны без неё. Прогресс сохранится, даже если отложить её или выйти.")
+ p.Guide.Visible=true;p.Pause.Visible=false
+ if not story then
+  p.Heading.Text=Locale.Text("Загружаем историю…")
+  W.SetButton(p.Guide,Locale.Text("ПОДОЖДИ…"),false,false);return
+ end
+ if story.completed then
+  p.Speaker.Text=Locale.Text("Все соседи");p.Heading.Text=Locale.Text("Район снова живёт")
+  p.Narrative.Text=Locale.Text(Story.Chapters[#Story.Chapters].Outro)
+  p.Step.Text=Locale.Text("Все десять глав пройдены")
+  p.Progress.Text="";p.Reward.Text="";p.Milestone.Text=Locale.Text("Три памятных украшения — в твоей коллекции")
+  p.Guide.Visible=false
+ else
+  local chapter=Story.Chapters[story.chapter];local definition=Config[chapter.TaskId]
+  local entry
+  for _,value in state.Tasks do if value.taskId==chapter.TaskId then entry=value;break end end
+  local index=entry and entry.step or 1;local stage=definition.Steps[index]
+  p.Speaker.Text=Locale.Text(chapter.Speaker);p.Heading.Text=Locale.Text(chapter.Title);p.Narrative.Text=Locale.Text(chapter.Brief)
+  p.Step.Text=Locale.Text(stage.Title).."\n"..Locale.Text(stage.Action)
+  p.Progress.Text=string.format(Locale.Text("Глава %d/%d · шаг %d/%d"),story.chapter,story.total,index,#definition.Steps)
+  p.Reward.Text=string.format(Locale.Text("Награда за главу: $%s"),entry and Locale.Number(entry.reward) or "—")
+  local item=chapter.Item and Cosmetics.Items[chapter.Item]
+  p.Milestone.Text=if item then Locale.Text("И памятное украшение: ")..Locale.Text(item.name) else Locale.Text("Награда выдаётся один раз. Следующая глава появится сама.")
+  if not story.available then p.Step.Text=Locale.Text("Сначала распакуй Verity и сделай первое улучшение.") end
+  p.Pause.Visible=story.available and not story.paused
+  W.SetButton(p.Guide,Locale.Text(if story.paused then "ВЕРНУТЬСЯ К ИСТОРИИ" else "ПОКАЗАТЬ ПУТЬ"),story.available and net.connected and not net:IsBusy(),net:IsBusy("StoryGuide"))
+  W.SetButton(p.Pause,Locale.Text("ОТЛОЖИТЬ ИСТОРИЮ"),net.connected and not net:IsBusy(),false)
+  if entry and entry.status=="Active" then
+   self.activeEntry=entry;self.target,self.targetName=entry.targetPosition,stage.Title
   end
  end
  local signature={}
- for _,entry in state and state.Tasks or {} do table.insert(signature,entry.taskId..entry.status..tostring(entry.step or 1)) end
+ for _,entry in state.Tasks or {} do table.insert(signature,entry.taskId..entry.status..tostring(entry.step)) end
  table.sort(signature);signature=table.concat(signature,"|")
- if self.sceneSignature~=signature then self.sceneSignature=signature;self:RefreshScenes() end
+ if signature~=self.sceneSignature then self.sceneSignature=signature;self:RefreshScenes() end
 end
+
 function Tasks:Tick()
  local now=os.clock()
  local blocked=not not (Card.Blocked(self.ctx) or Card.ActivityRunning())

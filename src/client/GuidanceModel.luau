@@ -66,7 +66,7 @@ function Model.Resolve(state,panel,selectedTaskId,now,nearestTaskId)
  local active
  if selectedTaskId and entries[selectedTaskId] and entries[selectedTaskId].status=="Active" then active=selectedTaskId end
  for _,id in order do if not active and entries[id] and entries[id].status=="Active" then active=id end end
- if active then return taskGoal(active,entries[active],panel,now) end
+ -- An optional chapter only guides the world, never forces a menu to close.
 
  local cost=state.NextVerityUpgradeCost
  if state.VerityLevel<100 and type(cost)=="number" and state.Cash>=cost
@@ -80,7 +80,9 @@ function Model.Resolve(state,panel,selectedTaskId,now,nearestTaskId)
   return phone(panel,"Заработай на улучшение")
  end
 
- local first=state.Progression and state.Progression.stage=="FirstActivity"
+ if panel=="TASKS" then return nil end
+ if active and not panel and state.Story and not state.Story.paused then return taskGoal(active,entries[active],nil,now) end
+ local first=false
  if not first then
   local abilityId,owned=Model.ReadyAbility(state)
   if abilityId and (panel==nil or panel=="MORE" or panel=="ABILITIES") then
@@ -102,19 +104,8 @@ function Model.Resolve(state,panel,selectedTaskId,now,nearestTaskId)
  end
  if panel and panel~="TASKS" then return nil end
 
- local ready
- if first and entries.PRESS_BUTTON and entries.PRESS_BUTTON.status=="Ready" then ready="PRESS_BUTTON" end
- for _,id in order do
-  local entry=entries[id]
-  if not ready and entry and not entry.completedThisVisit and (entry.status=="Ready" or entry.status=="Cooldown" and entry.cooldownEndsAt<=now) then ready=id end
- end
- if not ready and nearestTaskId and entries[nearestTaskId] and entries[nearestTaskId].status=="Ready" then ready=nearestTaskId end
- for _,id in order do
-  local entry=entries[id]
-  if not ready and entry and (entry.status=="Ready" or entry.status=="Cooldown" and entry.cooldownEndsAt<=now) then ready=id end
- end
- if ready then return ui("start:"..ready,if panel=="TASKS" then "Task."..ready else "Nav.TASKS",
-  if first then "Первое задание" else "Заработай на задании","НАЧАТЬ") end
+ -- No mission picker or repeatable cooldown offers; free play remains available.
+
  return phone(panel)
 end
 return Model

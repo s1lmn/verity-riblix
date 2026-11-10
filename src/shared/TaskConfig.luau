@@ -12,7 +12,10 @@ local tasks = {
  DRONE_RESCUE = {Order=9,Title="Спасение дрона",Description="Включи маяк, найди дрона по следу и верни его на базу.",Color="80BBFF",Reward=245,Cooldown=110,RewardSeconds=50,Radius=6.5,Mode="Prompt",HoldSeconds=0,CooldownField="NeighborhoodTaskCooldowns",Steps={{Title="Включи поисковый маяк",Action="Искать дрона",Side=-1,Distance=402,Prop="Console",Mode="Prompt",HoldSeconds=0},{Title="Следуй к первому следу",Action="Иди по стрелкам",Side=-1,Distance=431,Prop="Flag",Mode="Reach",HoldSeconds=0},{Title="Проследи сигнал через улицу",Action="Иди по стрелкам",Side=1,Distance=452,Prop="Flag",Mode="Reach",HoldSeconds=0},{Title="Подбери разряженного дрона",Action="Спасти дрона",Side=1,Distance=476,Prop="Drone",Mode="Prompt",HoldSeconds=0},{Title="Подзаряди дрона на базе",Action="Стой у базы 3 секунды",Side=-1,Distance=451,Prop="Dock",Mode="Hold",HoldSeconds=3,Carry="Drone"}}},
  FESTIVAL = {Order=10,Title="Праздник Verity",Description="Собери цветные заряды и зажги праздничную звезду района.",Color="FF71D7",Reward=260,Cooldown=120,RewardSeconds=55,Radius=6.5,Mode="Prompt",HoldSeconds=0,CooldownField="NeighborhoodTaskCooldowns",Steps={{Title="Собери розовый заряд",Action="Забрать заряд",Side=1,Distance=326,Prop="Cell",Mode="Prompt",HoldSeconds=0},{Title="Собери золотой заряд",Action="Забрать заряд",Side=-1,Distance=427,Prop="Cell",Mode="Prompt",HoldSeconds=0,Carry="Cell"},{Title="Собери голубой заряд",Action="Забрать заряд",Side=1,Distance=427,Prop="Cell",Mode="Prompt",HoldSeconds=0,Carry="Cell"},{Title="Подготовь праздничный пульт",Action="Стой у пульта 3 секунды",Side=-1,Distance=478,Prop="Console",Mode="Hold",HoldSeconds=3,Carry="Cell"},{Title="Зажги звезду Verity",Action="Зажечь звезду",Side=-1,Distance=504,Prop="Star",Mode="Prompt",HoldSeconds=0}}},
 }
-for _,definition in tasks do
+local Story=require(script.Parent.StoryConfig)
+for id,definition in tasks do
+ local chapter=Story.ByTask[id]
+ definition.Title=chapter.Title;definition.Description=chapter.Brief
  for _,stage in definition.Steps do table.freeze(stage) end
  table.freeze(definition.Steps);table.freeze(definition)
 end

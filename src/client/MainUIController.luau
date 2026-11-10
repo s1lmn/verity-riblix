@@ -33,6 +33,7 @@ local Visuals=require(game:GetService("ReplicatedStorage").World.VerityVisualCon
 local Main={}
 Main.__index=Main
 local Errors={
+ STORY_NOT_READY="Сначала распакуй Verity и сделай первое улучшение.",STORY_FINISHED="История района уже завершена.",STORY_ORDER_REQUIRED="Следующая глава истории появится сама.",
  FORGE_TOO_FAR="Подойди к кузнице погоды и заверши текущую активность.",
  FORGE_NEED_MATERIALS="Собери недостающие материалы во время погодных событий.",
  ALBUM_INCOMPLETE="Сначала собери все пять разных карт набора.",

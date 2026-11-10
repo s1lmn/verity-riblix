@@ -2,6 +2,7 @@
 -- Pure presentation logic. No prices, rewards or player progress are generated here.
 local Model = {}
 local LevelConfig = if game then require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("LevelConfig")) else require("../shared/LevelConfig")
+local StoryConfig = if game then require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("StoryConfig")) else require("../shared/StoryConfig")
 local TaskConfig = if game then require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("TaskConfig")) else require("../shared/TaskConfig")
 Model.Milestones = LevelConfig.Milestones
 
@@ -77,12 +78,19 @@ function Model.ValidateSnapshot(raw: any): (any?, string?)
                 or (entry.step ~= nil and not Model.IsInteger(entry.step,1,#TaskConfig[entry.taskId].Steps))
                 or (entry.stepCount ~= nil and entry.stepCount ~= #TaskConfig[entry.taskId].Steps)
                 or (entry.holdStartedAt ~= nil and not Model.IsFinite(entry.holdStartedAt))
-				or (entry.status ~= "Ready" and entry.status ~= "Active" and entry.status ~= "Cooldown")
+				or (entry.status ~= "Ready" and entry.status ~= "Active" and entry.status ~= "Cooldown" and entry.status ~= "Done" and entry.status ~= "Locked" and entry.status ~= "Paused")
 			then return nil, "Invalid task state" end
 			seen[entry.taskId] = true
 			table.insert(state.Tasks, table.clone(entry))
 		end
 	end
+ if raw.Story~=nil then
+  local story=raw.Story
+  if type(story)~="table" or not Model.IsInteger(story.chapter,1,#StoryConfig.Chapters+1) or story.total~=#StoryConfig.Chapters
+   or type(story.paused)~="boolean" or type(story.completed)~="boolean" or type(story.available)~="boolean"
+   or story.completed~=(story.chapter>#StoryConfig.Chapters) or (not story.completed and story.taskId~=StoryConfig.Chapters[story.chapter].TaskId) then return nil,"Invalid story state" end
+  state.Story=table.clone(story)
+ end
 	state.TutorialCompleted = raw.TutorialCompleted == true
 	state.TutorialStep = if Model.IsInteger(raw.TutorialStep, 1, 7) then raw.TutorialStep else nil
 	return state, nil

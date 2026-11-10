@@ -18,7 +18,23 @@ function Factory.Apply(model,equipped)
   local key=Catalog.BaseId(id)
   local color,accent=definition.color or "FFB72D",definition.accent or "FFF0CE"
   local item=Instance.new("Model");item.Name=id;item.Parent=folder
-  if key=="forge_halo" then
+  if key=="story_spark_band" or key=="story_neighborhood_crown" then
+   part(item,"StoryBand",Vector3.new(1.13,.1,.8),Vector3.new(0,1.7,0),if key=="story_spark_band" then "91E6D1" else "FFD66A")
+   local count=if key=="story_spark_band" then 1 else 5
+   for n=1,count do
+    local x=(n-(count+1)/2)*.23
+    local gem=part(item,"NeighborStar",Vector3.new(.16,.26,.1),Vector3.new(x,1.9,-.42),if n%2==0 then "F1A7DF" else "FFE9AA")
+    gem.CFrame*=CFrame.Angles(0,0,math.pi/4);gem.Material=Enum.Material.Neon
+   end
+  elseif key=="story_signal_charms" then
+   for _,side in {-1,1} do
+    part(item,"SignalCord",Vector3.new(.045,.25,.045),Vector3.new(side*.9,.75,-.08),"E9DAFF")
+    for n=1,3 do
+     local bead=part(item,"SignalBead",Vector3.one*.12,Vector3.new(side*(.85+n*.04),.55-n*.12,-.09),if n%2==0 then "FFD36B" else "86EAD9",Enum.PartType.Ball)
+     bead.Material=Enum.Material.Neon
+    end
+   end
+  elseif key=="forge_halo" then
    for n=1,12 do
     local a=n*math.pi/6
     local segment=part(item,"GoldenHalo",Vector3.new(.12,.10,.34),Vector3.new(math.cos(a)*.67,1.94,math.sin(a)*.56),"FFE39C")

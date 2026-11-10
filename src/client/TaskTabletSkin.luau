@@ -1,95 +1,49 @@
 --!nonstrict
--- Toy order board: native widgets, shared task protocol, no external assets.
+-- One story page, no task picker.
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local Skin={}
-local violet=Color3.fromHex("9960DC")
-local cream=Color3.fromHex("FFF6ED")
-local Config=require(game:GetService("ReplicatedStorage").Shared.TaskConfig)
-local orders={}
-for id,definition in Config do table.insert(orders,{id,definition.Title,definition.Description,Color3.fromHex(definition.Color),definition.Order}) end
-table.sort(orders,function(a,b)return a[5]<b[5] end)
-local cardHeight, gap = 210, 10
-local contentHeight = #orders * (cardHeight + gap) - gap
-local function shape(parent,name,x,y,w,h,color,radius)
- local f=W.Round(W.Frame(parent,name,UDim2.fromOffset(w,h),color),radius or 4)
- f.Position=UDim2.fromOffset(x,y);return f
-end
-local function actionIcon(parent,kind,color)
- local tile=shape(parent,"ActionIcon",12,12,36,36,color,10)
- if kind=="POSTBOX" then
-  shape(tile,"Envelope",6,10,24,17,T.White,4)
-  local flap=shape(tile,"Fold",12,9,12,12,T.Ink,3);flap.Rotation=45
- elseif kind=="PRESS_BUTTON" then
-  shape(tile,"Base",7,22,22,7,T.Ink,3)
-  shape(tile,"Button",10,10,16,15,T.White,7)
- elseif kind=="REACH_POINT" or kind=="CHECKPOINT" then
-  shape(tile,"Pin",10,5,16,20,T.Ink,9)
-  shape(tile,"Center",15,10,6,6,T.White,6)
-  shape(tile,"Shadow",7,28,22,3,T.White,3)
- else
-  shape(tile,"Platform",5,25,26,7,T.Ink,3)
-  shape(tile,"FootA",9,7,7,15,T.White,4)
-  shape(tile,"FootB",21,10,7,15,T.White,4)
- end
+local function line(parent,name,size,bold,color)
+ local label=W.Text(parent,name,"",size,bold,color)
+ label.Size=UDim2.new(1,0,0,0);label.AutomaticSize=Enum.AutomaticSize.Y
+ label.TextYAlignment=Enum.TextYAlignment.Top;return label
 end
 function Skin.Build(parent)
- local root=W.Round(W.Frame(parent,"Tasks",UDim2.fromOffset(420,640),violet),28)
- root.Visible=false;root.Active=true;root.SelectionGroup=true
- for _,dir in {"Up","Down","Left","Right"} do root["SelectionBehavior"..dir]=Enum.SelectionBehavior.Stop end
- W.Stroke(root,Color3.fromHex("633D92"),3).Transparency=.08
- local shell=shape(root,"CreamBoard",6,6,408,628,cream,23)
- shell.Size=UDim2.new(1,-12,1,-12)
- local clip=shape(root,"OrderClip",0,4,78,16,T.Gold,7)
- clip.AnchorPoint=Vector2.new(.5,0);clip.Position=UDim2.new(.5,0,0,4)
- shape(clip,"ClipInset",18,5,42,4,Color3.fromHex("D7A72F"),2)
- local title=W.Text(root,"Title","ЗАКАЗЫ РАЙОНА",20,true)
- title.Position=UDim2.fromOffset(20,28);title.Size=UDim2.new(1,-86,0,32)
- local subtitle=W.Text(root,"Subtitle","Маленькое приключение — приятная награда!",12,false,T.Muted)
- subtitle.Position=UDim2.fromOffset(20,64);subtitle.Size=UDim2.new(1,-40,0,34)
- local close=W.Button(root,"Close","×",T.Gold)
- close.Size=UDim2.fromOffset(44,44);close.Position=UDim2.new(1,-62,0,24);close.TextSize=26
- local body=W.New("ScrollingFrame",{Name="Orders",BackgroundTransparency=1,BorderSizePixel=0,
-  Position=UDim2.fromOffset(16,108),Size=UDim2.new(1,-32,1,-124),CanvasSize=UDim2.fromOffset(0,contentHeight),
-  AutomaticCanvasSize=Enum.AutomaticSize.None,ScrollingDirection=Enum.ScrollingDirection.Y,
-  ScrollBarThickness=3,ScrollBarImageColor3=violet},root)
- W.List(body,gap)
- local rows={}
- for index,info in orders do
-  local card=W.Round(W.Frame(body,info[1],UDim2.new(1,-6,0,cardHeight),T.White),16)
-  card.LayoutOrder=index;W.Stroke(card,info[4],2).Transparency=.45
-  actionIcon(card,info[1],info[4])
-  local heading=W.Text(card,"Title",info[2],14,true)
-  heading.Position=UDim2.fromOffset(58,10);heading.Size=UDim2.new(1,-70,0,40)
-  local description=W.Text(card,"Description",info[3],12,false,T.Muted)
-  description.Position=UDim2.fromOffset(12,53);description.Size=UDim2.new(1,-24,0,40)
-  local progress=W.Text(card,"Progress","",11,true,T.Purple)
-  progress.Position=UDim2.fromOffset(12,96);progress.Size=UDim2.new(1,-24,0,28)
-  local rewardBadge=shape(card,"RewardBadge",12,128,94,24,T.Gold,8)
-  local reward=W.Text(rewardBadge,"Reward","$—",15,true)
-  reward.TextXAlignment=Enum.TextXAlignment.Center;reward.Size=UDim2.fromScale(1,1)
-  local status=W.Text(card,"Status","Загрузка…",11,true,T.Muted)
-  status.Position=UDim2.fromOffset(116,128);status.Size=UDim2.new(1,-128,0,24)
-  status.TextXAlignment=Enum.TextXAlignment.Right
-  local button=W.Button(card,"Start","ЗАГРУЗКА…",info[4])
-  button.Position=UDim2.fromOffset(12,160);button.Size=UDim2.new(1,-24,0,44)
-  rows[info[1]]={Root=card,Title=heading,Description=description,Reward=reward,Status=status,Button=button,Progress=progress}
- end
- local footer=W.Text(root,"Footer","Выбери заказ — стрелка покажет путь",11,false,T.Muted)
- footer.Position=UDim2.new(0,16,1,-31);footer.Size=UDim2.new(1,-32,0,20)
- footer.TextXAlignment=Enum.TextXAlignment.Center;footer.Visible=false
- return {Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Rows=rows,Footer=footer}
+ local root=W.Round(W.Frame(parent,"Story",UDim2.fromOffset(420,580),T.Paper),20)
+ root.Visible=false;root.Active=true;root.SelectionGroup=true;root.ClipsDescendants=true
+ for _,d in {"Up","Down","Left","Right"} do root["SelectionBehavior"..d]=Enum.SelectionBehavior.Stop end
+ W.Stroke(root,T.Purple,2).Transparency=.4
+ local title=W.Text(root,"Title","ИСТОРИЯ РАЙОНА",20,true)
+ title.Position=UDim2.fromOffset(16,12);title.Size=UDim2.new(1,-78,0,30)
+ local subtitle=W.Text(root,"Subtitle","Необязательное приключение",12,false,T.Muted)
+ subtitle.Position=UDim2.fromOffset(16,44);subtitle.Size=UDim2.new(1,-32,0,25)
+ local close=W.Button(root,"Close","×",T.Gold);close.Size=UDim2.fromOffset(44,44);close.Position=UDim2.new(1,-58,0,10)
+ close:SetAttribute("FixedFeedbackSize",true)
+ local body=W.New("ScrollingFrame",{Name="StoryPage",BackgroundTransparency=1,BorderSizePixel=0,
+  Position=UDim2.fromOffset(12,79),Size=UDim2.new(1,-24,1,-91),AutomaticCanvasSize=Enum.AutomaticSize.Y,
+  CanvasSize=UDim2.new(),ScrollingDirection=Enum.ScrollingDirection.Y,ScrollBarThickness=3,ScrollBarImageColor3=T.Purple},root)
+ W.List(body,10);W.Padding(body,3)
+ local card=W.Round(W.Frame(body,"CurrentChapter",UDim2.new(1,-6,0,0),T.White),16)
+ card.AutomaticSize=Enum.AutomaticSize.Y;W.Padding(card,14);W.List(card,12)
+ W.Stroke(card,T.Purple,1).Transparency=.5
+ local refs={Root=root,Title=title,Subtitle=subtitle,Close=close,Body=body,Rows={}}
+ refs.Speaker=line(card,"Speaker",12,true,T.Purple)
+ refs.Heading=line(card,"ChapterTitle",21,true,T.Ink)
+ refs.Narrative=line(card,"Narrative",14,false,T.Ink)
+ refs.Step=line(card,"CurrentAction",15,true,T.Ink)
+ refs.Progress=line(card,"Progress",12,false,T.Muted)
+ refs.Reward=line(card,"CashReward",18,true,Color3.fromHex("2B8563"))
+ refs.Milestone=line(card,"Keepsake",13,true,T.Purple)
+ refs.Guide=W.Button(card,"Guide","ПОКАЗАТЬ ПУТЬ",T.Gold);refs.Guide.Size=UDim2.new(1,0,0,48)
+ refs.Pause=W.Button(card,"Pause","ОТЛОЖИТЬ ИСТОРИЮ",T.Soft);refs.Pause.Size=UDim2.new(1,0,0,44)
+ refs.Guide:SetAttribute("FixedFeedbackSize",true);refs.Pause:SetAttribute("FixedFeedbackSize",true)
+ refs.Hint=line(card,"OptionalHint",12,false,T.Muted)
+ return refs
 end
 function Skin.Layout(p,size,panelX)
- local width=math.min(420,size.X-(panelX or 12)-12)
- local height=math.min(640,size.Y-24)
  p.Root.Position=UDim2.fromOffset(panelX or 12,12)
- p.Root.Size=UDim2.fromOffset(width,height)
- local short=height<390
- p.Subtitle.Visible=not short
- p.Body.Position=UDim2.fromOffset(16,if short then 74 else 108)
- p.Body.Size=UDim2.new(1,-32,1,if short then -90 else -124)
- p.Title.TextSize=if width<360 then 16 else 20
- return {width=width,height=height,contentHeight=contentHeight,bodyHeight=height-144}
+ p.Root.Size=UDim2.fromOffset(math.min(460,size.X-(panelX or 12)-12),math.min(680,size.Y-24))
+ p.Title.TextSize=if p.Root.Size.X.Offset<360 then 16 else 20
+ return {width=p.Root.Size.X.Offset,height=p.Root.Size.Y.Offset}
 end
 return Skin

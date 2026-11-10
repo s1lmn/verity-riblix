@@ -94,6 +94,7 @@ local Tasks = require(script.Parent.TaskService).new(Data, State, Economy, clock
   end
   return true
  end)
+State.TaskProjection=function(id)return Tasks:Projection(id)end
 local Cosmetics = require(script.Parent.CosmeticService).new(Data, State, require(script.Parent.CosmeticProducts), clock)
 Delivery.onUnlocked=function(id) Cosmetics:GrantStarter(id) end
 State.CosmeticsCatalog = function() return Cosmetics:Catalog(not usingStudioMemory) end
@@ -105,9 +106,9 @@ local Album=require(script.Parent.AlbumService).new(Data,State,ActivityRewards,f
 end)
 Phone.onCollectionChanged=function(id) Album:CheckMaster(id) end
 local Boost = require(script.Parent.BoostService).new(Data, State, Income, clock)
-Tasks.onReward = function(id, reward, taskId)
+Tasks.onReward = function(id, reward, taskId, itemId)
 	World:React(id,"Confident",2)
-	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task",taskId=taskId})
+	send(id, "NotificationEvent", {protocolVersion=1,code="TASK_REWARD",reward=reward,eventId=guid(),source="Task",taskId=taskId,itemId=itemId})
 end
 if generatedWorld then require(script.Parent.GameplayInteractions).Start(workspace, World, Tasks, State) end
 local AbilityShop = require(script.Parent.AbilityShopService).new(Data,State,Economy,MarketplaceService)
@@ -300,6 +301,7 @@ Remote:Register("RequestSwipe", function(id)
 	if status=="OK" then World:React(id,"Love",2) end
 	return status,reward,cardId,isNewCard
 end)
+Remote:Register("RequestStoryGuide",function(id,payload)return Tasks:SetGuide(id,payload.enabled)end)
 Remote:Register("RequestTaskStart", function(id, payload) return Tasks:Start(id, payload.taskId) end)
 Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Complete(id, payload.taskId) end)
 Remote:Register("RequestSync", function(id)

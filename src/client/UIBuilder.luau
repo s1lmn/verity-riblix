@@ -95,7 +95,7 @@ function Builder.Build(playerGui)
  W.List(moreBody,10)
  refs.Panels.MORE={Root=more,Title=moreTitle,Subtitle=moreSubtitle,Close=moreClose,Body=moreBody}
  local buttons={}
- local primary={{"VERITY","ВЕРИТИ",T.Pink},{"PHONE","ТЕЛЕФОН",T.Blue},{"TASKS","ЗАДАНИЯ",T.Gold},{"MORE","ЕЩЁ",T.Mint}}
+ local primary={{"VERITY","ВЕРИТИ",T.Pink},{"PHONE","ТЕЛЕФОН",T.Blue},{"TASKS","ИСТОРИЯ",T.Gold},{"MORE","ЕЩЁ",T.Mint}}
  for _,entry in primary do
   local name,caption,color=table.unpack(entry)
   local button=W.Button(nav,name,"",color);button.Size=UDim2.fromOffset(52,52)

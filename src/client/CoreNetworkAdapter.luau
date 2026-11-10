@@ -137,7 +137,8 @@ function Adapter:Attach(folder)
 							local message=messages[payload.code]
        if payload.code=="TASK_REWARD" then
         local outcomes={PRESS_BUTTON="Свет на улице восстановлен!",REACH_POINT="Посылка доставлена получателю!",STAND_ON_PLATFORM="Все три клумбы расцвели!",POSTBOX="Все письма доставлены!",CHECKPOINT="Фонари снова работают!",CHARGE_PAD="Зарядная станция запущена!",CLEAN_PARK="Сквер стал чистым!",SIGNAL_REPAIR="Сигналы перехода работают!",DRONE_RESCUE="Дрон спасён и заряжен!",FESTIVAL="Звезда Verity зажжена!"}
-        message=outcomes[payload.taskId] or message
+        local chapter=require(ReplicatedStorage.Shared.StoryConfig).ByTask[payload.taskId]
+        message=chapter and chapter.Outro or outcomes[payload.taskId] or message
        end
        local drop=payload.deliveryReward
        if payload.code=="STREET_DELIVERY_REWARD" and type(drop)=="table" and drop.version==1 and type(drop.cycle)=="number" then

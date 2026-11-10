@@ -42,7 +42,7 @@ function RemoteService:Handle(userId, name, payload)
 		return self:_result(userId, name, payload.operationId, "INVALID_OPERATION_ID")
 	end
 	local fingerprint = name .. ":" .. tostring(payload.locked) .. ":" .. tostring(payload.open) .. ":" .. tostring(payload.taskId) .. ":" .. tostring(payload.itemId) .. ":" .. tostring(payload.equipped)
-		.. ":" .. tostring(payload.slot) .. ":" .. tostring(payload.cardId) .. ":" .. tostring(payload.variantId)
+		.. ":" .. tostring(payload.slot) .. ":" .. tostring(payload.cardId) .. ":" .. tostring(payload.variantId) .. ":" .. tostring(payload.enabled)
 	for id, operation in session.Operations do
 		if now - operation.at > Config.OperationTTL then session.Operations[id] = nil end
 	end

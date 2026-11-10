@@ -16,18 +16,27 @@ Rewards.Definitions=table.freeze({
  Race=table.freeze({Seconds=12,TargetFraction=.015,MaximumSeconds=60}),
 })
 local Tasks=require(script.Parent.TaskConfig)
+local Story=require(script.Parent.StoryConfig)
 function Rewards.Base(level,id)
  local d=Rewards.Definitions[id];if not d then return 0 end
  local income=Economy.getIncome(level);local cost=Economy.LevelCost[level] or 0
  return math.max(income*d.Seconds,math.min(cost*d.TargetFraction,income*d.MaximumSeconds))
 end
 function Rewards.Task(level,id,minimum)
- return math.max(minimum,Economy.getIncome(level)*(if Tasks[id] then Tasks[id].RewardSeconds else 4))
+ local chapter=Story.ByTask[id]
+ local income=Economy.getIncome(level)
+ if chapter then
+  return math.max(minimum,chapter.Minimum,income*chapter.Seconds,math.min((Economy.LevelCost[level] or 0)*chapter.Fraction,income*Story.MaxRewardSeconds))
+ end
+ return math.max(minimum,income*(if Tasks[id] then Tasks[id].RewardSeconds else 4))
 end
 
 -- Exclusive achievement inventory and house trophies from the team.
 Rewards.Order=table.freeze({"parkour_clear","race_champion","titan_victory"})
 Rewards.Items=table.freeze({
+ story_first_light=table.freeze({id="story_first_light",itemId="story_spark_band",name="Первая искра района",condition="Заверши первую главу необязательной истории района.",progress="Первая глава • %d/1",activity="Story",proof="Памятное украшение сохранено"}),
+ story_signal=table.freeze({id="story_signal",itemId="story_signal_charms",name="Район на связи",condition="Заверши пятую главу истории района.",progress="Пятая глава • %d/1",activity="Story",proof="Памятное украшение сохранено"}),
+ story_finale=table.freeze({id="story_finale",itemId="story_neighborhood_crown",name="Добрый сосед",condition="Заверши все десять глав истории района.",progress="История района • %d/1",activity="Story",proof="Памятное украшение сохранено"}),
  album_master=table.freeze({id="album_master",itemId="collector_crown",name="Весь мир в альбоме",condition="Найди все 40 разных карточек в ленте телефона.",
   progress="Полный альбом • %d/1",color="FFE28D",activity="Album",proof="Все 40 карточек собраны"}),
  secret_solar=table.freeze({id="secret_solar",itemId="prism_specs",name="Хранитель солнечного архива",condition="Запитай приёмник у архива и повтори порядок: день, ночь, звезда.",
