@@ -1637,6 +1637,24 @@ local storyEnglish={
 }
 for source,target in storyEnglish do en[source]=target end
 
+local dailyStormEnglish={
+ ["Тёплая встреча"]="A warm welcome",
+ ["Искра приключений"]="A spark of adventure",
+ ["Звёздный подарок"]="A stellar gift",
+ ["Дождевые сокровища"]="Rain treasures",
+ ["Запас для кузницы"]="Forge supplies",
+ ["Большой сюрприз"]="A big surprise",
+ ["Радужный финал"]="Rainbow finale",
+ ["Надвигается гроза"]="A storm approaches",
+ ["Стена дождя"]="A wall of rain",
+ ["Сердце бури"]="The heart of the storm",
+ ["Гроза отступает"]="The storm recedes",
+ ["Ежедневный подарок уже получен."]="Your daily gift has already been received.",
+ ["Проверяем бонус к ежедневным деньгам."]="Checking your daily cash bonus.",
+ ["Новый подарок после полуночи UTC."]="A new gift is available after midnight UTC.",
+}
+for source,target in dailyStormEnglish do en[source]=target end
+
 function Text.Get(language, source)
 	return (if language == "en" then en else ru)[source] or source
 end

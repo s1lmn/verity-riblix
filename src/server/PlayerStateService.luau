@@ -75,6 +75,7 @@ function PlayerStateService:Snapshot(userId)
 		SwipeUpgradeLevel = data.SwipeUpgradeLevel, TutorialStep = data.TutorialStep,
 		TutorialCompleted = data.TutorialCompleted,
         FirstActivityCompleted = data.FirstActivityCompleted, Story=story,
+        DailyRewards=if self.DailyProjection then self.DailyProjection(userId) else nil,
         Progression = Goals.Build(data), NextUnlock = Goals.NextUnlock(data,heroAccess),
         AbilityCollection = Abilities.Collection(data,heroAccess,Config.HeroPassId~=nil,profile.AdminHeroSlots),
         AbilitySlots = if self.AbilitySlots then self.AbilitySlots(userId) else {},

@@ -6,6 +6,7 @@ local Numeric=require(RS.Shared.Numeric)
 local Rewards=require(RS.Shared.ActivityRewards)
 local Locale=require(RS.Shared.LocaleText)
 local PremiumDecor=require(RS.World.PremiumDecorArt)
+local StormDirector=require(script.Parent.StormDirector)
 local Service={};Service.__index=Service
 local PARTY_EFFECT_SECONDS=6
 local PARTY_EFFECT_COOLDOWN=12
@@ -26,6 +27,7 @@ end
 function Service.new(world,model,data,state,economy,players,clock,abilities,arcade,notify)
  local self=setmetatable({world=world,model=model,data=data,state=state,economy=economy,players=players,clock=clock,abilities=abilities,arcade=arcade,notify=notify,
   runs={},parties={},modes={},hostReady={},ready={},trialRewards={},claimed={stars={},fire={},cave={}},prompts={},limits={},links={},serial=0,packet=0,cycle=1,weatherRound=1,weather="Clear",since=clock(),deadline=clock()+C.WeatherCycle[1].Seconds,lastPublish=0,closed=false},Service)
+ self.storm=StormDirector.new()
  self.remote=Instance.new("RemoteEvent");self.remote.Name="VerityAdventures";self.remote.Parent=RS
  for _,q in model.root:GetDescendants() do if q:IsA("ProximityPrompt") then
   table.insert(self.prompts,q)
@@ -111,7 +113,7 @@ function Service:Publish(only)
   local choices={}
   for _,entry in list do local copy=table.clone(entry);local party=self.parties[entry.plot];copy.seen=party and party.entries[p]~=nil;table.insert(choices,copy) end
   self.remote:FireClient(p,{version=C.Version,sequence=self.packet,weather=self.weather,weatherRound=self.weatherRound,since=self.since,deadline=self.deadline,
-   nextWeather=C.WeatherCycle[self.cycle%#C.WeatherCycle+1].Kind,run=run,parties=choices})
+   nextWeather=C.WeatherCycle[self.cycle%#C.WeatherCycle+1].Kind,storm=self.storm:Projection(self.weather,self.weatherRound,self.since,self.deadline,self.clock()),run=run,parties=choices})
  end
  if only then if only.Parent==self.players then send(only) end else for _,p in self.players:GetPlayers() do send(p) end;self.lastPublish=self.clock() end
 end
@@ -437,7 +439,7 @@ function Service:Remove(p)
  for _,party in self.parties do local e=party.entries[p];if e then e.left=true end end
 end
 function Service:Destroy()
- self.closed=true;for plot in self.parties do self:StopParty(plot,false) end
+ self.closed=true;self.storm:Destroy();for plot in self.parties do self:StopParty(plot,false) end
  for p in self.runs do self:End(p,false,true) end
  for _,link in self.links do link:Disconnect() end;self.remote:Destroy()
 end

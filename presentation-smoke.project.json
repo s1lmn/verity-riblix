@@ -130,6 +130,12 @@
         },
         "PurchaseReceiptService": {
           "$path": "src/server/PurchaseReceiptService.luau"
+        },
+        "DailyRewardService": {
+          "$path": "src/server/DailyRewardService.luau"
+        },
+        "StormDirector": {
+          "$path": "src/server/StormDirector.luau"
         }
       },
       "PresentationSmoke": {

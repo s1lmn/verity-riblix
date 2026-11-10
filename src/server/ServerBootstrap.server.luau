@@ -116,6 +116,8 @@ local Premium=require(script.Parent.PremiumService).new(Data,State,Income,Abilit
  send(id,"NotificationEvent",{protocolVersion=1,code=code,source="Premium",eventId=guid()})
 end)
 MoneyPass.premium=Premium;AbilityShop.premium=Premium
+local Daily=require(script.Parent.DailyRewardService).new(Data,State,Economy,Players,clock,Premium)
+State.DailyProjection=function(id)return Daily:Projection(id)end
 local Receipts=require(script.Parent.PurchaseReceiptService).new(Data,State,{Cosmetics,Boost},not usingStudioMemory)
 State.PremiumProjection=function(id)return Premium:Projection(id)end
 State.PremiumPublic=function(id)return Premium:PublicStyles(id)end
@@ -301,6 +303,7 @@ Remote:Register("RequestSwipe", function(id)
 	if status=="OK" then World:React(id,"Love",2) end
 	return status,reward,cardId,isNewCard
 end)
+Remote:Register("RequestClaimDailyReward",function(id)return Daily:Claim(id)end)
 Remote:Register("RequestStoryGuide",function(id,payload)return Tasks:SetGuide(id,payload.enabled)end)
 Remote:Register("RequestTaskStart", function(id, payload) return Tasks:Start(id, payload.taskId) end)
 Remote:Register("RequestTaskComplete", function(id, payload) return Tasks:Complete(id, payload.taskId) end)
@@ -339,7 +342,7 @@ for plotId, anchors in World.anchors do
 	end
 end
 Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyService = Economy,
-	IncomeService = Income, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
+	IncomeService = Income, DailyRewardService=Daily, PlotService = Plots, WorldIntegration = World, DeliveryService = Delivery,
 	VerityService = Verity, UpgradeService = Upgrade, PhoneService = Phone, TaskService = Tasks,
 	CosmeticService = Cosmetics, BoostService = Boost, MoneyPassService = MoneyPass, PremiumService=Premium, PurchaseReceiptService=Receipts, AbilityShopService = AbilityShop, VerityAbilityService = Abilities, CombatTargets = CombatTargets, VerityBattleService=Battle, ParkourService=Parkour, StreetDeliveryService=StreetDelivery, VerityRaceService=Race, ActivityRewardService=ActivityRewards, VerityFusionService=Fusion, DiversionsService=Diversions, HomeStyleService=HomeStyles, CommunityService=Community, VerityBondService=Bond, SecretsService=Secrets, AlbumService=Album, ArcadeService=Arcade, AdventureService=Adventures, WeatherForgeService=Forge, WorldSignal = worldSignal.Event}
 script.Parent:SetAttribute("CoreReady", true)
@@ -467,6 +470,7 @@ local function onPlayer(player)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
 	if closing or player.Parent ~= Players then Data:ReleaseAsync(player.UserId); return end
  Premium:Attach(player)
+ Daily:Attach(player)
 	playerConnections[player.UserId] = {player.CharacterAdded:Connect(function(character) onCharacter(player, character) end)}
 	player.RespawnLocation = roadSpawn
 	player:SetAttribute("HouseSelectionReady", true)
@@ -505,6 +509,7 @@ for plotId, anchors in World.anchors do
 	end)
 end
 local function removePlayer(player)
+ Daily:Remove(player)
  Premium:Remove(player);Forge:Remove(player);Adventures:Remove(player);Arcade:Remove(player);Community:Remove(player);Bond:Remove(player);HomeStyles:Remove(player);Secrets:Remove(player)
  Diversions:Remove(player)
  if Fusion then Fusion:Remove(player,true) end
@@ -546,6 +551,7 @@ RunService.Heartbeat:Connect(function(dt)
 	if taskElapsed >= Config.TaskPollInterval then taskElapsed = 0; Tasks:Tick() end
 	if stateElapsed >= Config.SnapshotInterval then
 		stateElapsed = 0
+  Daily:Tick()
 		for id in State.sessions do
 			if not Data:Get(id) then
 				local player = Players:GetPlayerByUserId(id)

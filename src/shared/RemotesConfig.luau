@@ -8,7 +8,7 @@ local Premium=require(script.Parent.PremiumCatalog)
 local Bridge=require(script.Parent.PremiumVisualBridge)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
-	"RequestStoryGuide", "RequestBuyPremiumOffer", "RequestEquipPremiumOffer", "RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
+	"RequestClaimDailyReward", "RequestStoryGuide", "RequestBuyPremiumOffer", "RequestEquipPremiumOffer", "RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
 	"RequestCraftWeatherItem", "RequestSetWeatherLook", "RequestClaimAlbumSet", "RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
