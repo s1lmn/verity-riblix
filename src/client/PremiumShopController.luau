@@ -227,11 +227,12 @@ end
 function Shop:Copy(id,row,state)
  local card=Catalog.Card(id)
  local product=Products.Items[id]
+ local look=Packs.Looks[Packs.AbilityForOffer(id)]
  local remaining=if product and product.Seconds then (state and state.ShopBoostExpiresAt or 0)-workspace:GetServerTimeNow() else 0
  row.Caption.Text=Locale.Text(if product and product.Cash then "ИГРОВАЯ ВАЛЮТА" elseif product then "БУСТ ДОХОДА"
-  elseif id=="money_x3" then "ПОСТОЯННЫЙ БОНУС" elseif card.Variants then "3 ВАРИАНТА" elseif Packs.Items[id] or id=="scarlet_sentinel" then "ПЕРСОНАЖ" else "НАБОР")
+  elseif id=="money_x3" then "ПОСТОЯННЫЙ БОНУС" elseif card.Variants then "3 ВАРИАНТА" elseif look then "ОБЛИК + 2 СПОСОБНОСТИ" else "НАБОР")
  row.Benefit.Text=Locale.Text(benefits[id] or card.Description)
- row.Bundle.Text=Locale.Text(if product then "МОЖНО КУПИТЬ ПОВТОРНО" elseif card.Variants then "ОДНА ПОКУПКА · ТРИ ВАРИАНТА" elseif id=="scarlet_sentinel" then "ПОСТОЯННЫЙ ПРОПУСК · ДВЕ СПОСОБНОСТИ" else "ПОСТОЯННЫЙ ПРОПУСК")
+ row.Bundle.Text=Locale.Text(if product then "МОЖНО КУПИТЬ ПОВТОРНО" elseif card.Variants then "ОДНА ПОКУПКА · ТРИ ВАРИАНТА" elseif look then "ОБЛИК · 2 СПОСОБНОСТИ · БОНУС" else "ПОСТОЯННЫЙ ПРОПУСК")
  row.Comparison.Visible=id=="money_x3"
  if row.Variant then
   row.Variant.Text=string.format(Locale.Text("Вариант %d/%d · %s ›"),self.variants[id] or 1,#card.Variants,Locale.Text(Catalog.Items[self:Variant(id)].Title))
@@ -266,6 +267,10 @@ function Shop:Copy(id,row,state)
  elseif id=="premium_homes" then
   row.Details.Text=Locale.Text("В наборе: сакура, космический дом и неоновая вилла. Фасад и интерьер.\nОформление не строит этажи и не увеличивает доход. Нужен построенный первый этап дома.")
  else row.Details.Text=Locale.Text(if id==Catalog.FusionLookId then "Достаточно пропуска у одного участника. Покупка не даёт напарнику постоянного владения." else "Оформление без изменения характеристик. Примерка не меняет профиль.") end
+ if look then
+  row.Bundle.Text=string.format(Locale.Text("ОБЛИК · 2 СПОСОБНОСТИ · +$%s ОДИН РАЗ"),Locale.Number(Packs.BonusCash))
+  row.Extra.Text=string.format(Locale.Text("Эффект облика: %s"),Locale.Text(look.Effect)).."\n"..row.Extra.Text
+ end
 end
 function Shop:Render()
  if self.dead or not self.refs.Root.Visible then return end
@@ -311,7 +316,7 @@ function Shop:Render()
   W.SetButton(row.Equip,Locale.Text("ВЫБРАТЬ"),row.Equip.Visible and net.connected and not net:IsBusy() and offer.canEquip or false,false)
   row.Reset.Visible=offer.selected==true and self:Binding(id)~=nil
   W.SetButton(row.Reset,Locale.Text("СНЯТЬ ОФОРМЛЕНИЕ"),net.connected and not net:IsBusy() and offer.canEquip==true,false)
-  W.SetButton(row.Preview,Locale.Text(if product then "ПОДРОБНЕЕ" else "ПРИМЕРИТЬ"),true,false)
+  W.SetButton(row.Preview,Locale.Text(if product then "ПОДРОБНЕЕ" elseif detail and Packs.AbilityForOffer(id) then "ПОВТОРИТЬ ПОКАЗ" else "ПРИМЕРИТЬ"),true,false)
   row.Preview.Visible=not detail or product==nil
   if detail then Skin.LayoutDetail(row,self.refs.Detail.AbsoluteSize.X-12)
   else Skin.LayoutTile(row) end
@@ -323,14 +328,14 @@ function Shop:Step(now)
   self:ClearPreview();return
  end
  if now>=(self.nextRender or 0) then self.nextRender=now+1;self:Render() end
- if self.playing and now-self.playAt>=8 then self.playing=nil end
+ if self.playing and now-self.playAt>=8.6 then self.playing=nil end
  local id=self.detailId
  if not id or Products.Items[id] then return end
  if not self.scenes[id] then
   self.scenes[id]=Scenes.new(self.rows[id].Viewport,self:Variant(id),{interior=id=="premium_homes" and self.interior})
  end
  local reduced=self.ctx.settings.values.ReducedMotion or self.ctx.settings.values.ReducedEffects
- local interval=if self.ctx.settings.values.LowGraphics then 1/20 else 1/30
+ local interval=if reduced or not self.playing then 1/15 elseif self.ctx.settings.values.LowGraphics then 1/24 else 1/60
  if now<(self.nextFrame or 0) then return end;self.nextFrame=now+interval
  for id,scene in self.scenes do
   local age=if self.playing==id then now-self.playAt else 0

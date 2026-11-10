@@ -3,6 +3,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Levels = require(Shared.LevelConfig)
 local Houses = require(Shared.HouseConfig)
 local ShopProducts = require(Shared.ShopProducts)
+local Packs = require(Shared.CharacterPacks)
 local Economy = require(Shared.EconomyConfig)
 local TaskConfig = require(Shared.TaskConfig)
 local Config = require(Shared.GameConfig)
@@ -39,10 +40,10 @@ function PlayerStateService:PublicPlotSnapshot(userId)
 	local profile, session = self.data:Get(userId), self.sessions[userId]
 	if not profile or not session then return nil end
 	local data = profile.Data
- local attack,attackId=Abilities.ProfileEquipped(profile,"Attack")
- local mobility,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
+ local _,attackId=Abilities.ProfileEquipped(profile,"Attack")
+ local _,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
 	return {
-  CharacterPack=if attack and attack.Pack then attackId elseif mobility and mobility.Pack then mobilityId else nil,
+  CharacterPack=Packs.LookForAbilities(attackId,mobilityId),
 		protocolVersion = 1, stateRevision = profile.Revision, ownerUserId = userId, PlotId = session.PlotId,
 		VerityLevel = data.VerityLevel, VerityScale = Levels.getVerityScale(data.VerityLevel),
 		VerityUnlocked = data.VerityUnlocked, DeliveryState = data.DeliveryState,
@@ -60,8 +61,8 @@ function PlayerStateService:Snapshot(userId)
 	if not profile or not session then return nil end
 	local data, level = profile.Data, profile.Data.VerityLevel
  local heroAccess=Abilities.HeroAccess(profile)
- local attack,attackId=Abilities.ProfileEquipped(profile,"Attack")
- local mobility,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
+ local _,attackId=Abilities.ProfileEquipped(profile,"Attack")
+ local _,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
  local equipped={Attack=attackId,Mobility=mobilityId}
 	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel,data.HouseDoorOwned,data.HouseSecondFloorOwned)
 	local now = self.clock()
@@ -112,7 +113,7 @@ function PlayerStateService:Snapshot(userId)
   WeatherMaterials=table.clone(data.WeatherMaterials), AdventureRecords=table.clone(data.AdventureRecords), ArcadeBestScore=data.ArcadeBestScore, FeedCollection = table.clone(data.FeedCollection),
   ShowcaseCards = table.clone(data.ShowcaseCards or {}),
   AbilitiesOwned = table.clone(data.AbilitiesOwned), AbilitiesEquipped = equipped,
-  CharacterPack=if attack and attack.Pack then attackId elseif mobility and mobility.Pack then mobilityId else nil,
+  CharacterPack=Packs.LookForAbilities(attackId,mobilityId),
   CharacterPackTrial=profile.AdminHeroSlots and profile.AdminHeroSlots.Attack,
   HeroPassOwned = heroAccess, HeroPassId = Config.HeroPassId, HeroPassTrial = heroAccess and profile.HeroPassOwned~=true,
   CosmeticsCatalog = if self.CosmeticsCatalog then self.CosmeticsCatalog() else {},

@@ -9,6 +9,7 @@ local Profile = require(Shared.VerityAnimationProfile)
 local Version = require(Shared.ProjectVersion)
 local Looks = require(Shared.VerityCompanionLevels)
 local Skins = require(Shared.VerityElementalSkins)
+local Packs = require(Shared.CharacterPacks)
 local FaceUI = require(script.Parent.VerityFaceUI)
 local Factory = {}
 
@@ -45,6 +46,7 @@ function Factory.Create(parent, origin, metadata)
 	local scale = Levels.getVerityScale(level)
 	local model = Instance.new("Model")
 	model.Name, model.ModelStreamingMode = "Verity", Enum.ModelStreamingMode.Persistent
+ if metadata.preview and metadata.characterPack then model:SetAttribute("CharacterPack",metadata.characterPack) end
  if metadata.preview and metadata.elementalSkin then model:SetAttribute("ElementalSkinOverride",metadata.elementalSkin) end
 	local ink, white, pink = Color3.fromHex("22264B"), Color3.fromHex("FFF9FF"), Color3.fromHex("FF5CB8")
 	local color = Factory.Color(level)
@@ -111,9 +113,10 @@ end
 
 function Factory.SetStage(model, level)
  local body=model:FindFirstChild("Body")
+ local pack=Packs.Looks[model:GetAttribute("CharacterPack")]
  if body then
-  local skin=Skins.Get(level,model:GetAttribute("WeatherSkinOverride") or model:GetAttribute("ElementalSkinOverride"))
-  local id=if skin then (skin.LevelKey or skin.Id) else "Base"
+  local skin=not pack and Skins.Get(level,model:GetAttribute("WeatherSkinOverride") or model:GetAttribute("ElementalSkinOverride"))
+  local id=if pack then "Pack:"..pack.Id elseif skin then (skin.LevelKey or skin.Id) else "Base"
   if body:GetAttribute("ElementalAppliedSkin")~=id then
    local mesh=body:FindFirstChildOfClass("SpecialMesh")
    if mesh then
@@ -124,14 +127,18 @@ function Factory.SetStage(model, level)
      body.Color=Color3.new(1,1,1);body:SetAttribute("VerityTint",false)
     else
      mesh.MeshId="";mesh.TextureId="";mesh.MeshType=Enum.MeshType.Sphere;mesh.Scale=Vector3.one;mesh.VertexColor=Vector3.one
-     body.Color=Factory.Color(level);body:SetAttribute("VerityTint",true)
+     body.Color=if pack then Color3.fromHex(pack.Color) else Factory.Color(level)
+     body:SetAttribute("VerityTint",pack==nil)
     end
     body:SetAttribute("ElementalAppliedSkin",id)
+    for _,part in model:GetChildren() do
+     if part:IsA("BasePart") and (part.Name=="Eye" or part.Name=="Smile") then part.Transparency=if pack then 1 else 0 end
+    end
    end
   end
  end
 	local crown = model:FindFirstChild("Crown")
-	if crown then for _, p in crown:GetChildren() do if p:IsA("BasePart") then p.Transparency = if level == 100 and model:GetAttribute("Cosmetic_Head")==nil then 0 else 1 end end end
+	if crown then for _, p in crown:GetChildren() do if p:IsA("BasePart") then p.Transparency = if not pack and level == 100 and model:GetAttribute("Cosmetic_Head")==nil then 0 else 1 end end end
 end
 
 return Factory

@@ -19,6 +19,7 @@ local Fusion=require(Shared.VerityFusionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
 local Catalog=require(Shared.CosmeticCatalog)
 local WeatherLooks=require(Shared.WeatherForgeConfig)
+local Packs=require(Shared.CharacterPacks)
 local Premium=require(Shared.PremiumVisualCatalog)
 local Players=game:GetService("Players")
 local Factory=require(script.Parent.VerityFactory)
@@ -313,12 +314,14 @@ visibility=function(record,alpha)
  local face=body and body:FindFirstChild("FaceGui")
  local image=face and FaceUI.Image(face)
  local textured=false
+ local pack=Packs.Looks[model:GetAttribute("CharacterPack")]
  if image then
   local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0)
    then model:GetAttribute("Emotion") else "Joy"
   local asset=Art.Textures[emotion] or Art.Textures.Joy
   if image.Image~=asset then image.Image=asset end
   textured=FaceUI.Refresh(face,alpha)
+  if pack and not textured then face.Enabled=false end
  end
  local faceEnabled=face and face.Enabled or false
  if record.textured~=textured or record.faceEnabled~=faceEnabled then
@@ -621,7 +624,7 @@ function Controller:Tick(now,dt)
 			else math.min(90,graphics and graphics.EffectDistance or 90)
 		local cover=math.max(record.visibility or 0,record.growthCover or 0,record.spawnCover or 0)
 		record.auraNear=not record.fusing and cover<.28 and auraDistance<auraLimit+(if record.auraNear then 8 else 0)
-  local aura=if not active and not spawning then Premium.Auras[model:GetAttribute("PremiumAura")] else nil
+  local aura=if not active and not spawning then Premium.Auras[model:GetAttribute("PremiumAura")] or Packs.Looks[model:GetAttribute("CharacterPack")] else nil
 		self.effects:Update(model,model:GetPivot(),auraScale,stage,now,
 			self.settings.values.ReducedEffects or self.settings.values.LowGraphics,record.auraNear,
 			auraLevel,reduced,record.teleported and not record.riding,if aura then Color3.fromHex(aura.Color) elseif weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(auraLevel),graphics,auraDistance,own,aura or weatherLook)

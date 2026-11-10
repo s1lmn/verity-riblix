@@ -13,6 +13,7 @@ local SPECTRUM = {
 	Color3.fromHex("77DBFF"), Color3.fromHex("BA98FF"),
 }
 local ELEMENTS = {
+ Crimson = {accent = Color3.fromHex("FFAB86"), tilt = .23, speed = .96},
 	Candy = {accent = Color3.fromHex("FFF2BD"), tilt = .18, speed = .56},
 	Aqua = {accent = Color3.fromHex("9DFFE1"), tilt = .32, speed = .64},
 	Frost = {accent = Color3.fromHex("C3EEFF"), tilt = .45, speed = .48},
@@ -156,7 +157,7 @@ local function styleAura(group, level, tint, detail, weatherLook)
 	local style = ELEMENTS[family]
 	local look = Profile.Aura(level)
 	local progress = (level-1)/99
-	local accent = tint:Lerp(style.accent,.62)
+	local accent = if weatherLook and weatherLook.Accent then Color3.fromHex(weatherLook.Accent) else tint:Lerp(style.accent,.62)
 	local extraArcs = if detail==0 or level<10 then 0 elseif detail==2 and level>=25 then 2 else 1
 	local moteCount = if detail==0 then 0 elseif detail==1 or level<10 then 3 elseif level>=50 then 7 else 5
 	local trailCount = if detail==2 then look.trails elseif detail==1 then math.min(1,look.trails) else 0

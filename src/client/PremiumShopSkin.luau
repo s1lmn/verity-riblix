@@ -2,6 +2,7 @@
 local RS=game:GetService("ReplicatedStorage")
 local Catalog=require(RS.Shared.PremiumVisualCatalog)
 local Products=require(RS.Shared.ShopProducts)
+local Packs=require(RS.Shared.CharacterPacks)
 local Art=require(script.Parent.PremiumShopArt)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
@@ -76,7 +77,8 @@ function Skin.Build(parent)
  return {Root=root,Backdrop=backdrop,Header=header,Title=title,Subtitle=subtitle,Close=close,Back=back,Body=body,Grid=grid,Detail=detail,Parking=parking,Tabs=tabs}
 end
 function Skin.Card(parent,id,item,order)
- local stage=STAGES[id] or {item.Color,"6747AB"}
+ local look=Packs.Looks[Packs.AbilityForOffer(id)]
+ local stage=if look then {look.Color,look.Dark} else STAGES[id] or {item.Color,"6747AB"}
  local accent=Color3.fromHex(item.Color)
  local row=W.Round(W.Frame(parent,id,UDim2.fromOffset(184,204),Color3.fromHex("1D2030")),14)
  row.LayoutOrder=order;row.Visible=false;row.ClipsDescendants=true
@@ -157,6 +159,7 @@ function Skin.LayoutDetail(row,width)
  if row.HouseView then row.HouseView.Visible=true end
  place(row.Art,math.clamp((width-24)*.40,128,260))
  fit(row.Benefit,23)
+ fit(row.Bundle,18)
  if row.Comparison.Visible then fit(row.Comparison,28) end
  if row.Variant then place(row.Variant,44) end
  if row.HouseView then place(row.HouseView,44) end
@@ -170,7 +173,7 @@ function Skin.LayoutDetail(row,width)
  end
  if action or row.Preview.Visible then y+=55 end
  if row.Reset.Visible then place(row.Reset,44) end
- fit(row.Bundle,18);fit(row.Details,26)
+ fit(row.Details,26)
  if row.Extra.Visible then fit(row.Extra,26) end
  row.Root.Size=UDim2.new(1,-7,0,y+4)
 end
