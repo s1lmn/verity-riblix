@@ -249,6 +249,16 @@ local ru = {
 	[" m"] = " м",
 }
 local en = {
+	["ПОСТОЯННЫЙ БОНУС ×3"] = "PERMANENT ×3",
+	["ВРЕМЕННЫЙ БУСТ ×2"] = "TIMED ×2 BOOST",
+	["АУРА НА VERITY"] = "AURA ON VERITY",
+	["ДИСКОШАР И ТАНЦПОЛ"] = "DISCO BALL AND DANCE FLOOR",
+	["КАРТОЧКИ И АЛЬБОМ"] = "CARDS AND ALBUM",
+	["ЗВЁЗДНЫЙ ПОТОЛОК"] = "STARRY CEILING",
+	["СВЕТЛЯЧКИ У ДОМА"] = "GARDEN FIREFLIES",
+	["СЕВЕРНОЕ СИЯНИЕ"] = "NORTHERN LIGHTS",
+	["ЗВЁЗДНОЕ СЛИЯНИЕ"] = "STARLIGHT FUSION",
+	["ЦЕРЕМОНИЯ СЛИЯНИЯ"] = "FUSION CEREMONY",
 	["ОБЛИК + 2 СПОСОБНОСТИ"] = "SKIN + 2 ABILITIES",
 	["ОБЛИК · 2 СПОСОБНОСТИ · +$%s ОДИН РАЗ"] = "SKIN · 2 ABILITIES · ONE-TIME +$%s",
 	["Эффект облика: %s"] = "Skin effect: %s",

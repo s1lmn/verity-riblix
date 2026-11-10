@@ -53,7 +53,8 @@ function Skin.Build(parent)
  root.Visible=false;root.Active=true;root.SelectionGroup=true;root.ClipsDescendants=true;root.ZIndex=10
  for _,direction in {"Up","Down","Left","Right"} do root["SelectionBehavior"..direction]=Enum.SelectionBehavior.Stop end
  outline(root,INK,4)
- local header=W.Frame(root,"Header",UDim2.new(1,0,0,60),Color3.fromHex("FFB20F"))
+ local header=W.Round(W.Frame(root,"Header",UDim2.new(1,-14,0,54),Color3.fromHex("FFB20F")),12)
+ header.Position=UDim2.fromOffset(7,7)
  gradient(header,"FF8D0A","FFF05D",0)
  local title=whiteType(W.Text(header,"Title","МАГАЗИН",23,true))
  title.TextWrapped=false;title.TextTruncate=Enum.TextTruncate.AtEnd
@@ -86,10 +87,6 @@ function Skin.Card(parent,id,item,order)
  local art=W.Round(W.Frame(row,"ProductScene",UDim2.new(1,-10,0,120),accent),11)
  art.ClipsDescendants=true;gradient(art,stage[1],stage[2],38)
  outline(art,Color3.fromHex("FFFFFF"),1.8).Transparency=.29
- for i=1,3 do
-  local gloss=W.Frame(art,"Shine",UDim2.new(.07+i*.025,0,1.85,0),T.White)
-  gloss.Position=UDim2.fromScale(.58+i*.13,-.37);gloss.Rotation=27;gloss.BackgroundTransparency=.91
- end
  local illustration=Art.Build(art,id,item,Products.Items[id])
  local viewport=W.New("ViewportFrame",{Name="Model",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
   Ambient=Color3.fromRGB(199,193,219),LightColor=Color3.fromRGB(255,246,227),LightDirection=Vector3.new(-1,-1,-2)},art)
@@ -150,14 +147,14 @@ function Skin.LayoutDetail(row,width)
   place(label,math.max(minimum,math.ceil(bounds.Y)+6))
  end
  row.Title.TextSize=22;fit(row.Title,30)
- row.Viewport.Position=UDim2.fromOffset(0,0);row.Viewport.Size=UDim2.fromScale(1,1)
+ row.Viewport.Position=UDim2.fromOffset(9,7);row.Viewport.Size=UDim2.new(1,-18,1,-39)
  row.Caption.Visible=false
  row.Illustration.Position=UDim2.fromOffset(0,3);row.Illustration.Size=UDim2.new(1,0,1,-6)
  row.Benefit.Visible=true;row.Bundle.Visible=true;row.Price.Visible=true;row.Price.BackgroundTransparency=1;row.Details.Visible=true
  row.Extra.Visible=row.Extra.Text~=""
  if row.Variant then row.Variant.Visible=true end
  if row.HouseView then row.HouseView.Visible=true end
- place(row.Art,math.clamp((width-24)*.40,128,260))
+ place(row.Art,math.clamp((width-24)*.48,154,300))
  fit(row.Benefit,23)
  fit(row.Bundle,18)
  if row.Comparison.Visible then fit(row.Comparison,28) end
@@ -185,21 +182,21 @@ function Skin.Layout(refs,size)
  refs.Root.Size=UDim2.fromOffset(width,height)
  local compactHeader=width<450 and height<235
  local horizontal=width>=450 or compactHeader
- refs.Header.Size=UDim2.new(1,0,0,55)
+ refs.Header.Size=UDim2.new(1,-14,0,54)
  refs.Close.Position=UDim2.new(1,-50,0,5)
  refs.Title.TextSize=if compactHeader then 13 elseif horizontal then 22 else 19
  refs.Title.Size=UDim2.fromOffset(if compactHeader then 91 elseif horizontal then 168 else width-112,44)
- local left=if compactHeader then 102 elseif horizontal then 178 else 8
- local span=(width-left-(if horizontal then 56 else 4))/3
+ local left=if compactHeader then 109 elseif horizontal then 185 else 9
+ local span=(width-left-(if horizontal then 62 else 7))/3
  for i,section in Catalog.Sections do
   local tab=refs.Tabs[section.id]
-  tab.Position=UDim2.fromOffset(left+(i-1)*span,if horizontal then 5 else 60)
+  tab.Position=UDim2.fromOffset(left+(i-1)*span,if horizontal then 12 else 68)
   tab.Size=UDim2.fromOffset(span-5,44)
   tab.ZIndex=2
  end
- local y=if horizontal then 61 else 109
+ local y=if horizontal then 68 else 119
  refs.Body.Position=UDim2.fromOffset(6,y);refs.Body.Size=UDim2.new(1,-12,1,-y-6)
- refs.Detail.Position=UDim2.fromOffset(6,61);refs.Detail.Size=UDim2.new(1,-12,1,-67)
+ refs.Detail.Position=UDim2.fromOffset(6,68);refs.Detail.Size=UDim2.new(1,-12,1,-77)
  local available=width-30
  local columns=if available>=720 then 4 elseif available>=495 then 3 elseif available>=232 then 2 else 1
  local tileWidth=math.floor((available-(columns-1)*GAP)/columns)

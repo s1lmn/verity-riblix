@@ -52,8 +52,18 @@ function Factory.Create(parent,entries,lookId)
   piece(m,"Eye",Vector3.new(side*1.5,6.1,4.78),Vector3.new(.5,1,.25),Color3.fromHex("2B2844"),true)
   piece(m,"EyeGlint",Vector3.new(side*1.5-.08,6.32,4.95),Vector3.one*.16,Color3.fromHex("FFF8E7"),true)
  end
- for i=0,10 do
-  local a=i*math.pi/10;piece(m,"Smile",Vector3.new(math.cos(a)*1.3,4.5-math.sin(a)*.6,4.9),Vector3.one*.18,Color3.fromHex("2B2844"),true)
+ if premium then
+  local ink=Color3.fromHex("302141")
+  piece(m,"Smile",Vector3.new(0,4.05,5.19),Vector3.new(1.96,1.05,.46),ink,true)
+  piece(m,"Tongue",Vector3.new(.15,3.83,5.41),Vector3.new(1.13,.36,.16),Color3.fromHex("FE91BD"),true)
+  for _,side in {-1,1} do
+   local gem=piece(m,"TempleGem",Vector3.new(side*3.08,7.6,3.96),Vector3.new(.42,.76,.22),right,false,true)
+   gem.CFrame*=CFrame.Angles(0,0,side*.62)
+  end
+ else
+  for i=0,10 do
+   local a=i*math.pi/10;piece(m,"Smile",Vector3.new(math.cos(a)*1.3,4.5-math.sin(a)*.6,4.9),Vector3.one*.18,Color3.fromHex("2B2844"),true)
+  end
  end
  piece(m,"Shine",Vector3.new(-1.7,8.2,3.7),Vector3.new(2,.35,.2),Color3.fromHex("FFF7E4"),true)
  local a=Instance.new("Attachment");a.Position=Vector3.new(0,5,0);a.Parent=root

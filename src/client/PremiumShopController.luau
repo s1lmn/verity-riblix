@@ -46,10 +46,10 @@ function Shop.new(ctx,money,abilities)
   self.cleanup:Add(row.Reset.Activated:Connect(function()self:Remove(id)end))
   if row.Variant then self.cleanup:Add(row.Variant.Activated:Connect(function()
    local card=Catalog.Card(id);self.variants[id]=(self.variants[id] or 1)%#card.Variants+1
-   self:DropScene(id);self:Render()
+   self:DropScene(id);self.playing=id;self.playAt=os.clock();self:Render()
   end)) end
   if row.HouseView then self.cleanup:Add(row.HouseView.Activated:Connect(function()
-   self.interior=not self.interior;self:DropScene(id);self:Render()
+   self.interior=not self.interior;self:DropScene(id);self.playing=id;self.playAt=os.clock();self:Render()
   end)) end
  end
  self.cleanup:Add(self.refs.Root:GetPropertyChangedSignal("Visible"):Connect(function()
@@ -132,11 +132,9 @@ function Shop:Preview(id)
   self.refs.Detail.CanvasPosition=Vector2.zero
   if Input.PreferredInput==Enum.PreferredInput.Gamepad then GuiService.SelectedObject=self.refs.Back end
  end
- if not Products.Items[id] then
-  self.playing=id
-  self.playAt=os.clock()
-  self.ctx.sound:Play("DecorTryOn")
- end
+ self.playing=id
+ self.playAt=os.clock()
+ self.ctx.sound:Play("DecorTryOn")
  self:Render()
  if self.refs.Detail.CanvasPosition.Y>0 then self.refs.Detail.CanvasPosition=Vector2.zero end
 end
@@ -298,8 +296,8 @@ function Shop:Render()
   self:Copy(id,row,net.state)
   local offer=self:Offer(id,net.state)
   local product=Products.Items[id]
-  row.Illustration.Visible=not detail or product~=nil
-  row.Viewport.Visible=detail and product==nil
+  row.Illustration.Visible=not detail
+  row.Viewport.Visible=detail
   row.PhasePlate.Visible=row.Viewport.Visible
   row.Price.Text=if offer.owned then Locale.Text("Куплено") elseif offer.loading then Locale.Text("Загружаем цену Roblox…")
    elseif offer.onSale and offer.price then string.format(Locale.Text("Цена Roblox: %d R$"),offer.price)
@@ -316,8 +314,7 @@ function Shop:Render()
   W.SetButton(row.Equip,Locale.Text("ВЫБРАТЬ"),row.Equip.Visible and net.connected and not net:IsBusy() and offer.canEquip or false,false)
   row.Reset.Visible=offer.selected==true and self:Binding(id)~=nil
   W.SetButton(row.Reset,Locale.Text("СНЯТЬ ОФОРМЛЕНИЕ"),net.connected and not net:IsBusy() and offer.canEquip==true,false)
-  W.SetButton(row.Preview,Locale.Text(if product then "ПОДРОБНЕЕ" elseif detail and Packs.AbilityForOffer(id) then "ПОВТОРИТЬ ПОКАЗ" else "ПРИМЕРИТЬ"),true,false)
-  row.Preview.Visible=not detail or product==nil
+  W.SetButton(row.Preview,Locale.Text(if detail then "ПОВТОРИТЬ ПОКАЗ" elseif product then "ПОДРОБНЕЕ" else "ПРИМЕРИТЬ"),true,false)
   if detail then Skin.LayoutDetail(row,self.refs.Detail.AbsoluteSize.X-12)
   else Skin.LayoutTile(row) end
  end
@@ -330,7 +327,7 @@ function Shop:Step(now)
  if now>=(self.nextRender or 0) then self.nextRender=now+1;self:Render() end
  if self.playing and now-self.playAt>=8.6 then self.playing=nil end
  local id=self.detailId
- if not id or Products.Items[id] then return end
+ if not id then return end
  if not self.scenes[id] then
   self.scenes[id]=Scenes.new(self.rows[id].Viewport,self:Variant(id),{interior=id=="premium_homes" and self.interior})
  end

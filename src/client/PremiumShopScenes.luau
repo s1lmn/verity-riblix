@@ -9,6 +9,7 @@ local Decor=require(World.PremiumDecorArt)
 local Fusion=require(World.VerityFusionFactory)
 local Themes=require(RS.Shared.HomeStyleConfig)
 local Visual=require(RS.Shared.PremiumVisualCatalog)
+local Products=require(RS.Shared.ShopProducts)
 local Packs=require(RS.Shared.CharacterPacks)
 local PackArt=require(World.CharacterPackArt)
 local Scene={};Scene.__index=Scene
@@ -21,37 +22,20 @@ local function piece(parent,name,size,pos,color,shape,glow)
 end
 local function smooth(t) t=math.clamp(t,0,1);return t*t*(3-2*t) end
 function Scene.new(viewport,id,options)
- local self=setmetatable({view=viewport,id=id,options=options or {},started=os.clock()},Scene)
+ local self=setmetatable({view=viewport,id=id,options=options or {}},Scene)
  self.container=Instance.new("WorldModel");self.container.Name="ProductPreview";self.container.Parent=viewport
  self.world=Instance.new("Model");self.world.Name="Scene";self.world.Parent=self.container
  self.camera=Instance.new("Camera");self.camera.FieldOfView=38;self.camera.Parent=viewport;viewport.CurrentCamera=self.camera
  local item=Visual.Items[id]
  local packId=Packs.AbilityForOffer(id)
+ local product=Products.Items[id]
  if packId then self:CharacterPack(packId)
- elseif id=="money_x3" then self:Money()
- elseif item.Preview=="House" then
-  local theme=Themes.Themes[item.Theme]
-  if self.options.tile then
-   self:HouseTile(item.Theme,theme.Color)
-  else
-   self.house=Interior.CreateHouse(self.world,CFrame.identity,Color3.fromHex(theme.Color))
-   HouseArt.Build(self.house,CFrame.identity,item.Theme)
-   if self.options.interior then
-    self.camera.CFrame=CFrame.lookAt(Vector3.new(8,7.6,10),Vector3.new(-11,4,3));self.camera.FieldOfView=62
-   else self:Frame(Vector3.new(0,7,3),Vector3.new(43,22,42),Vector3.new(1,.55,1.8)) end
-  end
- elseif item.Preview=="Aura" then
-  self.pet=Verity.Create(self.world,CFrame.identity,{level=1,preview=true});self.pet.PrimaryPart.LevelLabel.Enabled=false
-  Decor.Build(self.world,CFrame.identity,id,true)
-  self:Frame(Vector3.new(0,1.2,0),Vector3.new(4.8,4,4),Vector3.new(.35,.2,-1))
- elseif item.Preview=="Fusion" then
-  Fusion.Create(self.world,nil,id)
-  self:Frame(Vector3.new(0,5.4,0),Vector3.new(13,11,13),Vector3.new(.2,.1,1))
- else
-  Decor.Build(self.world,CFrame.identity,id,true)
-  local center,size=self.world:GetBoundingBox()
-  self:Frame(center.Position,size,Vector3.new(.4,.3,1))
- end
+ elseif product and product.Cash then self:Cash(product)
+ elseif product or id=="money_x3" then self:Boost(product)
+ elseif item.Preview=="House" then self:House(item.Theme)
+ elseif item.Preview=="Aura" then self:Aura(id)
+ elseif item.Preview=="Fusion" then self:Fusion(id)
+ else self:Decor(id) end
  self:Step(0,true)
  return self
 end
@@ -60,33 +44,8 @@ function Scene:Frame(target,size,direction)
  local s=self.view.AbsoluteSize;local aspect=math.max(.5,s.X/math.max(1,s.Y))
  local tan=math.tan(math.rad(self.camera.FieldOfView/2))
  local distance=math.max(size.Y/(2*tan),size.X/(2*tan*aspect))+size.Z*.42
- self.camera.CFrame=CFrame.lookAt(target+direction.Unit*distance*1.06,target)
-end
-function Scene:HouseTile(theme,color)
- local world=self.world
- local base=piece(world,"MiniatureBase",Vector3.new(5.1,.18,3.6),Vector3.new(0,.08,0),"E8CBCD")
- piece(world,"Walls",Vector3.new(3.9,2.05,2.68),Vector3.new(0,1.16,0),color)
- piece(world,"Door",Vector3.new(.72,1.26,.16),Vector3.new(0,.77,1.4),"51426B")
- for _,side in {-1,1} do
-  piece(world,"Window",Vector3.new(.82,.64,.13),Vector3.new(side*1.26,1.28,1.4),"FFE5AB")
- end
- if theme=="sakura" then
-  for _,side in {-1,1} do
-   local roof=piece(world,"UpturnedRoof",Vector3.new(2.35,.24,3.2),Vector3.new(side*1.12,2.32,0),"92385D")
-   roof.CFrame*=CFrame.Angles(0,0,side*.10)
-   local tree=Vector3.new(side*2.21,.66,1.15)
-   piece(world,"TreeStem",Vector3.new(.14,1,.14),tree,"84576C")
-   piece(world,"Sakura",Vector3.new(.72,.70,.72),tree+Vector3.new(0,.61,0),"FF8FB5",Enum.PartType.Ball)
-  end
- elseif theme=="cosmic" then
-  piece(world,"Dome",Vector3.new(2.06,1.20,1.84),Vector3.new(0,2.38,0),"A996FF",Enum.PartType.Ball)
-  piece(world,"Lens",Vector3.new(.58,.34,.12),Vector3.new(.13,2.55,.83),"A9F3FF",nil,true)
- else
-  piece(world,"VillaRoof",Vector3.new(4.3,.3,3.09),Vector3.new(.24,2.34,0),"3A3553")
-  piece(world,"NeonEdge",Vector3.new(4.28,.10,.12),Vector3.new(.24,2.31,1.58),"91FFE2",nil,true)
-  piece(world,"NeonEntry",Vector3.new(.95,.09,.13),Vector3.new(0,1.6,1.48),"FF9FE6",nil,true)
- end
- self:Frame(Vector3.new(0,1.43,0),Vector3.new(base.Size.X,3.15,3.6),Vector3.new(.7,.4,1))
+ self.frameDistance=distance*1.06
+ self.camera.CFrame=CFrame.lookAt(target+direction.Unit*self.frameDistance,target)
 end
 local DEMOS={
  homelander={Travel="Управляемый полёт",Attack="Красные лазеры",Mode="laser"},
@@ -189,35 +148,258 @@ function Scene:StepCharacter(age,reduced)
  if mobility then return self.demo.Travel or self.pack.MobilityLabel end
  return "ЭКСКЛЮЗИВНЫЙ ОБЛИК"
 end
-function Scene:Money()
- self.coins={}
- for group,count in {6,18} do
-  local x=if group==1 then -1.8 else 1.8
-  piece(self.world,"IncomePlinth",Vector3.new(2.7,.3,2.4),Vector3.new(x,-.2,0),if group==1 then "B9AAD3" else "B392F2")
-  for i=1,count do
-   local column=(i-1)%3;local height=math.floor((i-1)/3)
-   local pos=Vector3.new(x+(column-1)*.68,height*.19+.17,0)
-   local p=piece(self.world,"Coin",Vector3.new(.16,.62,.62),pos,if group==1 then "E2B877" else "FFD858",Enum.PartType.Cylinder)
-   p.CFrame=CFrame.new(pos)*CFrame.Angles(0,0,math.pi/2)
-   table.insert(self.coins,{p=p,pos=pos,index=i,group=group})
-  end
- end
- self:Frame(Vector3.new(0,.7,0),Vector3.new(6,3,3),Vector3.new(.08,.55,-1))
+local v=Vector3.new
+local BALL=Enum.PartType.Ball
+local CYLINDER=Enum.PartType.Cylinder
+
+local function cylinder(parent,name,pos,diameter,thickness,color,horizontal)
+ local disc=piece(parent,name,v(thickness,diameter,diameter),pos,color,CYLINDER)
+ disc.CFrame=disc.CFrame*(if horizontal then CFrame.Angles(0,0,math.pi/2) else CFrame.Angles(0,math.pi/2,0))
+ return disc
 end
-function Scene:Step(age,reduced)
- if self.framing and self.lastSize~=self.view.AbsoluteSize then self:Frame(table.unpack(self.framing)) end
- if self.demo then return self:StepCharacter(age,reduced)
- elseif self.id=="money_x3" then
-  for _,c in self.coins do
-   local lift=if reduced then 0 else math.max(0,math.sin((age%4)*math.pi*.5-c.index*.08))*.16
-   c.p.CFrame=CFrame.new(c.pos+Vector3.new(0,lift,0))*CFrame.Angles(0,0,math.pi/2)
+
+function Scene:Stage(diameter,base,trim)
+ cylinder(self.world,"Plinth",v(0,-.16,0),diameter,.27,base,true)
+ cylinder(self.world,"Inlay",v(0,-.015,0),diameter-.06,.045,trim,true)
+ cylinder(self.world,"Deck",v(0,.024,0),diameter-.24,.055,base,true)
+end
+
+function Scene:Cash(offer)
+ self:Stage(3.9,"173E42","66E0B2")
+ self.display=Instance.new("Model");self.display.Name="CashDisplay";self.display.Parent=self.world
+ local offsets={v(0,.45,-.33),v(-.65,.52,.31),v(.65,.61,.27),v(.13,.98,.23)}
+ for i=1,offer.Stacks do
+  local pivot=CFrame.new(offsets[i])*CFrame.Angles(0,.34*(i-2),-.09*(i-2))
+  local function bill(name,position,size,color)
+   local p=piece(self.display,name,size,v(0,0,0),color)
+   p.CFrame=pivot*CFrame.new(position)
   end
-  return "ОДИН ДОХОД — ВТРОЕ БОЛЬШЕ ДЕНЕГ"
- elseif self.house then return if self.options.interior then "ИНТЕРЬЕР ВХОДНОЙ КОМНАТЫ" else "ФАСАД И ДЕКОР"
- elseif self.pet then
-  self.pet:PivotTo(CFrame.new(0,if reduced then .2 else .2+math.sin(age*1.6)*.12,0))
+  bill("Stack",v(0,0,0),v(1.12,.38,.67),"15744C")
+  bill("Note",v(0,.19,0),v(1.12,.073,.67),"74F3A2")
+  for layer=1,3 do bill("PaperEdge",v(0,-.19+layer*.09,-.335),v(1.13,.023,.014),"46C982") end
+  bill("GoldStrap",v(.13,.023,0),v(.27,.435,.702),"FEC64D")
+  bill("StrapGlint",v(.06,.246,-.04),v(.06,.009,.57),"FFF2AA")
+  bill("Seal",v(-.30,.23,0),v(.26,.023,.29),"2EAE72")
  end
- return "ЛОКАЛЬНАЯ ПРИМЕРКА"
+ for i=1,offer.Stacks+1 do
+  local angle=2.35*i
+  local pos=v(math.cos(angle)*1.40,.115,math.sin(angle)*1.25)
+  cylinder(self.display,"CoinRim",pos,.37,.105,"E99E37",true)
+  cylinder(self.display,"CoinFace",pos+v(0,.06,0),.28,.035,"FFDE6C",true)
+ end
+ self.display.WorldPivot=CFrame.identity
+ self.caption="ИГРОВАЯ ВАЛЮТА"
+ self:Frame(v(0,.64,0),v(4.1,2.0,2.7),v(.48,.52,-1))
+end
+
+function Scene:Boost(offer)
+ local permanent=offer==nil
+ local color=if permanent then "B4A2FF" elseif offer.Seconds==3600 then "FF996D" else "FFDE78"
+ self:Stage(3.7,"34305B",color)
+ self.display=Instance.new("Model");self.display.Name="BoostDisplay";self.display.Parent=self.world
+ local center=v(0,1.17,0)
+ local clock=cylinder(self.display,"ClockCase",center,1.95,.32,"DB8B48",false)
+ cylinder(self.display,"Rim",center+v(0,0,-.18),1.82,.09,color,false)
+ cylinder(self.display,"Dial",center+v(0,0,-.238),1.61,.07,"30234E",false)
+ for i=0,11 do
+  local angle=i*math.pi/6
+  local mark=piece(self.display,"HourMark",v(.047,if i%3==0 then .14 else .085,.032),center+v(math.sin(angle)*.70,math.cos(angle)*.70,-.29),color)
+  mark.CFrame*=CFrame.Angles(0,0,-angle)
+ end
+ self.hands={}
+ for i,length in {.42,.57} do self.hands[i]=piece(self.display,"Hand",v(.072,length,.055),center,if i==1 then color else "FFF5D6") end
+ cylinder(self.display,"Pivot",center+v(0,0,-.38),.18,.06,"FFF2BC",false)
+ piece(self.display,"Crown",v(.34,.20,.26),center+v(0,1.03,0),"FFDF94")
+ for _,side in {-1,1} do
+  for i=1,(if permanent then 3 else 2) do
+   local bar=piece(self.display,"SpeedWing",v(.42+i*.14,.10,.24),v(side*(.89+i*.08),.67+i*.21,.10),if i%2==0 then "FFF2B8" else color)
+   bar.CFrame*=CFrame.Angles(0,0,side*.27)
+  end
+ end
+ self.display.WorldPivot=CFrame.identity
+ self.dialCenter=clock.Position
+ self.caption=if permanent then "ПОСТОЯННЫЙ БОНУС ×3" else "ВРЕМЕННЫЙ БУСТ ×2"
+ self:Frame(v(0,1.16,0),v(3.65,2.7,2.15),v(.28,.23,-1))
+end
+
+function Scene:House(themeId)
+ local theme=Themes.Themes[themeId]
+ self.house=Interior.CreateHouse(self.world,CFrame.identity,Color3.fromHex(theme.Color))
+ HouseArt.Build(self.house,CFrame.identity,themeId)
+ if self.options.interior then
+  self.camera.FieldOfView=62
+  self.caption="ИНТЕРЬЕР ВХОДНОЙ КОМНАТЫ"
+ else
+  self.caption="ФАСАД И ДЕКОР"
+  piece(self.world,"DioramaBase",v(37.8,.7,39.5),v(0,-.86,2.8),"363249")
+  piece(self.world,"DioramaTrim",v(37.9,.10,39.6),v(0,-.47,2.8),theme.Color)
+  self:Frame(v(0,9,6),v(38,22,28),v(.55,.34,1))
+ end
+end
+
+local AURA_BODY={aura_solar_crown="EF7867",aura_galactic_dust="795CC7",aura_liquid_gold="507FAF"}
+function Scene:Aura(id)
+ local color=Visual.Auras[id].Color
+ self:Stage(3.65,"382C55",color)
+ self.pet=Verity.Create(self.world,CFrame.identity,{level=1,preview=true})
+ self.pet.PrimaryPart.LevelLabel.Enabled=false
+ self.pet.Body.Color=Color3.fromHex(AURA_BODY[id])
+ for _,child in self.pet:GetChildren() do
+  if child.Name=="Eye" or child.Name=="Smile" then child:Destroy() end
+ end
+ local function face(name,pos,size,hex)
+  local p=piece(self.pet,name,size,pos,hex)
+  local mesh=Instance.new("SpecialMesh");mesh.MeshType=Enum.MeshType.Sphere;mesh.Parent=p
+  return p
+ end
+ for _,side in {-1,1} do
+  face("Eye",v(side*.27,1.04,-.825),v(.18,.27,.08),"23162E")
+  face("Catchlight",v(side*.27-.028,1.09,-.87),v(.059,.072,.023),"FFFFFF")
+ end
+ face("Smile",v(0,.65,-.85),v(.34,.22,.105),"2F1D37")
+ face("Tongue",v(.023,.609,-.899),v(.17,.076,.026),"FF82A0")
+ face("Highlight",v(-.29,1.45,-.52),v(.27,.10,.028),"FFF3EA").CFrame*=CFrame.Angles(0,0,.44)
+ self.display=Decor.Build(self.world,CFrame.identity,id,true)
+ self.display.WorldPivot=CFrame.identity
+ self.caption="АУРА НА VERITY"
+ self:Frame(v(0,1.03,0),v(3.7,2.65,2.45),v(.20,.25,-1))
+end
+
+function Scene:Fusion(id)
+ self.united=Fusion.Create(self.world,nil,id)
+ self.ghosts=Fusion.Ghosts(self.world,nil)
+ self.ghosts[1].model.Body.Color=Color3.fromHex("AB85FF")
+ self.ghosts[2].model.Body.Color=Color3.fromHex("FFC97B")
+ self.ring=Fusion.StarlightRing(self.world)
+ self.unitedParts={}
+ for _,part in self.united:GetDescendants() do
+  if part:IsA("BasePart") then table.insert(self.unitedParts,{part,part.Transparency}) end
+ end
+ self:Frame(v(0,5.45,0),v(21,13,12),v(.13,.14,1))
+end
+
+local DECOR_CAPTIONS={
+ party_disco="ДИСКОШАР И ТАНЦПОЛ",
+ collector_gallery="КАРТОЧКИ И АЛЬБОМ",
+ atmosphere_starry="ЗВЁЗДНЫЙ ПОТОЛОК",
+ atmosphere_fireflies="СВЕТЛЯЧКИ У ДОМА",
+ atmosphere_aurora="СЕВЕРНОЕ СИЯНИЕ",
+}
+function Scene:Decor(id)
+ local model=Decor.Build(self.world,CFrame.identity,id,true)
+ self.caption=DECOR_CAPTIONS[id]
+ self.animated={}
+ if id=="party_disco" then
+  for _,part in model:GetChildren() do
+   if part.Name=="MirrorFacet" then part:Destroy() end
+  end
+  local center=v(0,4.8,0)
+  local mirrors={"FCB5F3","ACBFFF","D3FFF8","FFE6A2"}
+  for row=-1,1 do
+   local count=if row==0 then 10 else 7
+   for i=1,count do
+    local angle=(i+row*.5)*2*math.pi/count
+    local pos=center+v(math.cos(angle)*.89,row*.37,math.sin(angle)*.89)
+    local mirror=piece(model,"MirrorFacet",v(.27,.24,.065),pos,mirrors[(i+row)%#mirrors+1],nil,true)
+    mirror.CFrame=CFrame.lookAt(pos,center)
+   end
+  end
+ elseif id=="collector_gallery" then
+  local cover=piece(model,"AlbumCover",v(2.0,.23,1.5),v(0,.78,1.15),"754DB1")
+  cover.CFrame*=CFrame.Angles(0,.28,0)
+  local pages=piece(model,"AlbumPages",v(1.82,.15,1.35),v(0,.94,1.15),"FFF0DF")
+  pages.CFrame*=CFrame.Angles(0,.28,0)
+  local badge=piece(model,"AlbumBadge",v(.60,.08,.60),v(0,1.03,1.15),"FFD27D")
+  badge.CFrame*=CFrame.Angles(0,.79,0)
+  for i,hex in {"FFBA78","A5ECF2","F397CE"} do
+   local x=(i-2)*2.65
+   piece(model,"CardPortrait",v(1.12,1.12,.36),v(x,3.55,.29),hex,BALL)
+   for _,side in {-1,1} do
+    piece(model,"PortraitEye",v(.105,.105,.105),v(x+side*.16,3.64,.46),"28203E",BALL)
+   end
+   piece(model,"PortraitSmile",v(.19,.105,.105),v(x,3.46,.46),"28203E",BALL)
+  end
+ elseif Visual.Atmospheres[id] then
+  local theme=if id=="atmosphere_starry" then "66518D" elseif id=="atmosphere_fireflies" then "488777" else "525C9C"
+  self:Stage(9.8,"292A46",theme)
+  if id=="atmosphere_starry" then
+   piece(model,"NightWall",v(8,.36,.36),v(0,1.56,-1.8),theme)
+   piece(model,"Bench",v(3.8,.44,1.25),v(0,.57,-.85),"A696CF")
+  else
+   for i=-2,2 do
+    piece(model,"GardenPath",v(1.25,.10,.59),v(i*.92,.11,1.05+math.cos(i)*.5),"91B8A2")
+   end
+   for _,side in {-1,1} do
+    local x=side*3.1
+    piece(model,"Trunk",v(.24,1.6,.24),v(x,.84,-.85),"725E71")
+    piece(model,"Canopy",v(1.45,1.45,1.45),v(x,1.91,-.85),theme,BALL)
+   end
+  end
+ end
+ for _,part in model:GetChildren() do
+  if part:IsA("BasePart") and (part.Name=="MirrorFacet" or part.Name=="DanceTile" or part.Name=="GarlandBulb"
+   or part.Name=="CardStar" or part.Name=="GalleryCrest" or part.Name=="CeilingStar" or part.Name=="Firefly"
+   or part.Name=="AuroraRibbon") then
+   table.insert(self.animated,{part=part,frame=part.CFrame,alpha=part.Transparency})
+  end
+ end
+ local center,size=self.world:GetBoundingBox()
+ self:Frame(center.Position,size,v(.28,.24,1))
+end
+
+function Scene:Step(age,reduced)
+ local time=if reduced then 0 else age
+ if self.framing and self.lastSize~=self.view.AbsoluteSize then self:Frame(table.unpack(self.framing)) end
+ if self.demo then return self:StepCharacter(age,reduced) end
+ if self.house then
+  if self.options.interior then
+   self.camera.CFrame=CFrame.lookAt(v(4-math.sin(time*.6)*1.7,6.3,13.4),v(-10,3.1,7))
+  else
+   local target=self.framing[1]
+   local angle=.38+.18*math.sin(time*.71)
+   self.camera.CFrame=CFrame.lookAt(target+v(math.sin(angle),.34,math.cos(angle)).Unit*self.frameDistance,target)
+  end
+ elseif self.united then
+  local progress=if reduced then 1 else smooth((age-.4)/3.7)
+  Fusion.Merge(self.ghosts,CFrame.identity,progress,reduced)
+  Fusion.PoseStarlightRing(self.ring,CFrame.identity,progress)
+  local reveal=smooth((progress-.60)/.30)
+  for _,entry in self.unitedParts do entry[1].Transparency=1-(1-entry[2])*reveal end
+  self.united:ScaleTo(.72+.28*reveal)
+  self.united:PivotTo(CFrame.new(0,math.sin(time*1.9)*.28,0)*CFrame.Angles(0,-.13+math.sin(time*.9)*.15,0))
+  local target=v(0,5.45,0)
+  local direction=v(.13,.14,1).Unit
+  self.camera.CFrame=CFrame.lookAt(target+direction*self.frameDistance*(1-.23*reveal),target)
+  return if reveal>.8 then "ЗВЁЗДНОЕ СЛИЯНИЕ" else "ЦЕРЕМОНИЯ СЛИЯНИЯ"
+ elseif self.pet then
+  self.pet:PivotTo(CFrame.new(0,.15+math.sin(time*2)*.10,0)*CFrame.Angles(0,-.09+.16*math.sin(time*.9),0))
+  self.display:PivotTo(CFrame.new(0,.15+math.sin(time*2)*.10,0)*CFrame.Angles(0,time*.93,0))
+ elseif self.display then
+  if self.hands then
+   local pose=CFrame.Angles(0,.19*math.sin(time*.9),0)
+   self.display:PivotTo(pose)
+   for i,p in self.hands do
+    local angle=-.68*i-time*(if i==1 then .65 else 2.5)
+    p.CFrame=pose*CFrame.new(self.dialCenter+v(0,0,-.345))*CFrame.Angles(0,0,angle)*CFrame.new(0,p.Size.Y*.40,0)
+   end
+  else
+   self.display:PivotTo(CFrame.Angles(0,.28*math.sin(time*.8),0))
+  end
+ elseif self.animated then
+  for i,entry in self.animated do
+   local p=entry.part
+   local wave=math.sin(time*2+i*1.17)
+   if p.Name=="MirrorFacet" then
+    local center=v(0,4.8,0)
+    p.CFrame=CFrame.new(center)*CFrame.Angles(0,time*.95,0)*CFrame.new(-center)*entry.frame
+   elseif p.Name=="Firefly" or p.Name=="AuroraRibbon" then
+    p.CFrame=entry.frame+v(0,if reduced then 0 else wave*.24,0)
+   end
+   local pulse=if reduced then 0 else (.5+.5*wave)
+   p.Transparency=entry.alpha+(1-entry.alpha)*pulse*.38
+  end
+ end
+ return self.caption or "ЛОКАЛЬНАЯ ПРИМЕРКА"
 end
 function Scene:Destroy()
  if self.view.CurrentCamera==self.camera then self.view.CurrentCamera=nil end
