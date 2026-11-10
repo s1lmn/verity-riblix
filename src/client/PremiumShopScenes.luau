@@ -63,7 +63,7 @@ function Scene:CharacterPack(id)
  local look=Packs.Looks[id]
  self.pet=Verity.Create(self.world,CFrame.identity,{level=1,preview=true,characterPack=id})
  self.pet.PrimaryPart.LevelLabel.Enabled=false
- PackArt.Build(self.pet,id)
+ local _,packMotion=PackArt.Build(self.pet,id);self.packMotion=packMotion
  self.pet:ScaleTo(1.10)
  local disc=piece(self.world,"Stage",Vector3.new(.13,2.82,2.82),Vector3.new(0,-.10,0),look.Dark,Enum.PartType.Cylinder)
  disc.CFrame*=CFrame.Angles(0,0,math.pi/2)
@@ -82,10 +82,10 @@ function Scene:CharacterPack(id)
  end
  self.target=piece(self.world,"PreviewTarget",Vector3.new(.36,.36,.36),TARGET,look.Dark,nil)
  self.target.Transparency=1
- self:Frame(Vector3.new(0,1.36,-.14),Vector3.new(3.28,3.20,2.20),Vector3.new(.24,.18,-1))
+ self:Frame(Vector3.new(0,1.62,-.02),Vector3.new(3.90,4.10,2.80),Vector3.new(.24,.18,-1))
 end
 
-function Scene:StepCharacter(age,reduced)
+function Scene:StepCharacter(age,reduced,lowGraphics)
  local mode=self.demo.Mode
  local t=if reduced then 0 else math.clamp(age,0,8.6)
  local mobility=t>=1.15 and t<4.35
@@ -105,6 +105,7 @@ function Scene:StepCharacter(age,reduced)
  end
  local pose=CFrame.new(x,lift,0)*CFrame.Angles(0,(if reduced then -.11 else -.11+.13*math.sin(t*1.2)),roll)
  self.pet:PivotTo(pose)
+ PackArt.Animate(self.packMotion,pose,self.pet:GetScale(),t,reduced or lowGraphics)
  local fade=if attack then (1-smooth((a-.74)/.26))*smooth(a/.09) else 0
  local landing=mobility and mode=="dome" and u>=.74
  local impact=math.clamp((u-.74)/.26,0,1)
@@ -347,10 +348,10 @@ function Scene:Decor(id)
  self:Frame(center.Position,size,v(.28,.24,1))
 end
 
-function Scene:Step(age,reduced)
+function Scene:Step(age,reduced,lowGraphics)
  local time=if reduced then 0 else age
  if self.framing and self.lastSize~=self.view.AbsoluteSize then self:Frame(table.unpack(self.framing)) end
- if self.demo then return self:StepCharacter(age,reduced) end
+ if self.demo then return self:StepCharacter(age,reduced,lowGraphics) end
  if self.house then
   if self.options.interior then
    self.camera.CFrame=CFrame.lookAt(v(4-math.sin(time*.6)*1.7,6.3,13.4),v(-10,3.1,7))

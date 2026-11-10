@@ -13,7 +13,8 @@ end
 function Factory.Apply(model,equipped,characterPack)
  local old=model:FindFirstChild("Cosmetics");if old then old:Destroy() end
  local folder=Instance.new("Folder");folder.Name="Cosmetics";folder.Parent=model
- if characterPack then PackArt.Build(folder,characterPack) end
+ local packMotion
+ if characterPack then local _,motion=PackArt.Build(folder,characterPack);packMotion=motion end
  for _,id in equipped do
   local definition=Catalog.Items[id]
   if not definition then continue end
@@ -188,5 +189,6 @@ function Factory.Apply(model,equipped,characterPack)
    part(item,"Bridge",Vector3.new(.17,.07,.07),Vector3.new(0,1.1,-.85),accent)
   else item:Destroy() end
  end
+ return packMotion
 end
 return Factory

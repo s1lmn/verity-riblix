@@ -17,6 +17,7 @@ local Ride=require(Shared.VerityRideConfig)
 local Race=require(Shared.VerityRaceConfig)
 local Fusion=require(Shared.VerityFusionConfig)
 local Cosmetics=require(script.Parent.CosmeticFactory)
+local PackArt=require(script.Parent.CharacterPackArt)
 local Catalog=require(Shared.CosmeticCatalog)
 local WeatherLooks=require(Shared.WeatherForgeConfig)
 local Packs=require(Shared.CharacterPacks)
@@ -122,7 +123,7 @@ function Controller:Register(model,attempt)
   local pivot,savedScale=model:GetPivot(),model:GetScale()
   model:ScaleTo(1);model:PivotTo(CFrame.identity)
   local equipped={};for slot in Catalog.Slots do local id=model:GetAttribute("Cosmetic_"..slot);if Catalog.Items[id] then equipped[slot]=id end end
-  Cosmetics.Apply(model,equipped,model:GetAttribute("CharacterPack"))
+  record.packMotion=Cosmetics.Apply(model,equipped,model:GetAttribute("CharacterPack"))
   record.visibility,record.appliedVisibility=nil,nil
   Factory.SetStage(model,record.stageLevel or record.level)
   model:ScaleTo(savedScale);model:PivotTo(pivot)
@@ -315,14 +316,14 @@ visibility=function(record,alpha)
  local image=face and FaceUI.Image(face)
  local textured=false
  local pack=Packs.Looks[model:GetAttribute("CharacterPack")]
- if image then
+ if image and not pack then
   local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0)
    then model:GetAttribute("Emotion") else "Joy"
   local asset=Art.Textures[emotion] or Art.Textures.Joy
   if image.Image~=asset then image.Image=asset end
   textured=FaceUI.Refresh(face,alpha)
-  if pack and not textured then face.Enabled=false end
  end
+ if pack and face then face.Enabled=false end
  local faceEnabled=face and face.Enabled or false
  if record.textured~=textured or record.faceEnabled~=faceEnabled then
   record.textured=textured;record.faceEnabled=faceEnabled;record.appliedVisibility=nil
@@ -567,7 +568,7 @@ function Controller:Tick(now,dt)
   record.lifePitch+=gp;record.lifeRoll+=gr;record.lifeLift+=gl
 		local body=model:FindFirstChild("Body")
 		local face=body and body:FindFirstChild("FaceGui")
-		if face then
+		if face and not Packs.Looks[model:GetAttribute("CharacterPack")] then
 			record.faceLife=record.faceLife or {}
 			local emotion=if record.adminEmotion and os.clock()<(record.adminEmotionUntil or 0) then record.adminEmotion elseif workspace:GetServerTimeNow()<(model:GetAttribute("EmotionUntil") or 0) then model:GetAttribute("Emotion") else "Joy"
 			FaceUI.Animate(face,now,record.owner,emotion,model:GetAttribute("EmotionUntil"),record.faceLife,reduced or not near,(self.settings.values.ReducedEffects or self.settings.values.LowGraphics) or not near)
@@ -608,6 +609,8 @@ function Controller:Tick(now,dt)
 			if record.model:GetAttribute("FollowOwner") or near or record.lastLift~=0 then self:Apply(record,scale*(if spawning then reveal.pose.scale else 1),lift,yaw,if weatherLook then Color3.fromHex(weatherLook.Color) else Factory.Color(renderLevel),renderLevel) end
 		end
 		visibility(record,record.visibility or 0)
+  PackArt.Animate(record.packMotion,model:GetPivot(),model:GetScale(),now,
+   reduced or not near or self.settings.values.ReducedEffects or self.settings.values.LowGraphics or active~=nil or spawning==true or record.fusing)
   if record.pendingReaction then
    if now-record.pendingReaction<.6 and now>=(record.reactionAt or 0) and own and near and not active and not spawning
     and not record.racing and not record.riding and not record.fusing and not reduced and not self.settings.values.ReducedEffects and not self.settings.values.LowGraphics then

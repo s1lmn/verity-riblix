@@ -57,7 +57,7 @@ for index,id in Products.Order do
 end
 for _,id in Packs.Order do
  local pack=Packs.Items[id]
- Catalog.Items[id]={Section="verity",Title=pack.Name,Description=pack.Description,Color=pack.Color,Preview="CharacterPack"}
+ Catalog.Items[id]={Section="verity",Title=pack.Name,Description=pack.Description,Color=Packs.Looks[id].Color,Preview="CharacterPack"}
  table.insert(Catalog.Order,id)
 end
 for _,id in {"home_theme_sakura","home_theme_cosmic","home_theme_neon"} do Catalog.Items[id].Description..=" Входит в набор из трёх стилей дома." end

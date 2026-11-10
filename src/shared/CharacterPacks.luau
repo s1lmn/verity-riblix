@@ -38,12 +38,12 @@ Packs.Items=table.freeze({
 
 Packs.BonusCash=25000
 Packs.Looks=table.freeze({
- homelander=table.freeze({Id="scarlet_sentinel",Color="EF335E",Accent="FFD491",Dark="51263F",Family="Crimson",Effect="Алый шлейф"}),
- reef_captain=table.freeze({Id="reef_captain",Color="27CBB8",Accent="FF968A",Dark="146884",Family="Aqua",Effect="Жемчужные брызги"}),
- phase_courier=table.freeze({Id="phase_courier",Color="8170F9",Accent="9EF6FF",Dark="27264C",Family="Cyber",Effect="Фазовые искры"}),
- magma_smith=table.freeze({Id="magma_smith",Color="F35F30",Accent="FFD184",Dark="492C42",Family="Magma",Effect="Кузнечные угли"}),
- amber_medic=table.freeze({Id="amber_medic",Color="FFAD44",Accent="FFF4B8",Dark="A34E59",Family="Candy",Effect="Янтарное сияние"}),
- polar_ranger=table.freeze({Id="polar_ranger",Color="67C8F6",Accent="CCB5FF",Dark="2C578C",Family="Frost",Effect="Ледяные кристаллы"}),
+ homelander=table.freeze({Id="scarlet_sentinel",Color="FF4164",Accent="FFD578",Dark="962D60",Family="Crimson",Effect="Алый шлейф"}),
+ reef_captain=table.freeze({Id="reef_captain",Color="15DCCB",Accent="FF8F9A",Dark="187DAD",Family="Aqua",Effect="Жемчужные брызги"}),
+ phase_courier=table.freeze({Id="phase_courier",Color="A581FF",Accent="94FFFF",Dark="434989",Family="Cyber",Effect="Фазовые искры"}),
+ magma_smith=table.freeze({Id="magma_smith",Color="FF883D",Accent="FFE18B",Dark="75435D",Family="Magma",Effect="Кузнечные угли"}),
+ amber_medic=table.freeze({Id="amber_medic",Color="FFC45C",Accent="A7FFE0",Dark="B76E55",Family="Candy",Effect="Янтарное сияние"}),
+ polar_ranger=table.freeze({Id="polar_ranger",Color="77DEFF",Accent="CFADFF",Dark="537CB6",Family="Frost",Effect="Ледяные кристаллы"}),
 })
 function Packs.LookForAbilities(attackId,mobilityId)
  if Packs.Looks[attackId] then return attackId end

@@ -336,7 +336,7 @@ function Shop:Step(now)
  if now<(self.nextFrame or 0) then return end;self.nextFrame=now+interval
  for id,scene in self.scenes do
   local age=if self.playing==id then now-self.playAt else 0
-  self.rows[id].Phase.Text=Locale.Text(scene:Step(age,reduced or self.playing~=id))
+  self.rows[id].Phase.Text=Locale.Text(scene:Step(age,reduced or self.playing~=id,self.ctx.settings.values.LowGraphics))
  end
 end
 function Shop:Destroy() self.dead=true;self:ClearPreview();self.cleanup:Destroy() end
