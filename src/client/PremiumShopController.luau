@@ -7,6 +7,7 @@ local GuiService=game:GetService("GuiService")
 local Catalog=require(RS.Shared.PremiumVisualCatalog)
 local Bridge=require(RS.Shared.PremiumVisualBridge)
 local Abilities=require(RS.Shared.AbilityCatalog)
+local Packs=require(RS.Shared.CharacterPacks)
 local Economy=require(RS.Shared.EconomyConfig)
 local Houses=require(RS.Shared.HouseConfig)
 local Config=require(RS.Shared.GameConfig)
@@ -122,6 +123,11 @@ function Shop:Offer(id,state)
   result.owned=state.HeroPassOwned==true;result.trial=state.HeroPassTrial==true
   result.selected=result.owned and eq.Attack==Catalog.HeroAbilityId and eq.Mobility==Catalog.HeroAbilityId
   result.canEquip=result.owned and state.VerityUnlocked==true
+ elseif Packs.Items[id] then
+  local equipped=state.AbilitiesEquipped or {}
+  result.trial=state.CharacterPackTrial==id and not result.owned
+  result.owned=result.owned or result.trial
+  result.selected=result.owned and equipped.Attack==id and equipped.Mobility==id
  end
  local info=self:Price(result.gamePassId)
  local price=info and info.PriceInRobux
@@ -130,7 +136,7 @@ function Shop:Offer(id,state)
  result.onSale=info and info.IsForSale==true
  result.loading=result.gamePassId~=nil and not info and self.priceRequests[result.gamePassId]==true
  result.canPurchase=result.canPurchase==true and result.onSale and result.price~=nil and not result.owned
- result.pending=self.promptPassId==result.gamePassId and os.clock()<(self.promptUntil or 0)
+ result.pending=result.gamePassId~=nil and self.promptPassId==result.gamePassId and os.clock()<(self.promptUntil or 0)
  return result
 end
 function Shop:Remove(id)
@@ -144,6 +150,7 @@ function Shop:Activate(id)
  if not net.connected or net:IsBusy() or offer.pending or offer.selected then return end
  if offer.owned and offer.canEquip then
   if id=="scarlet_sentinel" then self.abilities:Activate(Catalog.HeroAbilityId)
+  elseif Packs.Items[id] then self.ctx.request("EquipAbility",{itemId=id})
   else
    local v=self:Variant(id)
    self.ctx.request("EquipPremiumOffer",{itemId=id,variantId=if v~=id then v else nil})
@@ -171,6 +178,10 @@ function Shop:Copy(id,row,state)
    else "F — полёт · G — лазеры"
   row.Details.Text=string.format(Locale.Text("Полёт %d с · скорость %d studs/с · повтор через %d с\nЛазеры: %d против NPC / %d против игроков · дальность %d studs\nПерезарядка лазеров: %d с\n%s"),a.FlightDuration,a.FlightSpeed,a.FlightCooldown,a.PvEDamage,a.Damage,a.Range,a.Cooldown,Locale.Text(controls))
   row.Extra.Text=Locale.Text("Свободный мир и PvE. В гонках, паркуре и слиянии силы отключены. Испытания допускают только нужную силу. Под крышей полёт ограничен; безопасные зоны защищены от урона. Направление — стик или WASD, подъём — прыжок. Для спуска нажми Ctrl на ПК или удерживай «Спуск» на телефоне. Сцена сокращена для показа.")
+ elseif Packs.Items[id] then
+  local pack=Packs.Items[id]
+  row.Details.Text=string.format(Locale.Text("Движение: %s · повтор через %d с\nPvE: %s · повтор через %d с"),Locale.Text(pack.MobilityLabel),pack.MobilityCooldown,Locale.Text(pack.AttackLabel),pack.Cooldown)
+  row.Extra.Text=Locale.Text("Боевой приём работает в активной волне PvE. В гонках, паркуре и совместном заезде способности отключены.")
  elseif id=="money_x3" then
   local level=math.clamp(state and state.VerityLevel or 1,1,100)
   local base=Economy.getIncome(level)*Houses.getIncomeMultiplier(state and state.HouseIncomeLevel or 0,state and state.HouseDoorOwned,state and state.HouseSecondFloorOwned)*(state and state.BoostMultiplier or 1)
@@ -202,7 +213,8 @@ function Shop:Render()
    elseif offer.onSale and offer.price then string.format(Locale.Text("Цена Roblox: %d R$"),offer.price)
    elseif not offer.priceKnown then Locale.Text("Цена временно недоступна")
    else Locale.Text("Сейчас не продаётся")
-  row.Buy.Visible=offer.owned~=true
+  row.Buy.Visible=offer.owned~=true and (not Packs.Items[id] or offer.gamePassId~=nil)
+  if Packs.Items[id] and not offer.gamePassId and not offer.owned then row.Price.Text=Locale.Text("Скоро") end
   row.Equip.Visible=offer.owned==true and not offer.selected and id~="money_x3"
   if offer.owned then row.Price.Text=Locale.Text(if offer.selected then "✓ ВЫБРАНО" else "✓ КУПЛЕНО") end
   if offer.trial then row.Price.Text=Locale.Text("Пробный доступ на эту сессию") end

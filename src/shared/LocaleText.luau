@@ -1587,4 +1587,29 @@ function Text.SetWorld(instance, property, source, ...)
 	instance:AddTag(Text.WorldTag)
 end
 
+local characterPackEnglish={
+ ["Волна"]="Wave",["Вихрь"]="Vortex",["Метка"]="Mark",["Купол"]="Dome",
+ ["Удар"]="Slam",["Бег"]="Sprint",["Лечение"]="Heal",["Планер"]="Glide",["Рывок ×2"]="Dash ×2",
+ ["Рифовый капитан"]="Reef Captain",
+ ["Скользи на волне и собирай мелких врагов водоворотом."]="Ride a wave and pull smaller enemies together with a vortex.",
+ ["Прилив"]="Tide Ride",["Водоворот"]="Vortex",
+ ["Фазовый гонец"]="Phase Courier",
+ ["Сделай два рывка. Следующий точный выстрел пометит цель для команды."]="Dash twice, then land a shot to mark the target for your team.",
+ ["Двойной рывок"]="Double Dash",["Второй рывок"]="Second Dash",["Метка фазы"]="Phase Mark",
+ ["Магмовый кузнец"]="Magma Smith",
+ ["Прерви атаки мелких врагов приземлением и укрой команду куполом."]="Interrupt smaller enemies on landing and shelter your team under a dome.",
+ ["Сейсмопрыжок"]="Seismic Leap",["Кузнечный купол"]="Forge Dome",
+ ["Янтарный медик"]="Amber Medic",
+ ["Ускорься к союзникам и восстанови здоровье команды."]="Sprint to your allies and restore the team's health.",
+ ["Спасательный спринт"]="Rescue Sprint",["Лечебная вспышка"]="Healing Flash",
+ ["Полярный следопыт"]="Polar Ranger",
+ ["Раскрой ледяные крылья и замедли наступающую волну."]="Spread ice wings and slow an incoming wave.",
+ ["Ледяной планер"]="Ice Glider",["Иней"]="Frost Field",
+ ["На PvE-арене"]="In the PvE arena",
+ ["Эта способность работает в активной волне PvE."]="This power works during an active PvE wave.",
+ ["Движение: %s · повтор через %d с\nPvE: %s · повтор через %d с"]="Movement: %s · reuse after %ds\nPvE: %s · reuse after %ds",
+ ["Боевой приём работает в активной волне PvE. В гонках, паркуре и совместном заезде способности отключены."]="The combat power works during an active PvE wave. Powers are disabled in races, parkour, and co-op rides.",
+}
+for source,target in characterPackEnglish do en[source]=target end
+
 return Text

@@ -335,6 +335,7 @@ function WorldIntegration:UpdatePlot(userId, state)
   local cosmetics=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
   verity:SetAttribute("WeatherLook",state.WeatherLook or "Original")
   local aura=state.PremiumStyle and state.PremiumStyle.aura
+  verity:SetAttribute("CharacterPack",state.CharacterPack)
   verity:SetAttribute("PremiumAura",if aura and Premium.Auras[aura] then aura else nil)
   for slot in cosmetics.Slots do verity:SetAttribute("Cosmetic_"..slot,(state.CosmeticsEquipped or {})[slot]) end
 	end

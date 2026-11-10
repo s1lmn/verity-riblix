@@ -1,6 +1,7 @@
 --!nonstrict
 local Shared=game:GetService("ReplicatedStorage").Shared
 local Catalog=require(Shared.AbilityCatalog)
+local Packs=require(Shared.CharacterPacks)
 local Config=require(Shared.GameConfig)
 local AdminAccess=require(script.Parent.AdminAccess)
 local Shop={};Shop.__index=Shop
@@ -15,11 +16,12 @@ function Shop:Equip(userId,id,slot)
 	local data=profile.Data
 	if not data.VerityUnlocked then return "BOX_NOT_OPENED" end
 	if data.VerityLevel<item.Level then return "ABILITY_LEVEL_REQUIRED" end
-	if not Catalog.Owns(data,id,Catalog.HeroAccess(profile)) then return "ABILITY_NOT_OWNED" end
+	if not Catalog.Owns(data,id,Catalog.HeroAccess(profile),profile.AdminHeroSlots) then return "ABILITY_NOT_OWNED" end
 	if slot~=nil and slot~=item.Slot and not (slot=="Mobility" and item.MobilityAction) then return "INVALID_EQUIPMENT" end
  local slots=if not slot and item.MobilityAction then {"Attack","Mobility"} else {slot or item.Slot}
  local temporary=profile.AdminHeroSlots
- if item.Premium and temporary and not profile.HeroPassOwned then
+ local paid=if item.Pack then Packs.Owns(data,id) else profile.HeroPassOwned==true
+ if item.Premium and temporary and not paid then
   for _,key in slots do temporary[key]=id end
  else
   for _,key in slots do
@@ -48,8 +50,16 @@ function Shop:GrantHeroForSession(userId)
  local profile=self.data:Get(userId)
  if not profile or not self.state.sessions[userId] then return "NOT_READY" end
  if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
- if not profile.HeroPassOwned and not profile.AdminHeroSlots then profile.AdminHeroSlots={} end
+ if not profile.HeroPassOwned then profile.AdminHeroSlots={Attack="homelander",Mobility="homelander"} end
  return self:Equip(userId,"homelander")
+end
+function Shop:GrantPackForSession(userId,id)
+ if not AdminAccess.IsAllowed(userId) or not Packs.Items[id] then return "DENIED" end
+ local profile=self.data:Get(userId)
+ if not profile or not self.state.sessions[userId] then return "NOT_READY" end
+ if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
+ profile.AdminHeroSlots={Attack=id,Mobility=id}
+ return "OK"
 end
 function Shop:RefreshPassAsync(userId,equipOnPurchase)
  if self.premium then return self.premium:RefreshAsync(userId,"hero_kit",equipOnPurchase) end

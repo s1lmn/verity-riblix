@@ -58,7 +58,7 @@ function Controller.new(ctx)
 		if elapsed<.1 then return end;elapsed=0
 		self:Render()
 		local item=self:Item("Mobility")
-		if not self.remote or (not Players.LocalPlayer:GetAttribute("VerityRiding") and (not item or (item.Action~="flight" and not item.MobilityAction)))
+		if not self.remote or (not Players.LocalPlayer:GetAttribute("VerityRiding") and (not item or (item.MobilityAction or item.Action)~="flight"))
 			or (Players.LocalPlayer:GetAttribute("VerityMobilityUntil") or 0)<workspace:GetServerTimeNow() then return end
 		local char=Players.LocalPlayer.Character;local hum=char and char:FindFirstChildOfClass("Humanoid")
 		if not hum or hum.Health<=0 then return end
@@ -75,6 +75,11 @@ end
 function Controller:Item(slot)
 	local state=self.ctx.net.state
 	if not state or not state.VerityUnlocked then return nil end
+ local projected=state.AbilitySlots and state.AbilitySlots[slot]
+ if projected then return Catalog.Items[projected.itemId] end
+ local id=state.AbilitiesEquipped and state.AbilitiesEquipped[slot]
+ local item=Catalog.Items[id]
+ if item and item.Pack then return item end
 	return Catalog.Equipped(state,slot,state.HeroPassOwned)
 end
 function Controller:Activate(slot,fromButton)
@@ -161,7 +166,7 @@ function Controller:Render()
   button.Visible=visible and allowed and usableHere and state~=nil and state.VerityUnlocked or false
  end
  local mobility=self:Item("Mobility")
- local flying=remaining>0 and (riding or mobility and (mobility.MobilityAction or mobility.Action)=="flight")
+ local flying=remaining>0 and (riding or mobility and not mobility.Travel and (mobility.MobilityAction or mobility.Action)=="flight")
  self.descend.Visible=touch and visible and flying and not transitioning or false
  if not self.descend.Visible or GuiService.MenuIsOpen then self.descendInput=nil end
  if self.descend.Visible then
@@ -179,20 +184,29 @@ function Controller:Render()
 		local now=workspace:GetServerTimeNow()
 		local remaining=math.max(0,math.ceil((player:GetAttribute(attribute) or (snapshot and snapshot.readyAt) or 0)-now))
 		local key=if Input.PreferredInput==Enum.PreferredInput.Touch then "" elseif Input.PreferredInput==Enum.PreferredInput.Gamepad then (if slot=="Mobility" then "L1 · " else "R1 · ") else (if slot=="Mobility" then "F · " else "G · ")
-		local name=if not item then (if slot=="Mobility" then "Движение" else "Атака") elseif slot=="Mobility" and item.MobilityAction then "Полёт героя" else item.Name
+		local name=if not item then (if slot=="Mobility" then "Движение" else "Атака")
+   elseif item.Pack then (if slot=="Mobility" then item.MobilityLabel else item.AttackLabel)
+   elseif slot=="Mobility" and item.MobilityAction then "Полёт героя" else item.Name
 		local icon=if item and snapshot and Catalog.Items[snapshot.itemId]==item then snapshot.icon
 			elseif item then icons[if slot=="Mobility" then item.MobilityAction or item.Action else item.Action] or "◆" else "◇"
 		local activeUntil=player:GetAttribute(if slot=="Attack" then "VerityAttackUntil" else "VerityMobilityUntil") or 0
 		local active=math.max(0,math.ceil(activeUntil-now))
+  local secondDash=slot=="Mobility" and item and item.SecondDashWindow and now<(player:GetAttribute("VeritySecondDashUntil") or 0) and active==0
+  if secondDash then name="Второй рывок";remaining=0 end
 		local blocked=racing or player:GetAttribute("VerityParkourStep")~=nil or (riding and slot=="Mobility") or snapshot and snapshot.blockedReason~=nil
-		local status=if snapshot and snapshot.blockedReason=="HOUSE_POWER" then "Выйди из дома" elseif racing then "Недоступно в гонке" elseif blocked then "Заблокировано здесь" elseif not item then "Выбери в коллекции" elseif not ctx.net.connected then "Нет связи"
+		local status=if snapshot and snapshot.blockedReason=="PACK_ARENA_ONLY" then "На PvE-арене" elseif snapshot and snapshot.blockedReason=="HOUSE_POWER" then "Выйди из дома" elseif racing then "Недоступно в гонке" elseif blocked then "Заблокировано здесь" elseif not item then "Выбери в коллекции" elseif not ctx.net.connected then "Нет связи"
 		 elseif active>0 then string.format(Locale.Text("Действует • %d с"),active)
 		 elseif remaining>0 then string.format(Locale.Text("Перезарядка • %d с"),remaining) else "Готово"
 		local caption=icon.." "..key..Locale.Text(name).."\n"..Locale.Text(status)
 		if touch then
-			local label=if button.Size.X.Offset<76 or not item then (if slot=="Mobility" then "Навык" else "Атака") else name
+			local label=name
+   if button.Size.X.Offset<76 or not item then
+    if secondDash then label="Рывок ×2"
+    elseif item and item.Pack then label=if slot=="Mobility" then item.ShortMobility else item.ShortAttack
+    else label=if slot=="Mobility" then "Навык" else "Атака" end
+   end
 			local seconds=math.max(active,remaining)
-			caption=Locale.Text(label)..(if seconds>0 then "\n"..seconds..Locale.Text("с") else "")
+			caption=Locale.Text(label)..(if snapshot and snapshot.blockedReason=="PACK_ARENA_ONLY" then "\nPvE" elseif seconds>0 then "\n"..seconds..Locale.Text("с") else "")
 		end
 		W.SetButton(button,caption,not blocked and remaining==0 and active==0 and ctx.net.connected,false)
 	end

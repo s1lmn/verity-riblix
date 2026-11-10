@@ -121,12 +121,13 @@ function Controller:Register(model,attempt)
   local pivot,savedScale=model:GetPivot(),model:GetScale()
   model:ScaleTo(1);model:PivotTo(CFrame.identity)
   local equipped={};for slot in Catalog.Slots do local id=model:GetAttribute("Cosmetic_"..slot);if Catalog.Items[id] then equipped[slot]=id end end
-  Cosmetics.Apply(model,equipped)
+  Cosmetics.Apply(model,equipped,model:GetAttribute("CharacterPack"))
   record.visibility,record.appliedVisibility=nil,nil
   Factory.SetStage(model,record.stageLevel or record.level)
   model:ScaleTo(savedScale);model:PivotTo(pivot)
  end
  for slot in Catalog.Slots do record.cleanup:Add(model:GetAttributeChangedSignal("Cosmetic_"..slot):Connect(refreshCosmetics)) end
+ record.cleanup:Add(model:GetAttributeChangedSignal("CharacterPack"):Connect(refreshCosmetics))
  refreshCosmetics()
  -- Existing record owns this observer; initial/restored idle faces make no sound.
  record.cleanup:Add(model:GetAttributeChangedSignal("EmotionUntil"):Connect(function()

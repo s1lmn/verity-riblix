@@ -9,7 +9,7 @@ local Numeric=require(Shared.Numeric)
 local Factory=require(game:GetService("ReplicatedStorage").World.VerityFactory)
 local Service={};Service.__index=Service
 function Service.new(model,data,state,economy,players,clock,targets,abilities,notify)
- local self=setmetatable({model=model,data=data,state=state,economy=economy,players=players,clock=clock,targets=targets,abilities=abilities,notify=notify,members={},enemies={},ready={},phase="Idle",sequence=0,links={}},Service)
+ local self=setmetatable({model=model,data=data,state=state,economy=economy,players=players,clock=clock,targets=targets,abilities=abilities,notify=notify,members={},enemies={},ready={},packDomes={},phase="Idle",sequence=0,links={}},Service)
  local remote=Instance.new("RemoteEvent");remote.Name="VerityEnemyMotion";remote.Parent=game:GetService("ReplicatedStorage");self.motionRemote=remote
  table.insert(self.links,model.Entry.JoinBattle.Triggered:Connect(function(player) self:Join(player) end))
  return self
@@ -71,7 +71,7 @@ function Service:ClearEnemies()
 end
 function Service:Remove(player,move)
  local member=self.members[player];if not member then return end
- self.members[player]=nil;self.abilities:Stop(player)
+ self.members[player]=nil;self.packDomes[player]=nil;self.abilities:Stop(player)
  player:SetAttribute("VerityBattleActive",nil);player:SetAttribute("VerityBattleFighting",nil);player:SetAttribute("VerityBattleWave",nil)
  if move and player.Character==member.character then
   local root=member.character:FindFirstChild("HumanoidRootPart");local hum=member.character:FindFirstChildOfClass("Humanoid")
@@ -102,7 +102,8 @@ function Service:Damage(r,amount,userId)
  if self.phase~="Fighting" or not root or not C.Contains(root.Position) or self.enemies[r.part]~=r or r.health<=0 then return 0 end
  local profile=self.data:Get(userId)
  local owned=profile and Catalog.ProfileEquipped(profile,"Attack")
- local damage=math.min(r.health,math.max(0,amount)*(if owned then 1.5 else 1));r.health-=damage
+ local teamBonus=if r.markOwner and r.markOwner~=player and self:IsParticipant(r.markOwner) and self.clock()<r.markUntil then 1.25 else 1
+ local damage=math.min(r.health,math.max(0,amount)*(if owned then 1.5 else 1)*teamBonus);r.health-=damage
  r.model:SetAttribute("EnemyHealth",r.health)
  Locale.SetWorld(r.label,"Text","%s • %d / %d",Locale.Get("ru",r.definition.Name),math.ceil(r.health),r.maximum)
  r.label:SetAttribute("Text_locale_en",string.format("%s • %d / %d",Locale.Get("en",r.definition.Name),math.ceil(r.health),r.maximum))
@@ -135,6 +136,89 @@ function Service:Wave()
  for player in self.members do player:SetAttribute("VerityBattleWave",self.wave);self.notify(player.UserId,if self.wave==#C.Waves then "BATTLE_BOSS" else "BATTLE_WAVE",0) end
  self:SetPhase("Fighting")
 end
+local function enemyStatus(enemy,name,color,seconds)
+ local old=enemy.model:FindFirstChild(name)
+ if old then old:Destroy() end
+ local outline=Instance.new("Highlight")
+ outline.Name=name;outline.Adornee=enemy.model
+ outline.DepthMode=Enum.HighlightDepthMode.Occluded
+ outline.FillColor=color;outline.FillTransparency=.84
+ outline.OutlineColor=color;outline.OutlineTransparency=.16
+ outline.Parent=enemy.model
+ game:GetService("Debris"):AddItem(outline,seconds)
+end
+
+function Service:Mark(player,part)
+ local enemy=self.enemies[part]
+ if not enemy or not self:IsParticipant(player) then return end
+ enemy.markOwner=player
+ enemy.markUntil=self.clock()+5
+ enemyStatus(enemy,"PhaseMark",Color3.fromHex("FFCE75"),5)
+end
+
+function Service:PackCast(player,action,center,radius,damage)
+ if not self:IsParticipant(player) or not C.Contains(center) then return false end
+ local root=self:Valid(player)
+ local now=self.clock()
+ if action=="dome" then
+  self.packDomes[player]={position=center,deadline=now+5}
+ end
+ local ray=RaycastParams.new()
+ ray.RespectCanCollide=true
+ if action=="heal" then
+  for ally in self.members do
+   local allyRoot,hum=self:Valid(ally)
+   if allyRoot and C.Contains(allyRoot.Position) and (allyRoot.Position-center).Magnitude<=radius then
+    ray.FilterDescendantsInstances={player.Character,ally.Character}
+    if ally==player or (allyRoot.Position-center).Magnitude<.05 or not workspace:Raycast(center,allyRoot.Position-center,ray) then
+     hum.Health=math.min(hum.MaxHealth,hum.Health+32)
+    end
+   end
+  end
+ end
+ self:UpdateMotion(now)
+ for part,enemy in self.enemies do
+  local delta=part.Position-center
+  if delta.Magnitude>radius then continue end
+  ray.FilterDescendantsInstances={player.Character,enemy.model}
+  if workspace:Raycast(root.Position,part.Position-root.Position,ray) then continue end
+  if enemy.model:GetAttribute("EnemyKind")~="Boss" then
+   if action=="pull" or action=="slam" then
+    enemy.strikeAt=nil
+    enemy.nextAt=math.max(enemy.nextAt,now+(if action=="slam" then 1.8 else 1))
+    enemy.model:SetAttribute("StrikeAt",nil)
+   end
+   if action=="pull" then
+    local pivot=enemy.model:GetPivot()
+    local toward=Vector3.new(-delta.X,0,-delta.Z)
+    if toward.Magnitude>2 then
+     local step=toward.Unit*math.min(toward.Magnitude-2,8)
+     local block=workspace:Raycast(part.Position,step,ray)
+     if block then step=step.Unit*math.max(0,block.Distance-1) end
+     self:PlanMotion(enemy,pivot+step,now)
+    end
+   elseif action=="freeze" then
+    enemy.frozenUntil=now+3.5
+    enemyStatus(enemy,"FrostField",Color3.fromHex("83DEF8"),3.5)
+   end
+  end
+  self:Damage(enemy,damage,player.UserId)
+ end
+ return true
+end
+
+function Service:CoveredByDome(position)
+ local now=self.clock()
+ for owner,dome in self.packDomes do
+  if now>=dome.deadline or not self:IsParticipant(owner) then
+   self.packDomes[owner]=nil
+  elseif (position-dome.position).Magnitude<=12 then
+   return true
+  end
+ end
+ return false
+end
+
 function Service:Strike(r)
  local d=r.definition
  for player in self.members do
@@ -143,7 +227,7 @@ function Service:Strike(r)
   local ray=RaycastParams.new();ray.FilterDescendantsInstances={r.model,player.Character};ray.RespectCanCollide=true
   if workspace:Raycast(r.part.Position,root.Position-r.part.Position,ray) then continue end
   local shield=(player:GetAttribute("VerityShieldUntil") or 0)>self.clock()
-  hum:TakeDamage(d.Damage*(if shield then .25 else 1))
+  hum:TakeDamage(d.Damage*(if shield then .25 elseif self:CoveredByDome(root.Position) then .45 else 1))
  end
  r.strikeAt=nil;r.nextAt=self.clock()+d.Delay;r.model:SetAttribute("StrikeAt",nil)
 end
@@ -188,7 +272,8 @@ function Service:Tick(dt)
   local delta=nearest.Position-r.part.Position;delta=Vector3.new(delta.X,0,delta.Z)
   if delta.Magnitude>.1 then
    local pos=pivot.Position
-   if best>d.Range*.7 then pos+=delta.Unit*math.min(math.max(0,best-d.Range*.7),d.Speed*Motion.Step) end
+   local slow=if now<(r.frozenUntil or 0) then .32 else 1
+   if best>d.Range*.7 then pos+=delta.Unit*math.min(math.max(0,best-d.Range*.7),d.Speed*Motion.Step*slow) end
    local rotation=pivot.Rotation:Lerp(CFrame.lookAt(Vector3.zero,delta).Rotation,Motion.TurnFraction)
    to=CFrame.new(pos)*rotation
   end

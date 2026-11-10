@@ -8,7 +8,7 @@ return table.freeze({
 	MoneyPassId = 2075332782,
 	HeroPassId = 2074444798,
 	HeroPassPrice = 99,
- -- Real IDs only: home_style_pack, aura_pack, fusion_pack, party_pack, collector_pack, atmosphere_pack.
+ -- Real IDs only. Add character-pack IDs here after the corresponding passes exist.
  PremiumPassIds = table.freeze({
   home_style_pack=2076112611,aura_pack=2076046768,fusion_pack=2074726849,
   party_pack=2075758718,collector_pack=2074552741,atmosphere_pack=2074366798,

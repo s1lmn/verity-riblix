@@ -382,6 +382,10 @@ adminRemote.OnServerInvoke = function(player, action, value, ...)
  elseif action == "GrantHero" and value == "homelander" then
   local status=AbilityShop:GrantHeroForSession(id)
   if status~="OK" then return status end
+ elseif action=="GrantCharacterPack" and type(value)=="string" then
+  local status=AbilityShop:GrantPackForSession(id,value)
+  if status~="OK" then return status end
+  Abilities:Stop(player)
  else
   return "DENIED"
  end

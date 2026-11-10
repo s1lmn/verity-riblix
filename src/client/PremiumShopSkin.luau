@@ -45,7 +45,7 @@ function Skin.Build(parent)
  return {Root=root,Header=header,Title=title,Subtitle=subtitle,Close=close,Body=body,Tabs=tabs}
 end
 function Skin.Card(parent,id,item,order)
- local stage=STAGES[id]
+ local stage=STAGES[id] or {item.Color,"30274E"}
  local accent=Color3.fromHex(item.Color)
  local row=W.Round(W.Frame(parent,id,UDim2.new(1,-6,0,320),T.White),18)
  row.LayoutOrder=order;row.Visible=false;row.ClipsDescendants=true

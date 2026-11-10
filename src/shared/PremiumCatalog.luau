@@ -2,6 +2,7 @@
 -- Stable Core contract. Actual prices come from MarketplaceService, not SuggestedPrice.
 local Config=require(script.Parent.GameConfig)
 local Bridge=require(script.Parent.PremiumVisualBridge)
+local Packs=require(script.Parent.CharacterPacks)
 local Catalog={Version=1}
 Catalog.Order={"money_x3","hero_kit","home_style_pack","aura_pack","fusion_pack","party_pack","collector_pack","atmosphere_pack"}
 Catalog.Slots={"HouseStyle","Aura","FusionStyle","PartyStyle","AlbumStyle","Atmosphere"}
@@ -26,9 +27,15 @@ Catalog.Options={
  AlbumStyle={collector={Item="collector_pack",Name="Золотой альбом"}},
  Atmosphere={star_ceiling={Item="atmosphere_pack",Name="Звёздный потолок"},fireflies={Item="atmosphere_pack",Name="Светлячки"},aurora={Item="atmosphere_pack",Name="Северное сияние"}},
 }
+for _,id in Packs.Order do
+ local pack=Packs.Items[id]
+ Catalog.Items[id]={Name=pack.Name,Description=pack.Description,Category="Verity",CharacterPack=true}
+ table.insert(Catalog.Order,id)
+end
 for _,id in Catalog.Order do
  local item=Catalog.Items[id];item.Id=id;item.Kind="GamePass"
- if id~="money_x3" and id~="hero_kit" then item.PassId=configured[id];item.PresentationReady=ready[id]==true;item.PriceApproved=false end
+ if item.CharacterPack then item.PassId=Packs.PassId(id);item.PresentationReady=true;item.PriceApproved=false
+ elseif id~="money_x3" and id~="hero_kit" then item.PassId=configured[id];item.PresentationReady=ready[id]==true;item.PriceApproved=false end
  table.freeze(item)
 end
 for _,options in Catalog.Options do for _,option in options do table.freeze(option) end;table.freeze(options) end

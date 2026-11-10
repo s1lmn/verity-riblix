@@ -14,7 +14,7 @@ local AdventureConfig=require(Shared.AdventureConfig)
 local Service={};Service.__index=Service
 
 function Service.new(data,state,world,targets)
-	local self=setmetatable({data=data,state=state,world=world,targets=targets,active={},attacks={},requests={},steering={},cooldowns={}},Service)
+	local self=setmetatable({data=data,state=state,world=world,targets=targets,active={},attacks={},requests={},steering={},cooldowns={},phaseChains={}},Service)
 	local remote=Instance.new("RemoteEvent");remote.Name="UseVerityAbility"
 	remote.OnServerEvent:Connect(function(player,slot,direction,...)
 		if select("#",...)>0 then return end
@@ -58,6 +58,7 @@ function Service:SlotSnapshot(player)
   local untilTime=player:GetAttribute(if slot=="Mobility" then "VerityMobilityUntil" else "VerityAttackUntil") or 0
   local reason=self:BlockReason(player,slot)
   if not profile.Data.VerityUnlocked then reason="BOX_NOT_OPENED" elseif not character then reason="CHARACTER_UNAVAILABLE"
+  elseif slot=="Attack" and not reason and item and item.Pack and not (self.arena and self.arena:IsParticipant(player)) then reason="PACK_ARENA_ONLY"
   elseif slot=="Attack" and not reason and self:IsAttackBlocked(player,root) and not (self.secrets and self.secrets:CanAimMechanism(player,item)) and not (self.adventures and self.adventures:CanAimMechanism(player,item)) then reason="SAFE_ZONE" end
   result[slot]={slot=slot,itemId=id,name=item and item.Name,key=if slot=="Mobility" then "F" else "G",
    gamepadKey=if slot=="Mobility" then "ButtonL1" else "ButtonR1",icon=item and Catalog.Icons[id] or (if slot=="Mobility" then "◇" else "✦"),empty=item==nil,
@@ -127,7 +128,10 @@ function Service:Refresh(player,character,snapshot)
 	humanoid.UseJumpPower=true;humanoid.JumpPower=if form then form.jump else 50
 end
 function Service:Stop(player,stopAttacks)
-	if stopAttacks~=false then self.attacks[player]=nil;player:SetAttribute("VerityAttackUntil",nil) end
+	if stopAttacks~=false then
+  self.attacks[player]=nil;self.phaseChains[player]=nil
+  player:SetAttribute("VerityAttackUntil",nil);player:SetAttribute("VeritySecondDashUntil",nil)
+ end
 	local current=self.active[player]
 	if not current then return end
 	if current.transition then current.transition:Disconnect();current.transition=nil end
@@ -250,9 +254,25 @@ function Service:Attack(player,item,id,character,root,direction)
 	local head=character:FindFirstChild("Head")
 	local origin=if head then head.Position else root.Position+Vector3.new(0,2,0)
 	local cover,bodies=self:CombatRays(character)
-	local result=cast(origin,origin+direction*item.Range,cover,bodies)
-	local endpoint=if result then result.Position else origin+direction*item.Range
-	local candidates=self:Candidates(player,not self:IsInHouse(root));local primary
+ local range=item.Range or 1
+	local result=cast(origin,origin+direction*range,cover,bodies)
+	local endpoint=if result then result.Position else origin+direction*range
+ if item.Pack and item.PackAction~="mark" then
+  local point=if item.PackAction=="dome" or item.PackAction=="heal" then root.Position else endpoint
+  if not self.arena or not self.arena:PackCast(player,item.PackAction,point,item.Radius,item.Damage or 0) then
+   self.remote:FireClient(player,{kind="Blocked",code="PACK_ARENA_ONLY"})
+   return false
+  end
+  self.remote:FireAllClients({kind="Attack",ownerUserId=player.UserId,itemId=id,origin=origin,points={point},duration=item.Duration})
+  return true
+ end
+ if item.Pack and not (self.arena and self.arena:IsParticipant(player)) then
+  self.remote:FireClient(player,{kind="Blocked",code="PACK_ARENA_ONLY"})
+  return false
+ end
+ local chain=self.phaseChains[player]
+ local canMark=item.PackAction=="mark" and chain and chain.character==character and (chain.markUntil or 0)>workspace:GetServerTimeNow()
+	local candidates=self:Candidates(player,not item.Pack and not self:IsInHouse(root));local primary
 	for _,candidate in candidates do
 		if candidate.player~=player and result and self:Matches(candidate,result.Instance) then primary=candidate;break end
 	end
@@ -321,7 +341,9 @@ function Service:Attack(player,item,id,character,root,direction)
 				local hit=cast(currentOrigin,candidate.part.Position,liveCover,liveBodies)
 				if hit and self:Matches(candidate,hit.Instance) then
 					local damage=if not candidate.player and item.PvEDamage then item.PvEDamage else item.Damage
-					dealt+=self:Hit(player,candidate,damage/ticks*(if item.Chains then .8^(index-1) else 1))
+					local hitDamage=self:Hit(player,candidate,damage/ticks*(if item.Chains then .8^(index-1) else 1))
+     dealt+=hitDamage
+     if hitDamage>0 and canMark then self.arena:Mark(player,candidate.part) end
 				end
 			end
 			if tick==ticks and self.attacks[player]==token then
@@ -335,19 +357,20 @@ end
 
 -- Sustain the short dash against humanoid ground friction; use a body sweep,
 -- not the attack ray, so a wall limits travel instead of cancelling every dash.
-function Service:DashVelocity(character,root,item)
+function Service:DashVelocity(character,root,item,duration)
  local facing=root.CFrame.LookVector
  local direction=Vector3.new(facing.X,0,facing.Z)
  if direction.Magnitude<.01 then return nil end
  direction=direction.Unit
  local params=RaycastParams.new();params.FilterType=Enum.RaycastFilterType.Exclude
  params.FilterDescendantsInstances={character};params.RespectCanCollide=true;params.IgnoreWater=true
- local distance=item.Power*item.Duration
+ local power=item.MobilityPower or item.Power
+ local distance=power*duration
  local size=Vector3.new(root.Size.X*.9,root.Size.Y*.8,root.Size.Z*.9)
  local hit=workspace:Blockcast(root.CFrame,size,direction*distance,params)
  if hit then distance=math.min(distance,math.max(0,hit.Distance-.4)) end
  if distance<=.05 then return nil end
- return direction*math.min(item.Power,distance/item.Duration)
+ return direction*math.min(power,distance/duration)
 end
 function Service:Drive(current,root,velocity,plane)
  local attachment=Instance.new("Attachment");attachment.Name=if plane then "VerityDash" else "VerityFlight"
@@ -481,6 +504,34 @@ function Service:Ride(player,profile,now)
  end)
  task.delay(Ride.Duration,function() if self.active[player]==current then self:Dismount(player,current) end end)
 end
+function Service:SurfSurface(character,position)
+ local params=RaycastParams.new()
+ params.FilterDescendantsInstances={character}
+ params.RespectCanCollide=true;params.IgnoreWater=false
+ local surface=workspace:Raycast(position,Vector3.new(0,-13,0),params)
+ return if surface and surface.Normal.Y>.55 then surface else nil
+end
+
+function Service:WatchPackLanding(player,current,humanoid)
+ task.spawn(function()
+  local airborne=false
+  while self.active[player]==current and player.Character==current.character and humanoid.Health>0 do
+   RunService.Heartbeat:Wait()
+   if self.active[player]~=current or player.Character~=current.character or not current.root.Parent or humanoid.Health<=0 then break end
+   if humanoid.FloorMaterial==Enum.Material.Air then
+    airborne=true
+   elseif airborne then
+    local position=current.root.Position
+    if self.arena and self.arena:PackCast(player,"slam",position,10,22) then
+     self.remote:FireAllClients({kind="PackLanding",ownerUserId=player.UserId,itemId=current.id,origin=position,points={position},duration=.7})
+    end
+    self:Stop(player,false)
+    break
+   end
+  end
+ end)
+end
+
 function Service:Activate(player,slot,direction)
 	local now=workspace:GetServerTimeNow()
  if slot=="Steer" then
@@ -492,9 +543,19 @@ function Service:Activate(player,slot,direction)
 		if not current or current.phase or not current.flight or not current.velocity or now>=current.untilTime or player.Character~=current.character then return end
 		if typeof(direction)~="Vector3" or not Numeric.isFinite(direction.X) or not Numeric.isFinite(direction.Y)
 			or not Numeric.isFinite(direction.Z) or direction.Magnitude>1.1 then return end
-		local _,root=self:Character(player);if not root then return end
+		local _,root,humanoid=self:Character(player);if not root then return end
 		local vertical=if root.Position.Y>80 then math.min(0,direction.Y) else direction.Y
-		current.velocity.VectorVelocity=Vector3.new(direction.X*current.speed,vertical*22,direction.Z*current.speed)
+  local verticalSpeed=vertical*22
+  if current.travel=="glide" then
+   local elapsed=now-current.started
+   if elapsed>1 and humanoid.FloorMaterial~=Enum.Material.Air then self:Stop(player,false);return end
+   verticalSpeed=if elapsed<.55 and root.Position.Y<80 then 15 else -5.5
+  elseif current.travel=="surf" then
+   local surface=self:SurfSurface(current.character,root.Position)
+   if not surface then self:Stop(player,false);return end
+   verticalSpeed=math.clamp((surface.Position.Y+current.groundOffset-root.Position.Y)*6,-24,20)
+  end
+		current.velocity.VectorVelocity=Vector3.new(direction.X*current.speed,verticalSpeed,direction.Z*current.speed)
   self:WatchFlightInput(player,current)
 		return
 	end
@@ -513,7 +574,10 @@ function Service:Activate(player,slot,direction)
 	local character,root,humanoid=self:Character(player)
 	if not root then return end
 	local cooldowns=self.cooldowns[player] or {};self.cooldowns[player]=cooldowns
-	if now<(cooldowns[slot] or 0) then return end
+ local chain=self.phaseChains[player]
+ local secondDash=slot=="Mobility" and item.SecondDashWindow~=nil and chain and chain.character==character
+  and chain.secondAt and now>=chain.secondAt and now<chain.deadline
+	if now<(cooldowns[slot] or 0) and not secondDash then return end
 	if slot=="Attack" then
 		if typeof(direction)~="Vector3" or not Numeric.isFinite(direction.X) or not Numeric.isFinite(direction.Y)
 			or not Numeric.isFinite(direction.Z) or direction.Magnitude<.1 or direction.Magnitude>2 then return end
@@ -522,8 +586,14 @@ function Service:Activate(player,slot,direction)
   player:SetAttribute("VerityAttackUntil",now+(if item.Action=="laser" then .56 else .16));return
 	end
 	local action=item.MobilityAction or item.Action
-	local duration=if item.MobilityAction then item.FlightDuration else item.Duration
- local dashVelocity=if action=="dash" then self:DashVelocity(character,root,item) else nil
+ local duration=item.MobilityDuration or item.FlightDuration or item.Duration
+ if item.Travel=="surf" then
+  local surface=self:SurfSurface(character,root.Position)
+  if not surface or root.Position.Y-surface.Position.Y>7 then
+   self.remote:FireClient(player,{kind="Blocked",code="MOVEMENT_UNAVAILABLE"});return
+  end
+ end
+ local dashVelocity=if action=="dash" then self:DashVelocity(character,root,item,duration) else nil
  if action=="dash" and not dashVelocity then
   self.remote:FireClient(player,{kind="Blocked",code="OBSTACLE"});return
  end
@@ -533,7 +603,17 @@ function Service:Activate(player,slot,direction)
  end
  self:Stop(player,false)
  if usesPhysics then root:SetNetworkOwner(nil) end
-	cooldowns[slot]=now+(item.FlightCooldown or item.Cooldown)
+ if not secondDash then cooldowns[slot]=now+(item.MobilityCooldown or item.FlightCooldown or item.Cooldown) end
+ if item.SecondDashWindow then
+  if secondDash then
+   chain.secondAt=nil;chain.markUntil=now+5
+   player:SetAttribute("VeritySecondDashUntil",nil)
+  else
+   chain={character=character,secondAt=now+duration,deadline=now+item.SecondDashWindow}
+   self.phaseChains[player]=chain
+   player:SetAttribute("VeritySecondDashUntil",chain.deadline)
+  end
+ end
 	player:SetAttribute("VerityAbilityReadyAt",cooldowns[slot])
 	player:SetAttribute("VerityMobilityUntil",now+duration)
 	player:SetAttribute("VerityMobilityColor",item.Color)
@@ -552,17 +632,19 @@ function Service:Activate(player,slot,direction)
 				or not root:IsDescendantOf(workspace) or not humanoid.Parent or root.Anchored or humanoid.SeatPart then return end
 			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 			-- Reach the launch speed even while falling; don't add to an upward jump.
-			local deltaY=math.max(0,item.Power-root.AssemblyLinearVelocity.Y)
+			local deltaY=math.max(0,(item.MobilityPower or item.Power)-root.AssemblyLinearVelocity.Y)
 			root:ApplyImpulse(Vector3.yAxis*root.AssemblyMass*deltaY)
+   if item.LandingSlam then self:WatchPackLanding(player,current,humanoid) end
 			task.delay(.2,function()
 				if self.active[player]~=current or not root:IsDescendantOf(workspace) then return end
 				if root:CanSetNetworkOwnership() then root:SetNetworkOwnershipAuto();current.ownsPhysics=false end
 			end)
 		end)
-	elseif action=="sprint" then current.speed=item.Power;humanoid.WalkSpeed=current.speed
+	elseif action=="sprint" then current.speed=item.MobilityPower or item.Power;humanoid.WalkSpeed=current.speed
 	elseif action=="flight" then
-		current.speed=item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
-  current.flight=true
+		current.speed=item.MobilityPower or item.FlightSpeed or item.Power;humanoid.WalkSpeed=current.speed
+  current.flight=true;current.travel=item.Travel;current.started=now
+  current.groundOffset=humanoid.HipHeight+root.Size.Y/2+.55
 		humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
   self:Drive(current,root,Vector3.new(0,8,0),false)
   self:WatchFlightInput(player,current)

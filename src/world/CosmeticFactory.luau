@@ -1,6 +1,7 @@
 --!nonstrict
 -- Native cosmetic geometry in unscaled model coordinates. No physics or uploaded IDs.
 local Catalog=require(game:GetService("ReplicatedStorage").Shared.CosmeticCatalog)
+local PackArt=require(script.Parent.CharacterPackArt)
 local Factory={}
 local function part(parent,name,size,position,color,shape)
  local p=Instance.new("Part");p.Name=name;p.Size=size;p.CFrame=CFrame.new(position)
@@ -9,9 +10,10 @@ local function part(parent,name,size,position,color,shape)
  if shape then p.Shape=shape end
  p.Parent=parent;return p
 end
-function Factory.Apply(model,equipped)
+function Factory.Apply(model,equipped,characterPack)
  local old=model:FindFirstChild("Cosmetics");if old then old:Destroy() end
  local folder=Instance.new("Folder");folder.Name="Cosmetics";folder.Parent=model
+ if characterPack then PackArt.Build(folder,characterPack) end
  for _,id in equipped do
   local definition=Catalog.Items[id]
   if not definition then continue end

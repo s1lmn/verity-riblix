@@ -1,6 +1,7 @@
 --!nonstrict
 -- Static compatibility only. Entitlements are exclusively decided by PremiumService.
 local Visual=require(script.Parent.PremiumVisualCatalog)
+local Packs=require(script.Parent.CharacterPacks)
 local B={}
 B.Offers={
  money_x3={Item="money_x3"},scarlet_sentinel={Item="hero_kit"},
@@ -17,6 +18,7 @@ B.Offers={
  atmosphere_fireflies={Item="atmosphere_pack",Slot="Atmosphere",Choice="fireflies",Bundle=3},
  atmosphere_aurora={Item="atmosphere_pack",Slot="Atmosphere",Choice="aurora",Bundle=3},
 }
+for _,id in Packs.Order do B.Offers[id]={Item=id} end
 -- Bundle cards buy one pass; only a whitelisted member chooses a saved style.
 B.Offers.premium_homes={Item="home_style_pack",Slot="HouseStyle",Variants=Visual.Passes.premium_homes.Variants}
 B.Offers.premium_auras={Item="aura_pack",Slot="Aura",Variants=Visual.Passes.premium_auras.Variants}

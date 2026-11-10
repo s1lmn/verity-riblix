@@ -1,5 +1,6 @@
 --!nonstrict
 -- Pass IDs and planned prices for this experience. Core and Roblox supply live offers.
+local Packs=require(script.Parent.CharacterPacks)
 local Catalog={}
 Catalog.HeroAbilityId="homelander"
 Catalog.FusionLookId="fusion_starlight"
@@ -47,6 +48,11 @@ Catalog.Items={
  atmosphere_fireflies={Section="house",Title="Светлячки",Description="Тёплые огоньки у дорожки дома.",Color="F4DB92",Preview="Decor"},
  atmosphere_aurora={Section="house",Title="Северное сияние",Description="Мятные и сиреневые ленты над участком.",Color="90F1DA",Preview="Decor"},
 }
+for _,id in Packs.Order do
+ local pack=Packs.Items[id]
+ Catalog.Items[id]={Section="verity",Title=pack.Name,Description=pack.Description,Color=pack.Color,Preview="CharacterPack"}
+ table.insert(Catalog.Order,id)
+end
 for _,id in {"home_theme_sakura","home_theme_cosmic","home_theme_neon"} do Catalog.Items[id].Description..=" Входит в набор из трёх стилей дома." end
 for _,id in {"aura_solar_crown","aura_galactic_dust","aura_liquid_gold"} do Catalog.Items[id].Description..=" Входит в набор из трёх аур." end
 for _,id in {"atmosphere_starry","atmosphere_fireflies","atmosphere_aurora"} do Catalog.Items[id].Description..=" Входит в набор из трёх атмосфер." end

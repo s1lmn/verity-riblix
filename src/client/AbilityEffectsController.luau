@@ -68,7 +68,7 @@ end
 function Controller:Event(event)
 	if type(event)~="table" then return end
 	if event.kind=="Blocked" then
-  local messages={HOUSE_POWER="Для рывка, прыжка и полёта выйди из дома.",DIVERSION_POWER="Сначала заверши текущую активность.",RACE_POWER="Способности недоступны во время гонки.",RIDING_POWER="Сначала спешься с Verity.",BATTLE_OTHER_ACTIVITY="Сначала выйди с арены.",PARKOUR_POWER="На маршруте используй прыжки. Способности доступны после выхода.",RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
+  local messages={PACK_ARENA_ONLY="Эта способность работает в активной волне PvE.",HOUSE_POWER="Для рывка, прыжка и полёта выйди из дома.",DIVERSION_POWER="Сначала заверши текущую активность.",RACE_POWER="Способности недоступны во время гонки.",RIDING_POWER="Сначала спешься с Verity.",BATTLE_OTHER_ACTIVITY="Сначала выйди с арены.",PARKOUR_POWER="На маршруте используй прыжки. Способности доступны после выхода.",RIDE_LANDING="Подлети к свободному месту для приземления.",RIDE_SPACE="Для посадки на Verity выйди на просторное место.",RIDE_PARKOUR="Сначала заверши паркур или выйди из него.",SAFE_ZONE="Дома и после возрождения действует защита.",OBSTACLE="Перед тобой препятствие — отойди от стены.",FLIGHT_UNAVAILABLE="Сейчас полёт недоступен. Попробуй после приземления.",MOVEMENT_UNAVAILABLE="Сейчас способность недоступна. Попробуй после приземления."}
   self.ctx.notifications:Show(Locale.Text(messages[event.code] or messages.SAFE_ZONE));return
  end
 	if event.kind=="CombatResult" then
@@ -92,6 +92,10 @@ function Controller:Event(event)
 	r.serverEndsAt=event.endsAt or (workspace:GetServerTimeNow()+event.duration)
 	Visuals.Prepare(r,reduced,graphics and graphics.ParticleScale or 1)
 	table.insert(self.effects,r)
+ if event.kind=="PackLanding" or event.kind=="Attack" and item.Pack and item.PackAction~="mark" then
+  Visuals.Pack(r,event.points[1],event.kind=="PackLanding")
+  return
+ end
 	if event.kind=="Attack" then
 		local target=event.points[1]
 		Visuals.Attack(r,target)

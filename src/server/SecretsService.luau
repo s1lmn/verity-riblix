@@ -42,11 +42,11 @@ function Service:Record(p,char)
 end
 function Service:Flying(p)
  local a=self.abilities.active[p]
- return a~=nil and a.flight==true and not a.ride and a.character==p.Character and self.clock()<a.untilTime
+ return a~=nil and a.flight==true and not a.ride and not a.travel and a.character==p.Character and self.clock()<a.untilTime
 end
 function Service:AirAccess(profile)
  local item=Catalog.ProfileEquipped(profile,"Mobility")
- return item~=nil and (item.Action=="flight" or item.MobilityAction=="flight")
+ return item~=nil and not item.Travel and (item.Action=="flight" or item.MobilityAction=="flight")
 end
 function Service:Grounded(root,platform)
  local point=platform.CFrame:PointToObjectSpace(root.Position)
