@@ -63,12 +63,9 @@ function Skin.Build(parent)
  local caption=text(controls,"Caption","",10);caption.Visible=false
  local hint=text(controls,"PowerHint","",10);hint.Visible=false
  local subtitle=text(root,"Subtitle","",10);subtitle.Visible=false
- local home=W.Button(root,"Home","",T.Gold)
- home.AnchorPoint=Vector2.new(.5,1);home.Position=UDim2.new(.5,0,1,-2);home.Size=UDim2.fromOffset(76,44)
- home.BackgroundTransparency=1
- local homeCap=W.Round(W.Frame(home,"YellowButton",UDim2.fromOffset(62,18),T.Gold),9)
- homeCap.AnchorPoint=Vector2.new(.5,.5);homeCap.Position=UDim2.fromScale(.5,.5)
- W.Stroke(homeCap,Color3.fromHex("D8A124"),1).Transparency=.1
+ local home=W.Button(root,"Home","МЕНЮ",T.Gold)
+ home.AnchorPoint=Vector2.new(.5,1);home.Position=UDim2.new(.5,0,1,-3);home.Size=UDim2.fromOffset(110,44)
+ home.TextSize=14;home.ZIndex=7;home:SetAttribute("FixedFeedbackSize",true)
  -- Simple Verity charm on the bumper, without font-dependent face glyphs.
  local strap=W.Round(W.Frame(root,"CharmLoop",UDim2.fromOffset(7,28),T.Gold),4)
  strap.Position=UDim2.new(1,-5,0,24)

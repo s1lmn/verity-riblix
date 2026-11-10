@@ -140,8 +140,11 @@ end
 function Tutorial:UIButton(key)
  local refs=self.ctx.refs;local group,name=key:match("^([^%.]+)%.(.+)$")
  if group=="Nav" then
-  if (name=="WORKSHOP" or name=="ABILITIES" or name=="COSMETICS") and self.ctx.active~="MORE" then return refs.Nav.MORE end
-  return refs.Nav[name]
+  if name=="PHONE" or name=="SHOP" then return refs.Nav[name] end
+  if self.ctx.active=="MORE" then return refs.Nav[name] end
+  if self.ctx.active=="PHONE" then return refs.Nav.MORE end
+  if not self.ctx.active then return refs.Nav.PHONE end
+  return nil
  end
  if group=="HUD" then return refs[name] end
  if group=="Phone" then return refs.Panels.PHONE[name] end

@@ -31,11 +31,15 @@ function Scene.new(viewport,id,options)
  elseif item.Preview=="CharacterPack" then self:CharacterPack(id)
  elseif item.Preview=="House" then
   local theme=Themes.Themes[item.Theme]
-  self.house=Interior.CreateHouse(self.world,CFrame.identity,Color3.fromHex(theme.Color))
-  HouseArt.Build(self.house,CFrame.identity,item.Theme)
-  if self.options.interior then
-   self.camera.CFrame=CFrame.lookAt(Vector3.new(8,7.6,10),Vector3.new(-11,4,3));self.camera.FieldOfView=62
-  else self:Frame(Vector3.new(0,7,3),Vector3.new(43,22,42),Vector3.new(1,.55,1.8)) end
+  if self.options.tile then
+   self:HouseTile(item.Theme,theme.Color)
+  else
+   self.house=Interior.CreateHouse(self.world,CFrame.identity,Color3.fromHex(theme.Color))
+   HouseArt.Build(self.house,CFrame.identity,item.Theme)
+   if self.options.interior then
+    self.camera.CFrame=CFrame.lookAt(Vector3.new(8,7.6,10),Vector3.new(-11,4,3));self.camera.FieldOfView=62
+   else self:Frame(Vector3.new(0,7,3),Vector3.new(43,22,42),Vector3.new(1,.55,1.8)) end
+  end
  elseif item.Preview=="Aura" then
   self.pet=Verity.Create(self.world,CFrame.identity,{level=1,preview=true});self.pet.PrimaryPart.LevelLabel.Enabled=false
   Decor.Build(self.world,CFrame.identity,id,true)
@@ -57,6 +61,32 @@ function Scene:Frame(target,size,direction)
  local tan=math.tan(math.rad(self.camera.FieldOfView/2))
  local distance=math.max(size.Y/(2*tan),size.X/(2*tan*aspect))+size.Z*.42
  self.camera.CFrame=CFrame.lookAt(target+direction.Unit*distance*1.06,target)
+end
+function Scene:HouseTile(theme,color)
+ local world=self.world
+ local base=piece(world,"MiniatureBase",Vector3.new(5.1,.18,3.6),Vector3.new(0,.08,0),"E8CBCD")
+ piece(world,"Walls",Vector3.new(3.9,2.05,2.68),Vector3.new(0,1.16,0),color)
+ piece(world,"Door",Vector3.new(.72,1.26,.16),Vector3.new(0,.77,1.4),"51426B")
+ for _,side in {-1,1} do
+  piece(world,"Window",Vector3.new(.82,.64,.13),Vector3.new(side*1.26,1.28,1.4),"FFE5AB")
+ end
+ if theme=="sakura" then
+  for _,side in {-1,1} do
+   local roof=piece(world,"UpturnedRoof",Vector3.new(2.35,.24,3.2),Vector3.new(side*1.12,2.32,0),"92385D")
+   roof.CFrame*=CFrame.Angles(0,0,side*.10)
+   local tree=Vector3.new(side*2.21,.66,1.15)
+   piece(world,"TreeStem",Vector3.new(.14,1,.14),tree,"84576C")
+   piece(world,"Sakura",Vector3.new(.72,.70,.72),tree+Vector3.new(0,.61,0),"FF8FB5",Enum.PartType.Ball)
+  end
+ elseif theme=="cosmic" then
+  piece(world,"Dome",Vector3.new(2.06,1.20,1.84),Vector3.new(0,2.38,0),"A996FF",Enum.PartType.Ball)
+  piece(world,"Lens",Vector3.new(.58,.34,.12),Vector3.new(.13,2.55,.83),"A9F3FF",nil,true)
+ else
+  piece(world,"VillaRoof",Vector3.new(4.3,.3,3.09),Vector3.new(.24,2.34,0),"3A3553")
+  piece(world,"NeonEdge",Vector3.new(4.28,.10,.12),Vector3.new(.24,2.31,1.58),"91FFE2",nil,true)
+  piece(world,"NeonEntry",Vector3.new(.95,.09,.13),Vector3.new(0,1.6,1.48),"FF9FE6",nil,true)
+ end
+ self:Frame(Vector3.new(0,1.43,0),Vector3.new(base.Size.X,3.15,3.6),Vector3.new(.7,.4,1))
 end
 function Scene:Hero()
  local world=self.world
