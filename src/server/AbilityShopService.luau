@@ -3,7 +3,6 @@ local Shared=game:GetService("ReplicatedStorage").Shared
 local Catalog=require(Shared.AbilityCatalog)
 local Packs=require(Shared.CharacterPacks)
 local Config=require(Shared.GameConfig)
-local AdminAccess=require(script.Parent.AdminAccess)
 local Shop={};Shop.__index=Shop
 function Shop.new(data,state,economy,market)
 	return setmetatable({data=data,state=state,economy=economy,market=market,passId=Config.HeroPassId},Shop)
@@ -44,22 +43,6 @@ function Shop:Buy(userId,id)
 	if not self.economy:TrySpendCash(userId,item.Cost) then return "INSUFFICIENT_CASH" end
 	profile.Data.AbilitiesOwned[id]=true
 	return self:Equip(userId,id)
-end
-function Shop:GrantHeroForSession(userId)
- if not AdminAccess.IsAllowed(userId) then return "DENIED" end
- local profile=self.data:Get(userId)
- if not profile or not self.state.sessions[userId] then return "NOT_READY" end
- if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
- if not profile.HeroPassOwned then profile.AdminHeroSlots={Attack="homelander",Mobility="homelander"} end
- return self:Equip(userId,"homelander")
-end
-function Shop:GrantPackForSession(userId,id)
- if not AdminAccess.IsAllowed(userId) or not Packs.Items[id] then return "DENIED" end
- local profile=self.data:Get(userId)
- if not profile or not self.state.sessions[userId] then return "NOT_READY" end
- if not profile.Data.VerityUnlocked then return "BOX_NOT_OPENED" end
- profile.AdminHeroSlots={Attack=id,Mobility=id}
- return "OK"
 end
 function Shop:RefreshPassAsync(userId,equipOnPurchase)
  if self.premium then return self.premium:RefreshAsync(userId,"hero_kit",equipOnPurchase) end

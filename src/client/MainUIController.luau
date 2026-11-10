@@ -118,7 +118,6 @@ function Main.new()
  self.cleanup:Add(require(script.Parent.ActivityRewardController).new(ctx,self.cosmetics))
  self.cleanup:Add(require(script.Parent.GameplayAudioController).new(ctx,self.visuals))
 	self.presentation=self.cleanup:Add(Presentation.new(ctx))
- self.admin=self.cleanup:Add(require(script.Parent.AdminPanelController).new(ctx,self.visuals))
 	self.cleanup:Add(self.visuals.Started.Event:Connect(function(event,model)
 		if event.ownerUserId==Players.LocalPlayer.UserId then
 			self.ledger:Push(event);self.presentation:Start(event,model)
@@ -256,7 +255,6 @@ function Main:Open(name)
 	if name and name~="SETTINGS" and name~="MORE" and name~="SHOP" and name~="ABILITIES" and not Players.LocalPlayer:GetAttribute("HousePlotId") then return end
 	if name and (ctx.forgeReveal or ctx.presenting or Players.LocalPlayer:GetAttribute("VerityFusionActive") or Players.LocalPlayer:GetAttribute("VerityDiversionKind") and name~="SETTINGS") then return end
 	if ctx.active==name then return end
- if name and self.admin and self.admin.panel.Visible then self.admin:Close() end
 	self.previousFocus=GuiService.SelectedObject
  if name and not ctx.active then self.worldFocus=if name=="SHOP" then self.refs.Nav.SHOP else self.refs.Nav.PHONE end
  self.panelBack=if name=="MORE" then "PHONE" elseif name and name~="SHOP" and ctx.active=="MORE" then "MORE" else nil

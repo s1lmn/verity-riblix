@@ -104,9 +104,6 @@
         "HouseConstruction": {
           "$path": "src/server/HouseConstruction.luau"
         },
-        "AdminAccess": {
-          "$path": "src/server/AdminAccess.luau"
-        },
         "ParkourService": {
           "$path": "src/server/ParkourService.luau"
         },

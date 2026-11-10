@@ -6,14 +6,18 @@ return table.freeze({
 	MoneyPassPrice = 99,
 	-- Game Passes for Grow your Verity (Cute Moggers Studios, universe 10775557886).
 	-- Repeatable Developer Product IDs in the community-owned experience.
-	ShopProductIds = table.freeze({}),
+	ShopProductIds = table.freeze({
+  cash_small=3730215076, cash_medium=3730215107, cash_large=3730215110, cash_vault=3730215115,
+  boost_15=3730215119, boost_60=3730215122,
+ }),
 	MoneyPassId = 2075332782,
 	HeroPassId = 2074444798,
 	HeroPassPrice = 99,
- -- Real IDs only. Add character-pack IDs here after the corresponding passes exist.
  PremiumPassIds = table.freeze({
   home_style_pack=2076112611,aura_pack=2076046768,fusion_pack=2074726849,
   party_pack=2075758718,collector_pack=2074552741,atmosphere_pack=2074366798,
+  reef_captain=2075452986,phase_courier=2075842969,magma_smith=2075237040,
+  amber_medic=2075417000,polar_ranger=2075560927,
  }),
  -- UI/VFX developer enables a key only after that product's actual presentation is integrated.
  PremiumPresentationReady = table.freeze({home_style_pack=true,aura_pack=true,fusion_pack=true,party_pack=true,collector_pack=true,atmosphere_pack=true}),

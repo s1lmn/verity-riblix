@@ -356,56 +356,6 @@ Runtime.Services = {DataService = Data, PlayerStateService = State, EconomyServi
 script.Parent:SetAttribute("CoreReady", true)
 ReplicatedStorage:SetAttribute("VerityCoreReady",true)
 local playerConnections, closing = {}, false
-local AdminAccess = require(script.Parent.AdminAccess)
-local AdminAbilities = require(Shared.AbilityCatalog)
-local AdminHouses = require(Shared.HouseConfig)
-local AdminNumbers = require(Shared.Numeric)
-local nextAdminRequest = 0
-local adminRemote = Instance.new("RemoteFunction")
-adminRemote.Name = "VerityAdminCommand"
-adminRemote.OnServerInvoke = function(player, action, value, ...)
- local id = player.UserId
- if not AdminAccess.IsAllowed(id) or player.Parent ~= Players or closing or select("#", ...) ~= 0 then return "DENIED" end
- local now = clock()
- if now < nextAdminRequest then return "WAIT" end
- nextAdminRequest = now + .3
- local profile = Data:Get(id)
- if not profile or not State.sessions[id] then return "NOT_READY" end
- local data = profile.Data
- if not data.VerityUnlocked then return "BOX_NOT_OPENED" end
- for _, attr in {"VerityDiversionKind","VerityFusionSlot","VerityRaceSlot","VerityParkourStep","VerityBattleActive","VerityRiding"} do
-  if player:GetAttribute(attr) then return "IN_ACTIVITY" end
- end
- if action == "SetLevel" then
-  if not AdminNumbers.isInteger(value, 1, 100) then return "INVALID_LEVEL" end
-  local house = AdminHouses.IncomeUpgrades[data.HouseIncomeLevel]
-  if house and value < house.Level then return "HOUSE_LEVEL", house.Level end
-  if data.VerityLevel == value then return "OK" end
-  Income:Settle(id)
-  Abilities:Stop(player)
-  data.VerityLevel = value
-  Data:Touch(profile)
-  Verity:Event(id, "VerityLevelSet", {newLevel = value, presentation = false})
- elseif action == "GrantAbility" then
-  local item = type(value) == "string" and AdminAbilities.Items[value]
-  if not item or item.Premium then return "INVALID_ABILITY" end
-  if data.VerityLevel < item.Level then return "ABILITY_LEVEL", item.Level end
-  data.AbilitiesOwned[value] = true
-  AbilityShop:Equip(id, value, item.Slot)
- elseif action == "GrantHero" and value == "homelander" then
-  local status=AbilityShop:GrantHeroForSession(id)
-  if status~="OK" then return status end
- elseif action=="GrantCharacterPack" and type(value)=="string" then
-  local status=AbilityShop:GrantPackForSession(id,value)
-  if status~="OK" then return status end
-  Abilities:Stop(player)
- else
-  return "DENIED"
- end
- State:Publish(id, true)
- return "OK"
-end
-adminRemote.Parent = ReplicatedStorage
 local languages = {}
 local languagePreference = Instance.new("RemoteEvent")
 languagePreference.Name = "VerityLanguagePreference"
@@ -472,7 +422,6 @@ local function onCharacter(player, character)
 	else death:Disconnect() end
 end
 local function onPlayer(player)
- AdminAccess.Apply(player)
 	if closing then return end
 	local profile, reason = Data:LoadAsync(player.UserId)
 	if not profile then if player.Parent == Players then warn("Profile unavailable", player.UserId, reason); kick(player, "Profile unavailable. Please rejoin.") end; return end
@@ -585,7 +534,7 @@ task.spawn(function()
 		end
 	end
 end)
--- Disabled until real owned product IDs are configured; no placeholder IDs.
+-- Dispatch only the Developer Product IDs registered with the receipt router.
 MarketplaceService.ProcessReceipt = function(receipt) return Receipts:Process(receipt) end
 game:BindToClose(function()
 	closing = true

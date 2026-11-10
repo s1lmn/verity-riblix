@@ -38,6 +38,9 @@ function Tutorial.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),arrows={},indicators={},nextPathAt=0,generation=0,dead=false},Tutorial)
  for _,panel in ctx.refs.Panels do panel.Subtitle.Visible=false end
  self.folder=self.cleanup:Add(Instance.new("Folder"));self.folder.Name="VerityGuidance";self.folder.Parent=workspace
+ self.floorProbe=RaycastParams.new()
+ self.floorProbe.FilterType=Enum.RaycastFilterType.Exclude
+ self.floorProbe.RespectCanCollide=true
  self.anchor=piece(self.folder,"GoalMarker");self.anchor.Size=Vector3.one*.1
  self.pin=Instance.new("BillboardGui");self.pin.Name="GoalPin";self.pin.Size=UDim2.fromOffset(200,104)
  self.pin.StudsOffsetWorldSpace=Vector3.new(0,4,0);self.pin.AlwaysOnTop=true;self.pin.MaxDistance=1500;self.pin.Enabled=false;self.pin.Parent=self.anchor
@@ -263,7 +266,7 @@ function Tutorial:ClearRoute()
  self.targetKey=nil;self.route=nil;self.nextPathAt=0;self:HideWorld()
 end
 function Tutorial:ComputeRoute(root,position,now)
- -- Direction indicator, deliberately independent of navmesh, raycasts and ground height.
+ -- The compass points directly to the goal. Ground markers only render where there is floor.
  self.targetPosition=position
  self.ctx.refs.Gui:SetAttribute("GuidancePathStatus","Direct")
 end
@@ -271,29 +274,33 @@ function Tutorial:DrawRoute(root,now)
  if self.lastDrawAt and now-self.lastDrawAt<.1 then return end
  self.lastDrawAt=now;self:HideArrows()
  if not validPosition(self.targetPosition) then return end
- local from=root.Position+Vector3.new(0,-.45,0)
- local delta=self.targetPosition+Vector3.new(0,1.2,0)-from
- if delta.Magnitude<3 then return end
+ local delta=flat(self.targetPosition-root.Position)
+ if delta.Magnitude<9 then return end
  local direction=delta.Unit
- local up=if math.abs(direction:Dot(Vector3.yAxis))>.95 then Vector3.zAxis else Vector3.yAxis
+ self.floorProbe.FilterDescendantsInstances={root.Parent,self.folder}
  self.arrowHighlights=self.arrowHighlights or {}
- for i=1,6 do
-  local distance=3+(i-1)*6.5
+ for i=1,4 do
+  local distance=8+(i-1)*5.5
   if distance>delta.Magnitude-1 then break end
+  local sample=root.Position+direction*distance
+  local ground=workspace:Raycast(sample,Vector3.new(0,-8,0),self.floorProbe)
+  if not ground or ground.Normal.Y<.65 then break end
+  local tangent=direction-ground.Normal*direction:Dot(ground.Normal)
+  local pos=ground.Position+ground.Normal*.10
+  local cf=CFrame.lookAt(pos,pos+tangent,ground.Normal)
   local arrow=self.arrows[i]
   if not arrow then
    local model=Instance.new("Model");model.Name="DirectionArrow";model.Parent=self.folder
    arrow={piece(model,"RouteStem"),piece(model,"RouteHead"),piece(model,"RouteHead")};self.arrows[i]=arrow
-   local glow=Instance.new("Highlight");glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
+   local glow=Instance.new("Highlight");glow.Adornee=model;glow.DepthMode=Enum.HighlightDepthMode.Occluded
    glow.FillColor=GUIDE_COLOR;glow.OutlineColor=Color3.fromHex("6C5600")
-   glow.FillTransparency=.12;glow.OutlineTransparency=.15;glow.Parent=model
+   glow.FillTransparency=.62;glow.OutlineTransparency=.35;glow.Parent=model
    self.arrowHighlights[i]=glow
   end
-  local pos=from+direction*distance;local cf=CFrame.lookAt(pos,pos+direction,up)
-  arrow[1].Size=Vector3.new(.95,.18,3.1);arrow[1].CFrame=cf*CFrame.new(0,0,.65)
-  arrow[2].Size=Vector3.new(.82,.18,2.6);arrow[2].CFrame=cf*CFrame.new(-.84,0,-.95)*CFrame.Angles(0,-math.pi/4,0)
-  arrow[3].Size=arrow[2].Size;arrow[3].CFrame=cf*CFrame.new(.84,0,-.95)*CFrame.Angles(0,math.pi/4,0)
-  for _,p in arrow do p.Transparency=0 end
+  arrow[1].Size=Vector3.new(.45,.09,1.42);arrow[1].CFrame=cf*CFrame.new(0,0,.27)
+  arrow[2].Size=Vector3.new(.42,.09,1.30);arrow[2].CFrame=cf*CFrame.new(-.38,0,-.47)*CFrame.Angles(0,-math.pi/4,0)
+  arrow[3].Size=arrow[2].Size;arrow[3].CFrame=cf*CFrame.new(.38,0,-.47)*CFrame.Angles(0,math.pi/4,0)
+  for _,p in arrow do p.Transparency=.24 end
   self.arrowHighlights[i].Enabled=true
  end
 end
