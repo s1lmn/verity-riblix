@@ -5,6 +5,7 @@ local Players=game:GetService("Players")
 local RS=game:GetService("ReplicatedStorage")
 local C=require(RS.Shared.AdventureConfig)
 local Cleanup=require(script.Parent.Cleanup)
+local Storm=require(script.Parent.StormVisuals)
 local V={};V.__index=V
 local rainbow={"FF819F","FFBD82","FFE993","A8F3BC","86DEF3","A5B4FF","D6A8F7"}
 local function line(p,a,b,width)
@@ -14,8 +15,9 @@ local function line(p,a,b,width)
 end
 function V.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),streaks={},stars={},meteors={},splashes={},bolts={},beams={},rainGround={},kind="Clear",alpha=0},V)
- self.original={ClockTime=Lighting.ClockTime,OutdoorAmbient=Lighting.OutdoorAmbient}
+ self.original={ClockTime=Lighting.ClockTime,OutdoorAmbient=Lighting.OutdoorAmbient,Brightness=Lighting.Brightness,ExposureCompensation=Lighting.ExposureCompensation}
  local folder=Instance.new("Folder");folder.Name="LocalVerityWeather";folder.Parent=workspace;self.folder=self.cleanup:Add(folder)
+ self.storm=self.cleanup:Add(Storm.new(ctx,folder))
  local function part(name)
   local p=Instance.new("Part");p.Name=name;p.Anchored=true;p.CanCollide=false;p.CanQuery=false;p.CanTouch=false;p.CastShadow=false
   p.Material=Enum.Material.Neon;p.Transparency=1;p.Size=Vector3.one*.1;p.Parent=folder;return p
@@ -26,10 +28,7 @@ function V.new(ctx)
   local head=part("FallingStar");head.Shape=Enum.PartType.Ball
   self.meteors[i]={head=head,tail=part("MeteorTail")}
  end
- for i=1,12 do
-  local splash=part("RainSplash");splash.Shape=Enum.PartType.Cylinder;self.splashes[i]=splash
- end
- for i=1,7 do self.bolts[i]=part("SkyLightning") end
+
  self.anchor=part("SkyAnchor")
  for i=1,6 do
   local a=Instance.new("Attachment");a.Parent=self.anchor;local b=Instance.new("Attachment");b.Parent=self.anchor
@@ -58,25 +57,63 @@ function V.new(ctx)
   end
  end
  self.color=self.cleanup:Add(Instance.new("ColorCorrectionEffect"));self.color.Name="VerityWeatherGrade";self.color.Parent=Lighting
+ self.bloom=self.cleanup:Add(Instance.new("BloomEffect"));self.bloom.Name="VerityStormBloom";self.bloom.Intensity=.22;self.bloom.Size=18;self.bloom.Threshold=1;self.bloom.Enabled=false;self.bloom.Parent=Lighting
  local terrain=workspace:FindFirstChildOfClass("Terrain")
- if terrain and not terrain:FindFirstChildOfClass("Clouds") then
-  self.clouds=self.cleanup:Add(Instance.new("Clouds"));self.clouds.Name="VerityWeatherClouds";self.clouds.Cover=0;self.clouds.Density=0;self.clouds.Parent=terrain
+ if terrain then
+  self.clouds=terrain:FindFirstChildOfClass("Clouds")
+  if self.clouds then
+   self.cloudOriginal={Cover=self.clouds.Cover,Density=self.clouds.Density,Color=self.clouds.Color,Enabled=self.clouds.Enabled}
+  else
+   self.clouds=self.cleanup:Add(Instance.new("Clouds"));self.clouds.Name="VerityWeatherClouds";self.clouds.Cover=0;self.clouds.Density=0;self.clouds.Parent=terrain
+  end
  end
  self.cleanup:Add(function()
   if not self.lastClock or math.abs(Lighting.ClockTime-self.lastClock)<.01 then Lighting.ClockTime=self.original.ClockTime end
   if not self.lastAmbient or Lighting.OutdoorAmbient==self.lastAmbient then Lighting.OutdoorAmbient=self.original.OutdoorAmbient end
+  if self.lastBrightness and Lighting.Brightness==self.lastBrightness then Lighting.Brightness=self.original.Brightness end
+  if self.lastExposure and Lighting.ExposureCompensation==self.lastExposure then Lighting.ExposureCompensation=self.original.ExposureCompensation end
+  if self.cloudOriginal and self.clouds and self.clouds.Parent then
+   for key,value in self.cloudOriginal do if not self.lastCloud or self.clouds[key]==self.lastCloud[key] then self.clouds[key]=value end end
+  end
+  self:RestoreAtmosphere()
   if ctx.sound.SetWeather then ctx.sound:SetWeather("Clear") end
  end)
  return self
+end
+function V:RestoreAtmosphere()
+ local r=self.atmosphere;if not r then return end
+ if r.object.Parent then
+  if r.owned then r.object:Destroy()
+  else for key,value in r.original do if r.last[key]==nil or r.object[key]==r.last[key] then r.object[key]=value end end end
+ end
+ self.atmosphere=nil
+end
+function V:Atmosphere(strength,blend)
+ if strength<.003 then self:RestoreAtmosphere();return end
+ if not self.atmosphere or not self.atmosphere.object.Parent then
+  local object=Lighting:FindFirstChildOfClass("Atmosphere");local owned=object==nil
+  if owned then object=Instance.new("Atmosphere");object.Name="VerityStormHaze";object.Density=0;object.Haze=0;object.Glare=0;object.Parent=Lighting end
+  local original={};for _,key in {"Density","Offset","Color","Decay","Glare","Haze"} do original[key]=object[key] end
+  self.atmosphere={object=object,owned=owned,original=original,last={}}
+ end
+ local r=self.atmosphere;local o=r.object;local base=r.original
+ local targets={Density=base.Density+(math.clamp(math.max(base.Density,.34),0,.42)-base.Density)*strength,
+  Offset=base.Offset+(.12-base.Offset)*strength,Haze=base.Haze+(math.max(base.Haze,1.7)-base.Haze)*strength,Glare=base.Glare*(1-strength),
+  Color=base.Color:Lerp(Color3.fromRGB(145,165,189),strength),Decay=base.Decay:Lerp(Color3.fromRGB(73,89,115),strength)}
+ for key,target in targets do
+  o[key]=if typeof(target)=="Color3" then o[key]:Lerp(target,blend) else o[key]+(target-o[key])*blend
+  r.last[key]=o[key]
+ end
 end
 function V:Set(message)
  if self.kind~=message.weather then
   self.kind=message.weather;self.dirty=true;self.rainbowAlpha=nil;self.groundAt=nil
   if self.ctx.sound.SetWeather then self.ctx.sound:SetWeather(self.kind) end
  end
- self.message=message
+ self.message=message;self.storm:Set(message)
 end
 function V:Hide()
+ self.storm:Hide()
  for _,p in self.streaks do p.Transparency=1 end
  for _,p in self.stars do p.Transparency=1 end
  for _,r in self.meteors do r.head.Transparency=1;r.tail.Transparency=1 end
@@ -94,25 +131,64 @@ function V:Tick(now,dt)
  local cave=base.Y< -15
  local visible=self.kind~="Clear" and not cave
  local blend=1-math.exp(-math.min(dt or .016,.1)*1.25)
- local clock=if self.kind=="Fire" then 18.1 elseif self.kind=="Stars" then 20.3 elseif self.kind=="Storm" then 16.8 else self.original.ClockTime
- Lighting.ClockTime+=(clock-Lighting.ClockTime)*blend;self.lastClock=Lighting.ClockTime
- local ambient=if self.kind=="Fire" then Color3.fromRGB(176,131,111) elseif self.kind=="Stars" then Color3.fromRGB(130,136,178) elseif self.kind=="Storm" then Color3.fromRGB(126,149,173) else self.original.OutdoorAmbient
- Lighting.OutdoorAmbient=Lighting.OutdoorAmbient:Lerp(ambient,blend);self.lastAmbient=Lighting.OutdoorAmbient
- local tint=if cave then Color3.fromRGB(225,244,255) elseif self.kind=="Fire" then Color3.fromRGB(255,211,169) elseif self.kind=="Stars" then Color3.fromRGB(230,218,255) elseif self.kind=="Storm" then Color3.fromRGB(201,225,250) else Color3.new(1,1,1)
- self.color.TintColor=self.color.TintColor:Lerp(tint,blend);self.color.Saturation=if self.kind=="Fire" then .18 elseif self.kind=="Stars" then .12 elseif self.kind=="Storm" then -.10 else .03
- self.color.Enabled=not self.ctx.presenting and not self.ctx.forgeReveal and not self.ctx.rewardOverlay
- self.color.Contrast=if self.kind=="Storm" then .04 else .015
- local lightning=(workspace:GetServerTimeNow()-(self.message and self.message.since or 0))%11
- self.color.Brightness=if visible and self.kind=="Storm" and not low and not reduced and lightning>8 and lightning<8.38 then .025*(1-(lightning-8)/.38) else 0
- if self.clouds then
-  local cover=if self.kind=="Fire" then .76 elseif self.kind=="Storm" then .91 elseif self.kind=="Stars" then .14 elseif self.kind=="Rainbow" then .30 else 0
-  self.clouds.Cover+=(cover-self.clouds.Cover)*blend;self.clouds.Density=if self.kind=="Fire" then .58 elseif self.kind=="Storm" then .72 else .24
-  self.clouds.Color=if self.kind=="Fire" then Color3.fromRGB(159,79,68) elseif self.kind=="Storm" then Color3.fromRGB(88,111,146) else Color3.fromRGB(231,232,255)
+ local serverNow=workspace:GetServerTimeNow();local sample=self.storm:Sample(serverNow)
+ local hum=char and char:FindFirstChildOfClass("Humanoid")
+ local blocked=self.ctx.presenting or self.ctx.forgeReveal or self.ctx.rewardOverlay
+ local active=sample~=nil and not cave and not blocked
+ self.stormWeight=(self.stormWeight or 0)+((if active then 1 else 0)-(self.stormWeight or 0))*blend
+ if sample then self.lastStormIntensity=sample.intensity end
+ local strength=self.stormWeight*(sample and sample.intensity or self.lastStormIntensity or 0)
+ local stormVisible=active and root~=nil and hum~=nil and hum.Health>0
+ if sample then self.storm:Render(sample,now,serverNow,camera,base,tier,reduced,not stormVisible) end
+ local clock=if self.kind=="Fire" then 18.1 elseif self.kind=="Stars" then 20.3
+  elseif sample then self.original.ClockTime+(19.4-self.original.ClockTime)*strength else self.original.ClockTime
+ if not blocked then
+  Lighting.ClockTime+=(clock-Lighting.ClockTime)*blend;self.lastClock=Lighting.ClockTime
+  local ambient=if self.kind=="Fire" then Color3.fromRGB(176,131,111) elseif self.kind=="Stars" then Color3.fromRGB(130,136,178)
+   else self.original.OutdoorAmbient:Lerp(Color3.fromRGB(71,89,116),strength)
+  Lighting.OutdoorAmbient=Lighting.OutdoorAmbient:Lerp(ambient,blend);self.lastAmbient=Lighting.OutdoorAmbient
+  if strength>.003 then self.skyOwned=true end
+  if self.skyOwned then
+   local brightness=self.original.Brightness*(1-.40*strength)
+   Lighting.Brightness+=(brightness-Lighting.Brightness)*blend;self.lastBrightness=Lighting.Brightness
+   local exposure=self.original.ExposureCompensation-.20*strength
+   Lighting.ExposureCompensation+=(exposure-Lighting.ExposureCompensation)*blend;self.lastExposure=Lighting.ExposureCompensation
+   if strength<=.003 then
+    Lighting.Brightness=self.original.Brightness;Lighting.ExposureCompensation=self.original.ExposureCompensation
+    self.lastBrightness=Lighting.Brightness;self.lastExposure=Lighting.ExposureCompensation;self.skyOwned=false
+   end
+  end
+ end
+ local tint=if cave then Color3.fromRGB(225,244,255) elseif self.kind=="Fire" then Color3.fromRGB(255,211,169)
+  elseif self.kind=="Stars" then Color3.fromRGB(230,218,255) else Color3.new(1,1,1):Lerp(Color3.fromRGB(192,211,238),strength)
+ self.color.TintColor=self.color.TintColor:Lerp(tint,blend)
+ local saturation=if self.kind=="Fire" then .18 elseif self.kind=="Stars" then .12 else .03-.23*strength
+ self.color.Saturation+=(saturation-self.color.Saturation)*blend
+ self.color.Enabled=not blocked;self.color.Contrast+=(.015+.09*strength-self.color.Contrast)*blend
+ self.color.Brightness+=(-.02*strength-self.color.Brightness)*blend
+ self.bloom.Enabled=not blocked and not reduced and tier>1 and strength>.04
+ self:Atmosphere(strength,blend)
+ if self.ctx.sound.SetWeather then self.ctx.sound:SetWeather(self.kind,sample and sample.intensity,self.storm.covered or cave) end
+ if self.clouds and self.clouds.Parent then
+  local original=self.cloudOriginal or {Cover=0,Density=.24,Color=Color3.fromRGB(231,232,255),Enabled=true}
+  local cover=if sample then sample.cloudCoverage elseif self.kind=="Fire" then .76 elseif self.kind=="Stars" then .14 elseif self.kind=="Rainbow" then .30 else original.Cover
+  local density=if sample then .38+.5*strength elseif self.kind=="Fire" then .58 else original.Density
+  local color=if self.kind=="Fire" then Color3.fromRGB(159,79,68) elseif sample then original.Color:Lerp(Color3.fromRGB(46,62,89),strength) else original.Color
+  self.clouds.Cover+=(cover-self.clouds.Cover)*blend;self.clouds.Density+=(density-self.clouds.Density)*blend
+  self.clouds.Color=self.clouds.Color:Lerp(color,blend);self.clouds.Enabled=sample~=nil or self.kind~="Clear" or original.Enabled
+  self.lastCloud={Cover=self.clouds.Cover,Density=self.clouds.Density,Color=self.clouds.Color,Enabled=self.clouds.Enabled}
  end
  if now<(self.frameAt or 0) and not self.dirty then return end
  self.frameAt=now+(if tier==1 then 1/20 elseif tier==2 then 1/30 else 1/45);self.dirty=false
  local signature=self.kind..":"..tier..":"..tostring(reduced)..":"..tostring(visible)
- if self.drawSignature~=signature then self:Hide();self.drawSignature=signature end
+ if self.drawSignature~=signature then
+  for _,p in self.streaks do p.Transparency=1 end
+  for _,p in self.stars do p.Transparency=1 end
+  for _,r in self.meteors do r.head.Transparency=1;r.tail.Transparency=1 end
+  for _,r in self.beams do r.beam.Enabled=false end
+  for _,beam in self.rainbowBands do beam.Enabled=false end
+  self.drawSignature=signature
+ end
  if not visible then return end
  -- Only intermittent effects need resetting every visual frame.
  for _,r in self.meteors do if r.head.Transparency~=1 then r.head.Transparency=1;r.tail.Transparency=1 end end
@@ -176,58 +252,8 @@ function V:Tick(now,dt)
    end
   end
  elseif self.kind=="Storm" then
-  -- Rain stays in world-space columns and ends on the exact surface sampled below each one.
-  local columns=if low then 12 elseif reduced then 16 elseif tier==2 then 24 else 32
-  local cell=Vector3.new(math.round(base.X/8)*8,0,math.round(base.Z/8)*8)
-  if cell~=self.rainCell or columns~=self.rainColumns or now>=(self.groundAt or 0) then
-   self.rainCell=cell;self.rainColumns=columns;self.groundAt=now+.4
-   local params=RaycastParams.new();params.FilterDescendantsInstances={self.folder,char or self.folder};params.RespectCanCollide=true
-   local world=workspace:FindFirstChild("GeneratedWorld")
-   local boundary=world and world:FindFirstChild("MapBoundary")
-   if boundary then params:AddToFilter(boundary) end
-   local top=math.max(165,base.Y+64)
-   for i=1,columns do
-    local origin=cell+Vector3.new((i*17%61)-30,top,(i*29%67)-33)
-    local hit=workspace:Raycast(origin,Vector3.new(0,-top-12,0),params)
-    self.rainGround[i]=hit and hit.Position
-   end
-  end
-  local layers=if low or reduced then 2 else 3
-  local speed=if reduced then 23 else 43
-  local length=if reduced then 2.4 else 4.6
-  for i=1,columns do
-   local surface=self.rainGround[i]
-   if not surface then continue end
-   for layer=1,layers do
-    local height=44-(now*speed+i*5.37+layer*44/layers)%44
-    local bottom=surface+Vector3.yAxis*(math.max(0,height-length)+.08)
-    local tip=surface+Vector3.yAxis*(height+.08)
-    if height>.12 then
-     local p=self.streaks[(i-1)*layers+layer]
-     line(p,tip,bottom,if low then .07 else .055)
-     p.Color=Color3.fromHex("C2E5FF");p.Transparency=if reduced then .55 else .36
-    end
-   end
-   local splash=self.splashes[i]
-   if splash and not reduced then
-    local phase=(now*speed+i*5.37)%(44/layers)
-    if phase<5 then
-     local fade=phase/5;local diameter=.3+fade
-     splash.Size=Vector3.new(.035,diameter,diameter)
-     splash.CFrame=CFrame.new(surface+Vector3.yAxis*.05)*CFrame.Angles(0,0,math.pi/2)
-     splash.Color=Color3.fromHex("BEE7FA");splash.Transparency=.58+fade*.42
-    end
-   end
-  end
-  -- One gentle distant lightning stroke every 11s; reduced settings suppress it.
-  local time=(workspace:GetServerTimeNow()-(self.message and self.message.since or 0))%11
-  if not reduced and not low and time>8 and time<8.38 then
-   local start=base+forward*130+right*32+Vector3.yAxis*125
-   for i=1,7 do local a=start+Vector3.new((i%2)*4,-(i-1)*10,0);local b=start+Vector3.new(((i+1)%2)*4,-i*10,0)
-    local p=self.bolts[i];line(p,a,b,.35);p.Color=Color3.fromHex("DAEEFF");p.Transparency=.12+(time-8)*2
-   end
-   -- Illumination is interpolated above on every frame.
-  end
+  -- StormV2 has already drawn its own bounded pool above.
+
  elseif self.kind=="Rainbow" then
   local distance=(camera.CFrame.Position-self.rainbowAnchor.Position).Magnitude
   local range=if settings.Graphics then settings.Graphics.EffectDistance else 260

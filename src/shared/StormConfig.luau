@@ -15,4 +15,17 @@ for i=1,8 do
 end
 for _,phase in S.Phases do table.freeze(phase) end
 table.freeze(S.Phases);table.freeze(S.Anchors);table.freeze(S.StrikeFractions)
+-- Shared interpolation keeps the renderer smooth between one-second server packets.
+function S.Sample(since,deadline,now)
+ local duration=math.max(1,deadline-since);local fraction=math.clamp((now-since)/duration,0,1)
+ local index=#S.Phases
+ for i,phase in S.Phases do if fraction<phase.Until then index=i;break end end
+ local phase=S.Phases[index];local previous=S.Phases[index-1]
+ local t=math.clamp((fraction-phase.From)/math.max(.001,phase.Until-phase.From),0,1);t=t*t*(3-2*t)
+ local function mix(key,initial) local from=if previous then previous[key] else initial;return from+(phase[key]-from)*t end
+ local intensity=phase.IntensityFrom+(phase.IntensityTo-phase.IntensityFrom)*t
+ return {phase=phase.Id,phaseName=phase.Name,phaseSince=since+duration*phase.From,phaseDeadline=since+duration*phase.Until,
+  intensity=intensity,rain=mix("Rain",.02),windSpeed=mix("Wind",0),darkness=mix("Darkness",.05),cloudCoverage=mix("Clouds",.3),
+  windDirection=Vector3.new(.82,0,-.57),haze=.24*intensity,wetness=intensity,groundMist=.55*intensity}
+end
 return table.freeze(S)

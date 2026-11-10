@@ -23,6 +23,11 @@ function Audio.new(settings)
   sound.Parent=SoundService
   self.sounds[name]=self.cleanup:Add(sound)
  end
+ local wind=self.sounds.GardenBreeze
+ if wind then
+  self.windSpeed=wind.PlaybackSpeed
+  self.windEQ=Instance.new("EqualizerSoundEffect");self.windEQ.Name="StormWindTone";self.windEQ.Enabled=false;self.windEQ.Parent=wind
+ end
  self.cleanup:Add(settings.Changed.Event:Connect(function(values)
   group.Volume=if values.UISounds then values.Volume else 0
   if not values.UISounds or values.Volume<=0 then
@@ -103,7 +108,16 @@ function Audio:IsCelebrating(now)
  return (now or os.clock())<(self.celebrationUntil or 0)
 end
 
-function Audio:SetWeather(kind) self.weatherKind=kind end
+function Audio:SetWeather(kind,intensity,sheltered)
+ self.weatherKind=kind;self.weatherIntensity=math.clamp(intensity or 0,0,1);self.weatherSheltered=sheltered==true
+end
+function Audio:PlayStormThunder(gain)
+ -- No unapproved asset ID: this hook becomes audible only after a team Thunder cue is configured.
+ if not Config.UI.StormThunder then return false end
+ self.thunderGain=math.clamp(gain or 1,0,1)
+ if not self:Play("StormThunder") then return false end
+ return true
+end
 
 function Audio:Tick(now,dt)
  if self.dead then return end
@@ -112,7 +126,14 @@ function Audio:Tick(now,dt)
  for name,entry in Config.UI do
   local sound=self.sounds[name]
   local target=entry.Volume*Config.MixGain(entry.Category,celebrating,feature)
-  if name=="GardenBreeze" then target*=if self.weatherKind=="Storm" then 2 elseif self.weatherKind=="Stars" then .65 else 1
+  if name=="GardenBreeze" then
+   local storm=self.weatherKind=="Storm";local strength=self.weatherIntensity or 0
+   target*=if storm then (1+2*strength)*(if self.weatherSheltered then .28 else 1) elseif self.weatherKind=="Stars" then .65 else 1
+   if self.windEQ then
+    self.windEQ.Enabled=storm;self.windEQ.LowGain=3*strength;self.windEQ.MidGain=-strength;self.windEQ.HighGain=-5*strength
+    sound.PlaybackSpeed=if storm then (self.windSpeed or 1)*(.88+.08*(1-strength)) else self.windSpeed or 1
+   end
+  elseif name=="StormThunder" then target*=self.thunderGain or 1
   elseif name=="NeighborhoodBirds" then target*=if self.weatherKind=="Storm" then .05 elseif self.weatherKind=="Stars" then .12 else 1 end
   -- Fast attenuation, gentle recovery. No additional frame connection or delayed queue.
   local speed=if target<sound.Volume then 24 else 5
