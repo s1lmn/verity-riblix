@@ -3,7 +3,7 @@
 local Protocol = {}
 Protocol.RequestNames = {ClaimDailyReward="RequestClaimDailyReward",StoryGuide="RequestStoryGuide",BuyPremiumOffer="RequestBuyPremiumOffer",EquipPremiumOffer="RequestEquipPremiumOffer",PremiumPurchase="RequestPremiumPurchase",PremiumRefresh="RequestPremiumRefresh",SetPremiumStyle="RequestSetPremiumStyle",CraftWeatherItem="RequestCraftWeatherItem",SetWeatherLook="RequestSetWeatherLook",ClaimAlbumSet="RequestClaimAlbumSet",BuyAbility="RequestBuyAbility",EquipAbility="RequestEquipAbility",UpgradeHouse="RequestUpgradeHouse",HouseDoor="RequestHouseDoor",Sync="RequestSync",OpenBox="RequestOpenBox",UpgradeVerity="RequestUpgradeVerity",
 	UpgradeSwipe="RequestUpgradeSwipe",PhoneSession="RequestPhoneSession",Swipe="RequestSwipe",SetShowcaseCard="RequestSetShowcaseCard",
-	EquipCosmetic="RequestEquipCosmetic",CosmeticPurchase="RequestCosmeticPurchase",TaskStart="RequestTaskStart",TaskComplete="RequestTaskComplete"}
+	BuyShopProduct="RequestBuyShopProduct",EquipCosmetic="RequestEquipCosmetic",CosmeticPurchase="RequestCosmeticPurchase",TaskStart="RequestTaskStart",TaskComplete="RequestTaskComplete"}
 function Protocol.State(raw)
 	if type(raw)~="table" then return nil end
 	if raw.protocolVersion~=1 then return if raw.version==1 then raw else nil end

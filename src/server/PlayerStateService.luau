@@ -2,6 +2,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Levels = require(Shared.LevelConfig)
 local Houses = require(Shared.HouseConfig)
+local ShopProducts = require(Shared.ShopProducts)
 local Economy = require(Shared.EconomyConfig)
 local TaskConfig = require(Shared.TaskConfig)
 local Config = require(Shared.GameConfig)
@@ -63,7 +64,10 @@ function PlayerStateService:Snapshot(userId)
  local mobility,mobilityId=Abilities.ProfileEquipped(profile,"Mobility")
  local equipped={Attack=attackId,Mobility=mobilityId}
 	local houseMultiplier = Houses.getIncomeMultiplier(data.HouseIncomeLevel,data.HouseDoorOwned,data.HouseSecondFloorOwned)
-	local boostMultiplier = if data.BoostExpiresAt > self.clock() then Economy.Boost.Multiplier else 1
+	local now = self.clock()
+	local shopExpiry = data.ShopBoostExpiresAt or 0
+	local boostMultiplier = (if data.BoostExpiresAt > now then Economy.Boost.Multiplier else 1) * ShopProducts.Multiplier(data, now)
+	local nextBoostExpiry = if data.BoostExpiresAt > now and shopExpiry > now then math.min(data.BoostExpiresAt, shopExpiry) else math.max(data.BoostExpiresAt, shopExpiry)
 	local multiplier=boostMultiplier*(if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1)
  local tasks,story={},nil
  if self.TaskProjection then tasks,story=self.TaskProjection(userId) end
@@ -96,7 +100,7 @@ function PlayerStateService:Snapshot(userId)
 		NextVerityUpgradeCost = Economy.LevelCost[level],
 		NextSwipeUpgradeCost = Economy.getSwipeCost(data.SwipeUpgradeLevel),
 		MoneyPassOwned = profile.MoneyPassOwned==true, MoneyPassId = Config.MoneyPassId,
-		BoostMultiplier = boostMultiplier, BoostExpiresAt = data.BoostExpiresAt,
+		BoostMultiplier = boostMultiplier, BoostExpiresAt = nextBoostExpiry, ShopBoostExpiresAt = shopExpiry,
 		PhoneOpen = session.PhoneOpen, Tasks = tasks, TaskCompletedCount=completedJobs,
   DeliveryPosition = if self.DeliveryPosition then self.DeliveryPosition(userId) else nil,
   CompanionMode = "FollowOwner", CosmeticsOwned = table.clone(data.CosmeticsOwned),

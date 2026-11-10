@@ -118,7 +118,10 @@ end)
 MoneyPass.premium=Premium;AbilityShop.premium=Premium
 local Daily=require(script.Parent.DailyRewardService).new(Data,State,Economy,Players,clock,Premium)
 State.DailyProjection=function(id)return Daily:Projection(id)end
-local Receipts=require(script.Parent.PurchaseReceiptService).new(Data,State,{Cosmetics,Boost},not usingStudioMemory)
+local ShopProducts=require(script.Parent.ShopProductService).new(Data,State,Income,clock,function(id,code)
+ send(id,"NotificationEvent",{protocolVersion=1,code=code})
+end)
+local Receipts=require(script.Parent.PurchaseReceiptService).new(Data,State,{Cosmetics,Boost,ShopProducts},not usingStudioMemory)
 State.PremiumProjection=function(id)return Premium:Projection(id)end
 State.PremiumPublic=function(id)return Premium:PublicStyles(id)end
 State.PremiumVisual=function(id)return Premium:VisualStyles(id)end
@@ -222,17 +225,22 @@ Remote:Register("RequestUpgradeHouse",function(id)
  return if status=="HOUSE_UPGRADED" then "OK" else status
 end)
 Remote:Register("RequestEquipCosmetic", function(id,payload) return Cosmetics:Equip(id,payload.itemId,payload.equipped) end)
-Remote:Register("RequestCosmeticPurchase", function(id,payload)
+local function requestProduct(id, service, key)
  if usingStudioMemory then return "PRODUCT_UNAVAILABLE" end
- local status,product=Cosmetics:PreparePurchase(id,payload.itemId)
- if status=="OK" then task.defer(function()
-  local player=Players:GetPlayerByUserId(id)
-  if not player then return end
-  local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,product) end)
-  if not ok then Cosmetics:ClosePrompt(id,product);send(id,"NotificationEvent",{protocolVersion=1,code="PURCHASE_ERROR"}) end
- end) end
+ local status,product=service:PreparePurchase(id,key)
+ if status=="OK" then
+  local session=State.sessions[id]
+  task.defer(function()
+   local player=Players:GetPlayerByUserId(id)
+   if not player or State.sessions[id]~=session then return end
+   local ok=pcall(function() MarketplaceService:PromptProductPurchase(player,product) end)
+   if not ok then Cosmetics:ClosePrompt(id,product);send(id,"NotificationEvent",{protocolVersion=1,code="PURCHASE_ERROR"}) end
+  end)
+ end
  return status
-end)
+end
+Remote:Register("RequestCosmeticPurchase", function(id,payload) return requestProduct(id,Cosmetics,payload.itemId) end)
+Remote:Register("RequestBuyShopProduct", function(id,payload) return requestProduct(id,ShopProducts,payload.itemId) end)
 MarketplaceService.PromptProductPurchaseFinished:Connect(function(id,product,_purchased)
  -- Closes prompt only. Never grants an entitlement from this event.
  Cosmetics:ClosePrompt(id,product)

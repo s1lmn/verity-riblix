@@ -121,7 +121,7 @@ function Adapter:Attach(folder)
         STREET_DELIVERY_STARTED="Фургон Verity Express в районе! Следи за посылкой на главной дороге.",STREET_DELIVERY_DROPPED="Посылка выпала! Успей первым подобрать её на тротуаре.",STREET_DELIVERY_REWARD="Посылка твоя! Награда получена.",
         RACE_JOINED="Ты в заезде! Дождись второго участника у своего места.",RACE_STARTED="Старт! Болей за своего Verity!",RACE_WIN="Твой Verity победил! Награда получена.",RACE_FINISH="Заезд завершён! Можно попробовать ещё раз.",RACE_CANCELLED="Недостаточно участников. Verity вернулся к тебе.",
         BATTLE_NEEDS_ATTACK="Для арены экипируй атакующую способность в коллекции.",BATTLE_JOINED="Ты на арене! Готовься к пяти волнам.",BATTLE_BUSY="Арена занята. Дождись конца битвы.",BATTLE_COOLDOWN="Награда арены скоро обновится.",BATTLE_OTHER_ACTIVITY="Сначала заверши текущую активность.",BATTLE_WAVE="Новая волна! Выходи из красных кругов.",BATTLE_BOSS="Появился Неоновый титан!",BATTLE_WIN="Пять волн пройдены! Награда получена.",BATTLE_FAILED="Битва завершена. Попробуй ещё раз!",PARKOUR_RETRY="Ловушка! Ты вернулся на контрольную точку.",
-        COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
+        SHOP_CASH_GRANTED="Валюта зачислена!",SHOP_BOOST_GRANTED="Ускорение ×2 включено!",COMBAT_REWARD="Цель разрушена! Награда получена.",PURCHASE_ERROR="Purchase could not open. Please try again.",TOO_FAR="Move closer to the interaction.",TASK_REWARD="Task completed!"}
 							if payload.source=="HouseFeature" then
 								messages={OK="Дом улучшен!",INSUFFICIENT_CASH="Не хватает денег",
 									ALREADY_OWNED="Куплено",BOX_NOT_OPENED="Сначала распакуй Verity"}
@@ -149,7 +149,7 @@ function Adapter:Attach(folder)
          message=string.format(Locale.Text("Из посылки: %s!"),Locale.Text(Cosmetics.Items[drop.itemId].name))
         else message=string.format(Locale.Text("Награда доставки ×%d: $%s"),drop.multiplier or 1,Locale.Number(payload.reward)) end
        end
-							if message then self.Notification:Fire({version=1,message=message,kind="Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward,achievementId=payload.achievementId,itemId=payload.itemId}) end
+							if message then self.Notification:Fire({version=1,message=message,kind=if payload.code=="SHOP_CASH_GRANTED" or payload.code=="SHOP_BOOST_GRANTED" then "Success" else "Info",eventId=payload.eventId,reward=payload.reward,code=payload.code,source=payload.source,deliveryReward=payload.deliveryReward,achievementId=payload.achievementId,itemId=payload.itemId}) end
 						elseif payload.version==1 and type(payload.message)=="string" then self.Notification:Fire(payload) end
 					end
 				end)

@@ -8,6 +8,7 @@ local SettingsSkin=require(script.Parent.SettingsSkin)
 local PremiumShopSkin=require(script.Parent.PremiumShopSkin)
 local GrowthPanelsSkin=require(script.Parent.GrowthPanelsSkin)
 local MobileHUD = require(script.Parent.MobileHUDLayout)
+local HUDSkin = require(script.Parent.HUDSkin)
 local Builder = {}
 
 local function launcher(parent,name,caption,color)
@@ -55,15 +56,26 @@ function Builder.Build(playerGui)
 	safe.Visible = false
 	local refs = { Gui = gui, Safe = safe, Panels = {}, Nav = {} }
 
- local hud=W.Round(W.Frame(safe,"HUD",UDim2.fromOffset(150,64)),10)
- hud.Position=UDim2.fromOffset(12,8);hud.BackgroundTransparency=.08;W.Stroke(hud,T.Ink,1)
- refs.Cash=W.Text(hud,"Cash","$—",16,true)
- refs.Income=W.Text(hud,"Income","+$— / sec",11,true,T.Purple)
- refs.Level=W.Text(hud,"Level","LVL — / 100",10,true,T.Muted)
- refs.Cash.Position,refs.Cash.Size=UDim2.fromOffset(10,5),UDim2.new(1,-20,0,21)
- refs.Income.Position,refs.Income.Size=UDim2.fromOffset(10,28),UDim2.new(1,-20,0,15)
- refs.Level.Position,refs.Level.Size=UDim2.fromOffset(10,46),UDim2.new(1,-20,0,13)
- W.New("UIGradient",{Color=ColorSequence.new(T.White,T.Purple:Lerp(T.Paper,.82)),Rotation=95},hud)
+ local hud=HUDSkin.PanelFrame(safe,"HUD",UDim2.fromOffset(150,55),11)
+ hud.Position=UDim2.fromOffset(12,8)
+ local wallet=W.Round(W.Frame(hud,"WalletBadge",UDim2.fromOffset(23,21),HUDSkin.Mint),6)
+ wallet.Position=UDim2.fromOffset(7,5)
+ W.Stroke(wallet,HUDSkin.Ink,2).Transparency=0
+ local coin=W.Text(wallet,"Currency","$",13,true,HUDSkin.Ink)
+ coin.TextXAlignment=Enum.TextXAlignment.Center;coin.Size=UDim2.fromScale(1,1)
+ refs.Cash=HUDSkin.TextOutline(W.Text(hud,"Cash","—",16,true,HUDSkin.Mint))
+ refs.Cash.TextWrapped=false;refs.Cash.TextTruncate=Enum.TextTruncate.AtEnd
+ refs.Income=W.Text(hud,"Income","+$— / sec",11,true,HUDSkin.Sky)
+ refs.Cash.Position,refs.Cash.Size=UDim2.fromOffset(36,4),UDim2.new(1,-42,0,24)
+ refs.Income.Visible=false
+ local meter=W.Round(W.Frame(hud,"LevelMeter",UDim2.new(1,-14,0,14),HUDSkin.Ink),5)
+ meter.Position=UDim2.new(0,7,1,-18)
+ meter.ClipsDescendants=true
+ refs.LevelFill=W.Round(W.Frame(meter,"Fill",UDim2.fromScale(0,1),HUDSkin.Sky),5)
+ W.New("UIGradient",{Color=ColorSequence.new(Color3.fromHex("81E6FF"),Color3.fromHex("396BF3")),Rotation=90},refs.LevelFill)
+ refs.Level=HUDSkin.TextOutline(W.Text(meter,"Level","LVL — / 100",10,true,HUDSkin.Text))
+ refs.Level.Position,refs.Level.Size=UDim2.fromOffset(5,0),UDim2.new(1,-10,1,0)
+ refs.Level.TextWrapped=false
  refs.HUD=hud
  local ability=W.Button(safe,"VerityAbility","",T.Mint:Lerp(T.Paper,.7))
  ability.AnchorPoint=Vector2.new(1,0)
@@ -103,7 +115,7 @@ function Builder.Build(playerGui)
   if name=="SETTINGS" then refs.SettingsButton=button else refs.Nav[name]=button end
  end
  refs.Navigation=nav
- refs.Status=W.Text(safe,"ConnectionStatus","Connecting…",10,true,T.Muted)
+ refs.Status=HUDSkin.TextOutline(W.Text(safe,"ConnectionStatus","Connecting…",10,true,HUDSkin.Soft))
  refs.Status.Size=UDim2.fromOffset(180,24);refs.Status.Visible=false
 
 	local verity = GrowthPanelsSkin.BuildVerity(safe)
@@ -126,13 +138,13 @@ function Builder.Build(playerGui)
  refs.Panels.SHOP=PremiumShopSkin.Build(safe)
 
 
- refs.Tutorial=W.Round(W.Frame(safe,"Tutorial",UDim2.fromOffset(220,54),T.Paper),9)
- refs.Tutorial.BackgroundTransparency=.08;W.Stroke(refs.Tutorial,T.Gold,1)
- refs.GuideTitle=W.Text(refs.Tutorial,"GuideTitle","Твоя следующая цель",11,true,T.Ink)
+ refs.Tutorial=HUDSkin.PanelFrame(safe,"Tutorial",UDim2.fromOffset(220,54),10)
+ HUDSkin.Accent(refs.Tutorial,HUDSkin.Gold)
+ refs.GuideTitle=W.Text(refs.Tutorial,"GuideTitle","Твоя следующая цель",11,true,HUDSkin.Gold)
  refs.GuideTitle.TextWrapped=false;refs.GuideTitle.TextTruncate=Enum.TextTruncate.AtEnd
- refs.GuideTitle.Position,refs.GuideTitle.Size=UDim2.fromOffset(8,4),UDim2.new(1,-16,0,16)
- refs.TutorialText=W.Text(refs.Tutorial,"Hint","Подожди доставку…",11,false,T.Ink)
- refs.TutorialText.Position,refs.TutorialText.Size=UDim2.fromOffset(8,21),UDim2.new(1,-54,1,-25)
+ refs.GuideTitle.Position,refs.GuideTitle.Size=UDim2.fromOffset(15,4),UDim2.new(1,-23,0,16)
+ refs.TutorialText=W.Text(refs.Tutorial,"Hint","Подожди доставку…",11,false,HUDSkin.Text)
+ refs.TutorialText.Position,refs.TutorialText.Size=UDim2.fromOffset(15,21),UDim2.new(1,-61,1,-25)
  refs.Tutorial.Visible=false
 
 	refs.Toasts = W.Frame(safe, "Notifications", UDim2.new(1, -32, 0, 108))
@@ -140,19 +152,20 @@ function Builder.Build(playerGui)
 	refs.Toasts.Position = UDim2.fromOffset(16, 6)
 	refs.Toasts.AnchorPoint = Vector2.new(0.5, 0)
 	W.List(refs.Toasts, 6)
-	refs.Reward = W.Text(safe, "FloatingReward", "", 21, true, T.Mint)
+	refs.Reward = HUDSkin.TextOutline(W.Text(safe, "FloatingReward", "", 21, true, HUDSkin.Mint))
 	refs.Reward.Size, refs.Reward.AnchorPoint = UDim2.fromOffset(260, 34), Vector2.new(0.5, 0)
 	refs.Reward.Position, refs.Reward.TextXAlignment = UDim2.fromScale(0.5, 0.25), Enum.TextXAlignment.Center
 	refs.Reward.ZIndex, refs.Reward.Visible = 30, false
-	refs.Direction = W.Text(safe, "TaskDirection", "", 13, true, T.Gold)
+	refs.Direction = HUDSkin.TextOutline(W.Text(safe, "TaskDirection", "", 13, true, HUDSkin.Gold))
 	refs.Direction.AnchorPoint, refs.Direction.Position = Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0.42)
 	refs.Direction.Size, refs.Direction.Visible = UDim2.new(0.8, 0, 0, 32), false
 	refs.Direction.TextXAlignment = Enum.TextXAlignment.Center
-	refs.Banner = W.Round(W.Frame(safe, "LevelBanner", UDim2.fromOffset(400, 70), T.Gold), 16)
+	refs.Banner = HUDSkin.PanelFrame(safe, "LevelBanner", UDim2.fromOffset(400, 70), 12)
+	HUDSkin.Accent(refs.Banner,HUDSkin.Gold).ZIndex=26
 	refs.Banner.AnchorPoint, refs.Banner.Position = Vector2.new(0.5, 0), UDim2.fromScale(0.5, 0.3)
 	refs.Banner.ZIndex, refs.Banner.Visible = 25, false
-	refs.BannerText = W.Text(refs.Banner, "Message", "", 16, true)
-	refs.BannerText.Position, refs.BannerText.Size, refs.BannerText.ZIndex = UDim2.fromOffset(12, 6), UDim2.new(1, -24, 1, -12), 26
+	refs.BannerText = W.Text(refs.Banner, "Message", "", 16, true, HUDSkin.Gold)
+	refs.BannerText.Position, refs.BannerText.Size, refs.BannerText.ZIndex = UDim2.fromOffset(15, 6), UDim2.new(1, -25, 1, -12), 26
 	refs.BannerText.TextXAlignment = Enum.TextXAlignment.Center
 
  refs.Layout=function(open)
@@ -167,7 +180,6 @@ function Builder.Build(playerGui)
   hud.Size=UDim2.fromOffset(if touch then 122 else 150,hudHeight)
   refs.Cash.TextSize=if touch then 17 else 20
   refs.Income.Visible=false
-  refs.Level.Position=UDim2.fromOffset(10,if touch then 28 else 33)
   local navHeight=if compact then side else side*2+gap
   local navTop=if compact then 62 elseif touch then 68 else math.max(74,math.floor((size.Y-navHeight)*.46))
   local railWidth=if compact then side*2+gap else side
@@ -184,7 +196,7 @@ function Builder.Build(playerGui)
   refs.Tutorial.Size=UDim2.fromOffset(if open and size.X>=640 then 150 else math.min(220,size.X-24),hintHeight)
   refs.TutorialText.TextSize=if short then 10 else 11
   refs.GuideTitle.TextSize=if short then 10 else 11
-  refs.TutorialText.Position=UDim2.fromOffset(8,if short then 18 else 21)
+  refs.TutorialText.Position=UDim2.fromOffset(15,if short then 18 else 21)
   refs.Status.Position=refs.Tutorial.Position
   if touch then
    refs.Tutorial.Position=UDim2.new(1,-MobileHUD.StatusWidth(size)-8,0,MobileHUD.GuideTop)
@@ -226,6 +238,8 @@ function Builder.Build(playerGui)
    refs.Toasts.AnchorPoint=Vector2.new(if open then .5 else 1,0)
    refs.Toasts.Position=if open then UDim2.new(.5,0,0,MobileHUD.NoticeTop) else UDim2.new(1,-8,0,MobileHUD.NoticeTop)
    refs.Toasts.Size=UDim2.fromOffset(if open then math.min(340,size.X-24) else MobileHUD.StatusWidth(size),MobileHUD.NoticeHeight)
+   refs.Banner.Position=UDim2.new(1,-8,0,MobileHUD.StatusTop)
+   refs.Banner.Size=UDim2.fromOffset(MobileHUD.StatusWidth(size),46)
    refs.Reward.AnchorPoint=Vector2.zero
    refs.Reward.Position=UDim2.fromOffset(8,navTop+navHeight+7)
    refs.Reward.Size=UDim2.fromOffset(120,24)

@@ -5,6 +5,8 @@ return table.freeze({
 	MoneyPassMultiplier = 3,
 	MoneyPassPrice = 99,
 	-- Game Passes for Grow your Verity (Cute Moggers Studios, universe 10775557886).
+	-- Repeatable Developer Product IDs in the community-owned experience.
+	ShopProductIds = table.freeze({}),
 	MoneyPassId = 2075332782,
 	HeroPassId = 2074444798,
 	HeroPassPrice = 99,

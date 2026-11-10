@@ -40,7 +40,7 @@ local Errors={
  TASK_OTHER_ACTIVITY="Заверши текущую активность, затем возьми поручение.",
  CARD_NOT_OWNED="Этой карточки пока нет в коллекции.",
  ABILITY_LEVEL_REQUIRED="Сначала повысь уровень Verity.",ABILITY_NOT_OWNED="Сначала купи эту способность.",TOO_FAR="Подойди к станции строительства внутри своего дома.",
- NOT_OWNED="You do not own this accessory.",PRODUCT_UNAVAILABLE="This item is not on sale yet.",
+ NOT_OWNED="You do not own this accessory.",PRODUCT_UNAVAILABLE="This item is not on sale yet.",SHOP_WALLET_FULL="В кошельке не хватает места для всего пакета.",
  ALREADY_OWNED="You already own this item.",BUSY="Finish the previous purchase first.",
 	INSUFFICIENT_CASH="You need a little more Cash for that upgrade.",
 	COOLDOWN="A little too soon. Try again in a moment.",
@@ -278,6 +278,7 @@ function Main:Render()
 	self.refs.Status.Text=if self.versions.issue then self.versions:IssueText() elseif not ctx.net.connected then Locale.Text("Connecting…") elseif not state then Locale.Text("Loading progress…") else ""
  self.refs.Status.Visible=ctx.active==nil and (self.versions.issue~=nil or not ctx.net.connected or (state==nil and not Players.LocalPlayer:GetAttribute("HouseSelectionReady")))
 	self.refs.Income.Text=if state then "+$"..Locale.Number(state.IncomePerSecond)..Locale.Text(" / sec") else Locale.Text("+$— / sec")
+	self.refs.LevelFill.Size=UDim2.fromScale(if state then math.clamp(state.VerityLevel/100,0,1) else 0,1)
 	self.refs.Level.Text=if state then string.format(Locale.Text("LVL %d / 100"),state.VerityLevel) else Locale.Text("LVL — / 100")
 	self:RenderAbility()
 	if ctx.active=="VERITY" then self.verity:Render() end
@@ -311,7 +312,7 @@ function Main:Tick(dt)
 		if ctx.settings.values.ReducedMotion then self.displayCash=state.Cash
 		else self.displayCash+=(state.Cash-self.displayCash)*(1-math.exp(-dt*15)) end
 		if math.abs(state.Cash-self.displayCash)<0.5 then self.displayCash=state.Cash end
-		self.refs.Cash.Text="$"..Locale.Number(self.displayCash)
+		self.refs.Cash.Text=Locale.Number(self.displayCash)
 	end
 	local now=os.clock()
 	if self.versions.issue then self.refs.Status.Text=self.versions:IssueText() end

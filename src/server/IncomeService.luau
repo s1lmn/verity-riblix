@@ -1,6 +1,7 @@
 --!nonstrict
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Economy = require(Shared.EconomyConfig)
+local ShopProducts = require(Shared.ShopProducts)
 local Houses = require(Shared.HouseConfig)
 local IncomeService = {}
 IncomeService.__index = IncomeService
@@ -16,10 +17,15 @@ function IncomeService:Settle(userId)
 	session.LastIncomeAt = now
 	if not profile.Data.VerityUnlocked or now <= before then return end
 	local elapsed = now - before
-	local boosted = math.max(0, math.min(now, profile.Data.BoostExpiresAt) - before)
+	local legacySeconds = math.max(0, math.min(now, profile.Data.BoostExpiresAt) - before)
+	local shopSeconds = math.max(0, math.min(now, profile.Data.ShopBoostExpiresAt or 0) - before)
+	local legacyBonus = Economy.Boost.Multiplier - 1
+	local shopBonus = ShopProducts.BoostMultiplier - 1
+	local weightedTime = elapsed + legacySeconds * legacyBonus + shopSeconds * shopBonus
+		+ math.min(legacySeconds, shopSeconds) * legacyBonus * shopBonus
 	self.economy:AddCash(userId, Economy.getIncome(profile.Data.VerityLevel)
 		* Houses.getIncomeMultiplier(profile.Data.HouseIncomeLevel,profile.Data.HouseDoorOwned,profile.Data.HouseSecondFloorOwned) * self.economy:GetPermanentMultiplier(profile)
-		* (elapsed + boosted * (Economy.Boost.Multiplier - 1)))
+		* weightedTime)
 end
 function IncomeService:Tick()
 	for userId in self.state.sessions do self:Settle(userId) end

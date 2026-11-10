@@ -2,6 +2,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Config = require(Shared.GameConfig)
 local Economy = require(Shared.EconomyConfig)
+local ShopProducts = require(Shared.ShopProducts)
 local Houses = require(Shared.HouseConfig)
 local Numeric = require(Shared.Numeric)
 local EconomyService = {}
@@ -17,7 +18,9 @@ function EconomyService:GetPermanentMultiplier(profile)
 	return if profile.MoneyPassOwned then Config.MoneyPassMultiplier else 1
 end
 function EconomyService:GetMultiplier(profile, at)
-	return self:GetPermanentMultiplier(profile) * (if profile.Data.BoostExpiresAt > (at or self.clock()) then Economy.Boost.Multiplier else 1)
+	local now = at or self.clock()
+	local legacy = if profile.Data.BoostExpiresAt > now then Economy.Boost.Multiplier else 1
+	return self:GetPermanentMultiplier(profile) * legacy * ShopProducts.Multiplier(profile.Data, now)
 end
 function EconomyService:GetIncomePerSecond(userId)
 	local profile = self.data:Get(userId)

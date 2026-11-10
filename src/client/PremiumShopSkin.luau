@@ -1,16 +1,21 @@
 --!nonstrict
 local RS=game:GetService("ReplicatedStorage")
 local Catalog=require(RS.Shared.PremiumVisualCatalog)
+local Products=require(RS.Shared.ShopProducts)
+local Art=require(script.Parent.PremiumShopArt)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
 local TextService=game:GetService("TextService")
 local Skin={}
 local INK=Color3.fromHex("14131F")
-local PANEL=Color3.fromHex("252635")
+local PANEL=Color3.fromHex("202135")
 local GREEN=Color3.fromHex("9BF540")
-local GAP=10
+local GAP=12
 local STAGES={
- money_x3={"9AFD55","179B46"}, scarlet_sentinel={"FF747C","AD244F"},
+ cash_small={"88EF58","188956"}, cash_medium={"5EECB0","127450"},
+ cash_large={"3FE4BE","08707E"}, cash_vault={"D4F878","419634"},
+ boost_15={"FFDD61","E07539"}, boost_60={"FFAC59","C64657"},
+ money_x3={"D2A0F6","6D4ABE"}, scarlet_sentinel={"FF747C","AD244F"},
  premium_homes={"FFD178","E9669E"}, premium_auras={"C0A3FF","5746BC"},
  fusion_starlight={"88CEFF","5250CC"}, party_disco={"FF9AE9","AA45AA"},
  collector_gallery={"FFE08A","C28031"}, home_atmosphere={"7EF1DE","3378B0"},
@@ -42,7 +47,7 @@ local function scroll(root,name)
 end
 function Skin.Build(parent)
  local backdrop=W.Frame(parent,"ShopBackdrop",UDim2.fromScale(1,1),INK)
- backdrop.BackgroundTransparency=.4;backdrop.Visible=false;backdrop.Active=true;backdrop.ZIndex=9
+ backdrop.BackgroundTransparency=.29;backdrop.Visible=false;backdrop.Active=true;backdrop.ZIndex=9
  local root=W.Round(W.Frame(parent,"PremiumShop",UDim2.fromOffset(840,560),PANEL),18)
  root.Visible=false;root.Active=true;root.SelectionGroup=true;root.ClipsDescendants=true;root.ZIndex=10
  for _,direction in {"Up","Down","Left","Right"} do root["SelectionBehavior"..direction]=Enum.SelectionBehavior.Stop end
@@ -50,11 +55,12 @@ function Skin.Build(parent)
  local header=W.Frame(root,"Header",UDim2.new(1,0,0,60),Color3.fromHex("FFB20F"))
  gradient(header,"FF8D0A","FFF05D",0)
  local title=whiteType(W.Text(header,"Title","МАГАЗИН",23,true))
+ title.TextWrapped=false;title.TextTruncate=Enum.TextTruncate.AtEnd
  local subtitle=W.Text(header,"Subtitle","",1);subtitle.Visible=false
  local close=whiteType(fixed(W.Button(header,"Close","×",Color3.fromHex("E32D56"))))
- close.Size=UDim2.fromOffset(44,44);close.TextSize=28;outline(close)
+ close.Size=UDim2.fromOffset(44,44);close.TextSize=28;outline(close);gradient(close,"FF7795","E32D56")
  local back=whiteType(fixed(W.Button(header,"Back","‹",Color3.fromHex("2F65CD"))))
- back.Position=UDim2.fromOffset(8,5);back.Size=UDim2.fromOffset(44,44);back.TextSize=27;back.Visible=false;outline(back)
+ back.Position=UDim2.fromOffset(8,5);back.Size=UDim2.fromOffset(44,44);back.TextSize=27;back.Visible=false;outline(back);gradient(back,"6ED5FC","3570EF")
  local tabs={}
  for _,section in Catalog.Sections do
   local tab=fixed(W.Button(root,section.id,section.title,Color3.fromHex(section.color)))
@@ -77,15 +83,19 @@ function Skin.Card(parent,id,item,order)
  outline(row,INK,3)
  local art=W.Round(W.Frame(row,"ProductScene",UDim2.new(1,-10,0,120),accent),11)
  art.ClipsDescendants=true;gradient(art,stage[1],stage[2],38)
- outline(art,Color3.fromHex("FFFFFF"),1.25).Transparency=.46
- local gloss=W.Frame(art,"Shine",UDim2.new(.22,0,1.55,0),T.White)
- gloss.Position=UDim2.fromScale(.78,-.32);gloss.Rotation=22;gloss.BackgroundTransparency=.82
+ outline(art,Color3.fromHex("FFFFFF"),1.8).Transparency=.29
+ for i=1,3 do
+  local gloss=W.Frame(art,"Shine",UDim2.new(.07+i*.025,0,1.85,0),T.White)
+  gloss.Position=UDim2.fromScale(.58+i*.13,-.37);gloss.Rotation=27;gloss.BackgroundTransparency=.91
+ end
+ local illustration=Art.Build(art,id,item,Products.Items[id])
  local viewport=W.New("ViewportFrame",{Name="Model",Size=UDim2.fromScale(1,1),BackgroundTransparency=1,
   Ambient=Color3.fromRGB(199,193,219),LightColor=Color3.fromRGB(255,246,227),LightDirection=Vector3.new(-1,-1,-2)},art)
  local phasePlate=W.Round(W.Frame(art,"PhasePill",UDim2.new(1,-16,0,24),INK),8)
  phasePlate.Position=UDim2.new(0,8,1,-30);phasePlate.BackgroundTransparency=.22
  local phase=centered(W.Text(phasePlate,"Phase","",11,true,T.White));phase.Size=UDim2.fromScale(1,1)
  local name=whiteType(centered(W.Text(row,"Name",item.Title,16,true)))
+ name.TextWrapped=true
  name.ZIndex=3;name.TextTruncate=Enum.TextTruncate.AtEnd
  local benefit=W.Text(row,"Benefit","",13,false,T.White)
  local bundle=W.Text(row,"Bundle","",11,true,Color3.fromHex("FFD987"))
@@ -94,7 +104,11 @@ function Skin.Card(parent,id,item,order)
  local view=if id=="premium_homes" then fixed(W.Button(row,"HouseView","ИНТЕРЬЕР",T.Soft)) else nil
  local detail=W.Text(row,"Facts","",12,false,T.White);detail.TextYAlignment=Enum.TextYAlignment.Top
  local extra=W.Text(row,"Rules","",12,false,Color3.fromHex("D2CCE4"));extra.TextYAlignment=Enum.TextYAlignment.Top
- local price=centered(W.Text(row,"Price","",13,true,T.White))
+ local price=centered(W.Text(row,"Price","",13,true,Color3.fromHex("D0D4EB")))
+ price.BackgroundColor3=Color3.fromHex("303149")
+ W.Round(price,9)
+ local caption=whiteType(centered(W.Text(art,"Caption","",10,true)))
+ caption.Position=UDim2.new(0,5,1,-19);caption.Size=UDim2.new(1,-10,0,16)
  local preview=fixed(W.Button(row,"TryOn","ПРИМЕРИТЬ",Color3.fromHex("BFDFFF")))
  preview.ZIndex=4
  local buy=fixed(W.Button(row,"Buy","КУПИТЬ",GREEN))
@@ -102,13 +116,15 @@ function Skin.Card(parent,id,item,order)
  gradient(buy,"D5FF7A","72CE32")
  local equip=fixed(W.Button(row,"Equip","ВЫБРАТЬ",Color3.fromHex("C2ACFF")));outline(equip)
  local reset=fixed(W.Button(row,"Remove","СНЯТЬ ОФОРМЛЕНИЕ",T.Soft))
- return {Root=row,Title=name,Benefit=benefit,Bundle=bundle,Art=art,Viewport=viewport,Phase=phase,PhasePlate=phasePlate,
+ return {Root=row,Title=name,Benefit=benefit,Bundle=bundle,Art=art,Viewport=viewport,Illustration=illustration,Caption=caption,Phase=phase,PhasePlate=phasePlate,
   Comparison=comparison,Variant=variant,HouseView=view,Details=detail,Extra=extra,Price=price,
   Preview=preview,Buy=buy,Equip=equip,Reset=reset}
 end
 function Skin.LayoutTile(row)
- row.Title.TextSize=15
- row.Title.Position=UDim2.fromOffset(10,8);row.Title.Size=UDim2.new(1,-20,0,32)
+ row.Title.TextSize=if row.Root.AbsoluteSize.X>=170 then 17 else 15
+ row.Title.Position=UDim2.fromOffset(10,7);row.Title.Size=UDim2.new(1,-20,0,33)
+ row.Caption.Visible=true
+ row.Illustration.Position=UDim2.fromOffset(0,32);row.Illustration.Size=UDim2.new(1,0,1,-50)
  row.Art.Position=UDim2.fromOffset(5,5);row.Art.Size=UDim2.new(1,-10,1,-58)
  row.Viewport.Position=UDim2.fromOffset(0,31);row.Viewport.Size=UDim2.new(1,0,1,-34)
  row.PhasePlate.Visible=false
@@ -119,7 +135,7 @@ function Skin.LayoutTile(row)
  row.Preview.Position=UDim2.fromOffset(5,5);row.Preview.Size=UDim2.new(1,-10,1,-58)
  local action=if row.Buy.Visible then row.Buy elseif row.Equip.Visible then row.Equip else nil
  if action then action.Position=UDim2.new(0,6,1,-50);action.Size=UDim2.new(1,-12,0,44) end
- row.Price.Visible=action==nil
+ row.Price.Visible=action==nil;row.Price.BackgroundTransparency=0
  row.Price.Position=UDim2.new(0,6,1,-49);row.Price.Size=UDim2.new(1,-12,0,43)
 end
 function Skin.LayoutDetail(row,width)
@@ -133,8 +149,9 @@ function Skin.LayoutDetail(row,width)
  end
  row.Title.TextSize=22;fit(row.Title,30)
  row.Viewport.Position=UDim2.fromOffset(0,0);row.Viewport.Size=UDim2.fromScale(1,1)
- row.PhasePlate.Visible=true
- row.Benefit.Visible=true;row.Bundle.Visible=true;row.Price.Visible=true;row.Details.Visible=true
+ row.Caption.Visible=false
+ row.Illustration.Position=UDim2.fromOffset(0,3);row.Illustration.Size=UDim2.new(1,0,1,-6)
+ row.Benefit.Visible=true;row.Bundle.Visible=true;row.Price.Visible=true;row.Price.BackgroundTransparency=1;row.Details.Visible=true
  row.Extra.Visible=row.Extra.Text~=""
  if row.Variant then row.Variant.Visible=true end
  if row.HouseView then row.HouseView.Visible=true end
@@ -147,8 +164,11 @@ function Skin.LayoutDetail(row,width)
  local action=if row.Buy.Visible then row.Buy elseif row.Equip.Visible then row.Equip else nil
  row.Preview.BackgroundTransparency=0;row.Preview.TextTransparency=0
  row.Preview.Position=UDim2.fromOffset(12,y);row.Preview.Size=if action then UDim2.new(.46,-15,0,48) else UDim2.new(1,-24,0,48)
- if action then action.Position=UDim2.new(.46,3,0,y);action.Size=UDim2.new(.54,-15,0,48) end
- y+=55
+ if action then
+  action.Position=if row.Preview.Visible then UDim2.new(.46,3,0,y) else UDim2.fromOffset(12,y)
+  action.Size=if row.Preview.Visible then UDim2.new(.54,-15,0,48) else UDim2.new(1,-24,0,48)
+ end
+ if action or row.Preview.Visible then y+=55 end
  if row.Reset.Visible then place(row.Reset,44) end
  fit(row.Bundle,18);fit(row.Details,26)
  if row.Extra.Visible then fit(row.Extra,26) end
@@ -180,7 +200,7 @@ function Skin.Layout(refs,size)
  local available=width-30
  local columns=if available>=720 then 4 elseif available>=495 then 3 elseif available>=232 then 2 else 1
  local tileWidth=math.floor((available-(columns-1)*GAP)/columns)
- local tileHeight=math.clamp(height-y-14,142,224)
+ local tileHeight=math.clamp(height-y-12,170,235)
  refs.Grid.FillDirectionMaxCells=columns
  refs.Grid.CellSize=UDim2.fromOffset(tileWidth,tileHeight)
  refs.CompactHeader=compactHeader

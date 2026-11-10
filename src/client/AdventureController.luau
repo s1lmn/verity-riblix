@@ -7,6 +7,7 @@ local Card=require(script.Parent.ActivityCard)
 local Locale=require(script.Parent.Locale)
 local W=require(script.Parent.UIWidgets)
 local T=require(script.Parent.UITheme)
+local HUDSkin=require(script.Parent.HUDSkin)
 local Cleanup=require(script.Parent.Cleanup)
 local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Controller={};Controller.__index=Controller
@@ -14,10 +15,9 @@ function Controller.new(ctx)
  local self=setmetatable({ctx=ctx,cleanup=Cleanup.new(),prompts={}},Controller)
  self.card,self.title,self.detail,self.action=Card.Build(ctx.refs.Safe,"AdventureStatus","AdventureAction");self.cleanup:Add(self.card)
  self.weather=self.cleanup:Add(require(script.Parent.WeatherVisuals).new(ctx))
- self.dock=self.cleanup:Add(W.Round(W.Frame(ctx.refs.Safe,"WeatherDock",UDim2.fromOffset(228,44),T.Paper),12));self.dock.AnchorPoint=Vector2.new(1,1);self.dock.Visible=false
- self.dock.BackgroundTransparency=.08;W.Stroke(self.dock,T.Purple,1)
- self.weatherToggle=W.Button(self.dock,"WeatherToggle","",T.Purple:Lerp(T.White,.86));self.weatherToggle.Size=UDim2.new(1,0,0,44);self.weatherToggle.TextSize=11;self.weatherToggle.TextTruncate=Enum.TextTruncate.AtEnd;self.weatherToggle:SetAttribute("FixedFeedbackSize",true)
- self.weatherText=W.Text(self.dock,"WeatherDetail","",11,false,T.Ink);self.weatherText.Position=UDim2.fromOffset(12,48);self.weatherText.Size=UDim2.new(1,-24,0,37)
+ self.dock=self.cleanup:Add(HUDSkin.PanelFrame(ctx.refs.Safe,"WeatherDock",UDim2.fromOffset(228,44),12));self.dock.AnchorPoint=Vector2.new(1,1);self.dock.Visible=false
+ self.weatherToggle=W.Button(self.dock,"WeatherToggle","",HUDSkin.Panel);self.weatherToggle.Size=UDim2.new(1,0,0,44);self.weatherToggle.TextSize=11;self.weatherToggle.TextColor3=HUDSkin.Sky;self.weatherToggle.TextTruncate=Enum.TextTruncate.AtEnd;self.weatherToggle:SetAttribute("FixedFeedbackSize",true)
+ self.weatherText=W.Text(self.dock,"WeatherDetail","",11,false,HUDSkin.Soft);self.weatherText.Position=UDim2.fromOffset(12,48);self.weatherText.Size=UDim2.new(1,-24,0,37)
  self.weatherGo=W.Button(self.dock,"WeatherGo","ПОКАЗАТЬ ПУТЬ",T.Mint);self.weatherGo.Position=UDim2.fromOffset(10,91);self.weatherGo.Size=UDim2.new(1,-20,0,44);self.weatherGo.TextSize=11;self.weatherGo:SetAttribute("FixedFeedbackSize",true)
  self.cleanup:Add(self.weatherToggle.Activated:Connect(function()self.weatherExpanded=not self.weatherExpanded;self:Render()end))
  self.cleanup:Add(self.weatherGo.Activated:Connect(function()self.guide=true;self.weatherExpanded=false;ctx.close();self:Render()end))
@@ -154,7 +154,7 @@ function Controller:Render()
    progress=math.clamp(1-remaining/math.max(1,m.deadline-m.since),0,1);W.SetButton(self.action,"→",true,false)
   end
   self.title.Text=title;self.detail.Text=detail;self.fill.Size=UDim2.fromScale(progress,1)
-  self.fill.BackgroundColor3=Color3.fromHex(color or "B6A4FF");self.title.TextColor3=self.fill.BackgroundColor3:Lerp(T.Ink,.55)
+  self.fill.BackgroundColor3=Color3.fromHex(color or "B6A4FF");self.title.TextColor3=self.fill.BackgroundColor3:Lerp(T.White,.35)
  end
  local alive=player.Character and player.Character:FindFirstChildOfClass("Humanoid")
  for q in self.prompts do if q.Parent then

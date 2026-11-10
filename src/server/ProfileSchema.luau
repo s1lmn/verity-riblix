@@ -16,7 +16,7 @@ local Schema = {}
 function Schema.new()
 	return {DataVersion = 2, DailyRewards=Daily.NewRecord(), StoryChapter=1, StoryStep=1, StoryPaused=false, HouseTheme = "original", ArcadeBestScore=0, AdventureRecords={}, WeatherMaterials={Ember=0,Stardust=0,RainPearl=0}, WeatherLook="Original", WeatherMaterialsSeeded=false, PremiumGrants={}, PremiumLoadout=table.clone(Premium.Defaults), Cash = 0, TotalEarned = 0, VerityLevel = 1, VerityUnlocked = false,
 		DeliveryState = "NotDelivered", SwipeUpgradeLevel = 0, HouseIncomeLevel = 0, HouseDoorOwned = false, HouseSecondFloorOwned = false, TutorialStep = 1,
-		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
+		TutorialCompleted = false, FirstActivityCompleted = false, BoostExpiresAt = 0, ShopBoostExpiresAt = 0, Receipts = {}, FeedCollection = {}, ShowcaseCards = {}, AbilitiesOwned = {}, AbilitiesEquipped = {}, CosmeticsOwned = {}, CosmeticsEquipped = {}, TaskCooldowns = {}, NeighborhoodTaskCooldowns = {}}
 end
 -- Missing v1 fields are reconciled. Corrupt/future profiles fail closed, not reset.
 function Schema.validate(raw)
@@ -30,7 +30,7 @@ function Schema.validate(raw)
 	data.DataVersion = 2 -- Explicit non-destructive v1 -> v2 migration.
  data.DailyRewards=Daily.Validate(data.DailyRewards)
  if not data.DailyRewards then return nil,"INVALID_DAILY_REWARDS" end
-	for _, key in {"Cash", "TotalEarned", "BoostExpiresAt"} do
+	for _, key in {"Cash", "TotalEarned", "BoostExpiresAt", "ShopBoostExpiresAt"} do
 		if not Numeric.isFinite(data[key]) or data[key] < 0 or data[key] > Config.MaxMoney then
 			return nil, "INVALID_" .. key
 		end

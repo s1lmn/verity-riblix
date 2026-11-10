@@ -6,9 +6,10 @@ local Album=require(script.Parent.AlbumConfig)
 local Forge=require(script.Parent.WeatherForgeConfig)
 local Premium=require(script.Parent.PremiumCatalog)
 local Bridge=require(script.Parent.PremiumVisualBridge)
+local ShopProducts=require(script.Parent.ShopProducts)
 local RemotesConfig = {}
 RemotesConfig.Requests = table.freeze({
-	"RequestClaimDailyReward", "RequestStoryGuide", "RequestBuyPremiumOffer", "RequestEquipPremiumOffer", "RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
+	"RequestClaimDailyReward", "RequestStoryGuide", "RequestBuyShopProduct", "RequestBuyPremiumOffer", "RequestEquipPremiumOffer", "RequestPremiumPurchase", "RequestPremiumRefresh", "RequestSetPremiumStyle", "RequestBuyAbility", "RequestEquipAbility", "RequestUpgradeHouse", "RequestHouseDoor", "RequestOpenBox", "RequestUpgradeVerity", "RequestUpgradeSwipe", "RequestPhoneSession",
 	"RequestCraftWeatherItem", "RequestSetWeatherLook", "RequestClaimAlbumSet", "RequestEquipCosmetic", "RequestCosmeticPurchase", "RequestSwipe", "RequestTaskStart", "RequestTaskComplete", "RequestSetShowcaseCard", "RequestSync",
 })
 RemotesConfig.Events = table.freeze({"PlayerStateUpdated", "ActionResult", "WorldEvent", "NotificationEvent"})
@@ -26,6 +27,9 @@ function RemotesConfig.validateRequest(name: string, payload: any): (boolean, st
 	if name=="RequestStoryGuide" then
   allowed.enabled=true
   if type(payload.enabled)~="boolean" then return false,"INVALID_BOOLEAN" end
+ elseif name=="RequestBuyShopProduct" then
+  allowed.itemId=true
+  if type(payload.itemId)~="string" or not ShopProducts.Items[payload.itemId] then return false,"INVALID_ITEM" end
  elseif name=="RequestBuyPremiumOffer" or name=="RequestEquipPremiumOffer" then
   allowed.itemId=true
   local binding=type(payload.itemId)=="string" and Bridge.Offers[payload.itemId]

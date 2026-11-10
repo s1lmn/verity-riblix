@@ -1,19 +1,19 @@
 --!nonstrict
 local W=require(script.Parent.UIWidgets)
-local T=require(script.Parent.UITheme)
+local Skin=require(script.Parent.HUDSkin)
 local Players=game:GetService("Players")
 local MobileHUD=require(script.Parent.MobileHUDLayout)
 local Card={}
 
 function Card.Build(parent,name,leaveName)
- local root=W.Round(W.Frame(parent,name,UDim2.fromOffset(320,64),T.Paper),12)
+ local root=Skin.PanelFrame(parent,name,UDim2.fromOffset(320,64),12)
  root.Visible=false
- W.Stroke(root,T.Purple,2)
- local title=W.Text(root,"Title","",13,true,T.Purple)
- title.Position=UDim2.fromOffset(10,5);title.Size=UDim2.new(1,-66,0,23)
- local detail=W.Text(root,"Detail","",11,false,T.Ink)
- detail.Position=UDim2.fromOffset(10,29);detail.Size=UDim2.new(1,-66,1,-34)
- local leave=W.Button(root,leaveName,"×",T.Pink)
+ Skin.Accent(root,Skin.Sky)
+ local title=W.Text(root,"Title","",13,true,Skin.Sky)
+ title.Position=UDim2.fromOffset(15,5);title.Size=UDim2.new(1,-72,0,23)
+ local detail=W.Text(root,"Detail","",11,false,Skin.Text)
+ detail.Position=UDim2.fromOffset(15,29);detail.Size=UDim2.new(1,-72,1,-34)
+ local leave=W.Button(root,leaveName,"×",Skin.Pink)
  leave.Size=UDim2.fromOffset(44,44);leave.Position=UDim2.new(1,-54,0,10)
  return root,title,detail,leave
 end

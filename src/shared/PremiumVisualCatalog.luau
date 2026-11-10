@@ -1,6 +1,7 @@
 --!nonstrict
 -- Pass IDs and planned prices for this experience. Core and Roblox supply live offers.
 local Packs=require(script.Parent.CharacterPacks)
+local Products=require(script.Parent.ShopProducts)
 local Catalog={}
 Catalog.HeroAbilityId="homelander"
 Catalog.FusionLookId="fusion_starlight"
@@ -48,6 +49,12 @@ Catalog.Items={
  atmosphere_fireflies={Section="house",Title="Светлячки",Description="Тёплые огоньки у дорожки дома.",Color="F4DB92",Preview="Decor"},
  atmosphere_aurora={Section="house",Title="Северное сияние",Description="Мятные и сиреневые ленты над участком.",Color="90F1DA",Preview="Decor"},
 }
+for index,id in Products.Order do
+ local offer=Products.Items[id]
+ Catalog.Items[id]={Section="boost",Title=offer.Title,Color=offer.Color,
+  Description=if offer.Cash then "Валюта сразу поступает на игровой баланс." else "Удваивает денежный доход на указанное время."}
+ table.insert(Catalog.Order,index,id)
+end
 for _,id in Packs.Order do
  local pack=Packs.Items[id]
  Catalog.Items[id]={Section="verity",Title=pack.Name,Description=pack.Description,Color=pack.Color,Preview="CharacterPack"}

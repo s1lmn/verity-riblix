@@ -94,7 +94,7 @@ function Controller:Render()
   local total,goal=0,0;for i=1,3 do total+=message.delivered[i];goal+=message.goals[i] end
   local variant=C.Variants[message.variant or "light"]
   self.title.Text=string.format(Locale.Text("%s • %dс"),Locale.Text(({light="Зажигаем район",van="Ремонт фургона",drones="Верни дронов",festival="Готовим праздник"})[message.variant or "light"]),math.max(0,math.ceil(message.deadline-workspace:GetServerTimeNow())))
-  self.title.TextColor3=Color3.fromHex(variant.Color):Lerp(T.Ink,.52)
+  self.title.TextColor3=Color3.fromHex(variant.Color):Lerp(T.White,.35)
   for i,fill in self.progress do
    local ratio=math.clamp(message.delivered[i]/math.max(1,message.goals[i]),0,1)
    fill.BackgroundColor3=Color3.fromHex(variant.Color):Lerp(T.Purple,.2)
